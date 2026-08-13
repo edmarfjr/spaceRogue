@@ -1,0 +1,298 @@
+import 'dart:math';
+import 'dart:math' as math;
+import 'package:flame/components.dart';
+import 'package:flutter/material.dart';
+import 'package:spacerogue/game/components/utils/palette.dart';
+import 'package:spacerogue/game/components/enemies/enemy.dart';
+import 'package:spacerogue/game/components/enemies/enemy_spawner.dart';
+import 'package:spacerogue/game/components/items/power_up_item.dart';
+import 'package:spacerogue/game/components/map/door.dart';
+import 'package:spacerogue/game/components/map/pedestal.dart';
+import 'package:spacerogue/game/components/map/stairs.dart';
+import 'package:spacerogue/game/components/map/wall_barrier.dart';
+import 'package:spacerogue/game/components/map/wall_tile.dart';
+import 'package:spacerogue/game/components/player/player.dart';
+import 'dungeon_generator.dart';
+import 'obstacle.dart';
+
+class RoomComponent extends PositionComponent with HasGameRef {
+  final RoomData data;
+  final Player player;
+
+  // Variáveis de Combate
+  bool isLocked = false;
+  List<Door> roomDoors = []; // Paredes temporárias para trancar as portas
+  List activeEnemies = []; // Lista de inimigos vivos nesta sala
+  
+  final Random _random = Random();
+  
+  // Tamanho exato da nossa câmera / resolução do Game Boy
+  static const double roomWidth = 16 * 12.0;
+  static const double roomHeight = 16 * 12.0;
+  static const double wallThickness = 16.0;
+  static const double doorSize = 32.0;
+
+  late final Sprite floorSprite;
+  late final Sprite doorSprite;
+
+  RoomComponent(this.data, {required this.player}) 
+      : super(
+          size: Vector2(roomWidth, roomHeight),
+          position: Vector2((data.x - 50) * roomWidth, (data.y - 50) * roomHeight),
+        );
+
+  late final Paint floorPaint;
+  late final Paint doorPaint;
+  late final Paint lockedDoorPaint;
+
+  @override
+  Future<void> onLoad() async {
+    super.onLoad();
+
+    floorSprite = await gameRef.loadSprite('tileset/floor.png');
+    doorSprite = await gameRef.loadSprite('tileset/door.png');
+
+    floorPaint = Paint()
+      ..filterQuality = FilterQuality.none
+      ..colorFilter = ColorFilter.mode(Palette.cinza, BlendMode.modulate);
+
+    doorPaint = Paint()
+      ..filterQuality = FilterQuality.none
+      ..colorFilter = ColorFilter.mode(Palette.cinzaEsc, BlendMode.modulate);
+
+    lockedDoorPaint = Paint()
+      ..filterQuality = FilterQuality.none
+      ..colorFilter = const ColorFilter.mode(Palette.preto, BlendMode.srcATop); // Deixa a porta escura  
+      
+    _generateWalls();
+    _generateDoors();
+
+    if (data.type == RoomType.normal) {
+      _generateObstacles();
+    } else if (data.type == RoomType.item) {
+      _spawnTreasure();
+    }
+  }
+
+  void _spawnTreasure() {
+    Vector2 centerPos = position + Vector2(width / 2, height / 2);
+    
+    parent?.add(PedestalComponent(
+      position: centerPos,
+      powerUpType: PowerUpType.hpUp, 
+    ));
+  }
+
+  void _generateObstacles() {
+    for (double y = 16.0; y < height - 16.0; y += 16.0) {
+      for (double x = 16.0; x < width - 16.0; x += 16.0) {
+        
+        // REGRA 1: Não spawnar pedras bem no meio da sala
+        //bool isCenter = (x >= width / 2 - 24 && x <= width / 2 + 8) && 
+        //                (y >= height / 2 - 24 && y <= height / 2 + 8);
+        //
+        // REGRA 2: Não spawnar bloqueando o corredor das portas
+        bool isDoorPathHorizontal = (y >= height / 2 - 16 && y <= height / 2 + 16);
+        bool isDoorPathVertical = (x >= width / 2 - 16 && x <= width / 2 + 16);
+        
+        if (/*isCenter ||*/ isDoorPathHorizontal || isDoorPathVertical) {
+          continue; 
+        }
+
+        int roll = _random.nextInt(100);
+
+        if (roll < 5) {
+          add(Rock(position: Vector2(x, y)));
+        } else if (roll >= 5 && roll < 8) {
+          add(Hole(position: Vector2(x, y)));
+        }
+      }
+    }
+  }
+
+  void _generateDoors() {
+    bool initialOpen = data.isCleared || data.type == RoomType.start || !data.isVisited;
+    void addDoorHalf(Vector2 pos, double rot, {bool flipX = false}) {
+      var d = Door(
+        position: pos,
+        angleVal: rot,
+        isOpen: initialOpen,
+        flipX: flipX,
+      );
+      roomDoors.add(d);
+      add(d);
+    }
+
+    if (data.doorTop) {
+      addDoorHalf(Vector2((width / 2) - 16, 0), math.pi/2, flipX: false);
+      addDoorHalf(Vector2(width / 2, 0), math.pi/2, flipX: true);
+    }
+    if (data.doorBottom) {
+      addDoorHalf(Vector2((width / 2) - 16, height - 16), -math.pi/2, flipX: true);
+      addDoorHalf(Vector2(width / 2, height - 16), -math.pi/2, flipX: false);
+    }
+    if (data.doorLeft) {
+      addDoorHalf(Vector2(0, (height / 2) - 16), 0, flipX: true);
+      addDoorHalf(Vector2(0, height / 2), 0, flipX: false);
+    }
+    if (data.doorRight) {
+      addDoorHalf(Vector2(width - 16, (height / 2) - 16), math.pi, flipX: false);
+      addDoorHalf(Vector2(width - 16, height / 2), math.pi, flipX: true);
+    }
+  }
+
+  void onPlayerEnter() {
+    data.isVisited = true;
+    if (!data.isCleared && data.type != RoomType.start) {
+      _lockRoom();
+      _spawnEnemies();
+    }
+  }
+
+  void _lockRoom() {
+    isLocked = true;
+    for (var door in roomDoors) {
+      door.close(); // Fecha todas as portas da sala
+    }
+  }
+
+  void _unlockRoom() {
+    isLocked = false;
+    data.isCleared = true;
+    
+    for (var door in roomDoors) {
+      door.open(); // Abre todas as portas da sala
+    }
+
+    if (data.type == RoomType.boss) {
+      parent?.add(Stairs(
+        position: position + Vector2(width / 2, height / 2)
+      ));
+    }
+  }
+
+  void _spawnEnemies() {
+    int count = 2 + _random.nextInt(3); 
+    
+    for (int i = 0; i < count; i++) {
+      double px = 32 + _random.nextInt(8) * 16;//+ _random.nextDouble() * (width - 80.0);
+      double py = 32 + _random.nextInt(8) * 16;//_random.nextDouble() * (height - 80.0);
+      Vector2 spawnPos = position + Vector2(px, py) + Vector2(8,8);
+
+      Enemy enemy = EnemySpawner.getRandomEnemy(spawnPos, player);
+      
+      activeEnemies.add(enemy);
+      parent?.add(enemy); 
+    }
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    
+    if (isLocked) {
+      activeEnemies.removeWhere((enemy) => enemy.isRemoved);
+      
+      if (activeEnemies.isEmpty) {
+        _unlockRoom();
+      }
+    }
+  }
+
+  /// Geração inteligente das 4 paredes usando rotação dos 2 sprites base
+  void _generateWalls() {
+    final double tileSize = 16.0;
+    final int tilesX = (width / tileSize).round();
+    final int tilesY = (height / tileSize).round();
+
+    final String pathWall = 'tileset/wall.png';       
+    final String pathCorner = 'tileset/wallQuina.png'; 
+
+    // --- 1. GERAÇÃO DOS TILES VISUAIS (Respeitando as portas abertas/fechadas) ---
+    for (int y = 0; y < tilesY; y++) {
+      for (int x = 0; x < tilesX; x++) {
+        bool isTop = y == 0;
+        bool isBottom = y == tilesY - 1;
+        bool isLeft = x == 0;
+        bool isRight = x == tilesX - 1;
+
+        if (isTop || isBottom || isLeft || isRight) {
+          
+          // VERIFICAÇÃO DE PORTA: Se tem porta nessa direção, pula os tiles do meio da parede
+          bool isDoorTop = isTop && data.doorTop && (x >= (tilesX / 2) - 1 && x <= (tilesX / 2));
+          bool isDoorBottom = isBottom && data.doorBottom && (x >= (tilesX / 2) - 1 && x <= (tilesX / 2));
+          bool isDoorLeft = isLeft && data.doorLeft && (y >= (tilesY / 2) - 1 && y <= (tilesY / 2));
+          bool isDoorRight = isRight && data.doorRight && (y >= (tilesY / 2) - 1 && y <= (tilesY / 2));
+
+          if (isDoorTop || isDoorBottom || isDoorLeft || isDoorRight) {
+            continue; // Pula a criação do tile visual onde fica a porta, deixando o vão livre
+          }
+
+          String spriteToUse = '';
+          double rotation = 0.0;
+
+          if (isTop && isLeft)        { spriteToUse = pathCorner; rotation = 0; }
+          else if (isTop && isRight)    { spriteToUse = pathCorner; rotation = math.pi / 2; }
+          else if (isBottom && isRight) { spriteToUse = pathCorner; rotation = math.pi; }
+          else if (isBottom && isLeft)  { spriteToUse = pathCorner; rotation = 3 * math.pi / 2; }
+          else if (isTop)    { spriteToUse = pathWall; rotation = math.pi / 2; }
+          else if (isBottom) { spriteToUse = pathWall; rotation = 3 * math.pi / 2; }
+          else if (isLeft)   { spriteToUse = pathWall; rotation = 0; }
+          else if (isRight)  { spriteToUse = pathWall; rotation = math.pi; }
+
+          if (spriteToUse.isNotEmpty) {
+            add(WallTile(
+              position: Vector2(x * tileSize, y * tileSize),
+              spritePath: spriteToUse,
+              angleVal: rotation,
+            ));
+          }
+        }
+      }
+    }
+
+    // --- 2. GERAÇÃO DAS BARREIRAS FÍSICAS OTIMIZADAS ---
+    double midX = width / 2;
+    double midY = height / 2;
+    double doorSpan = 32.0;
+
+    if (data.doorTop) {
+      add(WallBarrier(position: Vector2(0, 0), size: Vector2(midX - (doorSpan / 2), 16)));
+      add(WallBarrier(position: Vector2(midX + (doorSpan / 2), 0), size: Vector2(midX - (doorSpan / 2), 16)));
+    } else {
+      add(WallBarrier(position: Vector2(0, 0), size: Vector2(width, 16)));
+    }
+
+    if (data.doorBottom) {
+      add(WallBarrier(position: Vector2(0, height - 16), size: Vector2(midX - (doorSpan / 2), 16)));
+      add(WallBarrier(position: Vector2(midX + (doorSpan / 2), height - 16), size: Vector2(midX - (doorSpan / 2), 16)));
+    } else {
+      add(WallBarrier(position: Vector2(0, height - 16), size: Vector2(width, 16)));
+    }
+
+    if (data.doorLeft) {
+      add(WallBarrier(position: Vector2(0, 0), size: Vector2(16, midY - (doorSpan / 2))));
+      add(WallBarrier(position: Vector2(0, midY + (doorSpan / 2)), size: Vector2(16, midY - (doorSpan / 2))));
+    } else {
+      add(WallBarrier(position: Vector2(0, 0), size: Vector2(16, height)));
+    }
+
+    if (data.doorRight) {
+      add(WallBarrier(position: Vector2(width - 16, 0), size: Vector2(16, midY - (doorSpan / 2))));
+      add(WallBarrier(position: Vector2(width - 16, midY + (doorSpan / 2)), size: Vector2(16, midY - (doorSpan / 2))));
+    } else {
+      add(WallBarrier(position: Vector2(width - 16, 0), size: Vector2(16, height)));
+    }
+  }
+
+  final Paint _roomBackgroundPaint = Paint()..color = Palette.cinzaEsc;
+
+  @override
+  void render(Canvas canvas) {
+    // Removemos totalmente o loop duplo do chão! 
+    // O Flame desenha um retângulo sólido instantaneamente na GPU:
+    canvas.drawRect(Rect.fromLTWH(0, 0, width, height), _roomBackgroundPaint);
+    
+    super.render(canvas); // Mantém apenas a renderização nativa dos componentes filhos
+  }
+}
