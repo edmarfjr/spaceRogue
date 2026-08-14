@@ -1,5 +1,5 @@
 import 'package:flame/components.dart';
-import 'package:spacerogue/game/components/utils/palette.dart';
+import 'package:spacerogue/game/components/core/palette.dart';
 import 'package:spacerogue/game/components/map/obstacle.dart';
 import 'package:spacerogue/game/components/map/wall_barrier.dart';
 import 'enemy.dart'; 
@@ -7,6 +7,8 @@ import 'dart:math';
 
 class SlimeAtira4DirEnemy extends Enemy {
   Vector2? targetPosition; 
+  Vector2? _startPosition;
+  
   final double tileSize = 16.0;
   final Random _random = Random();
   
@@ -16,11 +18,26 @@ class SlimeAtira4DirEnemy extends Enemy {
   double fireTimer = 0.0;
   double fireRate = 3.0;
 
+  late final SpriteAnimation moveAnimation;
+  late final SpriteAnimation attackAnimation;
+  
+  bool isAttacking = false;
+  bool wantsToShoot = false;
+  
+  double attackTimer = 0.0;
+  final int attackFrames = 3;           
+  final double attackFrameTime = 0.15;  
+  late final double attackDuration;     
+
   SlimeAtira4DirEnemy({
     required super.position,
     required super.playerTarget,
   }) : super(
-         spritePath: 'actors/slime.png',
+         // 1. Coloque aqui o nome do seu arquivo de spritesheet unificado!
+         spritePath: 'actors/slime.png', 
+         
+         // 2. A classe base carrega automaticamente a primeira parte da imagem
+         // (O movimento, que começa na posição 0,0 por padrão)
          animationData: SpriteAnimationData.sequenced(
            amount: 3, 
            stepTime: 0.15, 
@@ -33,28 +50,76 @@ class SlimeAtira4DirEnemy extends Enemy {
        );
 
   @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    
+    moveAnimation = visual.animation!;
+    attackDuration = (attackFrames-1) * attackFrameTime;
+
+    final swappedImage = visual.animation!.frames.first.sprite.image;
+
+    attackAnimation = SpriteAnimation.fromFrameData(
+      swappedImage,
+      SpriteAnimationData.sequenced(
+        amount: attackFrames,
+        stepTime: attackFrameTime,
+        textureSize: Vector2(16, 16),
+        texturePosition: Vector2(0, 16), 
+        loop: false, 
+      ),
+    );
+  }
+
+  @override
   void movimento(double dt) {
+    if (isAttacking) {
+      attackTimer += dt;
+      
+      if (attackTimer >= attackDuration) {
+        _fireProjectiles(); 
+        
+        isAttacking = false;
+        attackTimer = 0.0;
+        visual.animation = moveAnimation; 
+        pauseTimer = 0.0; 
+      }
+      return; 
+    }
+
+    if (!wantsToShoot) {
+      fireTimer += dt;
+      if (fireTimer >= fireRate) {
+        wantsToShoot = true;
+        fireTimer = 0.0;
+      }
+    }
+
     if (targetPosition == null) {
-      // ESTADO 1: Parado, pensando pra onde ir
+      if (wantsToShoot) {
+        isAttacking = true;
+        wantsToShoot = false;
+        
+        visual.animation = attackAnimation;
+        visual.animationTicker?.reset(); 
+        return;
+      }
+
       pauseTimer += dt;
       if (pauseTimer >= pauseDuration) {
         pauseTimer = 0.0;
         _pickNewTarget();
       }
+      
     } else {
-      // ESTADO 2: Andando até o bloco alvo
       Vector2 direction = targetPosition! - position;
       double distanceToMove = speed * dt;
 
       if (direction.length < distanceToMove) {
-        // Chegou exatamente no bloco! Crava a posição e volta a pensar
         position = targetPosition!.clone();
         targetPosition = null; 
       } else {
-        // Continua andando
         position += direction.normalized() * distanceToMove;
         
-        // Espelha o sprite se andar pra esquerda/direita
         if (direction.x < 0 && !visual.isFlippedHorizontally) {
           visual.flipHorizontallyAroundCenter();
         } else if (direction.x > 0 && visual.isFlippedHorizontally) {
@@ -62,25 +127,22 @@ class SlimeAtira4DirEnemy extends Enemy {
         }
       }
     }
+  }
 
-    fireTimer += dt;
-    if (fireTimer >= fireRate) {
-      fireTimer = 0.0;
-      List<Vector2> directions = [
-        Vector2(0, -1), // Cima
-        Vector2(0, 1),  // Baixo
-        Vector2(-1, 0), // Esquerda
-        Vector2(1, 0),  // Direita
-      ];
-      for (var dir in directions) {
-        shoot(dir);
-      }
+  void _fireProjectiles() {
+    List<Vector2> directions = [
+      Vector2(0, -1), // Cima
+      Vector2(0, 1),  // Baixo
+      Vector2(-1, 0), // Esquerda
+      Vector2(1, 0),  // Direita
+    ];
+    for (var dir in directions) {
+      shoot(dir);
     }
   }
 
   void _pickNewTarget() {
-    // Opções rígidas: Direita, Esquerda, Baixo, Cima
-    List directions = [
+    List<Vector2> directions = [
       Vector2(1, 0),
       Vector2(-1, 0),
       Vector2(0, 1),
@@ -89,18 +151,43 @@ class SlimeAtira4DirEnemy extends Enemy {
     
     Vector2 chosenDir = directions[_random.nextInt(4)];
     
-    // Define o alvo exato a 16 pixels de distância
+    _startPosition = position.clone(); 
     targetPosition = position + (chosenDir * tileSize);
   }
 
-  // O GRANDE TRUQUE: Sobrescrever a colisão da superclasse
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
-    super.onCollision(intersectionPoints, other); // Deixa o BaseEnemy empurrar ele pra trás
-    
-    // Se ele tentou andar pra uma parede ou pedra e bateu, ele desiste do caminho!
-    if (other is WallBarrier || other is Obstacle) {
-       targetPosition = null; // Volta a pensar em outra direção imediatamente
+    super.onCollision(intersectionPoints, other);
+    if (other is WallBarrier || other is Obstacle || other is Enemy) {
+      
+      if (intersectionPoints.isNotEmpty) {
+        double minX = intersectionPoints.first.x;
+        double maxX = intersectionPoints.first.x;
+        double minY = intersectionPoints.first.y;
+        double maxY = intersectionPoints.first.y;
+
+        for (var point in intersectionPoints) {
+          if (point.x < minX) minX = point.x;
+          if (point.x > maxX) maxX = point.x;
+          if (point.y < minY) minY = point.y;
+          if (point.y > maxY) maxY = point.y;
+        }
+
+        double overlapWidth = maxX - minX;
+        double overlapHeight = maxY - minY;
+
+        if (overlapWidth < 0.5 || overlapHeight < 0.5) {
+          return; 
+        }
+      }
+
+      if (_startPosition != null) {
+        position = _startPosition!.clone();
+      }
+      targetPosition = null; 
+      
+    } else {
+      super.onCollision(intersectionPoints, other);
     }
   }
 }

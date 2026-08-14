@@ -2,21 +2,22 @@ import 'package:flame/components.dart';
 import 'package:spacerogue/game/components/core/palette.dart';
 import 'enemy.dart'; 
 
-class EtEnemy extends Enemy {
-  EtEnemy({
+class FlyEnemy extends Enemy {
+  FlyEnemy({
     required super.position,
     required super.playerTarget,
   }) : super(
-         spritePath: 'actors/et.png',
+         hitboxSize:Vector2(8,8),
+         spritePath: 'actors/fly.png',
          animationData: SpriteAnimationData.sequenced(
-           amount: 3, 
-           stepTime: 0.15, 
+           amount: 2, 
+           stepTime: 0.1, 
            textureSize: Vector2(16, 16),
          ),
-         speed: 20.0,
-         health: 3,
-         corClara: Palette.roxoEsc, 
-         corEscura: Palette.amarelo, 
+         speed: 40.0,
+         health: 1,
+         corClara: Palette.indigo, 
+         corEscura: Palette.cinzaEsc, 
        );
 
   // A Inteligência Artificial exclusiva do Slime (Perseguição Simples)

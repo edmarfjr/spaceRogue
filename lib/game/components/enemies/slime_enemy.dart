@@ -1,5 +1,5 @@
 import 'package:flame/components.dart';
-import 'package:spacerogue/game/components/utils/palette.dart';
+import 'package:spacerogue/game/components/core/palette.dart';
 import 'package:spacerogue/game/components/map/obstacle.dart';
 import 'package:spacerogue/game/components/map/wall_barrier.dart';
 import 'enemy.dart'; 
@@ -7,6 +7,7 @@ import 'dart:math';
 
 class SlimeEnemy extends Enemy {
   Vector2? targetPosition; 
+  Vector2? _startPosition;
   final double tileSize = 16.0;
   final Random _random = Random();
   
@@ -72,18 +73,51 @@ class SlimeEnemy extends Enemy {
     
     Vector2 chosenDir = directions[_random.nextInt(4)];
     
-    // Define o alvo exato a 16 pixels de distância
+    _startPosition = position.clone(); 
     targetPosition = position + (chosenDir * tileSize);
   }
 
   // O GRANDE TRUQUE: Sobrescrever a colisão da superclasse
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
-    super.onCollision(intersectionPoints, other); // Deixa o BaseEnemy empurrar ele pra trás
-    
-    // Se ele tentou andar pra uma parede ou pedra e bateu, ele desiste do caminho!
-    if (other is WallBarrier || other is Obstacle) {
-       targetPosition = null; // Volta a pensar em outra direção imediatamente
+    super.onCollision(intersectionPoints, other);
+    if (other is WallBarrier || other is Obstacle || other is Enemy) {
+      
+      // TRUQUE MATEMÁTICO: Calcular o tamanho real da batida
+      if (intersectionPoints.isNotEmpty) {
+        double minX = intersectionPoints.first.x;
+        double maxX = intersectionPoints.first.x;
+        double minY = intersectionPoints.first.y;
+        double maxY = intersectionPoints.first.y;
+
+        // Acha as bordas da área onde os dois objetos se sobrepõem
+        for (var point in intersectionPoints) {
+          if (point.x < minX) minX = point.x;
+          if (point.x > maxX) maxX = point.x;
+          if (point.y < minY) minY = point.y;
+          if (point.y > maxY) maxY = point.y;
+        }
+
+        double overlapWidth = maxX - minX;
+        double overlapHeight = maxY - minY;
+
+        // Se a largura ou altura da sobreposição for mínima (< 0.5 pixels),
+        // eles estão apenas se raspando lateralmente nas bordas. Ignoramos a colisão!
+        if (overlapWidth < 0.5 || overlapHeight < 0.5) {
+          return; 
+        }
+      }
+
+      // Se passou pelo if acima, é porque bateu de frente mesmo.
+      // Volta instantaneamente para a casa anterior da grade e pensa novamente.
+      if (_startPosition != null) {
+        position = _startPosition!.clone();
+      }
+      targetPosition = null; 
+      
+    } else {
+      // Se bateu no player ou em tiros, deixa a classe Enemy resolver
+      super.onCollision(intersectionPoints, other);
     }
   }
 }

@@ -1,10 +1,10 @@
-import 'package:flame/components.dart';
+import 'package:spacerogue/game/components/core/palette.dart';
 import 'collectible.dart';
 import '../player/player.dart';
 
 class BombPickup extends Collectible {
-  BombPickup({required Vector2 position}) 
-      : super(position: position, spritePath: 'items/bomb.png');
+  BombPickup({required super.position}) 
+      : super(spritePath: 'items/bomb.png',cor1: Palette.indigo,cor2: Palette.azulEsc);
 
   @override
   bool onCollect(Player player) {

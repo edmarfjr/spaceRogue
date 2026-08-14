@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/components/utils/palette.dart';
+import 'package:spacerogue/game/components/core/palette.dart';
 import 'package:spacerogue/game/components/enemies/enemy.dart'; // Mude para base_enemy se refatorou
 import 'package:spacerogue/game/components/map/obstacle.dart';
 import 'package:spacerogue/game/components/player/player.dart';
@@ -53,8 +53,6 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
     
     if (_hitEntities.contains(other)) return; 
     _hitEntities.add(other);
-
-    print(other);
 
     if (other is Rock) {
       other.blowUp(); 

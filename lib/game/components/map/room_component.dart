@@ -2,7 +2,9 @@ import 'dart:math';
 import 'dart:math' as math;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/components/utils/palette.dart';
+import 'package:spacerogue/game/components/core/dungeon_theme.dart';
+import 'package:spacerogue/game/components/core/palette.dart';
+import 'package:spacerogue/game/components/enemies/dummy_enemy.dart';
 import 'package:spacerogue/game/components/enemies/enemy.dart';
 import 'package:spacerogue/game/components/enemies/enemy_spawner.dart';
 import 'package:spacerogue/game/components/items/power_up_item.dart';
@@ -19,14 +21,12 @@ class RoomComponent extends PositionComponent with HasGameRef {
   final RoomData data;
   final Player player;
 
-  // Variáveis de Combate
   bool isLocked = false;
-  List<Door> roomDoors = []; // Paredes temporárias para trancar as portas
-  List activeEnemies = []; // Lista de inimigos vivos nesta sala
+  List<Door> roomDoors = []; 
+  List activeEnemies = []; 
   
   final Random _random = Random();
   
-  // Tamanho exato da nossa câmera / resolução do Game Boy
   static const double roomWidth = 16 * 12.0;
   static const double roomHeight = 16 * 12.0;
   static const double wallThickness = 16.0;
@@ -35,11 +35,15 @@ class RoomComponent extends PositionComponent with HasGameRef {
   late final Sprite floorSprite;
   late final Sprite doorSprite;
 
-  RoomComponent(this.data, {required this.player}) 
+  late final DungeonTheme theme;
+
+  RoomComponent(this.data, {required this.player, int currentLevel = 1}) 
       : super(
           size: Vector2(roomWidth, roomHeight),
           position: Vector2((data.x - 50) * roomWidth, (data.y - 50) * roomHeight),
-        );
+        ) {
+    theme = DungeonTheme.getThemeForLevel(currentLevel);
+  }
 
   late final Paint floorPaint;
   late final Paint doorPaint;
@@ -71,6 +75,12 @@ class RoomComponent extends PositionComponent with HasGameRef {
       _generateObstacles();
     } else if (data.type == RoomType.item) {
       _spawnTreasure();
+    }else if (data.type == RoomType.start) {
+      Enemy enemy = DummyEnemy(
+        position: Vector2(width / 2, height / 2 - 32),
+        playerTarget: player,
+      );
+      parent?.add(enemy);
     }
   }
 
@@ -102,7 +112,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
         int roll = _random.nextInt(100);
 
         if (roll < 5) {
-          add(Rock(position: Vector2(x, y)));
+          add(Rock(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,));
         } else if (roll >= 5 && roll < 8) {
           add(Hole(position: Vector2(x, y)));
         }
@@ -118,6 +128,9 @@ class RoomComponent extends PositionComponent with HasGameRef {
         angleVal: rot,
         isOpen: initialOpen,
         flipX: flipX,
+        cor1: theme.corClara,  
+        cor2: theme.corEscura,
+        cor3: theme.corBranca,
       );
       roomDoors.add(d);
       add(d);
@@ -152,7 +165,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
   void _lockRoom() {
     isLocked = true;
     for (var door in roomDoors) {
-      door.close(); // Fecha todas as portas da sala
+      door.close(); 
     }
   }
 
@@ -161,7 +174,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
     data.isCleared = true;
     
     for (var door in roomDoors) {
-      door.open(); // Abre todas as portas da sala
+      door.open();
     }
 
     if (data.type == RoomType.boss) {
@@ -175,9 +188,30 @@ class RoomComponent extends PositionComponent with HasGameRef {
     int count = 2 + _random.nextInt(3); 
     
     for (int i = 0; i < count; i++) {
-      double px = 32 + _random.nextInt(8) * 16;//+ _random.nextDouble() * (width - 80.0);
-      double py = 32 + _random.nextInt(8) * 16;//_random.nextDouble() * (height - 80.0);
-      Vector2 spawnPos = position + Vector2(px, py) + Vector2(8,8);
+      double px = 0;
+      double py = 0;
+      bool validPosition = false;
+      int attempts = 0; 
+
+      while (!validPosition && attempts < 30) {
+        px = 32 + _random.nextInt(8) * 16.0;
+        py = 32 + _random.nextInt(8) * 16.0;
+
+        Rect enemyRect = Rect.fromLTWH(px, py, 16, 16);
+        validPosition = true;
+
+        for (var child in children) {
+          if (child is Obstacle) {
+            if (child.toRect().overlaps(enemyRect)) {
+              validPosition = false; 
+              break;
+            }
+          }
+        }
+        attempts++;
+      }
+
+      Vector2 spawnPos = position + Vector2(px, py) + Vector2(8, 8);
 
       Enemy enemy = EnemySpawner.getRandomEnemy(spawnPos, player);
       
@@ -199,7 +233,6 @@ class RoomComponent extends PositionComponent with HasGameRef {
     }
   }
 
-  /// Geração inteligente das 4 paredes usando rotação dos 2 sprites base
   void _generateWalls() {
     final double tileSize = 16.0;
     final int tilesX = (width / tileSize).round();
@@ -208,7 +241,6 @@ class RoomComponent extends PositionComponent with HasGameRef {
     final String pathWall = 'tileset/wall.png';       
     final String pathCorner = 'tileset/wallQuina.png'; 
 
-    // --- 1. GERAÇÃO DOS TILES VISUAIS (Respeitando as portas abertas/fechadas) ---
     for (int y = 0; y < tilesY; y++) {
       for (int x = 0; x < tilesX; x++) {
         bool isTop = y == 0;
@@ -218,14 +250,13 @@ class RoomComponent extends PositionComponent with HasGameRef {
 
         if (isTop || isBottom || isLeft || isRight) {
           
-          // VERIFICAÇÃO DE PORTA: Se tem porta nessa direção, pula os tiles do meio da parede
           bool isDoorTop = isTop && data.doorTop && (x >= (tilesX / 2) - 1 && x <= (tilesX / 2));
           bool isDoorBottom = isBottom && data.doorBottom && (x >= (tilesX / 2) - 1 && x <= (tilesX / 2));
           bool isDoorLeft = isLeft && data.doorLeft && (y >= (tilesY / 2) - 1 && y <= (tilesY / 2));
           bool isDoorRight = isRight && data.doorRight && (y >= (tilesY / 2) - 1 && y <= (tilesY / 2));
 
           if (isDoorTop || isDoorBottom || isDoorLeft || isDoorRight) {
-            continue; // Pula a criação do tile visual onde fica a porta, deixando o vão livre
+            continue; 
           }
 
           String spriteToUse = '';
@@ -245,13 +276,15 @@ class RoomComponent extends PositionComponent with HasGameRef {
               position: Vector2(x * tileSize, y * tileSize),
               spritePath: spriteToUse,
               angleVal: rotation,
+              cor1: theme.corClara,   
+              cor2: theme.corEscura,
+              cor3: theme.corBranca,
             ));
           }
         }
       }
     }
 
-    // --- 2. GERAÇÃO DAS BARREIRAS FÍSICAS OTIMIZADAS ---
     double midX = width / 2;
     double midY = height / 2;
     double doorSpan = 32.0;
@@ -285,14 +318,11 @@ class RoomComponent extends PositionComponent with HasGameRef {
     }
   }
 
-  final Paint _roomBackgroundPaint = Paint()..color = Palette.cinzaEsc;
-
   @override
   void render(Canvas canvas) {
-    // Removemos totalmente o loop duplo do chão! 
-    // O Flame desenha um retângulo sólido instantaneamente na GPU:
-    canvas.drawRect(Rect.fromLTWH(0, 0, width, height), _roomBackgroundPaint);
+    final Paint roomBackgroundPaint = Paint()..color = theme.corEscura;
+    canvas.drawRect(Rect.fromLTWH(0, 0, width, height), roomBackgroundPaint);
     
-    super.render(canvas); // Mantém apenas a renderização nativa dos componentes filhos
+    super.render(canvas);
   }
 }

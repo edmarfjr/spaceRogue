@@ -10,6 +10,8 @@ class PaletteSwapper {
     required String imagePath,
     required Color lightGrayReplacement,
     required Color darkGrayReplacement,
+    Color? whiteReplacement,
+    Color? blackReplacement,
   }) async {
     final ui.Image originalImage = await Flame.images.load(imagePath);
     final ByteData? byteData = await originalImage.toByteData(format: ui.ImageByteFormat.rawRgba);
@@ -21,6 +23,8 @@ class PaletteSwapper {
     // Se no seu desenho o valor for diferente, ajuste estas duas variáveis.
     const int lightGrayValue = 169; 
     const int darkGrayValue = 84;   
+    const int whiteValue = 255;   
+    const int blackValue = 0;   
 
     for (int i = 0; i < pixels.length; i += 4) {
       int r = pixels[i];
@@ -39,6 +43,16 @@ class PaletteSwapper {
         pixels[i] = darkGrayReplacement.red;
         pixels[i + 1] = darkGrayReplacement.green;
         pixels[i + 2] = darkGrayReplacement.blue;
+      }else if (whiteReplacement != null && r == whiteValue && g == whiteValue && b == whiteValue) {
+        pixels[i] = whiteReplacement.red;
+        pixels[i + 1] = whiteReplacement.green;
+        pixels[i + 2] = whiteReplacement.blue;
+      }
+      // Substitui o Preto (Se foi fornecida uma cor)
+      else if (blackReplacement != null && r == blackValue && g == blackValue && b == blackValue) {
+        pixels[i] = blackReplacement.red;
+        pixels[i + 1] = blackReplacement.green;
+        pixels[i + 2] = blackReplacement.blue;
       }
     }
 

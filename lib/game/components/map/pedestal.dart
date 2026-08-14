@@ -1,7 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
-import 'package:flutter/material.dart';
-import 'package:spacerogue/game/components/utils/palette.dart';
+import 'package:spacerogue/game/components/core/palette.dart';
 import 'package:spacerogue/game/components/items/power_up_item.dart';
 import 'package:spacerogue/game/components/map/obstacle.dart';
 
@@ -10,7 +9,7 @@ class PedestalComponent extends Obstacle {
   
   bool hasItem = true;
 
-  PedestalComponent({required super.position, required PowerUpType powerUpType,super.colorModulate = Palette.marromEsc,}) 
+  PedestalComponent({required super.position, required PowerUpType powerUpType,super.cor1 = Palette.indigo,super.cor2 = Palette.cinzaEsc}) 
       : super(
           spritePath: 'tileset/pedestal.png',
           size: Vector2(16, 16),

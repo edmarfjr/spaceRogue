@@ -1,27 +1,42 @@
+import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
+import 'package:spacerogue/game/components/core/palette.dart';
+import 'package:spacerogue/game/components/utils/palette_swapper.dart';
 
 import '../player/player.dart';
 
 // A classe é abstrata, não pode ser instanciada diretamente.
 abstract class Collectible extends PositionComponent with CollisionCallbacks, HasGameRef {
   final String spritePath; // Cada filho dirá qual imagem carregar
-  
+  final Color cor1;
+  final Color cor2;
+
   late final Sprite _sprite;
   final Paint _paint = Paint()..filterQuality = FilterQuality.none;
 
   Collectible({
     required Vector2 position,
     required this.spritePath,
+    this.cor1 = Palette.cinza,
+    this.cor2 = Palette.cinzaEsc,
   }) : super(position: position, size: Vector2(16, 16), anchor: Anchor.center);
 
   @override
   Future onLoad() async {
-    _sprite = await gameRef.loadSprite(spritePath);
+
+    final ui.Image img = await PaletteSwapper.createSwappedImage(
+      imagePath: spritePath,
+      lightGrayReplacement: cor1,
+      darkGrayReplacement: cor2,
+    );
+    
+
+    _sprite = Sprite(img);
     
     add(RectangleHitbox(
-      size: Vector2(10, 10),
+      size: Vector2(16, 16),
       anchor: Anchor.center,
       position: size / 2,
       collisionType: CollisionType.passive,

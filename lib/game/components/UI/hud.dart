@@ -1,6 +1,9 @@
+import 'dart:ui' as ui;
+
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/components/utils/palette.dart';
+import 'package:spacerogue/game/components/core/palette.dart';
+import 'package:spacerogue/game/components/utils/palette_swapper.dart';
 import '../player/player.dart';
 
 class Hud extends PositionComponent with HasGameRef {
@@ -16,8 +19,7 @@ class Hud extends PositionComponent with HasGameRef {
     ..colorFilter = const ColorFilter.mode(Palette.preto, BlendMode.srcATop)
     ..filterQuality = FilterQuality.none;
 
-  final Paint fullHeartPaint = Paint()..filterQuality = FilterQuality.none..colorFilter =  ColorFilter.mode(Palette.vermelho, BlendMode.modulate);
-  final Paint bombPaint = Paint()..filterQuality = FilterQuality.none..colorFilter =  ColorFilter.mode(Palette.azulEsc, BlendMode.modulate);
+  final Paint paint = Paint()..filterQuality = FilterQuality.none;
 
   late final TextPaint textPaint;
 
@@ -30,18 +32,41 @@ class Hud extends PositionComponent with HasGameRef {
   @override
   Future<void> onLoad() async {
     super.onLoad();
+
+    final ui.Image heartImg = await PaletteSwapper.createSwappedImage(
+      imagePath: 'ui/heart.png',
+      lightGrayReplacement: Palette.vermelho,
+      darkGrayReplacement: Palette.roxoEsc,
+    );
+
+    final ui.Image heartHalfImg = await PaletteSwapper.createSwappedImage(
+      imagePath: 'ui/heartHalf.png',
+      lightGrayReplacement: Palette.vermelho,
+      darkGrayReplacement: Palette.roxoEsc,
+    );
+
+    final ui.Image heartEmptyImg = await PaletteSwapper.createSwappedImage(
+      imagePath: 'ui/heartEmpty.png',
+      lightGrayReplacement: Palette.vermelho,
+      darkGrayReplacement: Palette.roxoEsc,
+    );
     
-    heartSprite = await gameRef.loadSprite('ui/heart.png');
-    heartHalfSprite = await gameRef.loadSprite('ui/heartHalf.png');
-    heartEmptySprite = await gameRef.loadSprite('ui/heartEmpty.png');
+    final ui.Image bombImg = await PaletteSwapper.createSwappedImage(
+      imagePath: 'ui/bomb.png',
+      lightGrayReplacement: Palette.picotronBege,
+      darkGrayReplacement: Palette.azulEsc,
+    );
+    
+    heartSprite = Sprite(heartImg);
+    heartHalfSprite = Sprite(heartHalfImg);
+    heartEmptySprite = Sprite(heartEmptyImg);
 
-
-    bombSprite = await gameRef.loadSprite('ui/bomb.png');
+    bombSprite = Sprite(bombImg);
 
     textPaint = TextPaint(
       style: const TextStyle(
         fontFamily: 'pixelFont',
-        color: Colors.white,
+        color: Palette.branco,
         fontSize: 10,
         fontWeight: FontWeight.bold,
         shadows: [
@@ -86,12 +111,12 @@ class Hud extends PositionComponent with HasGameRef {
         canvas, 
         position: Vector2(xPosition, 0), 
         size: heartSize, 
-        overridePaint: fullHeartPaint
+        overridePaint: paint
       );
     }
 
     double bombY = heartSize.y + 2;
-    bombSprite.render(canvas, position: Vector2(0, bombY), size: bombIconSize, overridePaint: bombPaint);
+    bombSprite.render(canvas, position: Vector2(0, bombY), size: bombIconSize, overridePaint: paint);
     textPaint.render(canvas, ':${player.bombsAmount}', Vector2(bombIconSize.x + 0, bombY+1));
   }
 }

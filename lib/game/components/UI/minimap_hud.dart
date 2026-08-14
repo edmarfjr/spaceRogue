@@ -1,6 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/components/utils/palette.dart';
+import 'package:spacerogue/game/components/core/palette.dart';
 import '../map/dungeon_generator.dart';
 
 class MinimapHud extends PositionComponent with HasGameRef {
@@ -14,127 +14,162 @@ class MinimapHud extends PositionComponent with HasGameRef {
   final Paint visitedRoomPaint = Paint()..color = Palette.cinza;
   final Paint bossRoomPaint = Paint()..color = Palette.vermelho;
   final Paint itemRoomPaint = Paint()..color = Palette.amarelo;
+  final Paint unvisitedPaint = Paint()..color = Palette.cinzaEsc; 
 
   final Paint backgroundPaint = Paint()..color = Palette.preto;
   final Paint borderPaint = Paint()
-    ..color = Colors.white
+    ..color = Palette.branco
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1.0;
-    
 
   final Paint roomOutlinePaint = Paint()
     ..color = Palette.preto
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 1.0;
+    ..strokeWidth = 0.5;
+
+  // Armazenam os limites para não ter que recalcular dentro do render
+  int _minX = 0;
+  int _minY = 0;
+  final double _padding = 8.0; // Espaço preto de borda (4px pra cada lado)
 
   MinimapHud({
     required this.mapData,
     required this.getCurrentLogicalRoom,
     required Vector2 position, 
-  }) : super(position: position);
+  }) : super(
+         position: position, 
+         anchor: Anchor.topRight, 
+         size: Vector2.zero(), // Começa zerado, a classe define isso sozinha agora!
+       );
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    
+    if (mapData.isEmpty) return;
+
+    // 1. Calcula os extremos do mapa a cada frame
+    int minX = 9999;
+    int maxX = -9999;
+    int minY = 9999;
+    int maxY = -9999;
+
+    for (var room in mapData.values) {
+      if (room.x < minX) minX = room.x;
+      if (room.x > maxX) maxX = room.x;
+      if (room.y < minY) minY = room.y;
+      if (room.y > maxY) maxY = room.y;
+    }
+
+    _minX = minX;
+    _minY = minY;
+
+    // 2. Descobre quantos pixels exatos as salas ocupam
+    double totalBlockSize = cellSize + spacing;
+    double mapPixelWidth = (maxX - minX + 1) * totalBlockSize;
+    double mapPixelHeight = (maxY - minY + 1) * totalBlockSize;
+
+    // 3. ATUALIZA O TAMANHO DO MINIMAPA DINAMICAMENTE
+    Vector2 newSize = Vector2(mapPixelWidth + _padding, mapPixelHeight + _padding);
+    if (size != newSize) {
+      size = newSize; 
+    }
+  }
 
   @override
   void render(Canvas canvas) {
-    super.render(canvas);
+    if (mapData.isEmpty) return; 
 
-    final currentRoom = getCurrentLogicalRoom();
+    Vector2 currentRoomCoords = getCurrentLogicalRoom();
 
-    final Paint connectionPaint = Paint()
-      ..color = Palette.cinzaEsc
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-
-    double minX = double.infinity;
-    double maxX = -double.infinity;
-    double minY = double.infinity;
-    double maxY = -double.infinity;
-    bool hasVisited = false;
-
+    // CHECAGEM DE OCULTAÇÃO (SALA TRANCADA)
     for (var room in mapData.values) {
-      if (!room.isVisited) continue;
-      hasVisited = true;
-
-      double dx = (room.x - currentRoom.x) * (cellSize + spacing);
-      double dy = (room.y - currentRoom.y) * (cellSize + spacing);
-
-      if (dx < minX) minX = dx;
-      if (dx > maxX) maxX = dx;
-      if (dy < minY) minY = dy;
-      if (dy > maxY) maxY = dy;
+      if (room.x == currentRoomCoords.x && room.y == currentRoomCoords.y) {
+        if (!room.isCleared && room.type != RoomType.start) {
+          return; // Aborta e esconde o minimapa!
+        }
+        break; 
+      }
     }
 
-    if (hasVisited) {
-      double padding = 3.0; 
-      
-      Rect bgRect = Rect.fromLTRB(
-        minX - (cellSize / 2) - padding,
-        minY - (cellSize / 2) - padding,
-        maxX + (cellSize / 2) + padding,
-        maxY + (cellSize / 2) + padding,
-      );
-      
-      canvas.drawRect(bgRect, backgroundPaint); 
-      canvas.drawRect(bgRect, borderPaint);     
-    }
+    // DESENHA O FUNDO COM O TAMANHO ATUALIZADO
+    // Adicionei 0.5 no offset do Rect para a linha de 1px da borda não ser cortada
+    Rect bgRect = Rect.fromLTWH(0.5, 0.5, width - 1, height - 1);
+    canvas.drawRect(bgRect, backgroundPaint);
+    canvas.drawRect(bgRect, borderPaint);
 
+    // Agora o offset é apenas metade da margem (para centralizar as salas dentro da caixinha)
+    double offset = _padding / 2;
+    double totalBlockSize = cellSize + spacing;
+
+    canvas.save();
+    canvas.clipRect(bgRect);
+
+    // DESENHA AS SALAS
     for (var room in mapData.values) {
-      //if (!room.isVisited) continue;
+      
+      bool isCurrentRoom = room.x == currentRoomCoords.x && room.y == currentRoomCoords.y;
+      
+      bool isAdjacent = ((room.x - currentRoomCoords.x).abs() == 1 && room.y == currentRoomCoords.y) ||
+                        ((room.y - currentRoomCoords.y).abs() == 1 && room.x == currentRoomCoords.x);
 
-      double dx = (room.x - currentRoom.x) * (cellSize + spacing);
-      double dy = (room.y - currentRoom.y) * (cellSize + spacing);
-      Offset center = Offset(dx, dy);
+      if (!room.isVisited && !isCurrentRoom && !isAdjacent) {
+        continue;
+      }
 
-      if (room.doorTop) {
-        var neighbor = mapData['${room.x},${room.y - 1}'];
-        if (neighbor != null && neighbor.isVisited) {
-          double neighborDy = (neighbor.y - currentRoom.y) * (cellSize + spacing);
-          canvas.drawLine(center, Offset(dx, neighborDy), connectionPaint);
+      double drawX = offset + (room.x - _minX) * totalBlockSize;
+      double drawY = offset + (room.y - _minY) * totalBlockSize;
+
+      Paint roomPaint = unvisitedPaint; 
+
+      if (room.x == currentRoomCoords.x && room.y == currentRoomCoords.y) {
+        roomPaint = currentRoomPaint; 
+      } else{
+        if (room.type == RoomType.boss) {
+          roomPaint = bossRoomPaint;
+        } else if (room.type == RoomType.item) {
+          roomPaint = itemRoomPaint;
+        } else {
+          roomPaint = visitedRoomPaint; 
         }
       }
-      if (room.doorBottom) {
-        var neighbor = mapData['${room.x},${room.y + 1}'];
-        if (neighbor != null && neighbor.isVisited) {
-          double neighborDy = (neighbor.y - currentRoom.y) * (cellSize + spacing);
-          canvas.drawLine(center, Offset(dx, neighborDy), connectionPaint);
-        }
-      }
-      if (room.doorLeft) {
-        var neighbor = mapData['${room.x - 1},${room.y}'];
-        if (neighbor != null && neighbor.isVisited) {
-          double neighborDx = (neighbor.x - currentRoom.x) * (cellSize + spacing);
-          canvas.drawLine(center, Offset(neighborDx, dy), connectionPaint);
-        }
-      }
+
+      Rect roomRect = Rect.fromLTWH(drawX, drawY, cellSize, cellSize);
+      
+      canvas.drawRect(roomRect, roomPaint);
+      canvas.drawRect(roomRect, roomOutlinePaint);
+
+      Paint passagePaint = Paint()..color = roomPaint.color;
+      double passageThickness = 2.0;
+      double centerOffset = (cellSize - passageThickness) / 2;
+
+      // Desenha passagem para a DIREITA
       if (room.doorRight) {
-        var neighbor = mapData['${room.x + 1},${room.y}'];
-        if (neighbor != null && neighbor.isVisited) {
-          double neighborDx = (neighbor.x - currentRoom.x) * (cellSize + spacing);
-          canvas.drawLine(center, Offset(neighborDx, dy), connectionPaint);
-        }
+        canvas.drawRect(
+          Rect.fromLTWH(
+            drawX + cellSize,          // Começa na borda direita da sala
+            drawY + centerOffset,      // Centralizado no Y
+            spacing,                   // Comprimento = espaço entre salas
+            passageThickness           // Espessura da porta
+          ), 
+          passagePaint
+        );
+      }
+
+      // Desenha passagem para BAIXO
+      if (room.doorBottom) {
+        canvas.drawRect(
+          Rect.fromLTWH(
+            drawX + centerOffset,      // Centralizado no X
+            drawY + cellSize,          // Começa na borda inferior da sala
+            passageThickness,          // Espessura da porta
+            spacing                    // Comprimento = espaço entre salas
+          ), 
+          passagePaint
+        );
       }
     }
 
-    for (var room in mapData.values) {
-      //if (!room.isVisited) continue; 
-
-      double dx = (room.x - currentRoom.x) * (cellSize + spacing);
-      double dy = (room.y - currentRoom.y) * (cellSize + spacing);
-
-      Rect rect = Rect.fromLTWH(dx - (cellSize / 2), dy - (cellSize / 2), cellSize, cellSize);
-
-      Paint paintToUse;
-      if (room.x == currentRoom.x && room.y == currentRoom.y) {
-        paintToUse = currentRoomPaint;
-      } else if (room.type == RoomType.boss) {
-        paintToUse = bossRoomPaint;
-      } else if (room.type == RoomType.item) {
-        paintToUse = itemRoomPaint;
-      } else {
-        paintToUse = visitedRoomPaint; 
-      }
-
-      canvas.drawRect(rect, paintToUse);
-      canvas.drawRect(rect, roomOutlinePaint); 
-    }
+    canvas.restore(); 
   }
 }

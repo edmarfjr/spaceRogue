@@ -1,3 +1,4 @@
+import 'package:spacerogue/game/components/core/palette.dart';
 import 'collectible.dart';
 import '../player/player.dart';
 
@@ -5,7 +6,7 @@ import '../player/player.dart';
 class HeartPickup extends Collectible {
   HeartPickup({required super.position}) 
       // Passamos a imagem pro 'super' carregar!
-      : super(spritePath: 'items/heart.png');
+      : super(spritePath: 'items/heartHalf.png',cor1: Palette.vermelho,cor2: Palette.roxoEsc);
 
   // Apenas implementamos a lógica do jogo
   @override

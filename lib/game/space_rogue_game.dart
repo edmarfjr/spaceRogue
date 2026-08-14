@@ -9,6 +9,7 @@ import 'package:spacerogue/game/components/UI/minimap_hud.dart';
 //import 'package:spacerogue/game/components/enemies/enemy.dart';
 import 'package:spacerogue/game/components/map/dungeon_generator.dart';
 import 'package:spacerogue/game/components/map/room_component.dart';
+import 'package:spacerogue/game/components/core/palette.dart';
 import 'components/player/player.dart';
 import 'package:flame/events.dart';
 
@@ -28,6 +29,11 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
 
   final VoidCallback? onGameOver; 
 
+  List<Color> colors1Level = [Palette.indigo,Palette.marromEsc];
+  List<Color> colors2Level = [Palette.eggplant,Palette.chocolate];
+  
+  int currentLevel = 1;
+
   @override
   Color backgroundColor() => const Color(0xFF1E1E1E); // Cor de fundo fora do mapa
 
@@ -35,6 +41,9 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
 
   late Map<String, RoomData> mapData;
   late MinimapHud minimapHud;
+
+  double freezeTmr = 0;
+  double freezeTime = 0.5;
 
   SpacerogueGame({this.onGameOver});
 
@@ -136,6 +145,10 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
 
   @override
   void update(double dt) {
+    if (freezeTmr > 0) {
+      freezeTmr -= dt;
+      return;
+    }
     super.update(dt);
     _checkCameraTransition();
   }
@@ -203,6 +216,8 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
     }
 
     if (transitioned) {
+      player.naoMove = true;
+      
       double pushDistance = 32.0; 
 
       if (newRoomX > currentRoomIndex.x) {
@@ -230,6 +245,10 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
         MoveToEffect(
           newCameraPosition,
           EffectController(duration: 0.4, curve: Curves.easeInOut),
+          onComplete: () {
+            player.naoMove = false;
+            freezeTmr = freezeTime;
+          }
         ),
       );
     }

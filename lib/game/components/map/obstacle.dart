@@ -1,15 +1,19 @@
 import 'dart:math';
+import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/components/utils/palette.dart';
+import 'package:spacerogue/game/components/core/palette.dart';
 import 'package:spacerogue/game/components/items/heart_half_pickup.dart';
 import 'package:spacerogue/game/components/items/heart_pickup.dart';
+import 'package:spacerogue/game/components/utils/palette_swapper.dart';
 
 abstract class Obstacle extends PositionComponent with HasGameRef {
   late final Sprite obstacleSprite;
   final String spritePath;
-  final Color? colorModulate;
+  final Color cor1;
+  final Color cor2;
+  final Color cor3;
   final CollisionType collisionType;
   
   final Paint paint = Paint()..filterQuality = FilterQuality.none;
@@ -17,19 +21,27 @@ abstract class Obstacle extends PositionComponent with HasGameRef {
   Obstacle({
     required Vector2 position,
     required this.spritePath,
-    this.colorModulate,
+    this.cor1 = Palette.marromEsc,
+    this.cor2 = Palette.onyx,
+    this.cor3 = Palette.branco,
     required Vector2 size,
     required this.collisionType,
   }) : super(position: position, size: size);
 
   @override
   Future<void> onLoad() async {
-    obstacleSprite = await gameRef.loadSprite(spritePath);
     add(RectangleHitbox(collisionType: collisionType));
     
-    if (colorModulate != null) {
-      paint.colorFilter = ColorFilter.mode(colorModulate!, BlendMode.modulate);
-    }
+    final ui.Image swappedImage = await PaletteSwapper.createSwappedImage(
+      imagePath: spritePath,
+      lightGrayReplacement: cor1,
+      darkGrayReplacement: cor2,
+      whiteReplacement: cor3,
+    );
+    
+    obstacleSprite = Sprite(swappedImage);
+    
+    paint.filterQuality = FilterQuality.none;
   }
 
   @override
@@ -40,14 +52,14 @@ abstract class Obstacle extends PositionComponent with HasGameRef {
 
 class Rock extends Obstacle {
   Rock({
-    required Vector2 position,
+    required super.position,
     String sprPath = 'tileset/rock.png',
-    Color cor = Palette.marromEsc,
+    super.cor1,
+    super.cor2,
+    super.cor3,
     Vector2? size,
   }) : super(
-         position: position,
-         spritePath: sprPath,
-         colorModulate: cor,
+         spritePath: sprPath, 
          size: size ?? Vector2(16, 16),
          collisionType: CollisionType.passive, 
        );

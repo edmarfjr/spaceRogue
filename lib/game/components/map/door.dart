@@ -1,7 +1,9 @@
+import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/components/utils/palette.dart';
+import 'package:spacerogue/game/components/core/palette.dart';
+import 'package:spacerogue/game/components/utils/palette_swapper.dart';
 import 'obstacle.dart';
 
 class Door extends Obstacle {
@@ -12,18 +14,25 @@ class Door extends Obstacle {
   late Sprite _closedSprite;
   late Sprite _openSprite;
 
+  final Color cor1;
+  final Color cor2;
+  final Color cor3;
+
   Door({
-    required Vector2 position,
+    required super.position,
     required this.angleVal,
-    Color? colorModulate = Palette.marromEsc,
+    this.cor1 = Palette.marromEsc,
+    this.cor2 = Palette.onyx,
+    this.cor3 = Palette.verde,
     bool isOpen = false,
     this.flipX = false,
   })  : _isOpen = isOpen,
         
         super(
-          position: position,
           spritePath: 'tileset/door.png',
-          colorModulate: colorModulate,
+          cor1: cor1,
+          cor2: cor2,  
+          cor3: cor3,  
           size: Vector2(16, 16),
           collisionType: isOpen ? CollisionType.inactive : CollisionType.passive,
         ) {
@@ -36,20 +45,29 @@ class Door extends Obstacle {
 
   @override
   Future<void> onLoad() async {
-    // 1. Chama o onLoad da superclasse (Obstacle), que já vai carregar 
-    // o obstacleSprite padrão e aplicar o colorModulate na 'paint' automaticamente!
     await super.onLoad();
+    
+    final ui.Image swappedImageClose = await PaletteSwapper.createSwappedImage(
+      imagePath: 'tileset/door1.png',
+      lightGrayReplacement: cor1,
+      darkGrayReplacement: cor2,
+      whiteReplacement: cor3,
+    );
 
-    // 2. Carrega especificamente os dois sprites para alternar entre aberto/fechado
-    _closedSprite = await gameRef.loadSprite('tileset/door.png');
-    _openSprite = await gameRef.loadSprite('tileset/doorOpen.png');
+    final ui.Image swappedImage = await PaletteSwapper.createSwappedImage(
+      imagePath: 'tileset/doorOpen1.png',
+      lightGrayReplacement: cor1,
+      darkGrayReplacement: cor2,
+      whiteReplacement: cor3,
+    );
+    
+    _closedSprite = Sprite(swappedImageClose);
+    _openSprite = Sprite(swappedImage);
 
-    priority = 100;
   }
 
   void open() {
     _isOpen = true;
-    // Desativa colisão
     firstChild<RectangleHitbox>()?.collisionType = CollisionType.inactive;
   }
 
@@ -61,12 +79,11 @@ class Door extends Obstacle {
   @override
   void onMount() {
     super.onMount();
-    position += size / 2; // Ajuste fino da âncora
+    position += size / 2;
   }
 
   @override
   void render(Canvas canvas) {
-    // Escolhe o sprite correto e desenha
     final sprite = _isOpen ? _openSprite : _closedSprite;
     sprite.render(canvas, size: size, overridePaint: paint);
   }

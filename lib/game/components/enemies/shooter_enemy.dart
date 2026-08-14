@@ -1,5 +1,5 @@
 import 'package:flame/components.dart';
-import 'package:spacerogue/game/components/utils/palette.dart';
+import 'package:spacerogue/game/components/core/palette.dart';
 import 'enemy.dart';
 
 class ShooterEnemy extends Enemy {

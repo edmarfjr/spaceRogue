@@ -1,34 +1,44 @@
 import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
-import 'package:spacerogue/game/components/utils/palette.dart';
+import 'package:spacerogue/game/components/core/palette.dart';
+import 'package:spacerogue/game/components/utils/palette_swapper.dart';
 
-// Não herda mais de BaseObstacle! Herda direto de SpriteComponent.
 class WallTile extends SpriteComponent with HasGameRef {
   final String spritePath;
   final double angleVal;
-  final Color? colorModulate;
+  final Color cor1;
+  final Color cor2;
+  final Color cor3;
 
   WallTile({
     required Vector2 position,
     required this.spritePath,
     this.angleVal = 0,
-    this.colorModulate = Palette.marromEsc,
+    this.cor1 = Palette.marromEsc,
+    this.cor2 = Palette.onyx,
+    this.cor3 = Palette.laranja,
   }) : super(
          position: position,
-         size: Vector2(16, 16), // Tamanho do bloco
+         size: Vector2(16, 16),
        ) {
-    anchor = Anchor.center; // Permite rodar em torno do próprio eixo
+    anchor = Anchor.center; 
     angle = angleVal;
   }
 
   @override
   Future<void> onLoad() async {
-    // Carrega o sprite visualmente, sem criar nenhuma Hitbox!
-    sprite = await gameRef.loadSprite(spritePath);
-    if (colorModulate != null) {
-      paint.colorFilter = ColorFilter.mode(colorModulate!, BlendMode.modulate);
-    }
+    final ui.Image swappedImage = await PaletteSwapper.createSwappedImage(
+      imagePath: spritePath,
+      lightGrayReplacement: cor1,
+      darkGrayReplacement: cor2,
+      whiteReplacement: cor3,
+    );
+    
+    sprite = Sprite(swappedImage);
+    
+    paint.filterQuality = FilterQuality.none;
   }
 
   @override

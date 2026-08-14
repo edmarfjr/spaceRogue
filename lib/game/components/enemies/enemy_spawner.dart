@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flame/components.dart';
+import 'package:spacerogue/game/components/enemies/fly_enemy.dart';
 import 'enemy.dart';
 import 'slime_atira4dir_enemy.dart';
 import 'slime_enemy.dart';
@@ -20,10 +21,10 @@ class EnemySpawner {
   static final Random _random = Random();
 
   static final List _pool = [
-    
-    SpawnOption((pos, player) => SlimeEnemy(position: pos, playerTarget: player), 10), // Peso 10 (Muito comum)
-    SpawnOption((pos, player) => EtEnemy(position: pos, playerTarget: player), 5),   // Peso 5 (Metade da chance)
-    SpawnOption((pos, player) => SlimeAtira4DirEnemy(position: pos, playerTarget: player), 5), 
+    SpawnOption((pos, player) => SlimeEnemy(position: pos, playerTarget: player), 10), 
+    SpawnOption((pos, player) => EtEnemy(position: pos, playerTarget: player), 5),   
+    SpawnOption((pos, player) => SlimeAtira4DirEnemy(position: pos, playerTarget: player), 5),
+    SpawnOption((pos, player) => FlyEnemy(position: pos, playerTarget: player), 20),  
   ];
 
   // Sorteia UM inimigo da pool com base no peso (Weighted Random)
