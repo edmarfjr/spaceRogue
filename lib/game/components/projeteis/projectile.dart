@@ -76,6 +76,9 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
       }
     } else {
       if (other is Enemy) {
+        if (!other.enemyHitbox.toAbsoluteRect().overlaps(toAbsoluteRect())) {
+          return; // Bala passa reto!
+        }
         other.takeDamage(dmg);
         other.applyKnockback(absolutePosition, kbForce);
         removeFromParent();

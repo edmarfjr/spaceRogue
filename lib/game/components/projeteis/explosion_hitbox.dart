@@ -36,11 +36,19 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
     if (lifeTime <= 0) removeFromParent();
   }
 
+  // Paints estáticos: antes eram 2 objetos novos por frame de explosão
+  static final Paint paintV = Paint()
+    ..color = Palette.vermelho
+    ..style = PaintingStyle.stroke
+    ..filterQuality = FilterQuality.none;
+
+  static final Paint paintB = Paint()
+    ..color = Palette.branco
+    ..style = PaintingStyle.stroke
+    ..filterQuality = FilterQuality.none;
+
   @override
   void render(Canvas canvas) {
-    final paintV = Paint()..color = Palette.vermelho..style = PaintingStyle.stroke..filterQuality = FilterQuality.none;
-    // Desenha o clarão visual
-    final paintB = Paint()..color = Palette.branco..style = PaintingStyle.stroke..filterQuality = FilterQuality.none;
     // Desenha o clarão visual
     canvas.drawCircle(Offset(size.x/2, size.y/2), size.x/2, paintB);
     canvas.drawCircle(Offset(size.x/2, size.y/2), size.x/2 + 1, paintV);

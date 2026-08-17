@@ -66,6 +66,7 @@ flutter:
     - assets/images/ui/
     - assets/images/projeteis/
     - assets/images/items/
+    - assets/images/effects/
     - assets/sounds/
     - assets/sounds/sfx/
     - assets/sounds/music/

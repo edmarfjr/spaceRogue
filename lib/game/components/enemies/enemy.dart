@@ -3,6 +3,7 @@ import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
 import 'package:spacerogue/game/components/core/palette.dart';
+import 'package:spacerogue/game/components/effects/sprite_effect.dart';
 import 'package:spacerogue/game/components/map/obstacle.dart';
 import 'package:spacerogue/game/components/map/wall_barrier.dart';
 import 'package:spacerogue/game/components/projeteis/projectile.dart';
@@ -24,12 +25,16 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   Color corEscura;
   Color corBranco;
   late Vector2 hitboxSize;
+  late Vector2 shadowOffset;
+  late RectangleHitbox enemyHitbox;
+  late RectangleHitbox physicsHitbox;
 
   final String spritePath;
   final SpriteAnimationData animationData;
 
   late Vector2 _previousPosition;
   late final SpriteAnimationComponent visual;
+  bool isAirborne;
 
   Vector2 knockbackVelocity = Vector2.zero();
 
@@ -39,17 +44,19 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     required this.spritePath,
     required this.animationData,
     this.speed = 30.0,
-    this.health = 3,
+    this.health = 1,
     this.dmg = 1,
-    this.bltSpeed = 150,
+    this.bltSpeed = 75,
+    this.isAirborne = false,
     this.bltCor1 = Palette.vermelho,
     this.bltCor2 = Palette.laranja,
-    this.bltImg = 'projeteis/tiro.png',
+    this.bltImg = 'projeteis/tiro2.png',
     this.corClara = Palette.cinza, 
     this.corEscura = Palette.cinzaEsc,
     this.corBranco = Palette.branco,
     Vector2? size, 
     Vector2? hitboxSize,
+    Vector2? shadowOffset,
   }) : super(
          position: position, 
          size: size ?? Vector2(16, 16), // Tamanho VISUAL padrão
@@ -59,6 +66,7 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     
     // Se não passar um tamanho de hitbox, ele assume que é igual ao tamanho visual
     this.hitboxSize = hitboxSize ?? (size ?? Vector2(16, 16));
+    this.shadowOffset = shadowOffset ?? Vector2.zero();
   }
 
   @override
@@ -78,7 +86,33 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
       paint: Paint()..filterQuality = FilterQuality.none, 
     );
     add(visual);
-    add(RectangleHitbox(collisionType: CollisionType.active));
+    enemyHitbox = RectangleHitbox(
+      size: hitboxSize,
+      anchor: Anchor.center,
+      position: size / 2, 
+      collisionType: CollisionType.active,
+    );
+    add(enemyHitbox);
+
+    physicsHitbox = RectangleHitbox(
+      size: Vector2(hitboxSize.x, hitboxSize.x * 0.5),
+      anchor: Anchor.center,
+      position: size / 2 + Vector2(0, hitboxSize.y / 2) + shadowOffset,
+      collisionType: CollisionType.active,
+    );
+    add(physicsHitbox);
+
+    final shadowPaint = Paint()..color = Palette.preto; // Preto com 40% de opacidade
+    
+    final shadow = CircleComponent(
+      radius: hitboxSize.x / 2, // O raio é metade da largura da Hitbox
+      anchor: Anchor.center,
+      position: size / 2 + Vector2(0, hitboxSize.y / 2) + shadowOffset,
+      paint: shadowPaint,
+      priority: -1, 
+    )..scale = Vector2(1.0, 0.75);
+    
+    add(shadow);
   }
 
   @override
@@ -119,9 +153,26 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   void takeDamage(double amount) {
     health -= amount; 
     if (health <= 0) {
-      removeFromParent();
+      death();
     }
   }
+
+  void death() {
+    final effect = SpriteEffect(
+      position: position.clone(), 
+      size: size.clone(), 
+      corClara: Palette.indigo,
+      corEscura: Palette.cinzaEsc,
+      corBranco: Palette.branco,
+      
+      spritePath: 'effects/enemy_death.png', 
+      frames: 7, 
+      textureSize: Vector2(16, 16), 
+    );
+    parent?.add(effect);
+    removeFromParent();
+  }
+
 
   void applyKnockback(Vector2 sourcePosition, double force) {
     Vector2 direction = (absolutePosition - sourcePosition).normalized();
@@ -150,9 +201,10 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
+    
+    // --- Lógica de Flocking (esbarrão entre inimigos) ---
     if (other is Enemy) {
       Vector2 separationVector = absolutePosition - other.absolutePosition;
-      
       if (separationVector.length > 0) {
         position += separationVector.normalized() * 0.5; 
       } else {
@@ -160,15 +212,22 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
       }
       return;
     }
+
+    // --- Lógica de Paredes e Obstáculos ---
     if (other is WallBarrier || other is Obstacle) {
+      
+      // AQUI ESTÁ A MÁGICA: Se a colisão não foi nos pés (sombra), ignora a parede!
+      if (!isPhysicsCollision(other)) return; 
+
       knockbackVelocity.setZero();
+      
       Vector2 collisionCenter = Vector2.zero();
       for (var point in intersectionPoints) {
         collisionCenter += point;
       }
       collisionCenter /= intersectionPoints.length.toDouble();
 
-      Vector2 diff = absolutePosition - collisionCenter;
+      Vector2 diff = physicsHitbox.absoluteCenter - collisionCenter;
       
       if (diff.x.abs() > diff.y.abs()) {
         position.x = _previousPosition.x;
@@ -176,5 +235,19 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
         position.y = _previousPosition.y;
       }
     }
+  }
+
+  
+  bool isPhysicsCollision(PositionComponent other) {
+    // 1. Se está voando, passa limpo por cima de obstáculos (pedras/buracos)
+    if (other is Obstacle && isAirborne) return false;
+    
+    // 2. Só valida a colisão se a hitbox da SOMBRA (pés) encostar no objeto.
+    // Isso permite que a cabeça/corpo cruze a parede visualmente lá no alto.
+    if (!physicsHitbox.toAbsoluteRect().overlaps(other.toAbsoluteRect())) {
+      return false; 
+    }
+    
+    return true;
   }
 }

@@ -32,8 +32,6 @@ class PowerUpItem extends Collectible {
 
         break;
     }
-
-    print("Item coletado: $type");
     return true; // Retorna true para sumir do chão
   }
 }

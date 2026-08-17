@@ -30,6 +30,10 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   late final List<Sprite> headSprites;
   late final List<Sprite> weaponSprites;
 
+  // --- NOVAS VARIÁVEIS DE COLISÃO ---
+  late RectangleHitbox playerHitbox;  // Colisor de Combate (Corpo)
+  late RectangleHitbox physicsHitbox; // Colisor de Física (Pés/Sombra)
+
   double speed = 60.0;
 
   int currentAimIndex = 0;
@@ -151,12 +155,36 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
     addAll([body, head, weapon]);
 
-    add(RectangleHitbox(
-      size: Vector2(16, 16),
+    // --- 1. COLISOR DE COMBATE (Corpo Inteiro) ---
+    playerHitbox = RectangleHitbox(
+      size: Vector2(10, 16),
       anchor: Anchor.center,
       position: size / 2, 
       collisionType: CollisionType.active, 
-    ));
+    );
+    add(playerHitbox);
+
+    // --- 2. COLISOR DE FÍSICA (Metade da altura, fica nos pés) ---
+    physicsHitbox = RectangleHitbox(
+      size: Vector2(size.x, size.x * 0.5),
+      anchor: Anchor.center,
+      position: size / 2 + Vector2(0, size.y / 2),
+      collisionType: CollisionType.active,
+    );
+    add(physicsHitbox);
+
+    // --- 3. SOMBRA VISUAL ---
+    final shadowPaint = Paint()..color = Palette.preto; 
+    
+    final shadow = CircleComponent(
+      radius: size.x / 2, 
+      anchor: Anchor.center,
+      position: size / 2 + Vector2(0, size.y / 2),
+      paint: shadowPaint,
+      priority: -1, 
+    )..scale = Vector2(1.0, 0.75);
+    
+    add(shadow);
   }
 
   @override
@@ -287,24 +315,28 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
     switch (currentAim) {
       case AimDirection.down: 
+        weaponPriority = 3; 
         targetFrameIndex = 0;
         needsFlip = false;
-        weaponPriority = 3; 
+        weapon.position = size/2;
         break;
       case AimDirection.right: 
+        weaponPriority = 0; 
         targetFrameIndex = 1;
         needsFlip = false;
-        weaponPriority = 3; 
+        weapon.position = size/2 + Vector2(2, 0);
         break;
       case AimDirection.left: 
+        weaponPriority = 3; 
         targetFrameIndex = 3;
         needsFlip = false;
-        weaponPriority = 3; 
+        weapon.position = size/2 - Vector2(2, 0);
         break;
       case AimDirection.up: 
+        weaponPriority = 0; 
         targetFrameIndex = 2;
         needsFlip = false;
-        weaponPriority = 0; 
+        weapon.position = size/2 - Vector2(0, 3);
         break;
     }
 
@@ -346,22 +378,41 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     parent?.add(projectile);
   }
 
+  // --- NOVA FUNÇÃO DE VALIDAÇÃO DE COLISÃO ---
+  bool isPhysicsCollision(PositionComponent other) {
+    // Se no futuro você adicionar uma mecânica de ROLAR (Dodge/Dash) para o player
+    // e criar uma variável "isAirborne", você também pode ignorar obstáculos aqui!
+    
+    if (!physicsHitbox.toAbsoluteRect().overlaps(other.toAbsoluteRect())) {
+      return false; 
+    }
+    return true;
+  }
+
   @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
 
     if (other is Enemy) {
-      takeDamage(other.dmg);
+      // O Inimigo só nos causa dano se o corpo dele bater no nosso corpo!
+      if (other.enemyHitbox.toAbsoluteRect().overlaps(playerHitbox.toAbsoluteRect())) {
+        takeDamage(1);
+      }
     }
     
     if (other is WallBarrier || other is Obstacle) {
+      
+      // MÁGICA AQUI: Só para de andar se bater os pés (sombra)!
+      if (!isPhysicsCollision(other)) return;
+
       Vector2 collisionCenter = Vector2.zero();
       for (var point in intersectionPoints) {
         collisionCenter += point;
       }
       collisionCenter /= intersectionPoints.length.toDouble();
 
-      Vector2 diff = absolutePosition - collisionCenter;
+      // USA O CENTRO DA SOMBRA E NÃO O CENTRO DO CORPO PARA EVITAR GRUDAR NA PAREDE SUPERIOR
+      Vector2 diff = physicsHitbox.absoluteCenter - collisionCenter;
       
       if (diff.x.abs() > diff.y.abs()) {
         position.x = _previousPosition.x;

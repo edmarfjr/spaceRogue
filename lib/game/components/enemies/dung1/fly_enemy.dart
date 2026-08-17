@@ -1,8 +1,9 @@
 import 'package:flame/components.dart';
 import 'package:spacerogue/game/components/core/palette.dart';
-import 'enemy.dart'; 
+import 'package:spacerogue/game/components/enemies/enemy_mixins.dart';
+import '../enemy.dart'; 
 
-class FlyEnemy extends Enemy {
+class FlyEnemy extends Enemy with ChaseMovement {
   FlyEnemy({
     required super.position,
     required super.playerTarget,
@@ -18,22 +19,14 @@ class FlyEnemy extends Enemy {
          health: 1,
          corClara: Palette.indigo, 
          corEscura: Palette.cinzaEsc, 
+         shadowOffset: Vector2(0, 8),
+         isAirborne: true,
        );
 
   // A Inteligência Artificial exclusiva do Slime (Perseguição Simples)
   @override
   void movimento(double dt) {
-    Vector2 directionToPlayer = playerTarget.position - position;
-    
-    if (directionToPlayer.length > 2.0) {
-      position += directionToPlayer.normalized() * speed * dt;
-
-      // Espelha o sprite dependendo da direção
-      if (directionToPlayer.x < 0 && !visual.isFlippedHorizontally) {
-        visual.flipHorizontallyAroundCenter();
-      } else if (directionToPlayer.x > 0 && visual.isFlippedHorizontally) {
-        visual.flipHorizontallyAroundCenter();
-      }
-    }
+    // Só chama o método do Mixin e pronto!
+    updateChaseMovement(dt);
   }
 }

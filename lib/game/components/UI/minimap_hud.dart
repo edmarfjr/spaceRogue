@@ -4,17 +4,25 @@ import 'package:spacerogue/game/components/core/palette.dart';
 import '../map/dungeon_generator.dart';
 
 class MinimapHud extends PositionComponent with HasGameRef {
-  Map mapData;
+  Map _mapData;
   final Vector2 Function() getCurrentLogicalRoom;
+
+  Map get mapData => _mapData;
+
+  // Ao trocar de fase, recalcula os limites uma vez (antes era por frame)
+  set mapData(Map value) {
+    _mapData = value;
+    _recalculateBounds();
+  }
 
   final double cellSize = 4.0;
   final double spacing = 1.0; 
   
   final Paint currentRoomPaint = Paint()..color = Palette.branco;
-  final Paint visitedRoomPaint = Paint()..color = Palette.cinza;
+  final Paint visitedRoomPaint = Paint()..color = Palette.indigo;
   final Paint bossRoomPaint = Paint()..color = Palette.vermelho;
   final Paint itemRoomPaint = Paint()..color = Palette.amarelo;
-  final Paint unvisitedPaint = Paint()..color = Palette.cinzaEsc; 
+  final Paint unvisitedPaint = Paint()..color = Palette.azulEsc; 
 
   final Paint backgroundPaint = Paint()..color = Palette.preto;
   final Paint borderPaint = Paint()
@@ -33,28 +41,28 @@ class MinimapHud extends PositionComponent with HasGameRef {
   final double _padding = 8.0; // Espaço preto de borda (4px pra cada lado)
 
   MinimapHud({
-    required this.mapData,
+    required Map mapData,
     required this.getCurrentLogicalRoom,
-    required Vector2 position, 
-  }) : super(
-         position: position, 
-         anchor: Anchor.topRight, 
+    required Vector2 position,
+  })  : _mapData = mapData,
+        super(
+         position: position,
+         anchor: Anchor.topRight,
          size: Vector2.zero(), // Começa zerado, a classe define isso sozinha agora!
-       );
+       ) {
+    _recalculateBounds();
+  }
 
-  @override
-  void update(double dt) {
-    super.update(dt);
-    
-    if (mapData.isEmpty) return;
+  void _recalculateBounds() {
+    if (_mapData.isEmpty) return;
 
-    // 1. Calcula os extremos do mapa a cada frame
+    // 1. Calcula os extremos do mapa
     int minX = 9999;
     int maxX = -9999;
     int minY = 9999;
     int maxY = -9999;
 
-    for (var room in mapData.values) {
+    for (var room in _mapData.values) {
       if (room.x < minX) minX = room.x;
       if (room.x > maxX) maxX = room.x;
       if (room.y < minY) minY = room.y;
@@ -69,11 +77,8 @@ class MinimapHud extends PositionComponent with HasGameRef {
     double mapPixelWidth = (maxX - minX + 1) * totalBlockSize;
     double mapPixelHeight = (maxY - minY + 1) * totalBlockSize;
 
-    // 3. ATUALIZA O TAMANHO DO MINIMAPA DINAMICAMENTE
-    Vector2 newSize = Vector2(mapPixelWidth + _padding, mapPixelHeight + _padding);
-    if (size != newSize) {
-      size = newSize; 
-    }
+    // 3. ATUALIZA O TAMANHO DO MINIMAPA
+    size = Vector2(mapPixelWidth + _padding, mapPixelHeight + _padding);
   }
 
   @override
@@ -139,7 +144,8 @@ class MinimapHud extends PositionComponent with HasGameRef {
       canvas.drawRect(roomRect, roomPaint);
       canvas.drawRect(roomRect, roomOutlinePaint);
 
-      Paint passagePaint = Paint()..color = roomPaint.color;
+      // Reaproveita o mesmo Paint da sala (mesma cor, mesmo estilo)
+      final Paint passagePaint = roomPaint;
       double passageThickness = 2.0;
       double centerOffset = (cellSize - passageThickness) / 2;
 

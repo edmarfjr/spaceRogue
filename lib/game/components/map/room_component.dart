@@ -5,8 +5,14 @@ import 'package:flutter/material.dart';
 import 'package:spacerogue/game/components/core/dungeon_theme.dart';
 import 'package:spacerogue/game/components/core/palette.dart';
 import 'package:spacerogue/game/components/enemies/dummy_enemy.dart';
+import 'package:spacerogue/game/components/enemies/dung1/bat_shooter_enemy.dart';
+//import 'package:spacerogue/game/components/enemies/dung1/bat_enemy.dart';
+import 'package:spacerogue/game/components/enemies/dung1/slime_atira4dir_enemy.dart';
+//import 'package:spacerogue/game/components/enemies/dung1/slime_enemy.dart';
 import 'package:spacerogue/game/components/enemies/enemy.dart';
 import 'package:spacerogue/game/components/enemies/enemy_spawner.dart';
+//import 'package:spacerogue/game/components/enemies/dung1/fly_explode_enemy.dart';
+//import 'package:spacerogue/game/components/enemies/dung1/planta_shooter.dart';
 import 'package:spacerogue/game/components/items/power_up_item.dart';
 import 'package:spacerogue/game/components/map/door.dart';
 import 'package:spacerogue/game/components/map/pedestal.dart';
@@ -32,8 +38,8 @@ class RoomComponent extends PositionComponent with HasGameRef {
   static const double wallThickness = 16.0;
   static const double doorSize = 32.0;
 
-  late final Sprite floorSprite;
-  late final Sprite doorSprite;
+  //late final Sprite floorSprite;
+  //late final Sprite doorSprite;
 
   late final DungeonTheme theme;
 
@@ -53,8 +59,8 @@ class RoomComponent extends PositionComponent with HasGameRef {
   Future<void> onLoad() async {
     super.onLoad();
 
-    floorSprite = await gameRef.loadSprite('tileset/floor.png');
-    doorSprite = await gameRef.loadSprite('tileset/door.png');
+  //  floorSprite = await gameRef.loadSprite('tileset/floor.png');
+  //  doorSprite = await gameRef.loadSprite('tileset/door1.png');
 
     floorPaint = Paint()
       ..filterQuality = FilterQuality.none
@@ -81,6 +87,14 @@ class RoomComponent extends PositionComponent with HasGameRef {
         playerTarget: player,
       );
       parent?.add(enemy);
+      //teste de inimigos
+/*
+      Enemy e = BatShooterEnemy(
+        position: Vector2(width / 2-32, height / 2 - 32),
+        playerTarget: player,
+      );
+      parent?.add(e);
+  */    
     }
   }
 
@@ -318,11 +332,38 @@ class RoomComponent extends PositionComponent with HasGameRef {
     }
   }
 
+  // Criado uma única vez (antes era um Paint novo por sala, por frame)
+  late final Paint _roomBackgroundPaint = Paint()..color = theme.corEscura;
+  late final Rect _roomBackgroundRect = Rect.fromLTWH(0, 0, width, height);
+
   @override
   void render(Canvas canvas) {
-    final Paint roomBackgroundPaint = Paint()..color = theme.corEscura;
-    canvas.drawRect(Rect.fromLTWH(0, 0, width, height), roomBackgroundPaint);
-    
+    canvas.drawRect(_roomBackgroundRect, _roomBackgroundPaint);
+
     super.render(canvas);
+  }
+
+  // --- CULLING: só a(s) sala(s) na tela gastam CPU/GPU ---
+  // Sem isso, as 12 salas desenhavam ~44 tiles de parede cada uma
+  // (~530 draw calls) e atualizavam toda a árvore de filhos por frame.
+  CameraComponent? _camera;
+
+  bool _isOnCamera() {
+    final cam = _camera ?? CameraComponent.currentCamera;
+    if (cam == null || !cam.isMounted) return true; // sem câmera ainda: não corta nada
+    _camera = cam;
+    return cam.visibleWorldRect.overlaps(toAbsoluteRect());
+  }
+
+  @override
+  void updateTree(double dt) {
+    if (!_isOnCamera()) return;
+    super.updateTree(dt);
+  }
+
+  @override
+  void renderTree(Canvas canvas) {
+    if (!_isOnCamera()) return;
+    super.renderTree(canvas);
   }
 }

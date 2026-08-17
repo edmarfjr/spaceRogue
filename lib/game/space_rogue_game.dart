@@ -2,14 +2,17 @@ import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/game.dart';
 import 'package:flame/palette.dart';
-import 'package:flutter/animation.dart';
-import 'package:flutter/painting.dart';
+//import 'package:flutter/animation.dart';
+import 'package:flutter/material.dart';
+//import 'package:flutter/painting.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey, KeyDownEvent;
 import 'package:spacerogue/game/components/UI/hud.dart';
 import 'package:spacerogue/game/components/UI/minimap_hud.dart';
 //import 'package:spacerogue/game/components/enemies/enemy.dart';
 import 'package:spacerogue/game/components/map/dungeon_generator.dart';
 import 'package:spacerogue/game/components/map/room_component.dart';
 import 'package:spacerogue/game/components/core/palette.dart';
+import 'package:spacerogue/game/components/utils/palette_swapper.dart';
 import 'components/player/player.dart';
 import 'package:flame/events.dart';
 
@@ -59,13 +62,18 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
 
     _setupJoysticks();
 
+    // Pré-processa a paleta dos sprites que aparecem em pleno combate.
+    // Sem isso, o PRIMEIRO tiro / explosão / morte de inimigo gerava uma
+    // textura nova em tempo de execução (travadinha na hora do disparo).
+    await _preloadCombatSprites();
+
     player = Player(moveJoystick: moveJoystick, aimJoystick: aimJoystick);
     player.onDeath = onGameOver;
     player.position = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
     dungeonWorld.add(player);
 
     final generator = DungeonGenerator(maxRooms: 12); // Gera uma dungeon com 12 salas
-    final mapData = generator.generate();
+    mapData = generator.generate();
 
     // Percorre todos os dados de salas criados pelo algoritmo
     for (var roomData in mapData.values) {
@@ -99,7 +107,24 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
       position: Vector2(RoomComponent.roomWidth - 15, 15), 
     );
     gameCamera.viewport.add(minimapHud);
+    pauseEngine();
+  }
 
+  @override
+  KeyEventResult onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) { // <-- MUDOU AQUI
+    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
+      if (!overlays.isActive('MainMenu')) { 
+        if (overlays.isActive('PauseMenu')) {
+          overlays.remove('PauseMenu');
+          resumeEngine();
+        } else {
+          pauseEngine();
+          overlays.add('PauseMenu');
+        }
+      }
+      return KeyEventResult.handled;
+    }
+    return super.onKeyEvent(event, keysPressed);
   }
 
   @override
@@ -113,6 +138,48 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
     
     // Exemplo para o joystick caso ele esteja se perdendo:
     // moveJoystick.position = Vector2(80, canvasSize.y - 80);
+  }
+
+  Future<void> _preloadCombatSprites() async {
+    await PaletteSwapper.warmUp([
+      // Tiro do player (Projectile padrão)
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/tiro.png',
+        lightGrayReplacement: Palette.azul,
+        darkGrayReplacement: Palette.verdeEsc,
+      ),
+      // Tiro dos inimigos (Enemy.bltImg padrão)
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/tiro2.png',
+        lightGrayReplacement: Palette.vermelho,
+        darkGrayReplacement: Palette.laranja,
+      ),
+      // Bomba
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/bomb.png',
+        lightGrayReplacement: Palette.indigo,
+        darkGrayReplacement: Palette.azulEsc,
+      ),
+      // Efeito de morte de inimigo
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'effects/enemy_death.png',
+        lightGrayReplacement: Palette.indigo,
+        darkGrayReplacement: Palette.cinzaEsc,
+        whiteReplacement: Palette.branco,
+      ),
+      // Drops de vida
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'items/heartHalf.png',
+        lightGrayReplacement: Palette.vermelho,
+        darkGrayReplacement: Palette.roxoEsc,
+      ),
+      // Drop de bomba
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'items/bomb.png',
+        lightGrayReplacement: Palette.indigo,
+        darkGrayReplacement: Palette.azulEsc,
+      ),
+    ]);
   }
 
   void _setupJoysticks() {
@@ -185,6 +252,20 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
     // 4. ATUALIZA O MINIMAPA
     // Entrega o novo mapa para a HUD e limpa o contorno antigo
     minimapHud.mapData = mapData;
+  }
+
+  void resetGame() {
+    // 1. Você pode chamar a sua função de recriar a sala (aquela "Limpa e recria a fase!")
+    // _clearRoom();
+    // _generateNewRoom();
+    
+    // 2. Reseta a vida, posição e bombas do jogador
+    player.currentHealth = player.maxHealth;
+    player.bombsAmount = 3;
+    player.position = Vector2(size.x / 2, size.y / 2); // Coloca no centro
+    
+    // 3. E garante que o jogo fique parado de novo na tela inicial
+    pauseEngine(); 
   }
 
   void _checkCameraTransition() {
