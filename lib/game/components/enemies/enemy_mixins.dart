@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:spacerogue/game/components/map/obstacle.dart';
-import 'package:spacerogue/game/components/map/wall_barrier.dart';
 import 'dart:math';
 import 'enemy.dart'; // Importe sua classe base
 
@@ -78,11 +77,13 @@ mixin WanderMovement on Enemy {
         isMoving = false;
         pauseTimer = minPause + _random.nextDouble() * (maxPause - minPause);
       }
+      animateMovement(dt, isMoving: true, horizontalDir: currentDirection.x);
     } else {
       pauseTimer -= dt;
       if (pauseTimer <= 0) {
         _pickRandomDirection(minMove, maxMove);
       }
+      animateMovement(dt, isMoving: false);
     }
   }
 
@@ -109,14 +110,15 @@ mixin WanderMovement on Enemy {
 
   // --- NOVA FUNÇÃO DE PREVISÃO DO FUTURO ---
   bool _isDirectionValid(Vector2 dir) {
-    if (parent == null) return true; // Segurança caso ele não esteja na tela ainda
+    final room = currentRoom;
+    if (room == null) return true; // Segurança caso ele não esteja na tela ainda
 
     // Projeta a sombra imaginária para o que aconteceria daqui a 0.6 segundos
-    double lookAheadDistance = speed * 0.6; 
-    
+    double lookAheadDistance = speed * 0.6;
+
     // Calcula o centro do futuro
     Vector2 futureCenter = physicsHitbox.absoluteCenter + (dir * lookAheadDistance);
-    
+
     // Cria um retângulo simulando a hitbox de física lá no futuro
     Rect futureRect = Rect.fromCenter(
       center: Offset(futureCenter.x, futureCenter.y),
@@ -124,20 +126,15 @@ mixin WanderMovement on Enemy {
       height: physicsHitbox.size.y,
     );
 
-    // Vasculha todos os objetos da sala
-    for (var child in parent!.children.whereType<PositionComponent>()) {
-      
-      if (child is WallBarrier || child is Obstacle) {
-        
-        if (isAirborne && child is Obstacle) continue;
-        
-        // Agora o Dart reconhece perfeitamente o toAbsoluteRect() !
-        if (child.toAbsoluteRect().overlaps(futureRect)) {
-          return false; 
-        }
+    // Vasculha os corpos sólidos da SALA (paredes e obstáculos são filhos dela)
+    for (final child in roomColliders) {
+      if (isAirborne && child is Obstacle) continue;
+
+      if (child.toAbsoluteRect().overlaps(futureRect)) {
+        return false;
       }
     }
-    
+
     return true; // Se o loop terminou sem bater em nada, a direção é perfeita!
   }
 
@@ -150,46 +147,42 @@ mixin WanderMovement on Enemy {
   }
 }
 
-// --- CÉREBRO 3: ATIRADOR COM ANIMAÇÃO ---
+// --- CÉREBRO 3: ATIRADOR ---
+// Sprite estático: não há mais spritesheet de ataque pra trocar de frame.
+// O tell visual do ataque é um pulso de escala (esticar/espremer) em vez de animação.
 mixin ShooterAttack on Enemy {
-  late SpriteAnimation moveAnimation;
-  late SpriteAnimation attackAnimation;
-
   bool isAttacking = false;
   bool wantsToShoot = false;
-  
+
   double attackTimer = 0.0;
-  late double attackDuration;
+  double attackDuration = 0.3;
   double fireTimer = 0.0;
 
-  void setupAttackAnimation({required int frames, required double frameTime, required Vector2 textureSize, required Vector2 texturePosition}) {
-    moveAnimation = visual.animation!;
-    attackDuration = (frames - 1) * frameTime;
-
-    final swappedImage = visual.animation!.frames.first.sprite.image;
-    attackAnimation = SpriteAnimation.fromFrameData(
-      swappedImage,
-      SpriteAnimationData.sequenced(
-        amount: frames,
-        stepTime: frameTime,
-        textureSize: textureSize,
-        texturePosition: texturePosition,
-        loop: false,
-      ),
-    );
+  void setupAttackAnimation({double duration = 0.3}) {
+    attackDuration = duration;
   }
 
   // Retorna 'true' enquanto estiver atacando (para bloquear o movimento)
   bool updateAttack(double dt, double fireRate, Function onShootCompleted) {
     if (isAttacking) {
       attackTimer += dt;
+
+      // Preserva o sinal de scale.x — é ele que guarda o flip horizontal.
+      // Sem isso, o inimigo virado pra esquerda voltava a olhar pra direita
+      // a cada tiro.
+      final flip = visual.scale.x.isNegative ? -1.0 : 1.0;
+
+      double progress = (attackTimer / attackDuration).clamp(0.0, 1.0);
+      double pulse = 1.0 + 0.25 * (1 - (progress * 2 - 1).abs());
+      visual.scale = Vector2(pulse * flip, 2.0 - pulse);
+
       if (attackTimer >= attackDuration) {
-        onShootCompleted(); 
+        onShootCompleted();
         isAttacking = false;
         attackTimer = 0.0;
-        visual.animation = moveAnimation;
+        visual.scale = Vector2(flip, 1.0);
       }
-      return true; 
+      return true;
     }
 
     if (!wantsToShoot) {
@@ -205,8 +198,7 @@ mixin ShooterAttack on Enemy {
   void triggerAttack() {
     isAttacking = true;
     wantsToShoot = false;
-    visual.animation = attackAnimation;
-    visual.animationTicker?.reset();
+    attackTimer = 0.0;
   }
 }
 
@@ -228,182 +220,83 @@ mixin ChaseMovement on Enemy {
       } else if (direction.x > 0 && visual.isFlippedHorizontally) {
         visual.flipHorizontallyAroundCenter();
       }
+
+      animateMovement(dt, isMoving: true, horizontalDir: direction.x);
+    } else {
+      animateMovement(dt, isMoving: false);
     }
   }
 }
 
 enum JumpState { idle, preparing, inAir }
 
-mixin InvestidaMovement on Enemy {
-  JumpState jumpState = JumpState.idle;
-  double jumpTimer = 0.0;
-
-  late SpriteAnimation idleAnim;
-  late SpriteAnimation prepAnim;
-  late SpriteAnimation airAnim;
-
-  late double prepDuration;
-  double airDuration = 0.4;  // Tempo de duração do pulo
-  double idleDuration = 1.0; // Tempo parado respirando
-
-  Vector2 jumpDirection = Vector2.zero();
-
-  void setupJumpAnimations({
-    required SpriteAnimation idle,
-    required SpriteAnimation prep,
-    required SpriteAnimation air,
-    required double prepTime,
-  }) {
-    idleAnim = idle;
-    prepAnim = prep;
-    airAnim = air;
-    prepDuration = prepTime;
-    
-    // Começa no estado idle
-    visual.animation = idleAnim;
-  }
-
-  void updateJumpMovement(double dt, Vector2 targetPos, {double jumpSpeed = 120.0}) {
-    jumpTimer += dt;
-
-    switch (jumpState) {
-      
-      // 1. ESTADO PARADO (IDLE)
-      case JumpState.idle:
-        if (jumpTimer >= idleDuration) {
-          jumpState = JumpState.preparing;
-          jumpTimer = 0.0;
-          
-          visual.animation = prepAnim;
-          visual.animationTicker?.reset(); // Garante que a animação rode desde o frame 0
-        }
-        break;
-
-      // 2. ESTADO DE PREPARAÇÃO (AGACHANDO)
-      case JumpState.preparing:
-        // A duração da preparação é exatamente o tempo da animação tocar inteira
-        if (jumpTimer >= prepDuration) {
-          jumpState = JumpState.inAir;
-          jumpTimer = 0.0;
-          
-          visual.animation = airAnim; // Troca pro sprite voando
-          
-          // Trava a direção na qual ele vai pular (na direção do alvo)
-          Vector2 distance = targetPos - absolutePosition;
-          if (distance.length > 0) {
-            jumpDirection = distance.normalized();
-            
-            // Espelha o sprite
-            if (jumpDirection.x < 0 && !visual.isFlippedHorizontally) {
-              visual.flipHorizontallyAroundCenter();
-            } else if (jumpDirection.x > 0 && visual.isFlippedHorizontally) {
-              visual.flipHorizontallyAroundCenter();
-            }
-          } else {
-            jumpDirection = Vector2.zero();
-          }
-        }
-        break;
-
-      // 3. ESTADO NO AR (MOVENDO)
-      case JumpState.inAir:
-        // Somente aqui ele altera a posição física (X, Y)
-        position += jumpDirection * jumpSpeed * dt;
-        
-        // Quando o tempo de voo acaba, ele "cai" no chão
-        if (jumpTimer >= airDuration) {
-          jumpState = JumpState.idle;
-          jumpTimer = 0.0;
-          visual.animation = idleAnim;
-          jumpDirection = Vector2.zero();
-        }
-        break;
-    }
-  }
-
-  // Aborta o salto e cai no chão se bater a cabeça numa parede
-  void cancelJump() {
-    if (jumpState == JumpState.inAir && knockbackVelocity.isZero()) {
-      jumpState = JumpState.idle;
-      jumpTimer = 0.0;
-      visual.animation = idleAnim;
-      jumpDirection = Vector2.zero();
-    }
-  }
-}
-
 enum JumpMode { targetPlayer, random }
 
+// --- CÉREBRO: PULO (SUBSTITUI O ANTIGO InvestidaMovement, agora removido) ---
+// Sprite estático: os três estados (parado/agachando/voando) não trocam mais
+// de frame — o tell visual é um agachamento por escala e um deslocamento em Y
+// simulando altura, e o pulo em si continua sendo dados puros (direção/velocidade).
 mixin JumpMovement on Enemy {
   JumpState jumpState = JumpState.idle;
   double jumpTimer = 0.0;
 
-  late SpriteAnimation idleAnim;
-  late SpriteAnimation prepAnim;
-  late SpriteAnimation airAnim;
-
-  late double prepDuration;
-  double airDuration = 0.4;  
-  double idleDuration = 1.0; 
+  double prepDuration = 0.3;
+  double airDuration = 0.4;
+  double idleDuration = 1.0;
 
   Vector2 jumpDirection = Vector2.zero();
-  
+
   late double _baseVisualY;
-  late double _baseHitboxY; 
-  
+  late double _baseHitboxY;
+
   double _calculatedJumpSpeed = 0.0;
   final Random _jumpRandom = Random();
 
-  void setupJumpAnimations({
-    required SpriteAnimation idle,
-    required SpriteAnimation prep,
-    required SpriteAnimation air,
-    required double prepTime,
-  }) {
-    idleAnim = idle;
-    prepAnim = prep;
-    airAnim = air;
+  void setupJumpAnimations({double prepTime = 0.3}) {
     prepDuration = prepTime;
-    
-    visual.animation = idleAnim;
-    
-    _baseVisualY = size.y / 2; 
-    _baseHitboxY = enemyHitbox.position.y; 
+
+    _baseVisualY = size.y / 2;
+    _baseHitboxY = enemyHitbox.position.y;
   }
 
   void updateJumpMovement(
-    double dt, 
+    double dt,
     Vector2 playerPos, {
     JumpMode mode = JumpMode.targetPlayer,
-    double? jumpDistance, 
+    double? jumpDistance,
     double jumpHeight = 24.0,
   }) {
     jumpTimer += dt;
 
+    // Preserva o sinal de scale.x — é ele que guarda o flip horizontal.
+    final flip = visual.scale.x.isNegative ? -1.0 : 1.0;
+
     switch (jumpState) {
-      
+
       case JumpState.idle:
         isAirborne = false;
-        visual.position.y = _baseVisualY; 
-        enemyHitbox.position.y = _baseHitboxY; 
+        visual.position.y = _baseVisualY;
+        visual.scale = Vector2(flip, 1.0);
+        enemyHitbox.position.y = _baseHitboxY;
         if (jumpTimer >= idleDuration) {
           jumpState = JumpState.preparing;
           jumpTimer = 0.0;
-          visual.animation = prepAnim;
-          visual.animationTicker?.reset(); 
         }
         break;
 
       case JumpState.preparing:
         isAirborne = false;
-        visual.position.y = _baseVisualY; 
-        enemyHitbox.position.y = _baseHitboxY; 
-        
+        visual.position.y = _baseVisualY;
+        enemyHitbox.position.y = _baseHitboxY;
+
+        // Agacha progressivamente até o momento do salto
+        double prepProgress = (jumpTimer / prepDuration).clamp(0.0, 1.0);
+        visual.scale = Vector2((1.0 + prepProgress * 0.2) * flip, 1.0 - prepProgress * 0.2);
+
         if (jumpTimer >= prepDuration) {
           jumpState = JumpState.inAir;
           jumpTimer = 0.0;
-          visual.animation = airAnim; 
-          
+
           Vector2 finalTarget;
           
           if (mode == JumpMode.targetPlayer) {
@@ -440,22 +333,24 @@ mixin JumpMovement on Enemy {
 
       case JumpState.inAir:
         isAirborne = true;
-        
+
         position += jumpDirection * _calculatedJumpSpeed * dt;
-        
-        double progress = jumpTimer / airDuration; 
+
+        double progress = jumpTimer / airDuration;
         double zOffset = 4 * jumpHeight * progress * (1 - progress);
-        
-        visual.position.y = _baseVisualY - zOffset; 
-        enemyHitbox.position.y = _baseHitboxY - zOffset; 
-        
+
+        visual.position.y = _baseVisualY - zOffset;
+        enemyHitbox.position.y = _baseHitboxY - zOffset;
+        // Estica levemente no ar, oposto ao agachamento da preparação
+        visual.scale = Vector2(0.9 * flip, 1.1);
+
         if (jumpTimer >= airDuration) {
           jumpState = JumpState.idle;
           jumpTimer = 0.0;
-          visual.animation = idleAnim;
-          
-          visual.position.y = _baseVisualY; 
-          enemyHitbox.position.y = _baseHitboxY; 
+          visual.scale = Vector2(flip, 1.0);
+
+          visual.position.y = _baseVisualY;
+          enemyHitbox.position.y = _baseHitboxY;
           jumpDirection = Vector2.zero();
         }
         break;
@@ -464,15 +359,16 @@ mixin JumpMovement on Enemy {
 
   // --- I.A. PREDITIVA PARA O PONTO DE POUSO ---
   Vector2 _calculateSmartRandomTarget(double dist) {
-    if (parent == null) return absolutePosition + Vector2(1, 0) * dist;
+    final room = currentRoom;
+    // Sem sala identificada (ex.: bem em cima da borda, por causa do Rect.contains
+    // ser exclusivo), não pula às cegas — fica parado até a próxima chamada.
+    if (room == null) return absolutePosition;
 
     int attempts = 0;
     Vector2 testTarget = absolutePosition;
-    
-    // Descobre a largura e altura total da sala atual!
-    Vector2 roomSize = (parent is PositionComponent) 
-        ? (parent as PositionComponent).size 
-        : Vector2(9999, 9999); // Fallback de segurança
+
+    // Limites reais da sala atual, em coordenadas absolutas do mundo
+    final Rect roomRect = room.toAbsoluteRect();
 
     while (attempts < 10) {
       double angle = _jumpRandom.nextDouble() * 2 * pi;
@@ -491,19 +387,17 @@ mixin JumpMovement on Enemy {
 
       // 1. CHECAGEM DE BORDAS DA SALA (Limites Absolutos)
       // A sombra imaginária vazou da sala (esquerda, cima, direita ou baixo)?
-      if (futureRect.left < 0 || futureRect.top < 0 || 
-          futureRect.right > roomSize.x || futureRect.bottom > roomSize.y) {
-        isValid = false; 
+      if (futureRect.left < roomRect.left || futureRect.top < roomRect.top ||
+          futureRect.right > roomRect.right || futureRect.bottom > roomRect.bottom) {
+        isValid = false;
       }
 
       // 2. CHECAGEM DE COLISÕES INTERNAS (Pedras, Paredes e Buracos)
       if (isValid) {
-        for (var child in parent!.children.whereType<PositionComponent>()) {
-          if (child is WallBarrier || child is Obstacle) {
-            if (child.toAbsoluteRect().overlaps(futureRect)) {
-              isValid = false;
-              break; 
-            }
+        for (final child in roomColliders) {
+          if (child.toAbsoluteRect().overlaps(futureRect)) {
+            isValid = false;
+            break;
           }
         }
       }
@@ -523,10 +417,10 @@ mixin JumpMovement on Enemy {
     if (jumpState == JumpState.inAir && knockbackVelocity.isZero()) {
       jumpState = JumpState.idle;
       jumpTimer = 0.0;
-      visual.animation = idleAnim;
-      
-      visual.position.y = _baseVisualY; 
-      enemyHitbox.position.y = _baseHitboxY; 
+      visual.scale = Vector2(visual.scale.x.isNegative ? -1.0 : 1.0, 1.0);
+
+      visual.position.y = _baseVisualY;
+      enemyHitbox.position.y = _baseHitboxY;
       jumpDirection = Vector2.zero();
     }
   }

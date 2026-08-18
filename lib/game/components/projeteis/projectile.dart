@@ -20,19 +20,25 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   double dmg;
   double kbForce;
 
+  /// Tempo de vida opcional, em segundos. Null = vive até colidir ou sair da tela.
+  final double? lifeTime;
+  double _age = 0;
+
   Projectile({
     required Vector2 position,
-    required this.direction, 
-    this.isEnemy = false, 
-    this.speed = 200, 
-    this.kbForce = 200,
-    this.sprPath = 'projeteis/tiro.png', 
-    this.cor1 = Palette.azul, 
-    this.cor2 = Palette.verdeEsc, 
-    this.dmg = 1
+    required this.direction,
+    this.isEnemy = false,
+    this.speed = 200,
+    this.kbForce = 20,
+    this.sprPath = 'projeteis/tiro.png',
+    this.cor1 = Palette.azul,
+    this.cor2 = Palette.verdeEsc,
+    this.dmg = 1,
+    this.lifeTime,
+    Vector2? size, 
     }): super(
       position: position, 
-      size: Vector2(10, 10), 
+      size: size ?? Vector2(10, 10),
       anchor: Anchor.center
     );
 
@@ -46,7 +52,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     );
     animation = SpriteAnimation.fromFrameData(
       img,
-      SpriteAnimationData.sequenced(amount: 2, stepTime: 0.2, textureSize: Vector2(16, 16)),
+      SpriteAnimationData.sequenced(amount: 1, stepTime: 0.2, textureSize: Vector2(16, 16)),
     );
 
     paint = Paint()..filterQuality = FilterQuality.none;
@@ -58,6 +64,11 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   void update(double dt) {
     super.update(dt);
     position += direction * speed * dt;
+
+    if (lifeTime != null) {
+      _age += dt;
+      if (_age >= lifeTime!) removeFromParent();
+    }
   }
 
   @override

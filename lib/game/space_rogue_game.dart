@@ -6,15 +6,17 @@ import 'package:flame/palette.dart';
 import 'package:flutter/material.dart';
 //import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey, KeyDownEvent;
+import 'package:flame/input.dart';
+import 'package:spacerogue/game/components/UI/ability_button_visual.dart';
 import 'package:spacerogue/game/components/UI/hud.dart';
 import 'package:spacerogue/game/components/UI/minimap_hud.dart';
 //import 'package:spacerogue/game/components/enemies/enemy.dart';
+import 'package:spacerogue/game/components/creatures/creature_data.dart';
 import 'package:spacerogue/game/components/map/dungeon_generator.dart';
 import 'package:spacerogue/game/components/map/room_component.dart';
 import 'package:spacerogue/game/components/core/palette.dart';
 import 'package:spacerogue/game/components/utils/palette_swapper.dart';
 import 'components/player/player.dart';
-import 'package:flame/events.dart';
 
 class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHandlerComponents {
   // O Mundo onde o mapa, inimigos e jogador existirão
@@ -23,11 +25,12 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
   // A câmera que vai renderizar o mundo na resolução do Game Boy
   late final CameraComponent gameCamera;
 
-  // Joysticks
+  // Joystick de movimento. Não há mais joystick de mira: a mira das
+  // habilidades é sempre a última direção de movimento do jogador.
   late final JoystickComponent moveJoystick;
-  late final JoystickComponent aimJoystick;
 
-  late final Player player;
+  late Player player;
+  bool _runStarted = false;
   Vector2 currentRoomIndex = Vector2.zero();
 
   final VoidCallback? onGameOver; 
@@ -61,13 +64,38 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
     add(dungeonWorld); // Adiciona o mundo ao jogo
 
     _setupJoysticks();
+    _setupActionButtons();
 
     // Pré-processa a paleta dos sprites que aparecem em pleno combate.
     // Sem isso, o PRIMEIRO tiro / explosão / morte de inimigo gerava uma
     // textura nova em tempo de execução (travadinha na hora do disparo).
     await _preloadCombatSprites();
 
-    player = Player(moveJoystick: moveJoystick, aimJoystick: aimJoystick);
+    // 2. Configura a Câmera (Resolução Fixa: 160 x 144). Não depende do
+    // jogador, então já pode ser montada aqui — a run em si só começa
+    // quando o jogador escolhe uma criatura no CreatureSelectOverlay.
+    gameCamera = CameraComponent.withFixedResolution(
+      width: RoomComponent.roomWidth,
+      height: RoomComponent.roomHeight,
+      world: dungeonWorld,
+    );
+    gameCamera.viewfinder.position = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
+    add(gameCamera);
+
+    pauseEngine();
+  }
+
+  /// Começa uma run nova com a criatura escolhida no seletor. Pode ser
+  /// chamado mais de uma vez: voltar ao menu e escolher outra criatura
+  /// derruba a run anterior (jogador e dungeon) e monta tudo de novo.
+  void startRun(CreatureData creature) {
+    for (final child in dungeonWorld.children.toList()) {
+      child.removeFromParent();
+    }
+    loadedRooms.clear();
+
+    player = Player(moveJoystick: moveJoystick, creatureData: creature);
+    _runStarted = true;
     player.onDeath = onGameOver;
     player.position = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
     dungeonWorld.add(player);
@@ -83,18 +111,12 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
       dungeonWorld.add(room);
     }
 
-    // 2. Configura a Câmera (Resolução Fixa: 160 x 144)
-    gameCamera = CameraComponent.withFixedResolution(
-      width: RoomComponent.roomWidth,
-      height: RoomComponent.roomHeight,
-      world: dungeonWorld,
-    );
-    // Movemos a câmera para focar no centro lógico (0,0) inicialmente
-    final startRoomCenter = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
-    
-    // Posiciona a câmera e o jogador no centro da primeira sala
-    gameCamera.viewfinder.position = startRoomCenter;
-    add(gameCamera);
+    currentRoomIndex = Vector2.zero();
+    gameCamera.viewfinder.position = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
+
+    // Remove HUD/minimapa de uma run anterior, se houver, antes de recriar.
+    gameCamera.viewport.children.whereType<Hud>().toList().forEach((h) => h.removeFromParent());
+    gameCamera.viewport.children.whereType<MinimapHud>().toList().forEach((m) => m.removeFromParent());
 
     final hud = Hud(player: player);
     gameCamera.viewport.add(hud);
@@ -104,10 +126,13 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
       getCurrentLogicalRoom: () {
         return Vector2(currentRoomIndex.x + 50, currentRoomIndex.y + 50);
       },
-      position: Vector2(RoomComponent.roomWidth - 15, 15), 
+      position: Vector2(RoomComponent.roomWidth - 15, 15),
     );
     gameCamera.viewport.add(minimapHud);
-    pauseEngine();
+
+    overlays.remove('CreatureSelect');
+    overlays.add('Hud');
+    resumeEngine();
   }
 
   @override
@@ -179,15 +204,23 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
         lightGrayReplacement: Palette.indigo,
         darkGrayReplacement: Palette.azulEsc,
       ),
+      // Bolha das habilidades defensivas (Bolha Protetora, Casco Fechado)
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/bolha.png',
+        lightGrayReplacement: Palette.azul,
+        darkGrayReplacement: Palette.azulEsc,
+        whiteReplacement: Palette.branco,
+      ),
     ]);
   }
 
   void _setupJoysticks() {
-    // Estilo dos botões
+    // Estilo do joystick
     final knobPaint = BasicPalette.lightGray.withAlpha(200).paint();
     final bgPaint = BasicPalette.black.withAlpha(100).paint();
 
-    // Joystick Esquerdo (Movimento)
+    // Joystick Esquerdo (Movimento). A mira sumiu: a mira das habilidades
+    // agora é sempre a última direção de movimento (ver Player.lockedFireDirection).
     moveJoystick = JoystickComponent(
       knob: CircleComponent(radius: 20, paint: knobPaint),
       background: CircleComponent(radius: 50, paint: bgPaint),
@@ -195,19 +228,71 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
       margin: const EdgeInsets.only(left: 40, bottom: 40),
     );
 
-    // Joystick Direito (Mira/Tiro)
-    aimJoystick = JoystickComponent(
-      knob: CircleComponent(radius: 20, paint: knobPaint),
-      background: CircleComponent(radius: 50, paint: bgPaint),
-      // Posiciona no canto inferior direito
-      margin: const EdgeInsets.only(right: 40, bottom: 40),
+    // Adicionamos o joystick DIRETAMENTE ao jogo, e não ao World.
+    // Isso garante que ele seja tratado como HUD (Interface) e
+    // não sofra o zoom/escala da resolução de 160x144.
+    add(moveJoystick);
+  }
+
+  void _setupActionButtons() {
+    // Botão A: laranja. Botão B: azul. A fatia escura por cima mostra o
+    // cooldown restante e some quando a habilidade fica pronta de novo.
+    final cooldownColor = Colors.black.withAlpha(170);
+
+    final abilityButton1 = HudButtonComponent(
+      button: AbilityButtonVisual(
+        radius: 14,
+        baseColor: Palette.laranja.withAlpha(220),
+        cooldownColor: cooldownColor,
+        cooldownFraction: () => _runStarted ? player.ability1CooldownFraction : 0.0,
+      ),
+      buttonDown: AbilityButtonVisual(
+        radius: 14,
+        baseColor: Palette.laranja.withAlpha(140),
+        cooldownColor: cooldownColor,
+        cooldownFraction: () => _runStarted ? player.ability1CooldownFraction : 0.0,
+      ),
+      margin: const EdgeInsets.only(right: 20, bottom: 65),
+      // Segurar mantém disparando: o botão só marca "está sendo pressionado",
+      // quem decide a hora certa de atirar é o cooldown lá no Player.update().
+      onPressed: () {
+        if (_runStarted) player.touchHoldAbility1 = true;
+      },
+      onReleased: () {
+        if (_runStarted) player.touchHoldAbility1 = false;
+      },
+      onCancelled: () {
+        if (_runStarted) player.touchHoldAbility1 = false;
+      },
     );
 
-    // Adicionamos os joysticks DIRETAMENTE ao jogo, e não ao World.
-    // Isso garante que eles sejam tratados como HUD (Interface) e 
-    // não sofram o zoom/escala da resolução de 160x144.
-    add(moveJoystick);
-    add(aimJoystick);
+    final abilityButton2 = HudButtonComponent(
+      button: AbilityButtonVisual(
+        radius: 14,
+        baseColor: Palette.azul.withAlpha(220),
+        cooldownColor: cooldownColor,
+        cooldownFraction: () => _runStarted ? player.ability2CooldownFraction : 0.0,
+      ),
+      buttonDown: AbilityButtonVisual(
+        radius: 14,
+        baseColor: Palette.azul.withAlpha(140),
+        cooldownColor: cooldownColor,
+        cooldownFraction: () => _runStarted ? player.ability2CooldownFraction : 0.0,
+      ),
+      margin: const EdgeInsets.only(right: 65, bottom: 30),
+      onPressed: () {
+        if (_runStarted) player.touchHoldAbility2 = true;
+      },
+      onReleased: () {
+        if (_runStarted) player.touchHoldAbility2 = false;
+      },
+      onCancelled: () {
+        if (_runStarted) player.touchHoldAbility2 = false;
+      },
+    );
+
+    add(abilityButton1);
+    add(abilityButton2);
   }
 
   @override
@@ -262,10 +347,20 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
     // 2. Reseta a vida, posição e bombas do jogador
     player.currentHealth = player.maxHealth;
     player.bombsAmount = 3;
-    player.position = Vector2(size.x / 2, size.y / 2); // Coloca no centro
-    
+
+    // Centro da SALA inicial (não do canvas): a câmera tem resolução fixa
+    // do tamanho da sala, então esse ponto é o meio da tela.
+    final startRoomCenter = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
+    player.position = startRoomCenter;
+    player.velocity.setZero();
+    player.naoMove = false;
+
+    currentRoomIndex = Vector2.zero();
+    gameCamera.viewfinder.position = startRoomCenter;
+    freezeTmr = 0;
+
     // 3. E garante que o jogo fique parado de novo na tela inicial
-    pauseEngine(); 
+    pauseEngine();
   }
 
   void _checkCameraTransition() {

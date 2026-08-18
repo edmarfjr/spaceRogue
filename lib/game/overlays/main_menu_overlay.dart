@@ -24,10 +24,10 @@ class MainMenuOverlay extends StatelessWidget {
                 backgroundColor: Colors.redAccent,
               ),
               onPressed: () {
-                // Remove o menu, adiciona o HUD de pause e despausa o motor
+                // Leva pro seletor de criaturas. A run só começa de fato
+                // (e o motor só despausa) quando uma criatura é escolhida.
                 game.overlays.remove('MainMenu');
-                game.overlays.add('Hud');
-                game.resumeEngine();
+                game.overlays.add('CreatureSelect');
               },
               child: const Text('JOGAR', style: TextStyle(fontSize: 24, color: Colors.white)),
             ),

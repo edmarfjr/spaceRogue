@@ -3,8 +3,11 @@ import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
 import 'package:spacerogue/game/components/core/palette.dart';
+import 'package:spacerogue/game/components/creatures/creature_data.dart';
+import 'package:spacerogue/game/components/effects/movement_animator.dart';
 import 'package:spacerogue/game/components/effects/sprite_effect.dart';
 import 'package:spacerogue/game/components/map/obstacle.dart';
+import 'package:spacerogue/game/components/map/room_component.dart';
 import 'package:spacerogue/game/components/map/wall_barrier.dart';
 import 'package:spacerogue/game/components/projeteis/projectile.dart';
 import '../player/player.dart';
@@ -29,20 +32,47 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   late RectangleHitbox enemyHitbox;
   late RectangleHitbox physicsHitbox;
 
+  /// A criatura que este inimigo é. Quando passada, fornece sprite, cores,
+  /// hitbox e estilo de animação — a subclasse só precisa codificar
+  /// COMPORTAMENTO. Stats (speed/health/dmg) continuam tunados à mão por
+  /// classe, usando `creature.stats` apenas como referência de projeto.
+  final CreatureData? creature;
+
   final String spritePath;
-  final SpriteAnimationData animationData;
 
   late Vector2 _previousPosition;
-  late final SpriteAnimationComponent visual;
+  late final SpriteComponent visual;
+  late final Vector2 _visualBasePosition;
   bool isAirborne;
+
+  /// Estilo de animação de movimento (ver MovementAnimator). Null = inimigo
+  /// sem animação genérica de movimento — ou porque o próprio mecanismo de
+  /// movimento já é a animação (ex.: JumpMovement, que pula de verdade), ou
+  /// porque ele nunca se move (ex.: boneco de treino).
+  final MovementAnimation? moveAnim;
+  MovementAnimator? _moveAnimator;
+
+  /// Se false, o inimigo não é empurrado por outros inimigos (planta, torreta...)
+  bool isPushable;
 
   Vector2 knockbackVelocity = Vector2.zero();
 
+  /// Gancho usado por habilidades de controle de grupo (ex.: Corrente
+  /// Estática). Enquanto > 0, o inimigo não chama `movimento`.
+  double stunTimer = 0.0;
+
+  /// Gancho de guarda defensiva (ex.: casco fechado da tartaruga). Neutro por
+  /// padrão: 0.0 não muda nada. Lido em `takeDamage`.
+  double damageReduction = 0.0;
+
   Enemy({
-    required Vector2 position, 
+    required Vector2 position,
     required this.playerTarget,
-    required this.spritePath,
-    required this.animationData,
+    this.creature,
+    String? spritePath,
+    Color? corClara,
+    Color? corEscura,
+    MovementAnimation? moveAnim,
     this.speed = 30.0,
     this.health = 1,
     this.dmg = 1,
@@ -51,21 +81,24 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     this.bltCor1 = Palette.vermelho,
     this.bltCor2 = Palette.laranja,
     this.bltImg = 'projeteis/tiro2.png',
-    this.corClara = Palette.cinza, 
-    this.corEscura = Palette.cinzaEsc,
+    this.isPushable = true,
     this.corBranco = Palette.branco,
-    Vector2? size, 
+    Vector2? size,
     Vector2? hitboxSize,
     Vector2? shadowOffset,
-  }) : super(
-         position: position, 
+  }) : spritePath = spritePath ?? creature?.spritePath ?? 'actors/dummy.png',
+       corClara = corClara ?? creature?.corClara ?? Palette.cinza,
+       corEscura = corEscura ?? creature?.corEscura ?? Palette.cinzaEsc,
+       moveAnim = moveAnim ?? creature?.moveAnim,
+       super(
+         position: position,
          size: size ?? Vector2(16, 16), // Tamanho VISUAL padrão
          anchor: Anchor.center,
        ) {
     _previousPosition = position.clone();
-    
-    // Se não passar um tamanho de hitbox, ele assume que é igual ao tamanho visual
-    this.hitboxSize = hitboxSize ?? (size ?? Vector2(16, 16));
+
+    // Hitbox: explícita > da criatura > tamanho visual.
+    this.hitboxSize = hitboxSize ?? creature?.hitboxSize ?? (size ?? Vector2(16, 16));
     this.shadowOffset = shadowOffset ?? Vector2.zero();
   }
 
@@ -78,12 +111,16 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
       whiteReplacement: corBranco,
     );
 
-    final anim = SpriteAnimation.fromFrameData(enemyImage, animationData);
+    _visualBasePosition = size / 2;
+    final anim = moveAnim;
+    if (anim != null) _moveAnimator = MovementAnimator(anim);
 
-    visual = SpriteAnimationComponent(
-      animation: anim,
+    visual = SpriteComponent(
+      sprite: Sprite(enemyImage),
       size: size,
-      paint: Paint()..filterQuality = FilterQuality.none, 
+      anchor: Anchor.center,
+      position: _visualBasePosition.clone(),
+      paint: Paint()..filterQuality = FilterQuality.none,
     );
     add(visual);
     enemyHitbox = RectangleHitbox(
@@ -131,15 +168,72 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
       }
       return; // Pula o método de movimento, o inimigo não "pensa" enquanto voa pra trás
     }
-    
-    movimento(dt); 
+
+    if (stunTimer > 0) {
+      stunTimer -= dt;
+      return; // Atordoado: também não "pensa"
+    }
+
+    movimento(dt);
   }
 
   void movimento(double dt);
 
-  void shoot(Vector2 direction) {
+  /// Toca a animação de movimento genérica (se a criatura tiver uma —
+  /// ver [moveAnim]). Mixins de movimento contínuo (WanderMovement,
+  /// ChaseMovement) chamam isso a cada frame com o estado atual.
+  void animateMovement(double dt, {required bool isMoving, double horizontalDir = 0.0}) {
+    _moveAnimator?.update(
+      visual: visual,
+      basePosition: _visualBasePosition,
+      isMoving: isMoving,
+      horizontalDir: horizontalDir,
+      dt: dt,
+    );
+  }
+
+  RoomComponent? _cachedRoom;
+
+  /// A sala onde este inimigo está.
+  ///
+  /// Necessário porque o inimigo é filho do World, enquanto as paredes
+  /// (WallBarrier) e os obstáculos (Rock/Hole/Door) são filhos da
+  /// RoomComponent — ou seja, NETOS do World. Varrer `parent!.children`
+  /// nunca encontra parede nenhuma.
+  RoomComponent? get currentRoom {
+    final center = Offset(absolutePosition.x, absolutePosition.y);
+
+    final cached = _cachedRoom;
+    if (cached != null && cached.isMounted && cached.toAbsoluteRect().contains(center)) {
+      return cached;
+    }
+
+    final p = parent;
+    if (p == null) return null;
+
+    for (final room in p.children.whereType<RoomComponent>()) {
+      if (room.toAbsoluteRect().contains(center)) {
+        _cachedRoom = room;
+        return room;
+      }
+    }
+
+    _cachedRoom = null;
+    return null;
+  }
+
+  /// Todos os corpos sólidos da sala atual (paredes, pedras, buracos, portas).
+  Iterable<PositionComponent> get roomColliders {
+    final room = currentRoom;
+    if (room == null) return const [];
+    return room.children
+        .whereType<PositionComponent>()
+        .where((c) => c is WallBarrier || c is Obstacle);
+  }
+
+  void shoot(Vector2 direction, {double? lifeTime}) {
     parent?.add(Projectile(
-      position: position.clone() + direction*size.x/2, 
+      position: position.clone() + direction*size.x/2,
       direction: direction,
       isEnemy: true,
       speed: bltSpeed,
@@ -147,11 +241,16 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
       sprPath: bltImg,
       cor1: bltCor1,
       cor2: bltCor2,
+      lifeTime: lifeTime,
     ));
   }
 
   void takeDamage(double amount) {
-    health -= amount; 
+    // Guarda defensiva ativa (casco fechado) reduz o dano recebido.
+    double amountFinal = amount * (1 - damageReduction);
+    if (amountFinal < 0) amountFinal = 0;
+
+    health -= amountFinal;
     if (health <= 0) {
       death();
     }
@@ -204,6 +303,9 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     
     // --- Lógica de Flocking (esbarrão entre inimigos) ---
     if (other is Enemy) {
+      // Inimigos fixos (planta) não saem do lugar; o OUTRO inimigo se desvia
+      if (!isPushable) return;
+
       Vector2 separationVector = absolutePosition - other.absolutePosition;
       if (separationVector.length > 0) {
         position += separationVector.normalized() * 0.5; 

@@ -5,14 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:spacerogue/game/components/core/dungeon_theme.dart';
 import 'package:spacerogue/game/components/core/palette.dart';
 import 'package:spacerogue/game/components/enemies/dummy_enemy.dart';
-import 'package:spacerogue/game/components/enemies/dung1/bat_shooter_enemy.dart';
-//import 'package:spacerogue/game/components/enemies/dung1/bat_enemy.dart';
-import 'package:spacerogue/game/components/enemies/dung1/slime_atira4dir_enemy.dart';
-//import 'package:spacerogue/game/components/enemies/dung1/slime_enemy.dart';
 import 'package:spacerogue/game/components/enemies/enemy.dart';
 import 'package:spacerogue/game/components/enemies/enemy_spawner.dart';
-//import 'package:spacerogue/game/components/enemies/dung1/fly_explode_enemy.dart';
-//import 'package:spacerogue/game/components/enemies/dung1/planta_shooter.dart';
 import 'package:spacerogue/game/components/items/power_up_item.dart';
 import 'package:spacerogue/game/components/map/door.dart';
 import 'package:spacerogue/game/components/map/pedestal.dart';
@@ -87,14 +81,6 @@ class RoomComponent extends PositionComponent with HasGameRef {
         playerTarget: player,
       );
       parent?.add(enemy);
-      //teste de inimigos
-/*
-      Enemy e = BatShooterEnemy(
-        position: Vector2(width / 2-32, height / 2 - 32),
-        playerTarget: player,
-      );
-      parent?.add(e);
-  */    
     }
   }
 

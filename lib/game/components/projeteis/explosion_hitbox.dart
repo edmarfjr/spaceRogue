@@ -8,20 +8,53 @@ import 'package:spacerogue/game/components/map/obstacle.dart';
 import 'package:spacerogue/game/components/player/player.dart';
 
 class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
-  double lifeTime = 0.2; 
+  double lifeTime = 0.2;
   int dmgPlr;
   int dmgEnemy;
 
+  /// Se true, além do dano, atordoa (zera a ação) os inimigos atingidos.
+  final bool isStun;
+  final double stunDuration;
+  final bool isEnemy;
+  final Color cor1;
+  final Color cor2;
+
+  /// Força de empurrão aplicada aos inimigos atingidos. 0 = não empurra.
+  final double knockback;
+
+  Paint paintV = Paint();
+  Paint paintB = Paint();
+
   final Set<PositionComponent> _hitEntities = {};
 
-  ExplosionHitbox({required Vector2 position, this.dmgPlr = 1, this.dmgEnemy = 1}) 
-      // Começamos a explosão um pouco menor (48x48) para ela ter espaço para crescer
-      : super(position: position, size: Vector2(48, 48), anchor: Anchor.center);
+  ExplosionHitbox({
+    required Vector2 position,
+    this.dmgPlr = 1,
+    this.dmgEnemy = 1,
+    this.isStun = false,
+    this.isEnemy = false,
+    this.stunDuration = 1.5,
+    this.knockback = 0.0,
+    this.cor1 = Palette.vermelho,
+    this.cor2 = Palette.branco,
+    Vector2? size,
+  })
+      : super(position: position, size: size ?? Vector2(32, 32), anchor: Anchor.center);
 
   @override
   Future<void> onLoad() async {
     // CORREÇÃO 1: isSolid = true garante que o interior do círculo também seja "sólido"
     add(CircleHitbox(isSolid: true, collisionType: CollisionType.active));
+
+    paintV = Paint()
+    ..color = cor1
+    ..style = PaintingStyle.stroke
+    ..filterQuality = FilterQuality.none;
+
+    paintB = Paint()
+    ..color = cor2
+    ..style = PaintingStyle.stroke
+    ..filterQuality = FilterQuality.none;
   }
 
   @override
@@ -35,17 +68,6 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
 
     if (lifeTime <= 0) removeFromParent();
   }
-
-  // Paints estáticos: antes eram 2 objetos novos por frame de explosão
-  static final Paint paintV = Paint()
-    ..color = Palette.vermelho
-    ..style = PaintingStyle.stroke
-    ..filterQuality = FilterQuality.none;
-
-  static final Paint paintB = Paint()
-    ..color = Palette.branco
-    ..style = PaintingStyle.stroke
-    ..filterQuality = FilterQuality.none;
 
   @override
   void render(Canvas canvas) {
@@ -63,11 +85,14 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
     _hitEntities.add(other);
 
     if (other is Rock) {
-      other.blowUp(); 
-    } else if (other is Enemy) { 
-      other.takeDamage(10); 
-    } else if (other is Player) {
-      other.takeDamage(1); 
+      other.blowUp();
+    } else if (other is Enemy) {
+      other.takeDamage(dmgEnemy.toDouble());
+      if (isStun) other.stunTimer = stunDuration;
+      if (knockback > 0) other.applyKnockback(absolutePosition, knockback);
+    } else if (other is Player && isEnemy) {
+      other.takeDamage(dmgPlr);
+      if (knockback > 0) other.applyKnockback(absolutePosition, knockback);
     }
   }
 }

@@ -25,7 +25,7 @@ class Hud extends PositionComponent with HasGameRef {
 
   final Vector2 heartSize = Vector2(16, 16); 
   final Vector2 bombIconSize = Vector2(16, 16); 
-  final double spacing = -1.0;
+  final double spacing = -13.0;
 
   Hud({required this.player}) : super(position: Vector2(2, 2));
 

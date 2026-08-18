@@ -1,0 +1,29 @@
+import 'package:flame/components.dart';
+import 'package:spacerogue/game/components/core/palette.dart';
+import 'package:spacerogue/game/components/creatures/ability.dart';
+import 'package:spacerogue/game/components/player/player.dart';
+import 'package:spacerogue/game/components/projeteis/projectile.dart';
+
+/// Tartaruga de Planta — botão A. Projétil lento e pesado, empurra bastante.
+class CuspeDeSemente extends Ability {
+  final double dano;
+  final double velocidade;
+  final double kbForce;
+
+  const CuspeDeSemente({this.dano = 4, this.velocidade = 90, this.kbForce = 260})
+      : super(nome: 'Cuspe de Semente', cooldown: 1.4);
+
+  @override
+  void execute(Player user, Vector2 dir) {
+    user.parent?.add(Projectile(
+      position: user.position.clone(),
+      direction: dir,
+      speed: velocidade,
+      dmg: dano,
+      kbForce: kbForce,
+      sprPath: 'projeteis/proj1.png',
+      cor1: Palette.verde,
+      cor2: Palette.verdeEsc,
+    ));
+  }
+}
