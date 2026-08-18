@@ -90,13 +90,14 @@ class MovementAnimator {
 
       case MovementAnimation.flutuar:
         // Nunca mexe em scale — o flip de fora chega intacto sozinho.
+        double floatOffSetY = -4;
         if (isMoving) {
-          visual.position.y = basePosition.y;
+          visual.position.y = basePosition.y + floatOffSetY;
           visual.angle = horizontalDir.clamp(-1.0, 1.0) * _floatBankAmount;
         } else {
           visual.angle = 0.0;
-          final bob = sin(_time * 2 * pi / _floatIdlePeriod);
-          visual.position.y = basePosition.y + bob * _floatIdleAmplitude;
+          final bob = sin(_time * 1 * pi / _floatIdlePeriod);
+          visual.position.y = basePosition.y + (bob * _floatIdleAmplitude) + floatOffSetY;
         }
         break;
     }

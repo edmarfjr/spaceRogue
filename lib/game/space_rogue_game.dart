@@ -394,7 +394,7 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
     if (transitioned) {
       player.naoMove = true;
       
-      double pushDistance = 32.0; 
+      double pushDistance = 40.0; 
 
       if (newRoomX > currentRoomIndex.x) {
         player.position.x += pushDistance;

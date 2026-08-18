@@ -75,6 +75,8 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   bool touchHoldAbility1 = false;
   bool touchHoldAbility2 = false;
 
+  bool isAirborne = false;
+
   void grantInvulnerability(double seconds) {
     if (seconds > _invulnerabilityTimer) _invulnerabilityTimer = seconds;
   }
@@ -112,6 +114,15 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     );
     add(visual);
 
+    Vector2 floatOffset = Vector2.zero();
+
+    if(creatureData.moveAnim == MovementAnimation.flutuar){
+      isAirborne = true;
+      floatOffset = Vector2(0,-4);
+    }else{
+      isAirborne = false;
+    }
+
     final ui.Image shieldImage = await PaletteSwapper.createSwappedImage(
       imagePath: 'projeteis/bolha.png',
       lightGrayReplacement: Palette.azul,
@@ -122,7 +133,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       sprite: Sprite(shieldImage),
       size: Vector2.all(24),
       anchor: Anchor.center,
-      position: size / 2,
+      position: size / 2 + floatOffset,
       paint: Paint()..filterQuality = FilterQuality.none,
       priority: 5,
     );
@@ -134,10 +145,10 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     playerHitbox = RectangleHitbox(
       size: hitboxSize,
       anchor: Anchor.bottomCenter,
-      position: _visualBasePosition,
+      position: _visualBasePosition + floatOffset,
       collisionType: CollisionType.active,
     );
-    //playerHitbox.debugMode = true;
+   
     add(playerHitbox);
 
     // --- 2. COLISOR DE FÍSICA (Metade da altura, fica nos pés) ---
@@ -161,6 +172,12 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     )..scale = Vector2(1.2, 0.75);
 
     add(shadow);
+
+    // playerHitbox.debugMode = true;
+    // physicsHitbox.debugMode = true;
+    // visual.debugMode = true;
+    // shieldVisual.debugMode = true;
+    // shadow.debugMode = true;
   }
 
   @override
@@ -358,7 +375,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     if (other is WallBarrier || other is Obstacle) {
 
       // MÁGICA AQUI: Só para de andar se bater os pés (sombra)!
-      if (!isPhysicsCollision(other)) return;
+      if (!isPhysicsCollision(other) || (isAirborne && other is Hole)) return;
 
       Vector2 collisionCenter = Vector2.zero();
       for (var point in intersectionPoints) {
