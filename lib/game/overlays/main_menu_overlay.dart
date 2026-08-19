@@ -14,7 +14,7 @@ class MainMenuOverlay extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              'SPACE ROGUE',
+              'CREATURES ROGUE',
               style: TextStyle(color: Colors.white, fontSize: 48, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 40),

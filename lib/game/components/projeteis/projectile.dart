@@ -34,6 +34,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
 
   /// Tempo de vida opcional, em segundos. Null = vive até colidir ou sair da tela.
   final double? lifeTime;
+  double lifeTimeIni = 10;
   double _age = 0;
 
   Projectile({
@@ -63,6 +64,8 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
 
   @override
   Future<void> onLoad() async {
+
+    lifeTimeIni = lifeTime ?? 10;
 
     final ui.Image img = await PaletteSwapper.createSwappedImage(
       imagePath: sprPath,
@@ -95,6 +98,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
           sprPath: sprPath,
           cor1: cor1,
           cor2: cor2,
+          isEnemy: isEnemy,
         ));
       }
     }
@@ -135,6 +139,10 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
 
     if (isEnemy) {
       if (other is Player) {
+        if(other.refleteProjetil){
+          refleteProjetil();
+          return;
+        }
         other.takeDamage(dmg.toInt());
         atravessa--;
         if(atravessa <= 0){
@@ -162,5 +170,19 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         } 
       }
     }
+  }
+
+  void refleteProjetil() {
+    parent?.add(Projectile(
+          position: position.clone(),
+          direction: direction.clone()*-1,
+          speed: speed,
+          dmg: dmg,
+          kbForce: kbForce,
+          lifeTime: lifeTimeIni,
+          sprPath: sprPath,
+          cor1: cor1,
+          cor2: cor2,
+        ));
   }
 }

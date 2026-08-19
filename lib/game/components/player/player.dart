@@ -66,6 +66,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   double damageReduction = 0.0;
   bool speedLocked = false;
   int shieldHits = 0;
+  bool refleteProjetil = false;
 
   double _cooldown1 = 0.0;
   double _cooldown2 = 0.0;

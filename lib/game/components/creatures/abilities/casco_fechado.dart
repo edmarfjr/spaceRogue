@@ -8,7 +8,7 @@ class CascoFechado extends Ability {
   final double reducaoDano;
   final double duracao;
 
-  const CascoFechado({this.reducaoDano = 0.85, this.duracao = 2.5})
+  const CascoFechado({this.reducaoDano = 1, this.duracao = 2.5})
       : super(nome: 'Casco Fechado', cooldown: 6.0);
 
   @override
@@ -16,12 +16,14 @@ class CascoFechado extends Ability {
     user.damageReduction = reducaoDano;
     user.speedLocked = true;
     user.shieldVisualActive = true;
+    user.refleteProjetil = true;
 
     Future.delayed(Duration(milliseconds: (duracao * 1000).round()), () {
       if (user.isMounted) {
         user.damageReduction = 0.0;
         user.speedLocked = false;
         user.shieldVisualActive = false;
+        user.refleteProjetil = false;
       }
     });
   }
