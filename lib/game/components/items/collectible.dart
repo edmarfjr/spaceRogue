@@ -2,8 +2,8 @@ import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/components/core/palette.dart';
-import 'package:spacerogue/game/components/utils/palette_swapper.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 
 import '../player/player.dart';
 

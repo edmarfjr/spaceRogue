@@ -3,13 +3,13 @@ import 'dart:ui' as ui;
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/components/enemies/enemy.dart';
-import 'package:spacerogue/game/components/player/player.dart';
-import 'package:spacerogue/game/components/projeteis/explosion_hitbox.dart';
-import 'package:spacerogue/game/components/core/palette.dart';
-import 'package:spacerogue/game/components/utils/palette_swapper.dart';
-import 'package:spacerogue/game/components/map/wall_barrier.dart';
-import 'package:spacerogue/game/components/map/obstacle.dart';
+import 'package:creatures_rogue/game/components/enemies/enemy.dart';
+import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
+import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
+import 'package:creatures_rogue/game/components/map/obstacle.dart';
 
 
 // 1. A BOMBA
@@ -19,6 +19,7 @@ class Bomb extends SpriteAnimationComponent with CollisionCallbacks, HasGameRef 
   final double friction = 80.0; // O quão rápido a bomba para de deslizar
   double acc = 100.0;
   Vector2 _previousPosition = Vector2.zero();
+  double dmg = 50;
 
   Bomb({required Vector2 position}) 
       : super(position: position, size: Vector2(16, 16), anchor: Anchor.center);
@@ -66,7 +67,7 @@ class Bomb extends SpriteAnimationComponent with CollisionCallbacks, HasGameRef 
 
   void _explode() {
     final currentWorld = parent; 
-    currentWorld?.add(ExplosionHitbox(position: position.clone(), dmgPlr: 2, dmgEnemy: 10));
+    currentWorld?.add(ExplosionHitbox(position: position.clone(), dmg: dmg));
     
     removeFromParent();
   }

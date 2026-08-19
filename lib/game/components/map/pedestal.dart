@@ -1,8 +1,8 @@
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
-import 'package:spacerogue/game/components/core/palette.dart';
-import 'package:spacerogue/game/components/items/power_up_item.dart';
-import 'package:spacerogue/game/components/map/obstacle.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/items/power_up_item.dart';
+import 'package:creatures_rogue/game/components/map/obstacle.dart';
 
 class PedestalComponent extends Obstacle {
   late final Sprite pedestalSprite;

@@ -1,25 +1,46 @@
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/overlays/console_overlay.dart';
-import 'package:spacerogue/game/overlays/creature_select_overlay.dart';
-import 'package:spacerogue/game/overlays/game_over_overlay.dart';
-import 'package:spacerogue/game/overlays/main_menu_overlay.dart';
-import 'package:spacerogue/game/overlays/pause_overlay.dart';
-import 'package:spacerogue/game/space_rogue_game.dart';
+import 'package:flutter/services.dart';
+import 'package:creatures_rogue/game/overlays/console_overlay.dart';
+import 'package:creatures_rogue/game/overlays/creature_select_overlay.dart';
+import 'package:creatures_rogue/game/overlays/game_over_overlay.dart';
+import 'package:creatures_rogue/game/overlays/main_menu_overlay.dart';
+import 'package:creatures_rogue/game/overlays/pause_overlay.dart';
+import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 
+bool get isDesktopPlatform {
+  switch (defaultTargetPlatform) {
+    case TargetPlatform.macOS:
+    case TargetPlatform.windows:
+    case TargetPlatform.linux:
+      return true;
+    case TargetPlatform.android:
+    case TargetPlatform.iOS:
+    case TargetPlatform.fuchsia:
+      return false;
+  }
+}
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Flame.device.setLandscape();
   await Flame.device.fullScreen();
+
+  //if (!isDesktopPlatform) {
+    await SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeLeft,
+    ]);
+ // }
 
   runApp(
     MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         backgroundColor: const Color(0xFF2C2C2C),
-        body: GameWidget<SpacerogueGame>(
-          game: SpacerogueGame(), // Não precisa mais passar onGameOver no construtor
+        body: GameWidget<CreaturesRogueGame>(
+          game: CreaturesRogueGame(), // Não precisa mais passar onGameOver no construtor
           overlayBuilderMap: {
             'MainMenu': (context, game) => MainMenuOverlay(game: game),
             'CreatureSelect': (context, game) => CreatureSelectOverlay(game: game),

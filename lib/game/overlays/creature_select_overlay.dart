@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/components/creatures/creature_data.dart';
-import 'package:spacerogue/game/components/creatures/creature_registry.dart';
-import 'package:spacerogue/game/components/creatures/creature_type.dart';
-import 'package:spacerogue/game/space_rogue_game.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
+import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 
 class CreatureSelectOverlay extends StatelessWidget {
-  final SpacerogueGame game;
+  final CreaturesRogueGame game;
   const CreatureSelectOverlay({super.key, required this.game});
 
   static String _typeLabel(CreatureType tipo) {

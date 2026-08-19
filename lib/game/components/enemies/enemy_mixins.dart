@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 import 'package:flame/components.dart';
-import 'package:spacerogue/game/components/map/obstacle.dart';
+import 'package:creatures_rogue/game/components/map/obstacle.dart';
 import 'dart:math';
 import 'enemy.dart'; // Importe sua classe base
 
@@ -158,12 +158,36 @@ mixin ShooterAttack on Enemy {
   double attackDuration = 0.3;
   double fireTimer = 0.0;
 
-  void setupAttackAnimation({double duration = 0.3}) {
+  /// Aviso: o inimigo trava, a exclamação aparece, e só DEPOIS o ataque começa.
+  /// É essa fase que dá ao jogador tempo de sair da frente — sem ela o aviso
+  /// nasceria junto com o golpe e não avisaria nada.
+  bool isTelegraphing = false;
+  double telegraphTimer = 0.0;
+  double telegraphDuration = 0.5;
+
+  void setupAttackAnimation({double duration = 0.3, double telegraph = 0.5}) {
     attackDuration = duration;
+    telegraphDuration = telegraph;
   }
 
-  // Retorna 'true' enquanto estiver atacando (para bloquear o movimento)
+  // Retorna 'true' enquanto estiver avisando ou atacando (para bloquear o movimento)
   bool updateAttack(double dt, double fireRate, Function onShootCompleted) {
+    if (isTelegraphing) {
+      telegraphTimer += dt;
+
+      // Trava em escala neutra: o inimigo "para e se prepara". Ninguém mais
+      // escreve scale nesta fase, já que o movimento está bloqueado.
+      visual.scale = Vector2(visual.scale.x.isNegative ? -1.0 : 1.0, 1.0);
+
+      if (telegraphTimer >= telegraphDuration) {
+        isTelegraphing = false;
+        telegraphTimer = 0.0;
+        isAttacking = true;
+        attackTimer = 0.0;
+      }
+      return true;
+    }
+
     if (isAttacking) {
       attackTimer += dt;
 
@@ -195,10 +219,15 @@ mixin ShooterAttack on Enemy {
     return false;
   }
 
+  /// Não ataca agora: entra na fase de aviso. O tiro sai
+  /// `telegraphDuration + attackDuration` segundos depois daqui.
   void triggerAttack() {
-    isAttacking = true;
+    isTelegraphing = true;
+    telegraphTimer = 0.0;
     wantsToShoot = false;
     attackTimer = 0.0;
+
+    spawnAlerta(duracao: telegraphDuration);
   }
 }
 
@@ -281,6 +310,10 @@ mixin JumpMovement on Enemy {
         if (jumpTimer >= idleDuration) {
           jumpState = JumpState.preparing;
           jumpTimer = 0.0;
+
+          // Só avisa quando o pulo é um ataque de verdade (mirado no jogador).
+          // Reposicionamento aleatório (JumpMode.random) não merece exclamação.
+          if (mode == JumpMode.targetPlayer) spawnAlerta();
         }
         break;
 

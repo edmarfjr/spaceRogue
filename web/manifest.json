@@ -1,6 +1,6 @@
 {
-    "name": "spacerogue",
-    "short_name": "spacerogue",
+    "name": "Creatures Rogue",
+    "short_name": "Creatures Rogue",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flame/components.dart';
-import 'package:spacerogue/game/components/creatures/creature_data.dart';
-import 'package:spacerogue/game/components/creatures/creature_registry.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'enemy.dart';
 import '../player/player.dart';
 
@@ -20,9 +20,13 @@ class EnemySpawner {
   static final List<SpawnOption> _pool = [
     SpawnOption(CreatureRegistry.aveEletrica, 20),     // frágil, comum
     SpawnOption(CreatureRegistry.roedorFogo, 16),      // frágil, comum
+    SpawnOption(CreatureRegistry.griloEletrico, 14),   // frágil, comum
     SpawnOption(CreatureRegistry.sapoAgua, 12),        // médio
+    SpawnOption(CreatureRegistry.slimePlanta, 9),      // médio, suja a arena
     SpawnOption(CreatureRegistry.tartarugaPlanta, 8),  // tanque, menos comum
+    SpawnOption(CreatureRegistry.bombaFogo, 6),        // ameaça alta, raro
     SpawnOption(CreatureRegistry.cobraAgua, 5),        // ameaça alta, raro
+    SpawnOption(CreatureRegistry.tornadoFogo, 4),      // ameaça alta, muito raro
     SpawnOption(CreatureRegistry.ursoPlanta, 3),       // ameaça alta, muito raro
   ];
 

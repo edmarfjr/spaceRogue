@@ -1,8 +1,8 @@
 import 'package:flame/components.dart';
-import 'package:spacerogue/game/components/core/palette.dart';
-import 'package:spacerogue/game/components/creatures/ability.dart';
-import 'package:spacerogue/game/components/player/player.dart';
-import 'package:spacerogue/game/components/projeteis/projectile.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/creatures/ability.dart';
+import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
 /// Cobra de Água — botão A. Rajada curta de tiros em sequência, feito um
 /// jato de água martelando o alvo por um instante. Diferente do Jato d'Água

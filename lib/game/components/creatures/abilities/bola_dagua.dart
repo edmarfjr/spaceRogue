@@ -1,17 +1,17 @@
 import 'package:flame/components.dart';
-import 'package:spacerogue/game/components/core/palette.dart';
-import 'package:spacerogue/game/components/creatures/ability.dart';
-import 'package:spacerogue/game/components/player/player.dart';
-import 'package:spacerogue/game/components/projeteis/projectile.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/creatures/ability.dart';
+import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
 /// Sapo de Água — botão A. Projétil reto e rápido, sem truque: é a linha
 /// de base contra a qual as outras habilidades ofensivas são comparadas.
-class JatoDagua extends Ability {
+class BolaDagua extends Ability {
   final double dano;
   final double velocidade;
 
-  const JatoDagua({this.dano = 3, this.velocidade = 220})
-      : super(nome: "Jato d'Água", cooldown: 0.6);
+  const BolaDagua({this.dano = 3, this.velocidade = 220})
+      : super(nome: "Bola d'Água", cooldown: 0.6);
 
   @override
   void execute(Player user, Vector2 dir) {

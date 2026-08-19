@@ -1,8 +1,8 @@
 import 'package:flame/components.dart';
-import 'package:spacerogue/game/components/core/palette.dart';
-import 'package:spacerogue/game/components/creatures/ability.dart';
-import 'package:spacerogue/game/components/player/player.dart';
-import 'package:spacerogue/game/components/projeteis/explosion_hitbox.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/creatures/ability.dart';
+import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 
 /// Ave de Eletricidade — botão B. Área ao redor do próprio corpo: dano baixo
 /// mais atordoamento. É a habilidade de quebrar cerco de quem luta colado.
@@ -17,8 +17,7 @@ class CorrenteEstatica extends Ability {
   void execute(Player user, Vector2 dir) {
     user.parent?.add(ExplosionHitbox(
       position: user.position.clone(),
-      dmgPlr: 0,
-      dmgEnemy: dano.round(),
+      dmg: dano,
       isStun: true,
       stunDuration: duracaoStun,
       cor1: Palette.amarelo,

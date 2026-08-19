@@ -1,7 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
-//import 'package:spacerogue/game/components/core/palette.dart';
+//import 'package:creatures_rogue/game/components/core/palette.dart';
 import '../utils/palette_swapper.dart'; 
 
 class SpriteEffect extends SpriteAnimationComponent with HasGameRef {
@@ -10,7 +10,6 @@ class SpriteEffect extends SpriteAnimationComponent with HasGameRef {
   final Color corEscura;
   final Color corBranco;
   
-  final int frames;
   final double stepTime;
   final Vector2 textureSize;
 
@@ -20,8 +19,7 @@ class SpriteEffect extends SpriteAnimationComponent with HasGameRef {
     required this.corClara,
     required this.corEscura,
     required this.corBranco,
-    super.size, // O tamanho físico na tela (escala)
-    this.frames = 5, // Quantos quadros tem a sua animação de morte?
+    super.size, 
     this.stepTime = 0.1, // Velocidade da explosão
     Vector2? textureSize, // O tamanho do recorte na imagem original
   }) : 
@@ -37,6 +35,8 @@ class SpriteEffect extends SpriteAnimationComponent with HasGameRef {
       darkGrayReplacement: corEscura,
       whiteReplacement: corBranco,
     );
+
+    final int frames = swappedImage.width ~/ swappedImage.height;
 
     // 2. Carrega a animação
     animation = SpriteAnimation.fromFrameData(

@@ -1,0 +1,60 @@
+import 'package:flame/components.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
+import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
+import '../enemy.dart';
+import '../enemy_mixins.dart';
+
+/// Slime de Planta como inimigo: nunca persegue ninguém. Vagueia pela arena e
+/// vai largando poças de veneno no chão, que ficam lá machucando quem pisar.
+/// É o inimigo "o mapa piora se você demorar" — deixar vivo custa espaço.
+///
+/// A poça é um Projectile parado (speed 0) com `isEnemy: true`, mesmo truque
+/// do tornado da Esquiva Tornado. Sem ShooterAttack: a cadência é um timer
+/// simples, e `arrastar` precisa do visual.scale só pra si.
+class SlimePlantaEnemy extends Enemy with WanderMovement {
+  static const double _intervaloPoca = 2.2;
+  static const double _duracaoPoca = 5.0;
+  static const double _danoPoca = 2.0;
+  static const double _tamanhoPoca = 20.0;
+
+  double _pocaTimer = 0.0;
+
+  SlimePlantaEnemy({
+    required super.position,
+    required super.playerTarget,
+  }) : super(
+         creature: CreatureRegistry.slimePlanta,
+         speed: 26.0, // devagar: a ameaça é o rastro, não ele
+         health: 34,  // stats.defesa 3 → dá tempo de sujar bastante chão
+         dmg: 2,
+       );
+
+  @override
+  void movimento(double dt) {
+    updateWanderMovement(dt);
+
+    _pocaTimer += dt;
+    if (_pocaTimer >= _intervaloPoca) {
+      _pocaTimer = 0.0;
+      _largarPoca();
+    }
+  }
+
+  void _largarPoca() {
+    parent?.add(Projectile(
+      position: position.clone(),
+      direction: Vector2.zero(),
+      isEnemy: true, // sem isso a poça machuca inimigos em vez do jogador
+      speed: 0,
+      kbForce: 0,
+      dmg: _danoPoca,
+      sprPath: 'projeteis/bolaGrande.png',
+      cor1: CreatureRegistry.slimePlanta.corClara,
+      cor2: CreatureRegistry.slimePlanta.corEscura,
+      lifeTime: _duracaoPoca,
+      atravessa: 10, // aguenta várias pisadas antes de sumir
+      size: Vector2.all(_tamanhoPoca),
+      radius: _tamanhoPoca / 2,
+    ));
+  }
+}

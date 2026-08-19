@@ -1,8 +1,8 @@
 import 'package:flame/components.dart';
-import 'package:spacerogue/game/components/creatures/creature_registry.dart';
-import 'package:spacerogue/game/components/map/obstacle.dart';
-import 'package:spacerogue/game/components/map/wall_barrier.dart';
-import 'package:spacerogue/game/components/projeteis/explosion_hitbox.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
+import 'package:creatures_rogue/game/components/map/obstacle.dart';
+import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
+import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 import '../enemy.dart';
 import '../enemy_mixins.dart';
 
@@ -67,8 +67,7 @@ class CobraAguaEnemy extends Enemy with JumpMovement {
     parent?.add(ExplosionHitbox(
       position: position.clone(),
       isEnemy: true, // sem isso a explosão não machuca o jogador
-      dmgPlr: _danoImpacto,
-      dmgEnemy: 0,
+      dmg: _danoImpacto.toDouble(),
       knockback: _empurraoImpacto,
       size: Vector2(30, 30),
       cor1: CreatureRegistry.cobraAgua.corClara,

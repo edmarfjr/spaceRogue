@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/space_rogue_game.dart';
+import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 
 class HudOverlay extends StatelessWidget {
-  final SpacerogueGame game;
+  final CreaturesRogueGame game;
   const HudOverlay({super.key, required this.game});
 
   @override

@@ -1,6 +1,6 @@
 import 'package:flame/components.dart';
-import 'package:spacerogue/game/components/creatures/creature_registry.dart';
-import 'package:spacerogue/game/components/projeteis/explosion_hitbox.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
+import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 import '../enemy.dart';
 import '../enemy_mixins.dart';
 
@@ -75,8 +75,7 @@ class UrsoPlantaEnemy extends Enemy with ChaseMovement {
     parent?.add(ExplosionHitbox(
       position: position.clone(),
       isEnemy: true, // sem isso a explosão não machuca o jogador
-      dmgPlr: _danoPancada,
-      dmgEnemy: 0,
+      dmg: _danoPancada.toDouble(),
       knockback: _empurraoPancada,
       size: Vector2(34, 34),
       cor1: CreatureRegistry.ursoPlanta.corClara,

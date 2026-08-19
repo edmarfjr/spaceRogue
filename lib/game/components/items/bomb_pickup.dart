@@ -1,4 +1,4 @@
-import 'package:spacerogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'collectible.dart';
 import '../player/player.dart';
 

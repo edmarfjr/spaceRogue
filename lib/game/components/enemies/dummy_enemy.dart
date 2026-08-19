@@ -1,4 +1,4 @@
-import 'package:spacerogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'enemy.dart';
 
 class DummyEnemy extends Enemy {

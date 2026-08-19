@@ -1,7 +1,7 @@
 import 'package:flame/components.dart';
-import 'package:spacerogue/game/components/creatures/creature_registry.dart';
-import 'package:spacerogue/game/components/map/obstacle.dart';
-import 'package:spacerogue/game/components/map/wall_barrier.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
+import 'package:creatures_rogue/game/components/map/obstacle.dart';
+import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
 import '../enemy.dart';
 import '../enemy_mixins.dart';
 

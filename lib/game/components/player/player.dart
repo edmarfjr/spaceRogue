@@ -2,15 +2,16 @@ import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/collisions.dart';
-import 'package:spacerogue/game/components/core/palette.dart';
-import 'package:spacerogue/game/components/creatures/ability.dart';
-import 'package:spacerogue/game/components/creatures/creature_data.dart';
-import 'package:spacerogue/game/components/effects/movement_animator.dart';
-import 'package:spacerogue/game/components/enemies/enemy.dart';
-import 'package:spacerogue/game/components/map/room_component.dart';
-import 'package:spacerogue/game/components/map/wall_barrier.dart';
-import 'package:spacerogue/game/components/projeteis/bomb.dart';
-import 'package:spacerogue/game/components/utils/palette_swapper.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/creatures/ability.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
+import 'package:creatures_rogue/game/components/effects/movement_animator.dart';
+import 'package:creatures_rogue/game/components/effects/text_effect.dart';
+import 'package:creatures_rogue/game/components/enemies/enemy.dart';
+import 'package:creatures_rogue/game/components/map/room_component.dart';
+import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
+import 'package:creatures_rogue/game/components/projeteis/bomb.dart';
+import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:flutter/services.dart';
 import '../map/obstacle.dart';
 
@@ -76,6 +77,75 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   bool touchHoldAbility2 = false;
 
   bool isAirborne = false;
+
+  // --- Salto genérico (ex.: Jogada de Corpo) — mesma curva visual do
+  // JumpMovement dos inimigos: sobe em arco e estica no ar. Enquanto
+  // pulando, substitui o controle normal e o MovementAnimator (os dois
+  // escrevem visual.position.y/scale, e disputariam o mesmo canal).
+  bool _pulando = false;
+  double _puloTimer = 0.0;
+  double _puloDuracao = 0.3;
+  double _puloAltura = 16.0;
+  Vector2 _puloDirecao = Vector2.zero();
+  double _puloVelocidade = 0.0;
+  VoidCallback? _puloAoAterrissar;
+
+  /// Salta na direção [direction], percorrendo [distance] px ao longo de
+  /// [duration]s. Com [direction] zero (sem mira/movimento), pula no lugar
+  /// — mesma curva de altura, sem deslocamento horizontal. [onLand] roda no
+  /// frame em que os pés tocam o chão.
+  void startJump({
+    required Vector2 direction,
+    required double distance,
+    required double duration,
+    double height = 16.0,
+    VoidCallback? onLand,
+  }) {
+    _pulando = true;
+    _puloTimer = 0.0;
+    _puloDuracao = duration;
+    _puloAltura = height;
+    _puloAoAterrissar = onLand;
+    velocity.setZero();
+
+    if (direction.length == 0) {
+      // Pulo vertical: sobe e desce no lugar, mantendo a direção que já
+      // estava olhando.
+      _puloDirecao = Vector2.zero();
+      _puloVelocidade = 0.0;
+      return;
+    }
+
+    _puloDirecao = direction.normalized();
+    _puloVelocidade = distance / duration;
+
+    if (_puloDirecao.x < 0 && !visual.isFlippedHorizontally) {
+      visual.flipHorizontallyAroundCenter();
+    } else if (_puloDirecao.x > 0 && visual.isFlippedHorizontally) {
+      visual.flipHorizontallyAroundCenter();
+    }
+  }
+
+  void _updateJump(double dt) {
+    _puloTimer += dt;
+    position += _puloDirecao * _puloVelocidade * dt;
+
+    final progress = (_puloTimer / _puloDuracao).clamp(0.0, 1.0);
+    final zOffset = 4 * _puloAltura * progress * (1 - progress);
+    visual.position.y = _visualBasePosition.y - zOffset;
+
+    final flip = visual.scale.x.isNegative ? -1.0 : 1.0;
+    visual.scale = Vector2(0.9 * flip, 1.1); // estica no ar, igual ao inimigo
+
+    if (_puloTimer >= _puloDuracao) {
+      _pulando = false;
+      visual.position.y = _visualBasePosition.y;
+      visual.scale = Vector2(flip, 1.0);
+      final aoAterrissar = _puloAoAterrissar;
+      _puloAoAterrissar = null;
+      aoAterrissar?.call();
+    }
+  }
 
   void grantInvulnerability(double seconds) {
     if (seconds > _invulnerabilityTimer) _invulnerabilityTimer = seconds;
@@ -222,15 +292,19 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     if (_keyboardHoldAbility1 || touchHoldAbility1) useAbility1();
     if (_keyboardHoldAbility2 || touchHoldAbility2) useAbility2();
 
-    _updateMovement(dt, moveDelta);
+    if (_pulando) {
+      _updateJump(dt);
+    } else {
+      _updateMovement(dt, moveDelta);
 
-    _moveAnimator.update(
-      visual: visual,
-      basePosition: _visualBasePosition,
-      isMoving: !velocity.isZero(),
-      horizontalDir: velocity.isZero() ? 0.0 : velocity.normalized().x,
-      dt: dt,
-    );
+      _moveAnimator.update(
+        visual: visual,
+        basePosition: _visualBasePosition,
+        isMoving: !velocity.isZero(),
+        horizontalDir: velocity.isZero() ? 0.0 : velocity.normalized().x,
+        dt: dt,
+      );
+    }
   }
 
   /// Sala onde o player está agora (mesma lógica usada por `Enemy.currentRoom`).
@@ -408,6 +482,12 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     int amountFinal = (amount * (1 - damageReduction)).ceil();
     if (amountFinal < 1) amountFinal = 1;
 
+    parent?.add(TextEffect.dano(
+      amountFinal,
+      position: position.clone() + Vector2(0, -size.y / 2 - 4),
+      color: Palette.vermelho,
+    ));
+
     currentHealth -= amountFinal;
     _invulnerabilityTimer = _invulnerabilityDuration;
 
@@ -416,13 +496,13 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     }
   }
 
-  void _placeBomb() {
-    if (bombsAmount > 0) {
-      bombsAmount--;
-      parent?.add(Bomb(position: position.clone()+(lockedAb1Direction.clone()*17)));
-    } else {
-      print("Sem bombas!");
-    }
+  void placeBomb(Vector2 dir) {
+    //if (bombsAmount > 0) {
+    //  bombsAmount--;
+      parent?.add(Bomb(position: position.clone()+(dir*17)));
+    //} else {
+    //  print("Sem bombas!");
+    //}
   }
 
   @override
@@ -436,9 +516,9 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     _keyboardHoldAbility1 = keysPressed.contains(LogicalKeyboardKey.keyZ);
     _keyboardHoldAbility2 = keysPressed.contains(LogicalKeyboardKey.keyX);
 
-    if (event is KeyDownEvent) {
-      if (event.logicalKey == LogicalKeyboardKey.space) _placeBomb();
-    }
+   // if (event is KeyDownEvent) {
+   //   if (event.logicalKey == LogicalKeyboardKey.space) _placeBomb();
+   // }
 
     return super.onKeyEvent(event, keysPressed);
   }

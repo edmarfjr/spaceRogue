@@ -1,6 +1,6 @@
 import 'package:flame/components.dart';
-import 'package:spacerogue/game/components/creatures/ability.dart';
-import 'package:spacerogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability.dart';
+import 'package:creatures_rogue/game/components/player/player.dart';
 
 /// Tartaruga de Planta — botão B. Reduz dano recebido em troca de ficar parada.
 /// Trocar mobilidade por sobrevivência é a decisão que define a criatura.

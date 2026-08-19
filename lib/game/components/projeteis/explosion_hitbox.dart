@@ -2,15 +2,14 @@ import 'dart:ui';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/components/core/palette.dart';
-import 'package:spacerogue/game/components/enemies/enemy.dart'; // Mude para base_enemy se refatorou
-import 'package:spacerogue/game/components/map/obstacle.dart';
-import 'package:spacerogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/enemies/enemy.dart'; // Mude para base_enemy se refatorou
+import 'package:creatures_rogue/game/components/map/obstacle.dart';
+import 'package:creatures_rogue/game/components/player/player.dart';
 
 class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
   double lifeTime = 0.2;
-  int dmgPlr;
-  int dmgEnemy;
+  double dmg;
 
   /// Se true, além do dano, atordoa (zera a ação) os inimigos atingidos.
   final bool isStun;
@@ -29,8 +28,7 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
 
   ExplosionHitbox({
     required Vector2 position,
-    this.dmgPlr = 1,
-    this.dmgEnemy = 1,
+    this.dmg = 1,
     this.isStun = false,
     this.isEnemy = false,
     this.stunDuration = 1.5,
@@ -86,12 +84,12 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
 
     if (other is Rock) {
       other.blowUp();
-    } else if (other is Enemy) {
-      other.takeDamage(dmgEnemy.toDouble());
+    } else if (other is Enemy && !isEnemy) {
+      other.takeDamage(dmg);
       if (isStun) other.stunTimer = stunDuration;
       if (knockback > 0) other.applyKnockback(absolutePosition, knockback);
     } else if (other is Player && isEnemy) {
-      other.takeDamage(dmgPlr);
+      other.takeDamage(dmg.toInt());
       if (knockback > 0) other.applyKnockback(absolutePosition, knockback);
     }
   }

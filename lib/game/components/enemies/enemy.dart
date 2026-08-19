@@ -2,14 +2,15 @@ import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/components/core/palette.dart';
-import 'package:spacerogue/game/components/creatures/creature_data.dart';
-import 'package:spacerogue/game/components/effects/movement_animator.dart';
-import 'package:spacerogue/game/components/effects/sprite_effect.dart';
-import 'package:spacerogue/game/components/map/obstacle.dart';
-import 'package:spacerogue/game/components/map/room_component.dart';
-import 'package:spacerogue/game/components/map/wall_barrier.dart';
-import 'package:spacerogue/game/components/projeteis/projectile.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
+import 'package:creatures_rogue/game/components/effects/movement_animator.dart';
+import 'package:creatures_rogue/game/components/effects/sprite_effect.dart';
+import 'package:creatures_rogue/game/components/effects/text_effect.dart';
+import 'package:creatures_rogue/game/components/map/obstacle.dart';
+import 'package:creatures_rogue/game/components/map/room_component.dart';
+import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
+import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 import '../player/player.dart';
 import '../utils/palette_swapper.dart'; 
 
@@ -64,6 +65,10 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   /// Gancho de guarda defensiva (ex.: casco fechado da tartaruga). Neutro por
   /// padrão: 0.0 não muda nada. Lido em `takeDamage`.
   double damageReduction = 0.0;
+
+  int poisonCount = 0;
+  double poisonTimer = 0.0;
+  double poisonDur = 1.0;
 
   Enemy({
     required Vector2 position,
@@ -175,6 +180,23 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     }
 
     movimento(dt);
+    updateCondicoes(dt);
+  }
+
+  void applyPoison(int count){
+    poisonCount = count;
+    poisonTimer = poisonDur;
+  }
+
+  void updateCondicoes(double dt) {
+    if (poisonCount > 0){
+      poisonTimer -= dt;
+      if (poisonTimer <= 0){
+        poisonCount--;
+        poisonTimer = poisonDur;
+        takeDamage(2, corTxt: Palette.verde);
+      }
+    }
   }
 
   void movimento(double dt);
@@ -245,10 +267,16 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     ));
   }
 
-  void takeDamage(double amount) {
+  void takeDamage(double amount,{Color corTxt = Palette.amarelo}) {
     // Guarda defensiva ativa (casco fechado) reduz o dano recebido.
     double amountFinal = amount * (1 - damageReduction);
     if (amountFinal < 0) amountFinal = 0;
+
+    parent?.add(TextEffect.dano(
+      amountFinal,
+      position: position.clone() + Vector2(0, -size.y / 2 - 4),
+      color: corTxt,
+    ));
 
     health -= amountFinal;
     if (health <= 0) {
@@ -256,16 +284,28 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     }
   }
 
+  void spawnAlerta({double duracao = 0.5}) {
+    final effect = SpriteEffect(
+      position: position.clone() - Vector2(0, size.y), 
+      size: Vector2(16, 16), 
+      corClara: Palette.indigo,
+      corEscura: Palette.vermelho,
+      corBranco: Palette.branco,
+      spritePath: 'effects/exclamacao.png', 
+      textureSize: Vector2(16, 16), 
+      stepTime: duracao
+    );
+    parent?.add(effect);
+  }
+
   void death() {
     final effect = SpriteEffect(
       position: position.clone(), 
-      size: size.clone(), 
+      size: Vector2(16, 16), 
       corClara: Palette.indigo,
       corEscura: Palette.cinzaEsc,
       corBranco: Palette.branco,
-      
       spritePath: 'effects/enemy_death.png', 
-      frames: 7, 
       textureSize: Vector2(16, 16), 
     );
     parent?.add(effect);

@@ -1,6 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
 import '../map/dungeon_generator.dart';
 
 class MinimapHud extends PositionComponent with HasGameRef {

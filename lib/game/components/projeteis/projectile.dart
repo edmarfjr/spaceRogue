@@ -1,14 +1,16 @@
+import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/components/core/palette.dart';
-import 'package:spacerogue/game/components/enemies/enemy.dart';
-import 'package:spacerogue/game/components/map/obstacle.dart';
-import 'package:spacerogue/game/components/map/wall_barrier.dart';
-import 'package:spacerogue/game/components/player/player.dart';
-import 'package:spacerogue/game/components/utils/palette_swapper.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/enemies/enemy.dart';
+import 'package:creatures_rogue/game/components/map/obstacle.dart';
+import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
+import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
+import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 
 class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGameRef {
   final Vector2 direction;
@@ -19,6 +21,16 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   Color cor2;
   double dmg;
   double kbForce;
+  int fragmentos;
+  double explosionSize;
+  double radius;
+  int atravessa;
+  bool isPoison;
+  int poisonCount;
+  bool atravessaObstaculos;
+
+  Map<PositionComponent,double> hits = {};
+  final double hitCooldown = 0.3;
 
   /// Tempo de vida opcional, em segundos. Null = vive até colidir ou sair da tela.
   final double? lifeTime;
@@ -35,10 +47,17 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     this.cor2 = Palette.verdeEsc,
     this.dmg = 1,
     this.lifeTime,
+    this.fragmentos = 0,
+    this.explosionSize = 0,
+    this.radius = 5,
+    this.atravessa = 1,
+    this.isPoison = false,
+    this.poisonCount = 1,
+    this.atravessaObstaculos = false,
     Vector2? size, 
     }): super(
       position: position, 
-      size: size ?? Vector2(10, 10),
+      size: size ?? Vector2(16, 16),
       anchor: Anchor.center
     );
 
@@ -52,12 +71,41 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     );
     animation = SpriteAnimation.fromFrameData(
       img,
-      SpriteAnimationData.sequenced(amount: 1, stepTime: 0.2, textureSize: Vector2(16, 16)),
+      SpriteAnimationData.sequenced(amount: (img.width/img.height).toInt(), stepTime: 0.2, textureSize: Vector2(16, 16)),
     );
 
     paint = Paint()..filterQuality = FilterQuality.none;
     angle = direction.screenAngle();
-    add(CircleHitbox(collisionType: CollisionType.active));
+    add(CircleHitbox(collisionType: CollisionType.active,radius: radius,anchor: Anchor.center,position: size/2));
+    //debugMode = true;
+  }
+
+  void onDestroy(){
+    if(fragmentos > 0){
+      for (int i = 0; i < fragmentos; i++) {
+        double angle = Random().nextDouble() * 2 * pi;
+        Vector2 dir = Vector2(cos(angle), sin(angle));
+        parent?.add(Projectile(
+          position: position.clone(),
+          direction: dir,
+          speed: speed,
+          dmg: dmg,
+          kbForce: kbForce,
+          lifeTime: lifeTime,
+          sprPath: sprPath,
+          cor1: cor1,
+          cor2: cor2,
+        ));
+      }
+    }
+    if(explosionSize > 0){
+      parent?.add(ExplosionHitbox(
+        position: position.clone(),
+        size:Vector2(explosionSize, explosionSize)
+      ));
+    }
+
+    removeFromParent();
   }
 
   @override
@@ -65,9 +113,14 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     super.update(dt);
     position += direction * speed * dt;
 
+    if (hits.isNotEmpty) {
+      hits.updateAll((enemy, timeRestante) => timeRestante - dt);
+      hits.removeWhere((enemy, timeRestante) => timeRestante <= 0);
+    }
+
     if (lifeTime != null) {
       _age += dt;
-      if (_age >= lifeTime!) removeFromParent();
+      if (_age >= lifeTime!) onDestroy();
     }
   }
 
@@ -75,24 +128,38 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollisionStart(intersectionPoints, other);
     
-    if (other is WallBarrier || other is Rock) {
-      removeFromParent();
+    if ((other is WallBarrier || other is Rock) && !atravessaObstaculos) {
+      onDestroy();
       return; 
     }
 
     if (isEnemy) {
       if (other is Player) {
-        other.takeDamage(dmg.toInt()); 
-        removeFromParent();
+        other.takeDamage(dmg.toInt());
+        atravessa--;
+        if(atravessa <= 0){
+          onDestroy();
+        } 
       }
     } else {
       if (other is Enemy) {
+        if (hits.containsKey(other)) {
+          return; // Bala fantasma, ignora a colisão e continua voando!
+        }
         if (!other.enemyHitbox.toAbsoluteRect().overlaps(toAbsoluteRect())) {
           return; // Bala passa reto!
         }
+        hits[other] = hitCooldown;
+        atravessa--;
+        if(isPoison){
+          other.applyPoison(poisonCount);
+        }
         other.takeDamage(dmg);
         other.applyKnockback(absolutePosition, kbForce);
-        removeFromParent();
+        
+        if(atravessa <= 0){
+          onDestroy();
+        } 
       }
     }
   }

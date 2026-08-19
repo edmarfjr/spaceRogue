@@ -1,11 +1,11 @@
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/space_rogue_game.dart';
+import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 
 import '../player/player.dart';
 
-class Stairs extends PositionComponent with CollisionCallbacks, HasGameRef<SpacerogueGame> {
+class Stairs extends PositionComponent with CollisionCallbacks, HasGameRef<CreaturesRogueGame> {
   late final Sprite sprite;
   final Paint _paint = Paint()..filterQuality = FilterQuality.none;
 

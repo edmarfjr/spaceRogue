@@ -3,10 +3,10 @@ import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/components/core/palette.dart';
-import 'package:spacerogue/game/components/items/heart_half_pickup.dart';
-import 'package:spacerogue/game/components/items/heart_pickup.dart';
-import 'package:spacerogue/game/components/utils/palette_swapper.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/items/heart_half_pickup.dart';
+import 'package:creatures_rogue/game/components/items/heart_pickup.dart';
+import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 
 abstract class Obstacle extends PositionComponent with HasGameRef {
   late final Sprite obstacleSprite;

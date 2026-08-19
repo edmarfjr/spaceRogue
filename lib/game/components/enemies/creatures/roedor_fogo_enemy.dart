@@ -1,8 +1,8 @@
 import 'dart:math';
 import 'package:flame/components.dart';
-import 'package:spacerogue/game/components/creatures/creature_registry.dart';
-import 'package:spacerogue/game/components/map/obstacle.dart';
-import 'package:spacerogue/game/components/map/wall_barrier.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
+import 'package:creatures_rogue/game/components/map/obstacle.dart';
+import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
 import '../enemy.dart';
 import '../enemy_mixins.dart';
 
@@ -55,7 +55,7 @@ class RoedorFogoEnemy extends Enemy with WanderMovement, ShooterAttack {
     final anguloRad = _anguloLequeGraus * pi / 180;
 
     for (final offset in [-anguloRad, 0.0, anguloRad]) {
-      shoot(base.clone()..rotate(offset));
+      shoot(base.clone()..rotate(offset),lifeTime: 0.5);
     }
   }
 

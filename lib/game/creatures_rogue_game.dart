@@ -7,18 +7,18 @@ import 'package:flutter/material.dart';
 //import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey, KeyDownEvent;
 import 'package:flame/input.dart';
-import 'package:spacerogue/game/components/UI/ability_button_visual.dart';
-import 'package:spacerogue/game/components/UI/hud.dart';
-import 'package:spacerogue/game/components/UI/minimap_hud.dart';
-//import 'package:spacerogue/game/components/enemies/enemy.dart';
-import 'package:spacerogue/game/components/creatures/creature_data.dart';
-import 'package:spacerogue/game/components/map/dungeon_generator.dart';
-import 'package:spacerogue/game/components/map/room_component.dart';
-import 'package:spacerogue/game/components/core/palette.dart';
-import 'package:spacerogue/game/components/utils/palette_swapper.dart';
+import 'package:creatures_rogue/game/components/UI/ability_button_visual.dart';
+import 'package:creatures_rogue/game/components/UI/hud.dart';
+import 'package:creatures_rogue/game/components/UI/minimap_hud.dart';
+//import 'package:creatures_rogue/game/components/enemies/enemy.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
+import 'package:creatures_rogue/game/components/map/dungeon_generator.dart';
+import 'package:creatures_rogue/game/components/map/room_component.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'components/player/player.dart';
 
-class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHandlerComponents {
+class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHandlerComponents {
   // O Mundo onde o mapa, inimigos e jogador existirão
   late final World dungeonWorld;
   
@@ -51,7 +51,7 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
   double freezeTmr = 0;
   double freezeTime = 0.5;
 
-  SpacerogueGame({this.onGameOver});
+  CreaturesRogueGame({this.onGameOver});
 
   @override
   Future<void> onLoad() async {
@@ -96,7 +96,7 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
 
     player = Player(moveJoystick: moveJoystick, creatureData: creature);
     _runStarted = true;
-    player.onDeath = onGameOver;
+    player.onDeath = _handleGameOver;
     player.position = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
     dungeonWorld.add(player);
 
@@ -241,13 +241,15 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
 
     final abilityButton1 = HudButtonComponent(
       button: AbilityButtonVisual(
-        radius: 14,
+        radius: 18,
+        text:'A',
         baseColor: Palette.laranja.withAlpha(220),
         cooldownColor: cooldownColor,
         cooldownFraction: () => _runStarted ? player.ability1CooldownFraction : 0.0,
       ),
       buttonDown: AbilityButtonVisual(
-        radius: 14,
+        radius: 18,
+        text:'A',
         baseColor: Palette.laranja.withAlpha(140),
         cooldownColor: cooldownColor,
         cooldownFraction: () => _runStarted ? player.ability1CooldownFraction : 0.0,
@@ -268,13 +270,15 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
 
     final abilityButton2 = HudButtonComponent(
       button: AbilityButtonVisual(
-        radius: 14,
+        radius: 18,
+        text:'B',
         baseColor: Palette.azul.withAlpha(220),
         cooldownColor: cooldownColor,
         cooldownFraction: () => _runStarted ? player.ability2CooldownFraction : 0.0,
       ),
       buttonDown: AbilityButtonVisual(
-        radius: 14,
+        radius: 18,
+        text:'B',
         baseColor: Palette.azul.withAlpha(140),
         cooldownColor: cooldownColor,
         cooldownFraction: () => _runStarted ? player.ability2CooldownFraction : 0.0,
@@ -339,28 +343,22 @@ class SpacerogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHa
     minimapHud.mapData = mapData;
   }
 
-  void resetGame() {
-    // 1. Você pode chamar a sua função de recriar a sala (aquela "Limpa e recria a fase!")
-    // _clearRoom();
-    // _generateNewRoom();
-    
-    // 2. Reseta a vida, posição e bombas do jogador
-    player.currentHealth = player.maxHealth;
-    player.bombsAmount = 3;
-
-    // Centro da SALA inicial (não do canvas): a câmera tem resolução fixa
-    // do tamanho da sala, então esse ponto é o meio da tela.
-    final startRoomCenter = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
-    player.position = startRoomCenter;
-    player.velocity.setZero();
-    player.naoMove = false;
-
-    currentRoomIndex = Vector2.zero();
-    gameCamera.viewfinder.position = startRoomCenter;
-    freezeTmr = 0;
-
-    // 3. E garante que o jogo fique parado de novo na tela inicial
+  /// Chamado pelo `Player.onDeath` quando a vida chega a zero. Congela o jogo
+  /// e troca a Hud pela tela de Game Over — as ações de RESTART/MENU dela já
+  /// esperam o motor pausado (ver comentário em game_over_overlay.dart).
+  void _handleGameOver() {
+    overlays.remove('Hud');
+    overlays.add('GameOver');
     pauseEngine();
+    onGameOver?.call();
+  }
+
+  /// Reseta a run inteira, não só o jogador: `startRun` já limpa todo mundo
+  /// (inimigos incluídos) e gera uma dungeon nova do zero, então reaproveita
+  /// ele em vez de tentar remendar o estado da run anterior.
+  void resetGame() {
+    freezeTmr = 0;
+    startRun(player.creatureData);
   }
 
   void _checkCameraTransition() {

@@ -1,8 +1,8 @@
 import 'package:flame/components.dart';
-import 'package:spacerogue/game/components/core/palette.dart';
-import 'package:spacerogue/game/components/creatures/ability.dart';
-import 'package:spacerogue/game/components/player/player.dart';
-import 'package:spacerogue/game/components/projeteis/projectile.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/creatures/ability.dart';
+import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
 /// Ave de Eletricidade — botão A. Cooldown baixíssimo, dano baixo, alcance
 /// curto. O DPS vem do volume de disparos, não do golpe individual.

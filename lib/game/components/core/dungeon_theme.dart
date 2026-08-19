@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:spacerogue/game/components/core/palette.dart'; 
+import 'package:creatures_rogue/game/components/core/palette.dart'; 
 
 class DungeonTheme {
   final Color corClara;

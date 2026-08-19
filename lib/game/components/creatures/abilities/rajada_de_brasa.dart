@@ -1,9 +1,9 @@
 import 'dart:math';
 import 'package:flame/components.dart';
-import 'package:spacerogue/game/components/core/palette.dart';
-import 'package:spacerogue/game/components/creatures/ability.dart';
-import 'package:spacerogue/game/components/player/player.dart';
-import 'package:spacerogue/game/components/projeteis/projectile.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/creatures/ability.dart';
+import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
 /// Roedor de Fogo — botão A. Três projéteis em leque, dano alto e perto.
 class RajadaDeBrasa extends Ability {
@@ -24,7 +24,7 @@ class RajadaDeBrasa extends Ability {
         direction: rotated,
         dmg: dano,
         lifeTime: alcanceSegundos,
-        sprPath: 'projeteis/fogo.png',
+        sprPath: 'projeteis/fogo2.png',
         cor1: Palette.vermelho,
         cor2: Palette.laranja,
       ));
