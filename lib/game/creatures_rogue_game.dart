@@ -3,11 +3,13 @@ import 'package:flame/effects.dart';
 import 'package:flame/game.dart';
 import 'package:flame/palette.dart';
 //import 'package:flutter/animation.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 //import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey, KeyDownEvent;
 import 'package:flame/input.dart';
 import 'package:creatures_rogue/game/components/UI/ability_button_visual.dart';
+import 'package:creatures_rogue/game/components/UI/dynamic_joystick_component.dart';
 import 'package:creatures_rogue/game/components/UI/hud.dart';
 import 'package:creatures_rogue/game/components/UI/minimap_hud.dart';
 //import 'package:creatures_rogue/game/components/enemies/enemy.dart';
@@ -27,7 +29,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
 
   // Joystick de movimento. Não há mais joystick de mira: a mira das
   // habilidades é sempre a última direção de movimento do jogador.
-  late final JoystickComponent moveJoystick;
+  late final DynamicJoystickComponent moveJoystick;
 
   late Player player;
   bool _runStarted = false;
@@ -214,18 +216,31 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     ]);
   }
 
+  /// Desktop usa mouse, não polegar: não precisa do piso de 48dp do Material.
+  /// Os controles ficam menores lá pra não dominar uma janela pequena.
+  bool get _isDesktop =>
+      defaultTargetPlatform == TargetPlatform.windows ||
+      defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.linux;
+
   void _setupJoysticks() {
     // Estilo do joystick
     final knobPaint = BasicPalette.lightGray.withAlpha(200).paint();
     final bgPaint = BasicPalette.black.withAlpha(100).paint();
 
+    final scale = _isDesktop ? 0.75 : 1.0;
+
     // Joystick Esquerdo (Movimento). A mira sumiu: a mira das habilidades
     // agora é sempre a última direção de movimento (ver Player.lockedFireDirection).
-    moveJoystick = JoystickComponent(
-      knob: CircleComponent(radius: 20, paint: knobPaint),
-      background: CircleComponent(radius: 50, paint: bgPaint),
-      // Posiciona no canto inferior esquerdo (na área fora da câmera de 160x144)
-      margin: const EdgeInsets.only(left: 40, bottom: 40),
+    //
+    // Flutuante: não fica fixo num canto — nasce onde o dedo toca, dentro da
+    // metade esquerda da tela (spawnAreaSize cobre só essa metade), e some
+    // ao soltar. Ver DynamicJoystickComponent pro porquê de não reaproveitar
+    // o JoystickComponent fixo do Flame aqui.
+    moveJoystick = DynamicJoystickComponent(
+      knob: CircleComponent(radius: 26 * scale, paint: knobPaint),
+      background: CircleComponent(radius: 60 * scale, paint: bgPaint),
+      spawnAreaSize: Vector2(size.x / 2, size.y),
     );
 
     // Adicionamos o joystick DIRETAMENTE ao jogo, e não ao World.
@@ -239,22 +254,35 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     // cooldown restante e some quando a habilidade fica pronta de novo.
     final cooldownColor = Colors.black.withAlpha(170);
 
+    // Raio 30 (60dp de diâmetro) é o piso de alvo de toque do Material —
+    // com 18 (36dp) o botão ficava menor que o mínimo recomendado.
+    final buttonRadius = (_isDesktop ? 22.0 : 30.0);
+
+    // Margens DERIVADAS do raio, não fixas: isso garante que os dois botões
+    // nunca se sobrepõem em X, não importa o valor de buttonRadius. B fica
+    // "gap" de distância à esquerda de A, sempre — ajustar só o raio nunca
+    // quebra esse espaçamento.
+    const double edgeMargin = 20;
+    const double gap = 10;
+    final double marginRightA = edgeMargin;
+    final double marginRightB = edgeMargin + buttonRadius * 2 + gap;
+
     final abilityButton1 = HudButtonComponent(
       button: AbilityButtonVisual(
-        radius: 18,
+        radius: buttonRadius,
         text:'A',
         baseColor: Palette.laranja.withAlpha(220),
         cooldownColor: cooldownColor,
         cooldownFraction: () => _runStarted ? player.ability1CooldownFraction : 0.0,
       ),
       buttonDown: AbilityButtonVisual(
-        radius: 18,
+        radius: buttonRadius,
         text:'A',
         baseColor: Palette.laranja.withAlpha(140),
         cooldownColor: cooldownColor,
         cooldownFraction: () => _runStarted ? player.ability1CooldownFraction : 0.0,
       ),
-      margin: const EdgeInsets.only(right: 20, bottom: 65),
+      margin: EdgeInsets.only(right: marginRightA, bottom: 80),
       // Segurar mantém disparando: o botão só marca "está sendo pressionado",
       // quem decide a hora certa de atirar é o cooldown lá no Player.update().
       onPressed: () {
@@ -270,20 +298,20 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
 
     final abilityButton2 = HudButtonComponent(
       button: AbilityButtonVisual(
-        radius: 18,
+        radius: buttonRadius,
         text:'B',
         baseColor: Palette.azul.withAlpha(220),
         cooldownColor: cooldownColor,
         cooldownFraction: () => _runStarted ? player.ability2CooldownFraction : 0.0,
       ),
       buttonDown: AbilityButtonVisual(
-        radius: 18,
+        radius: buttonRadius,
         text:'B',
         baseColor: Palette.azul.withAlpha(140),
         cooldownColor: cooldownColor,
         cooldownFraction: () => _runStarted ? player.ability2CooldownFraction : 0.0,
       ),
-      margin: const EdgeInsets.only(right: 65, bottom: 30),
+      margin: EdgeInsets.only(right: marginRightB, bottom: 35),
       onPressed: () {
         if (_runStarted) player.touchHoldAbility2 = true;
       },

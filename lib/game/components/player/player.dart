@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/collisions.dart';
+import 'package:creatures_rogue/game/components/UI/dynamic_joystick_component.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
@@ -18,7 +19,7 @@ import '../map/obstacle.dart';
 class Player extends PositionComponent with CollisionCallbacks, HasGameRef, KeyboardHandler{
   Vector2 _previousPosition = Vector2.zero();
 
-  final JoystickComponent moveJoystick;
+  final DynamicJoystickComponent moveJoystick;
   final CreatureData creatureData;
 
   // Componente visual único, animado por transformação (escala/flip), não por troca de frame.
@@ -195,8 +196,8 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
     final ui.Image shieldImage = await PaletteSwapper.createSwappedImage(
       imagePath: 'projeteis/bolha.png',
-      lightGrayReplacement: Palette.azul,
-      darkGrayReplacement: Palette.azulEsc,
+      lightGrayReplacement: creatureData.corClara,
+      darkGrayReplacement: creatureData.corEscura,
       whiteReplacement: Palette.branco,
     );
     shieldVisual = SpriteComponent(
