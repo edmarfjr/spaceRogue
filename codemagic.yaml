@@ -1,0 +1,100 @@
+# Codemagic CI/CD — Creatures Rogue
+# Docs: https://docs.codemagic.io/yaml/yaml-getting-started/
+#
+# Dois workflows separados de propósito: uma mudança só de web não precisa
+# esperar o Gradle, e um build de Android quebrado não esconde o de web.
+
+definitions:
+  # Reaproveitado pelos dois workflows. A versão do Flutter fica fixada de
+  # propósito, pra o CI usar exatamente a mesma que a máquina de desenvolvimento
+  # — trocar aqui é uma decisão explícita, não uma surpresa num build futuro.
+  flutter_env: &flutter_env
+    flutter: 3.38.9
+    java: 17 # bate com o JavaVersion.VERSION_17 do android/app/build.gradle.kts
+
+  cache_config: &cache_config
+    cache_paths:
+      - $HOME/.pub-cache
+      - $HOME/.gradle/caches
+
+workflows:
+  android:
+    name: Android APK
+    instance_type: linux_x2
+    max_build_duration: 45
+    environment:
+      <<: *flutter_env
+    cache:
+      <<: *cache_config
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+    scripts:
+      - name: Baixar dependências
+        script: flutter pub get
+
+      # --no-fatal-infos --no-fatal-warnings: o projeto tem ~21 avisos de
+      # depreciação do Flame (HasGameRef) que não são bugs. Sem essas flags o
+      # `flutter analyze` sai com código 1 e derruba todo build. Assim o gate
+      # pega só ERRO de compilação de verdade.
+      - name: Analisar código
+        script: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      # Sem step de teste: o único arquivo em test/ é o widget_test.dart do
+      # template (contador), que falha porque testa uma tela que não existe.
+      # Quando houver teste de verdade, descomente:
+      # - name: Rodar testes
+      #   script: flutter test
+
+      # Assina com a debug key (ver buildTypes.release no build.gradle.kts).
+      # Instalável por sideload, NÃO publicável na Play Store — pra isso é
+      # preciso subir keystore + senhas como variáveis no Codemagic e gerar AAB.
+      - name: Build APK release
+        script: flutter build apk --release
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk
+
+  web:
+    name: Web
+    instance_type: linux_x2
+    max_build_duration: 30
+    environment:
+      <<: *flutter_env
+    cache:
+      <<: *cache_config
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+    scripts:
+      - name: Baixar dependências
+        script: flutter pub get
+
+      - name: Analisar código
+        script: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      # base-href "/" serve pra itch.io e qualquer host que sirva na raiz.
+      # Pra GitHub Pages em subpasta, troque por --base-href /creaturesRogue/
+      - name: Build web release
+        script: flutter build web --release --base-href /
+
+      # itch.io e Netlify esperam um .zip com o index.html na raiz.
+      - name: Empacotar para upload
+        script: cd build/web && zip -r ../creatures_rogue_web.zip .
+    artifacts:
+      - build/creatures_rogue_web.zip
+
+# Notificação por e-mail ao terminar o build. Preencha o endereço e descomente
+# — deixei em branco pra não commitar e-mail em arquivo versionado.
+#    publishing:
+#      email:
+#        recipients:
+#          - seu@email.com
+#        notify:
+#          success: true
+#          failure: true
