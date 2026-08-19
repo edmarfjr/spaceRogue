@@ -8,12 +8,11 @@ import '../player/player.dart';
 
 class Hud extends PositionComponent with HasGameRef {
   final Player player;
-  
   // Sprites
   late final Sprite heartSprite;
   late final Sprite heartHalfSprite;
   late final Sprite heartEmptySprite;
-  late final Sprite bombSprite;
+  //late final Sprite bombSprite;
   
   final Paint emptyHeartPaint = Paint()
     ..colorFilter = const ColorFilter.mode(Palette.preto, BlendMode.srcATop)
@@ -61,7 +60,7 @@ class Hud extends PositionComponent with HasGameRef {
     heartHalfSprite = Sprite(heartHalfImg);
     heartEmptySprite = Sprite(heartEmptyImg);
 
-    bombSprite = Sprite(bombImg);
+    //bombSprite = Sprite(bombImg);
 
     textPaint = TextPaint(
       style: const TextStyle(
@@ -115,8 +114,8 @@ class Hud extends PositionComponent with HasGameRef {
       );
     }
 
-    double bombY = heartSize.y + 2;
-    bombSprite.render(canvas, position: Vector2(0, bombY), size: bombIconSize, overridePaint: paint);
-    textPaint.render(canvas, ':${player.bombsAmount}', Vector2(bombIconSize.x + 0, bombY+1));
+    //double bombY = heartSize.y + 2;
+    //bombSprite.render(canvas, position: Vector2(0, bombY), size: bombIconSize, overridePaint: paint);
+    //textPaint.render(canvas, ':${player.bombsAmount}', Vector2(bombIconSize.x + 0, bombY+1));
   }
 }
