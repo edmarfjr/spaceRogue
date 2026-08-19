@@ -20,7 +20,11 @@ definitions:
 workflows:
   android:
     name: Android APK
-    instance_type: linux_x2
+    # mac_mini_m2 é a única instância do plano free (500 min/mês). linux_x2 e
+    # windows_x2 exigem billing habilitado — daí o erro "selected instance type
+    # is not available with the current billing plan". macOS builda Android e
+    # web normalmente.
+    instance_type: mac_mini_m2
     max_build_duration: 45
     environment:
       <<: *flutter_env
@@ -59,7 +63,11 @@ workflows:
 
   web:
     name: Web
-    instance_type: linux_x2
+    # mac_mini_m2 é a única instância do plano free (500 min/mês). linux_x2 e
+    # windows_x2 exigem billing habilitado — daí o erro "selected instance type
+    # is not available with the current billing plan". macOS builda Android e
+    # web normalmente.
+    instance_type: mac_mini_m2
     max_build_duration: 30
     environment:
       <<: *flutter_env
