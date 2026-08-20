@@ -20,8 +20,8 @@ class TornadoFogoEnemy extends Enemy with ChaseMovement, ShooterAttack {
     required super.playerTarget,
   }) : super(
          creature: CreatureRegistry.tornadoFogo,
-         speed: 62.0, // stats.speed 70 → um dos mais rápidos
-         health: 30,  // stats.maxHp 10 / defesa 1 → morre rápido se for cercado
+         speed: 50.0, // stats.speed 70 → um dos mais rápidos
+         health: 20,  // stats.maxHp 10 / defesa 1 → morre rápido se for cercado
          dmg: 4,      // stats.ataque 4 → o soco dói de verdade
          bltSpeed: 260,
          bltImg: 'projeteis/soco.png',

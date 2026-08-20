@@ -6,15 +6,17 @@ import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
 /// Sapo de Água — botão A. Projétil reto e rápido, sem truque: é a linha
 /// de base contra a qual as outras habilidades ofensivas são comparadas.
+/// Dano = ataque da criatura × [coef] — ver BaseStats.
 class BolaDagua extends Ability {
-  final double dano;
+  final double coef;
   final double velocidade;
 
-  const BolaDagua({this.dano = 3, this.velocidade = 220})
+  const BolaDagua({this.coef = 1.5, this.velocidade = 220})
       : super(nome: "Bola d'Água", cooldown: 0.6);
 
   @override
   void execute(Player user, Vector2 dir) {
+    final dano = user.creatureData.stats.ataque * coef;
     user.parent?.add(Projectile(
       position: user.position.clone(),
       direction: dir,

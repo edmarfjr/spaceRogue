@@ -4,15 +4,16 @@ import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 
-class CreatureSelectOverlay extends StatelessWidget {
+class CreatureSelectOverlay extends StatefulWidget {
   final CreaturesRogueGame game;
   const CreatureSelectOverlay({super.key, required this.game});
 
-  static String _typeLabel(CreatureType tipo) {
+  static String typeLabel(CreatureType tipo) {
     switch (tipo) {
       case CreatureType.fogo:
         return 'Fogo';
@@ -27,7 +28,7 @@ class CreatureSelectOverlay extends StatelessWidget {
     }
   }
 
-  static Color _typeColor(CreatureType tipo) {
+  static Color typeColor(CreatureType tipo) {
     switch (tipo) {
       case CreatureType.fogo:
         return Palette.vermelho;
@@ -41,6 +42,18 @@ class CreatureSelectOverlay extends StatelessWidget {
         return Colors.grey;
     }
   }
+
+  @override
+  State<CreatureSelectOverlay> createState() => _CreatureSelectOverlayState();
+}
+
+class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
+  // Nunca abre já selecionando uma criatura travada, mesmo que a ordem de
+  // CreatureRegistry.all mude no futuro.
+  late CreatureData _selected = CreatureRegistry.all.firstWhere(
+    (c) => CreatureProgress.instance.isUnlocked(c.id),
+    orElse: () => CreatureRegistry.all.first,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -57,18 +70,27 @@ class CreatureSelectOverlay extends StatelessWidget {
               ),
             ),
             Expanded(
-              child: GridView.count(
-                padding: const EdgeInsets.all(8),
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 1.4,
-                children: CreatureRegistry.all
-                    .map((creature) => _CreatureCard(
-                          creature: creature,
-                          onTap: () => game.startRun(creature),
-                        ))
-                    .toList(),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      width: 160,
+                      child: _CreatureList(
+                        selected: _selected,
+                        onSelect: (creature) => setState(() => _selected = creature),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _CreatureDetailPanel(
+                        creature: _selected,
+                        onPlay: () => widget.game.startRun(_selected),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -78,90 +100,276 @@ class CreatureSelectOverlay extends StatelessWidget {
   }
 }
 
-class _CreatureCard extends StatelessWidget {
-  final CreatureData creature;
-  final VoidCallback onTap;
+/// Coluna da esquerda: uma linha por criatura, travada ou não conforme
+/// [CreatureProgress].
+class _CreatureList extends StatelessWidget {
+  final CreatureData selected;
+  final ValueChanged<CreatureData> onSelect;
 
-  const _CreatureCard({required this.creature, required this.onTap});
+  const _CreatureList({required this.selected, required this.onSelect});
 
   @override
   Widget build(BuildContext context) {
-    final accent = CreatureSelectOverlay._typeColor(creature.tipo);
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black45,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      padding: const EdgeInsets.all(6),
+      child: ListView.separated(
+        itemCount: CreatureRegistry.all.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 4),
+        itemBuilder: (context, index) {
+          final creature = CreatureRegistry.all[index];
+          final isSelected = creature.id == selected.id;
+          final locked = !CreatureProgress.instance.isUnlocked(creature.id);
+
+          return _CreatureListTile(
+            creature: creature,
+            isSelected: isSelected,
+            locked: locked,
+            onTap: locked ? null : () => onSelect(creature),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _CreatureListTile extends StatelessWidget {
+  final CreatureData creature;
+  final bool isSelected;
+  final bool locked;
+  final VoidCallback? onTap;
+
+  const _CreatureListTile({
+    required this.creature,
+    required this.isSelected,
+    required this.locked,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = CreatureSelectOverlay.typeColor(creature.tipo);
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(8),
       child: Container(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
-          color: Palette.cinza,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: accent, width: 2),
+          color: isSelected ? accent.withAlpha(60) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border(left: BorderSide(color: locked ? Colors.white24 : accent, width: 4)),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            FutureBuilder<ui.Image>(
-              future: PaletteSwapper.createSwappedImage(
-                imagePath: creature.spritePath, 
-                lightGrayReplacement: creature.corClara, 
-                darkGrayReplacement: creature.corEscura, 
+            Expanded(
+              child: Text(
+                locked ? '???' : creature.nome,
+                style: TextStyle(
+                  color: locked ? Colors.white38 : Colors.white,
+                  fontSize: 14,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: Center(
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54),
-                    ),
-                  );
-                }
-            
-                if (snapshot.hasData) {
-                  return RawImage(
-                    image: snapshot.data,
-                    width: 48,
-                    height: 48,
-                    filterQuality: FilterQuality.none, 
-                    fit: BoxFit.fill,
-                  );
-                }
-                return const SizedBox(
-                  width: 48, 
-                  height: 48, 
-                  child: Icon(Icons.broken_image, color: Colors.red),
-                );
-              },
             ),
-            const SizedBox(height: 6),
-            Text(
-              creature.nome,
-              style: const TextStyle(color: Palette.preto, fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            Text(
-              CreatureSelectOverlay._typeLabel(creature.tipo),
-              style: TextStyle(color: accent, fontSize: 13, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'HP ${creature.stats.maxHp}   VEL ${creature.stats.speed.toInt()}\n'
-              'DEF ${creature.stats.defesa.toInt()}   ATK ${creature.stats.ataque.toInt()}',
-              style: const TextStyle(color: Palette.preto, fontSize: 12),
-            ),
-            const Spacer(),
-            Text(
-              'A: ${creature.ability1.nome}',
-              style: const TextStyle(color: Palette.preto, fontSize: 11),
-              overflow: TextOverflow.ellipsis,
-            ),
-            Text(
-              'B: ${creature.ability2.nome}',
-              style: const TextStyle(color: Palette.preto, fontSize: 11),
-              overflow: TextOverflow.ellipsis,
-            ),
+            if (locked) const Icon(Icons.lock, color: Colors.white38, size: 16),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Painel da direita: sprite + nome/tipo em cima, status ao lado das
+/// habilidades embaixo — layout tirado direto do rascunho.
+class _CreatureDetailPanel extends StatelessWidget {
+  final CreatureData creature;
+  final VoidCallback onPlay;
+
+  const _CreatureDetailPanel({required this.creature, required this.onPlay});
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = CreatureSelectOverlay.typeColor(creature.tipo);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Palette.branco,
+        borderRadius: BorderRadius.circular(0),
+        border: Border.all(color: accent, width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(width: 20),
+              _CreatureSprite(creature: creature, size: 80),
+              const SizedBox(width: 5),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      creature.nome,
+                      style: const TextStyle(color: Palette.preto, fontSize: 22, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      'Tipo: ${CreatureSelectOverlay.typeLabel(creature.tipo)}',
+                      style: TextStyle(color: Palette.preto, fontSize: 15, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.start,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Palette.preto, width: 2),
+                      borderRadius: BorderRadius.circular(0),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _StatLine('HP', creature.stats.maxHp.toString()),
+                        _StatLine('VELOCIDADE', creature.stats.speed.toInt().toString()),
+                        _StatLine('ATAQUE', creature.stats.ataque.toInt().toString()),
+                        _StatLine('DEFESA', creature.stats.defesa.toInt().toString()),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'A: ${creature.ability1.nome}',
+                        style: const TextStyle(color: Palette.preto, fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'B: ${creature.ability2.nome}',
+                        style: const TextStyle(color: Palette.preto, fontSize: 15, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: onPlay,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: accent,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+              child: const Text('JOGAR', style: TextStyle(color: Palette.preto, fontSize: 16, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Rótulo à esquerda, número à direita, numa linha só.
+///
+/// O rascunho empilha o número embaixo do rótulo, mas em landscape de celular
+/// (~360dp de altura) 4 stats de 2 linhas somam ~160px numa faixa que tem
+/// ~100px — era exatamente o "BOTTOM OVERFLOWED". Uma linha por stat cabe em
+/// qualquer altura e mantém o número destacado.
+class _StatLine extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _StatLine(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(color: Palette.preto, fontSize: 11, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            value,
+            style: const TextStyle(color: Palette.preto, fontSize: 17, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Sprite da criatura já com a paleta trocada — as mesmas cores que ela tem
+/// em jogo. `Image.asset` não serve aqui: o PNG em disco é cinza-marcador
+/// (169/84), quem pinta é o [PaletteSwapper], que devolve `ui.Image`, não um
+/// asset — daí o FutureBuilder + RawImage.
+class _CreatureSprite extends StatelessWidget {
+  final CreatureData creature;
+  final double size;
+
+  const _CreatureSprite({required this.creature, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: FutureBuilder<ui.Image>(
+        // Cache por caminho+cores dentro do PaletteSwapper: mesma textura que
+        // o jogo usa, sem reprocessar a cada rebuild.
+        future: PaletteSwapper.createSwappedImage(
+          imagePath: creature.spritePath,
+          lightGrayReplacement: creature.corClara,
+          darkGrayReplacement: creature.corEscura,
+        ),
+        builder: (context, snapshot) {
+          final image = snapshot.data;
+          if (image == null) {
+            return const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black45));
+          }
+          return RawImage(
+            image: image,
+            width: size,
+            height: size,
+            // OBRIGATÓRIO: sem `fit`, o paintImage do Flutter assume
+            // BoxFit.scaleDown, que só REDUZ. Um sprite de 16x16 já cabe em
+            // qualquer caixa maior, então ele ficava desenhado em 16x16 no
+            // canto — a caixa crescia com `size`, a imagem não.
+            fit: BoxFit.contain,
+            // Sem isso o upscale de 16x16 sai borrado.
+            filterQuality: FilterQuality.none,
+          );
+        },
       ),
     );
   }

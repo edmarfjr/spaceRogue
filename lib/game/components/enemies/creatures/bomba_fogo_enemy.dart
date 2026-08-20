@@ -15,7 +15,7 @@ class BombaFogoEnemy extends Enemy with ChaseMovement {
   static const double _alcanceGatilho = 20.0;
   static const double _pavio = 0.5;
   static const double _danoExplosao = 4.0;
-  static const double _empurraoExplosao = 220.0;
+  static const double _empurraoExplosao = 50.0;
 
   double _pavioTimer = 0.0;
   bool _acendeu = false;

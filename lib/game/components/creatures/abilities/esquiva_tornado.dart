@@ -7,19 +7,21 @@ import 'package:creatures_rogue/game/components/player/player.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
 /// Tornado de Fogo — botão B. Evasiva com i-frames, deixa rastro de dano.
+/// Dano = ataque da criatura × [coefRastro] — ver BaseStats.
 class EsquivaTornado extends Ability {
   final double distancia;
   final double duracao;
-  final int danoRastro;
+  final double coefRastro;
 
   const EsquivaTornado({
     this.distancia = 32,
     this.duracao = 0.15,
-    this.danoRastro = 2,
+    this.coefRastro = 0.5,
   }) : super(nome: 'Esquiva Tornado', cooldown: 4.0, target: AbilityTarget.plrDir);
 
   @override
   void execute(Player user, Vector2 dir) {
+    final danoRastro = user.creatureData.stats.ataque * coefRastro;
     user.grantInvulnerability(duracao);
 
     user.parent?.add(Projectile(
@@ -27,7 +29,7 @@ class EsquivaTornado extends Ability {
           direction: Vector2.zero(),
           speed:0,
           lifeTime: 3,
-          dmg: 1,
+          dmg: danoRastro,
           sprPath: 'projeteis/tornado.png',
           cor1: Palette.vermelho,
           cor2: Palette.laranja,

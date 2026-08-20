@@ -8,23 +8,25 @@ import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 /// jato de água martelando o alvo por um instante. Diferente do Jato d'Água
 /// do Sapo (tiro único): aqui é uma sequência de tiros curtos disparados
 /// automaticamente quando o botão é apertado.
+/// Dano = ataque da criatura × [coef] — ver BaseStats.
 class JatoAquatico extends Ability {
   final int tiros;
   final double intervalo;
-  final double dano;
+  final double coef;
   final double velocidade;
   final double alcanceSegundos;
 
   const JatoAquatico({
     this.tiros = 6,
     this.intervalo = 0.08,
-    this.dano = 2,
+    this.coef = 0.5,
     this.velocidade = 200,
     this.alcanceSegundos = 0.25,
   }) : super(nome: "Jato d'Água", cooldown: 2.5);
 
   @override
   void execute(Player user, Vector2 dir) {
+    final dano = user.creatureData.stats.ataque * coef;
     final direction = dir.clone();
 
     for (int i = 0; i < tiros; i++) {

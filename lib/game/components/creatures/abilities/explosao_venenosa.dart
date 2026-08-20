@@ -5,15 +5,17 @@ import 'package:creatures_rogue/game/components/player/player.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
+/// Dano = ataque da criatura × [coef] — ver BaseStats.
 class ExplosaoVenenosa extends Ability {
-  final double dano;
+  final double coef;
   final double empurrao;
 
-  const ExplosaoVenenosa({this.dano = 1, this.empurrao = 50})
+  const ExplosaoVenenosa({this.coef = 0.25, this.empurrao = 50})
       : super(nome: 'Explosao Venenosa', cooldown: 6.0);
 
   @override
   void execute(Player user, Vector2 dir) {
+    final dano = user.creatureData.stats.ataque * coef;
     user.parent?.add(ExplosionHitbox(
       position: user.position.clone(),
       dmg: dano,

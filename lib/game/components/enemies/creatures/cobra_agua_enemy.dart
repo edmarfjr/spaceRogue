@@ -15,7 +15,7 @@ import '../enemy_mixins.dart';
 class CobraAguaEnemy extends Enemy with JumpMovement {
   static const double _alcanceBote = 70.0;
   static const int _danoImpacto = 2;
-  static const double _empurraoImpacto = 200.0;
+  static const double _empurraoImpacto = 40.0;
 
   bool _boteEmVoo = false;
 

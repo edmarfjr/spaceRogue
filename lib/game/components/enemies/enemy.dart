@@ -4,6 +4,7 @@ import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/components/effects/movement_animator.dart';
 import 'package:creatures_rogue/game/components/effects/sprite_effect.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
@@ -17,8 +18,13 @@ import '../utils/palette_swapper.dart';
 abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameRef {
   final Player playerTarget;
   
-  double speed; 
-  double health; 
+  double speed;
+  double health;
+
+  /// Vida com que este inimigo nasceu. Só serve pra calcular fração de vida
+  /// (barra de boss) — nada no jogo cura inimigo, então nunca muda.
+  late final double maxHealth;
+
   int dmg;
   double bltSpeed;
   String bltImg;
@@ -46,6 +52,8 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   late final Vector2 _visualBasePosition;
   bool isAirborne;
 
+  late final SpriteComponent shieldVisual;
+  bool shieldVisualActive = false;
   /// Estilo de animação de movimento (ver MovementAnimator). Null = inimigo
   /// sem animação genérica de movimento — ou porque o próprio mecanismo de
   /// movimento já é a animação (ex.: JumpMovement, que pula de verdade), ou
@@ -101,6 +109,7 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
          anchor: Anchor.center,
        ) {
     _previousPosition = position.clone();
+    maxHealth = health;
 
     // Hitbox: explícita > da criatura > tamanho visual.
     this.hitboxSize = hitboxSize ?? creature?.hitboxSize ?? (size ?? Vector2(16, 16));
@@ -128,6 +137,24 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
       paint: Paint()..filterQuality = FilterQuality.none,
     );
     add(visual);
+
+    final ui.Image shieldImage = await PaletteSwapper.createSwappedImage(
+      imagePath: 'projeteis/bolha.png',
+      lightGrayReplacement: corClara,
+      darkGrayReplacement: corEscura,
+      whiteReplacement: corBranco,
+    );
+    shieldVisual = SpriteComponent(
+      sprite: Sprite(shieldImage),
+      size: Vector2.all(24),
+      anchor: Anchor.center,
+      position: size / 2,
+      paint: Paint()..filterQuality = FilterQuality.none,
+      priority: 5,
+    );
+    shieldVisual.setOpacity(0.0); // só aparece enquanto shieldVisualActive
+    add(shieldVisual);
+
     enemyHitbox = RectangleHitbox(
       size: hitboxSize,
       anchor: Anchor.center,
@@ -161,6 +188,8 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   void update(double dt) {
     _previousPosition = position.clone();
     super.update(dt);
+
+    shieldVisual.setOpacity(shieldVisualActive ? 1.0 : 0.0);
 
     if (!knockbackVelocity.isZero()) {
       position += knockbackVelocity * dt;
@@ -299,6 +328,12 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   }
 
   void death() {
+    // Sem await de propósito: death() não é async (chamado de dentro de
+    // takeDamage, síncrono), e a contagem não precisa bloquear a morte —
+    // só precisa acabar gravada eventualmente.
+    final id = creature?.id;
+    if (id != null) CreatureProgress.instance.incrementKill(id);
+
     final effect = SpriteEffect(
       position: position.clone(), 
       size: Vector2(16, 16), 

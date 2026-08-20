@@ -9,23 +9,25 @@ import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart'
 /// pulo de verdade. Enquanto no ar, a invulnerabilidade concedida cobre tanto
 /// projéteis quanto o toque de inimigos. Ao aterrissar, uma explosão empurra
 /// tudo ao redor pra longe.
+/// Dano = ataque da criatura × [coef] — ver BaseStats.
 class JogadaDeCorpo extends Ability {
   final double distancia;
   final double duracao;
   final double altura;
-  final double dano;
+  final double coef;
   final double empurrao;
 
   const JogadaDeCorpo({
     this.distancia = 40,
     this.duracao = 0.3,
     this.altura = 16,
-    this.dano = 3,
+    this.coef = 0.75,
     this.empurrao = 50,
   }) : super(nome: 'Jogada de Corpo', cooldown: 4.5, target: AbilityTarget.joyDir);
 
   @override
   void execute(Player user, Vector2 dir) {
+    final dano = user.creatureData.stats.ataque * coef;
     user.grantInvulnerability(duracao);
 
     GhostEffect.spawnTrail(

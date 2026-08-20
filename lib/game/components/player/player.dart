@@ -44,6 +44,16 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   double _invulnerabilityTimer = 0.0;
   final double _invulnerabilityDuration = 1.5;
 
+  /// Escudo passivo derivado da defesa: uma segunda barra que absorve dano
+  /// antes do HP e regenera sozinha com o tempo. Tamanho e taxa de regen são
+  /// mutáveis (não final) porque upgrades e itens futuros vão alterá-los
+  /// durante a run.
+  double shieldMax;
+  double shield;
+  double shieldRegenAmount = 1.0;
+  double shieldRegenInterval = 5.0;
+  double _shieldRegenTimer = 0.0;
+
   int bombsAmount = 3;
 
   Vector2 velocity = Vector2.zero();
@@ -52,7 +62,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
   double get maxSpeed => creatureData.stats.speed;
   final double acceleration = 100.0;
-  final double friction = 200.0;
+  final double friction = 300.0;
 
   /// Direção que as habilidades (e a bomba) disparam: sempre o inimigo mais
   /// próximo dentro da sala atual. Sem inimigo à vista, mantém a última mira.
@@ -158,6 +168,8 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     required this.creatureData,
   }) : maxHealth = creatureData.stats.maxHp,
        currentHealth = creatureData.stats.maxHp,
+       shieldMax = creatureData.stats.shieldMax,
+       shield = creatureData.stats.shieldMax,
        super(size: Vector2(16, 16), anchor: Anchor.center, priority: 10);
 
   VoidCallback? onDeath;
@@ -238,7 +250,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     final shadow = CircleComponent(
       radius: hitboxSize.x / 2,
       anchor: Anchor.center,
-      position: size / 2 + Vector2(0, hitboxSize.y / 2),
+      position: _visualBasePosition,//size / 2 + Vector2(0, hitboxSize.y / 2),
       paint: shadowPaint,
       priority: -1,
     )..scale = Vector2(1.2, 0.75);
@@ -274,6 +286,14 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     }
 
     shieldVisual.setOpacity(shieldVisualActive ? 1.0 : 0.0);
+
+    if (shield < shieldMax) {
+      _shieldRegenTimer += dt;
+      if (_shieldRegenTimer >= shieldRegenInterval) {
+        _shieldRegenTimer = 0.0;
+        shield = (shield + shieldRegenAmount).clamp(0.0, shieldMax);
+      }
+    }
 
     if(creatureData.ability1.target == AbilityTarget.enemyDir ){
       lockedAb1Direction = _findNearestEnemyDirection(lockedAb1Direction);
@@ -474,12 +494,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
   void takeDamage(int amount) {
     if (_invulnerabilityTimer > 0) return;
-
-    if (shieldHits > 0) {
-      shieldHits--;
-      if (shieldHits <= 0) shieldVisualActive = false; // a bolha estourou
-      return;
-    }
+    _invulnerabilityTimer = _invulnerabilityDuration;
 
     int amountFinal = (amount * (1 - damageReduction)).ceil();
     if (amountFinal < 1) amountFinal = 1;
@@ -490,8 +505,23 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       color: Palette.vermelho,
     ));
 
+    if (shieldHits > 0) {
+      shieldHits--;
+      if (shieldHits <= 0) shieldVisualActive = false; // a bolha estourou
+      return;
+    }
+
+    // Escudo passivo (defesa) absorve antes do HP — segunda barra, não a
+    // bolha de habilidade (shieldHits), que já retornou acima se ativa.
+    if (shield > 0) {
+      //final absorvido = amountFinal > shield ? shield : amountFinal.toDouble();
+      shield -= amountFinal;
+      //amountFinal -= absorvido.ceil();
+      if (shield < 0) shield = 0;
+      return;
+    }
+
     currentHealth -= amountFinal;
-    _invulnerabilityTimer = _invulnerabilityDuration;
 
     if (currentHealth <= 0) {
       onDeath?.call();

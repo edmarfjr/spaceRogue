@@ -6,16 +6,18 @@ import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
 /// Tornado de Fogo — botão A. Cooldown baixo, dano alto, alcance
 /// curto.
+/// Dano = ataque da criatura × [coef] — ver BaseStats.
 class SocoFlamejante extends Ability {
-  final double dano;
+  final double coef;
   final double velocidade;
   final double alcanceSegundos;
 
-  const SocoFlamejante({this.dano = 4, this.velocidade = 260, this.alcanceSegundos = 0.15})
+  const SocoFlamejante({this.coef = 1.0, this.velocidade = 260, this.alcanceSegundos = 0.15})
       : super(nome: 'Soco Flamejante', cooldown: 0.4);
 
   @override
   void execute(Player user, Vector2 dir) {
+    final dano = user.creatureData.stats.ataque * coef;
     user.parent?.add(Projectile(
       position: user.position.clone(),
       direction: dir,

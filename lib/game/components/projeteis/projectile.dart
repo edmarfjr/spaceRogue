@@ -141,7 +141,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
       if (other is Player) {
         if(other.refleteProjetil){
           refleteProjetil();
-          return;
+          onDestroy();
         }
         other.takeDamage(dmg.toInt());
         atravessa--;

@@ -53,11 +53,11 @@ class CreatureRegistry {
 
   static final CreatureData tartarugaPlanta = CreatureData(
     id: 'tartaruga_planta',
-    nome: 'Tartaruga de Planta',
+    nome: 'Turtrent',
     spritePath: 'actors/tartPlanta.png',
     tipo: CreatureType.planta,
     corClara: Palette.verde,
-    corEscura: Palette.verdeEsc,
+    corEscura: Palette.marromEsc,
     stats: BaseStats(maxHp: 20, speed: 35, defesa: 4, ataque: 3),
     ability1: CuspeDeSemente(),
     ability2: CascoFechado(),
@@ -83,7 +83,7 @@ class CreatureRegistry {
 
   static final CreatureData aveEletrica = CreatureData(
     id: 'ave_eletrica',
-    nome: 'Ave de Eletricidade',
+    nome: 'Garibirb',
     spritePath: 'actors/aveEletric.png',
     tipo: CreatureType.eletrico,
     corClara: Palette.amarelo,
@@ -161,7 +161,7 @@ class CreatureRegistry {
     nome: 'Bomba de Fogo',
     spritePath: 'actors/bombaFogo.png',
     tipo: CreatureType.fogo,
-    corClara: Palette.picotronBege,
+    corClara: Palette.burgundy,
     corEscura: Palette.roxoEsc,
     stats: BaseStats(maxHp: 10, speed: 70, defesa: 3, ataque: 4),
     ability1: DeixarBomba(),
@@ -196,7 +196,7 @@ class CreatureRegistry {
     ursoPlanta,
     griloEletrico,
     bombaFogo,
-    slimePlanta
+    slimePlanta,
   ];
 
   static CreatureData byId(String id) => all.firstWhere((c) => c.id == id);

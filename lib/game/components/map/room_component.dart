@@ -37,8 +37,18 @@ class RoomComponent extends PositionComponent with HasGameRef {
 
   late final DungeonTheme theme;
 
-  RoomComponent(this.data, {required this.player, int currentLevel = 1}) 
-      : super(
+  /// Quando não-nulo, esta sala de boss recebe O BOSS em vez de inimigos
+  /// comuns. Quem constrói é o jogo (que também pendura a barra de vida na
+  /// viewport da câmera) — a sala só precisa saber onde colocar e acompanhar
+  /// a morte dele. Null = andar comum, sala de boss se comporta como antes.
+  final Enemy? Function(Vector2 position)? bossBuilder;
+
+  RoomComponent(
+    this.data, {
+    required this.player,
+    int currentLevel = 1,
+    this.bossBuilder,
+  }) : super(
           size: Vector2(roomWidth, roomHeight),
           position: Vector2((data.x - 50) * roomWidth, (data.y - 50) * roomHeight),
         ) {
@@ -185,7 +195,21 @@ class RoomComponent extends PositionComponent with HasGameRef {
   }
 
   void _spawnEnemies() {
-    int count = 2 + _random.nextInt(3); 
+    // Andar de boss: um adversário só, no centro, e nada de turma comum.
+    // Entra em activeEnemies como qualquer inimigo, então a sala destranca
+    // pela mesma regra de sempre — quando ele morre.
+    final construirBoss = bossBuilder;
+    if (data.type == RoomType.boss && construirBoss != null) {
+      final boss = construirBoss(position + Vector2(width / 2, height / 2 - 24));
+      if (boss != null) {
+        activeEnemies.add(boss);
+        parent?.add(boss);
+        return;
+      }
+      // Boss nulo (nada pendente pra desbloquear): cai no spawn normal.
+    }
+
+    int count = 2 + _random.nextInt(3);
     
     for (int i = 0; i < count; i++) {
       double px = 0;

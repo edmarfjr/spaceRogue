@@ -22,7 +22,7 @@ class RoedorFogoEnemy extends Enemy with WanderMovement, ShooterAttack {
          health: 30,
          dmg: 2,
          bltSpeed: 90,
-         bltImg: 'projeteis/fogo.png',
+         bltImg: 'projeteis/fogo2.png',
          bltCor1: CreatureRegistry.roedorFogo.corClara,
          bltCor2: CreatureRegistry.roedorFogo.corEscura,
        );

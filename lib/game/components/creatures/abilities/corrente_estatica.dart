@@ -6,15 +6,17 @@ import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart'
 
 /// Ave de Eletricidade — botão B. Área ao redor do próprio corpo: dano baixo
 /// mais atordoamento. É a habilidade de quebrar cerco de quem luta colado.
+/// Dano = ataque da criatura × [coef] — ver BaseStats.
 class CorrenteEstatica extends Ability {
-  final double dano;
+  final double coef;
   final double duracaoStun;
 
-  const CorrenteEstatica({this.dano = 1, this.duracaoStun = 1.5})
+  const CorrenteEstatica({this.coef = 1.0, this.duracaoStun = 1.5})
       : super(nome: 'Corrente Estática', cooldown: 5.0);
 
   @override
   void execute(Player user, Vector2 dir) {
+    final dano = user.creatureData.stats.ataque * coef;
     user.parent?.add(ExplosionHitbox(
       position: user.position.clone(),
       dmg: dano,

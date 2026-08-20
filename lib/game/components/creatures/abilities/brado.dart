@@ -5,15 +5,17 @@ import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart'
 
 /// Urso de Planta — botão B. Um rugido que sacode a área ao redor e empurra
 /// tudo pra longe. Pouco dano, muito peso.
+/// Dano = ataque da criatura × [coef] — ver BaseStats.
 class Brado extends Ability {
-  final double dano;
+  final double coef;
   final double empurrao;
 
-  const Brado({this.dano = 1, this.empurrao = 100})
+  const Brado({this.coef = 0.25, this.empurrao = 100})
       : super(nome: 'Brado', cooldown: 6.0);
 
   @override
   void execute(Player user, Vector2 dir) {
+    final dano = user.creatureData.stats.ataque * coef;
     user.parent?.add(ExplosionHitbox(
       position: user.position.clone(),
       dmg: dano,

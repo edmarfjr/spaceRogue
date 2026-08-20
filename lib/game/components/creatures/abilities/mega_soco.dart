@@ -4,16 +4,18 @@ import 'package:creatures_rogue/game/components/player/player.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 
 /// Urso de Planta — botão A. Soco curto e pesado bem na frente do focinho.
+/// Dano = ataque da criatura × [coef] — ver BaseStats.
 class MegaSoco extends Ability {
-  final double dano;
+  final double coef;
   final double alcance;
   final double empurrao;
 
-  const MegaSoco({this.dano = 5, this.alcance = 12, this.empurrao = 50})
+  const MegaSoco({this.coef = 1.25, this.alcance = 12, this.empurrao = 50})
       : super(nome: 'Mega Soco', cooldown: 1.3);
 
   @override
   void execute(Player user, Vector2 dir) {
+    final dano = user.creatureData.stats.ataque * coef;
     user.parent?.add(ExplosionHitbox(
       position: user.position.clone() + dir.normalized() * alcance,
       dmg: dano,

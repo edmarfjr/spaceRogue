@@ -22,9 +22,14 @@ class Hud extends PositionComponent with HasGameRef {
 
   late final TextPaint textPaint;
 
-  final Vector2 heartSize = Vector2(16, 16); 
-  final Vector2 bombIconSize = Vector2(16, 16); 
+  final Vector2 heartSize = Vector2(16, 16);
+  final Vector2 bombIconSize = Vector2(16, 16);
   final double spacing = -13.0;
+
+  static final Vector2 _shieldBarSize = Vector2(30, 3);
+  final Paint _shieldMoldura = Paint()..color = Palette.preto;
+  final Paint _shieldFundo = Paint()..color = Palette.cinzaEsc;
+  final Paint _shieldPreenchimento = Paint()..color = Palette.azul;
 
   Hud({required this.player}) : super(position: Vector2(2, 2));
 
@@ -112,6 +117,16 @@ class Hud extends PositionComponent with HasGameRef {
         size: heartSize, 
         overridePaint: paint
       );
+    }
+
+    // --- BARRA DE ESCUDO PASSIVO (defesa) ---
+    if (player.shieldMax > 0) {
+      final shieldY = heartSize.y + 1;
+      final fracao = (player.shield / player.shieldMax).clamp(0.0, 1.0);
+
+      canvas.drawRect(Rect.fromLTWH(-1, shieldY - 1, _shieldBarSize.x + 2, _shieldBarSize.y + 2), _shieldMoldura);
+      canvas.drawRect(Rect.fromLTWH(0, shieldY, _shieldBarSize.x, _shieldBarSize.y), _shieldFundo);
+      canvas.drawRect(Rect.fromLTWH(0, shieldY, _shieldBarSize.x * fracao, _shieldBarSize.y), _shieldPreenchimento);
     }
 
     //double bombY = heartSize.y + 2;

@@ -3,6 +3,8 @@ import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
+import 'package:creatures_rogue/game/overlays/boss_reveal_overlay.dart';
 import 'package:creatures_rogue/game/overlays/console_overlay.dart';
 import 'package:creatures_rogue/game/overlays/creature_select_overlay.dart';
 import 'package:creatures_rogue/game/overlays/game_over_overlay.dart';
@@ -24,6 +26,7 @@ bool get isDesktopPlatform {
 }
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await CreatureProgress.instance.load();
   await Flame.device.setLandscape();
   await Flame.device.fullScreen();
 
@@ -44,6 +47,7 @@ void main() async {
           overlayBuilderMap: {
             'MainMenu': (context, game) => MainMenuOverlay(game: game),
             'CreatureSelect': (context, game) => CreatureSelectOverlay(game: game),
+            'BossReveal': (context, game) => BossRevealOverlay(game: game),
             'PauseMenu': (context, game) => PauseMenuOverlay(game: game),
             'Hud': (context, game) => HudOverlay(game: game),
             'GameOver': (context, game) => GameOverMenu(game: game), // <--- REGISTRO NOVO

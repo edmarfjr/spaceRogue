@@ -47,8 +47,10 @@ class TartarugaPlantaEnemy extends Enemy with WanderMovement, ShooterAttack {
 
     if (_guardando) {
       // Casco fechado: imóvel e blindada. Nem anda nem atira.
+      
       if (_guardaTimer >= _duracaoGuarda) {
         _guardando = false;
+        shieldVisualActive = false;
         _guardaTimer = 0.0;
         damageReduction = 0.0;
         visual.scale = Vector2(visual.scale.x.isNegative ? -1.0 : 1.0, 1.0);
@@ -63,6 +65,7 @@ class TartarugaPlantaEnemy extends Enemy with WanderMovement, ShooterAttack {
 
     if (_guardaTimer >= _tempoAteGuardar) {
       _guardando = true;
+      shieldVisualActive = true;
       _guardaTimer = 0.0;
       damageReduction = _reducaoGuarda;
       return;

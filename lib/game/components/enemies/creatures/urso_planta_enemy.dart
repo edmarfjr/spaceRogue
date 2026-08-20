@@ -17,7 +17,7 @@ class UrsoPlantaEnemy extends Enemy with ChaseMovement {
   static const double _preparoPancada = 0.6;
   static const double _recuperacao = 1.2;
   static const int _danoPancada = 3;
-  static const double _empurraoPancada = 260.0;
+  static const double _empurraoPancada = 50.0;
 
   double _preparoTimer = 0.0;
   double _recuperacaoTimer = 0.0;

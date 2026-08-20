@@ -15,7 +15,7 @@ class SlimePlantaEnemy extends Enemy with WanderMovement {
   static const double _intervaloPoca = 2.2;
   static const double _duracaoPoca = 5.0;
   static const double _danoPoca = 2.0;
-  static const double _tamanhoPoca = 20.0;
+  static const double _tamanhoPoca = 16.0;
 
   double _pocaTimer = 0.0;
 
@@ -53,6 +53,7 @@ class SlimePlantaEnemy extends Enemy with WanderMovement {
       cor2: CreatureRegistry.slimePlanta.corEscura,
       lifeTime: _duracaoPoca,
       atravessa: 10, // aguenta várias pisadas antes de sumir
+      atravessaObstaculos: true,
       size: Vector2.all(_tamanhoPoca),
       radius: _tamanhoPoca / 2,
     ));

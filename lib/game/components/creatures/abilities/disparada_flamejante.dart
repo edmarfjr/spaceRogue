@@ -11,16 +11,17 @@ import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart'
 class DisparadaFlamejante extends Ability {
   final double distancia;
   final double duracao;
-  final double danoRastro;
+  final double coefRastro;
 
   const DisparadaFlamejante({
     this.distancia = 32,
     this.duracao = 0.15,
-    this.danoRastro = 2,
+    this.coefRastro = 0.67,
   }) : super(nome: 'Disparada Flamejante', cooldown: 4.0, target: AbilityTarget.plrDir);
 
   @override
   void execute(Player user, Vector2 dir) {
+    final danoRastro = user.creatureData.stats.ataque * coefRastro;
     user.grantInvulnerability(duracao);
 
     final origem = user.position.clone();

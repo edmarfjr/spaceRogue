@@ -11,9 +11,8 @@ class BaseStats {
     required this.ataque,
   });
 
-  /// Aplica a redução de defesa sobre um dano bruto, com piso de 1.
-  double danoRecebido(double danoBruto) {
-    final reduzido = danoBruto * (1 - defesa * 0.08);
-    return reduzido < 1 ? 1 : reduzido;
-  }
+  /// Tamanho do escudo passivo (segunda barra, absorve antes do HP) — quanto
+  /// maior a defesa, mais escudo. Regenera com o tempo; a taxa é do Player,
+  /// não daqui, porque upgrades/itens futuros vão alterá-la em runtime.
+  double get shieldMax => defesa * 2.0;
 }

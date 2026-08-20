@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/game.dart';
@@ -9,8 +11,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey, KeyDownEvent;
 import 'package:flame/input.dart';
 import 'package:creatures_rogue/game/components/UI/ability_button_visual.dart';
+import 'package:creatures_rogue/game/components/UI/boss_health_bar.dart';
 import 'package:creatures_rogue/game/components/UI/dynamic_joystick_component.dart';
 import 'package:creatures_rogue/game/components/UI/hud.dart';
+import 'package:creatures_rogue/game/components/enemies/boss_registry.dart';
+import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/UI/minimap_hud.dart';
 //import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
@@ -37,10 +42,22 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
 
   final VoidCallback? onGameOver; 
 
-  List<Color> colors1Level = [Palette.indigo,Palette.marromEsc];
-  List<Color> colors2Level = [Palette.eggplant,Palette.chocolate];
-  
   int currentLevel = 1;
+
+  /// De quantos em quantos andares aparece um boss. 5 combina com os 5 temas
+  /// de `DungeonTheme.levelThemes` (um por andar do ciclo). **Baixe pra 2
+  /// enquanto estiver ajustando um boss** — senão cada teste custa uma run
+  /// inteira.
+  static const int andaresPorBoss = 5;
+
+  /// Boss sorteado no começo da run e mantido até ela acabar, pra dar tempo de
+  /// revelar ao jogador o que espera no andar final. Null = nada pendente pra
+  /// desbloquear, e o andar de boss vira andar comum.
+  BossOption? runBoss;
+
+  final Random _bossRandom = Random();
+
+  bool get isBossFloor => currentLevel % andaresPorBoss == 0;
 
   @override
   Color backgroundColor() => const Color(0xFF1E1E1E); // Cor de fundo fora do mapa
@@ -102,13 +119,23 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     player.position = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
     dungeonWorld.add(player);
 
+    // Run nova: volta pro primeiro andar e sorteia o boss que espera no
+    // andar final desta run.
+    currentLevel = 1;
+    runBoss = BossRegistry.sortearPendente(_bossRandom);
+
     final generator = DungeonGenerator(maxRooms: 12); // Gera uma dungeon com 12 salas
     mapData = generator.generate();
 
     // Percorre todos os dados de salas criados pelo algoritmo
     for (var roomData in mapData.values) {
       // Cria o componente visual e o adiciona ao mundo
-      final room = RoomComponent(roomData, player: player);
+      final room = RoomComponent(
+        roomData,
+        player: player,
+        currentLevel: currentLevel,
+        bossBuilder: isBossFloor ? _buildRunBoss : null,
+      );
       loadedRooms['${roomData.x},${roomData.y}'] = room;
       dungeonWorld.add(room);
     }
@@ -119,6 +146,9 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     // Remove HUD/minimapa de uma run anterior, se houver, antes de recriar.
     gameCamera.viewport.children.whereType<Hud>().toList().forEach((h) => h.removeFromParent());
     gameCamera.viewport.children.whereType<MinimapHud>().toList().forEach((m) => m.removeFromParent());
+    // Barra de boss de uma run anterior: o boss dela já foi removido junto com
+    // o mundo, mas a barra vive na viewport e sobraria órfã.
+    gameCamera.viewport.children.whereType<BossHealthBar>().toList().forEach((b) => b.removeFromParent());
 
     final hud = Hud(player: player);
     gameCamera.viewport.add(hud);
@@ -133,12 +163,56 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     gameCamera.viewport.add(minimapHud);
 
     overlays.remove('CreatureSelect');
+
+    // Boss pendente nesta run: mostra quem espera no andar final antes de
+    // liberar o jogo. Motor continua pausado até `dismissBossReveal`.
+    if (runBoss != null) {
+      overlays.add('BossReveal');
+    } else {
+      overlays.add('Hud');
+      resumeEngine();
+    }
+  }
+
+  /// Chamado pelo botão "ENTRAR" do `BossRevealOverlay`.
+  void dismissBossReveal() {
+    overlays.remove('BossReveal');
     overlays.add('Hud');
     resumeEngine();
   }
 
+  /// Constrói o boss da run e pendura a barra de vida na viewport. Passado
+  /// como `bossBuilder` pra sala de boss, que decide QUANDO chamar (quando o
+  /// jogador entra). Null quando não há boss pendente — a sala então spawna
+  /// inimigos comuns.
+  Enemy? _buildRunBoss(Vector2 position) {
+    final option = runBoss;
+    if (option == null) return null;
+
+    final boss = option.builder(position, player);
+    // A barra se auto-remove quando o boss sai do mundo, então é só somar.
+    gameCamera.viewport.add(BossHealthBar(boss: boss, nome: option.nome));
+    return boss;
+  }
+
+  /// ATALHO DE TESTE (F1): joga um boss na frente do jogador sem precisar
+  /// chegar no andar final. Sempre o primeiro do registry, pra ser
+  /// determinístico durante o ajuste de números.
+  void _spawnTestBoss() {
+    if (!_runStarted) return;
+
+    final option = BossRegistry.all.first;
+    final boss = option.builder(player.position + Vector2(0, -40), player);
+    dungeonWorld.add(boss);
+    gameCamera.viewport.add(BossHealthBar(boss: boss, nome: option.nome));
+  }
+
   @override
   KeyEventResult onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) { // <-- MUDOU AQUI
+    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.f1) {
+      _spawnTestBoss();
+      return KeyEventResult.handled;
+    }
     if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
       if (!overlays.isActive('MainMenu')) { 
         if (overlays.isActive('PauseMenu')) {
@@ -347,13 +421,23 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     }
     loadedRooms.clear();
 
-    // 2. GERAÇÃO DE NOVO MAPA
+    // 2. AVANÇA O ANDAR
+    // Sem isso o contador ficava travado em 1 pra sempre — e como o tema da
+    // sala vem de `getThemeForLevel`, os outros 4 temas nunca apareciam.
+    currentLevel++;
+
+    // 3. GERAÇÃO DE NOVO MAPA
     // Você pode até aumentar o maxRooms a cada nível se quiser um desafio maior!
     final generator = DungeonGenerator(maxRooms: 12);
     mapData = generator.generate();
 
     for (var roomData in mapData.values) {
-      final room = RoomComponent(roomData, player: player);
+      final room = RoomComponent(
+        roomData,
+        player: player,
+        currentLevel: currentLevel,
+        bossBuilder: isBossFloor ? _buildRunBoss : null,
+      );
       loadedRooms['${roomData.x},${roomData.y}'] = room;
       dungeonWorld.add(room);
     }
