@@ -10,7 +10,8 @@ import 'package:flutter/material.dart';
 //import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey, KeyDownEvent;
 import 'package:flame/input.dart';
-import 'package:creatures_rogue/game/components/UI/ability_button_visual.dart';
+import 'package:creatures_rogue/game/components/UI/ability_button.dart';
+import 'package:creatures_rogue/game/components/UI/pointer_tracker.dart';
 import 'package:creatures_rogue/game/components/UI/boss_health_bar.dart';
 import 'package:creatures_rogue/game/components/UI/dynamic_joystick_component.dart';
 import 'package:creatures_rogue/game/components/UI/hud.dart';
@@ -35,6 +36,11 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   // Joystick de movimento. Não há mais joystick de mira: a mira das
   // habilidades é sempre a última direção de movimento do jogador.
   late final DynamicJoystickComponent moveJoystick;
+
+  /// Posição de todos os dedos na tela. Os botões de habilidade consultam isso
+  /// pra se ativarem quando um dedo desliza para dentro deles, e não só quando
+  /// um toque nasce ali (ver AbilityButton).
+  late final PointerTracker pointerTracker;
 
   late Player player;
   bool _runStarted = false;
@@ -81,6 +87,9 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     // 1. Inicializa o Mundo
     dungeonWorld = World();
     add(dungeonWorld); // Adiciona o mundo ao jogo
+
+    pointerTracker = PointerTracker();
+    add(pointerTracker);
 
     _setupJoysticks();
     _setupActionButtons();
@@ -324,13 +333,14 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   }
 
   void _setupActionButtons() {
-    // Botão A: laranja. Botão B: azul. A fatia escura por cima mostra o
-    // cooldown restante e some quando a habilidade fica pronta de novo.
+    // Botão A e B: cinza, mais transparente enquanto pressionado. A fatia
+    // escura por cima mostra o cooldown restante e some quando a habilidade
+    // fica pronta de novo.
     final cooldownColor = Colors.black.withAlpha(170);
 
     // Raio 30 (60dp de diâmetro) é o piso de alvo de toque do Material —
     // com 18 (36dp) o botão ficava menor que o mínimo recomendado.
-    final buttonRadius = (_isDesktop ? 22.0 : 30.0);
+    final buttonRadius = (_isDesktop ? 22.0 : 60.0);
 
     // Margens DERIVADAS do raio, não fixas: isso garante que os dois botões
     // nunca se sobrepõem em X, não importa o valor de buttonRadius. B fica
@@ -341,64 +351,40 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     final double marginRightA = edgeMargin;
     final double marginRightB = edgeMargin + buttonRadius * 2 + gap;
 
-    final abilityButton1 = HudButtonComponent(
-      button: AbilityButtonVisual(
+    add(
+      AbilityButton(
         radius: buttonRadius,
-        text:'A',
-        baseColor: Palette.laranja.withAlpha(220),
+        text: 'A',
+        baseColor: Palette.burgundy.withAlpha(255),
+        pressedColor: Palette.burgundy.withAlpha(140),
         cooldownColor: cooldownColor,
         cooldownFraction: () => _runStarted ? player.ability1CooldownFraction : 0.0,
+        pointerTracker: pointerTracker,
+        margin: EdgeInsets.only(right: marginRightA, bottom: 80),
+        // Manter pressionado mantém disparando: o botão só reporta "está sendo
+        // pressionado", quem decide a hora certa de atirar é o cooldown lá no
+        // Player.update().
+        onPressedChanged: (pressed) {
+          if (_runStarted) player.touchHoldAbility1 = pressed;
+        },
       ),
-      buttonDown: AbilityButtonVisual(
-        radius: buttonRadius,
-        text:'A',
-        baseColor: Palette.laranja.withAlpha(140),
-        cooldownColor: cooldownColor,
-        cooldownFraction: () => _runStarted ? player.ability1CooldownFraction : 0.0,
-      ),
-      margin: EdgeInsets.only(right: marginRightA, bottom: 80),
-      // Segurar mantém disparando: o botão só marca "está sendo pressionado",
-      // quem decide a hora certa de atirar é o cooldown lá no Player.update().
-      onPressed: () {
-        if (_runStarted) player.touchHoldAbility1 = true;
-      },
-      onReleased: () {
-        if (_runStarted) player.touchHoldAbility1 = false;
-      },
-      onCancelled: () {
-        if (_runStarted) player.touchHoldAbility1 = false;
-      },
     );
 
-    final abilityButton2 = HudButtonComponent(
-      button: AbilityButtonVisual(
+    add(
+      AbilityButton(
         radius: buttonRadius,
-        text:'B',
-        baseColor: Palette.azul.withAlpha(220),
+        text: 'B',
+        baseColor: Palette.burgundy.withAlpha(255),
+        pressedColor: Palette.burgundy.withAlpha(140),
         cooldownColor: cooldownColor,
         cooldownFraction: () => _runStarted ? player.ability2CooldownFraction : 0.0,
+        pointerTracker: pointerTracker,
+        margin: EdgeInsets.only(right: marginRightB, bottom: 35),
+        onPressedChanged: (pressed) {
+          if (_runStarted) player.touchHoldAbility2 = pressed;
+        },
       ),
-      buttonDown: AbilityButtonVisual(
-        radius: buttonRadius,
-        text:'B',
-        baseColor: Palette.azul.withAlpha(140),
-        cooldownColor: cooldownColor,
-        cooldownFraction: () => _runStarted ? player.ability2CooldownFraction : 0.0,
-      ),
-      margin: EdgeInsets.only(right: marginRightB, bottom: 35),
-      onPressed: () {
-        if (_runStarted) player.touchHoldAbility2 = true;
-      },
-      onReleased: () {
-        if (_runStarted) player.touchHoldAbility2 = false;
-      },
-      onCancelled: () {
-        if (_runStarted) player.touchHoldAbility2 = false;
-      },
     );
-
-    add(abilityButton1);
-    add(abilityButton2);
   }
 
   @override

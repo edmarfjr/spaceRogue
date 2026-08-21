@@ -28,6 +28,12 @@ workflows:
     max_build_duration: 45
     environment:
       <<: *flutter_env
+      # Nome da keystore cadastrada em Codemagic > Teams/App settings > Code
+      # signing identities > Android keystores. Com isso o Codemagic expõe
+      # CM_KEYSTORE_PATH, CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS e CM_KEY_PASSWORD
+      # no build. Se o nome cadastrado for outro, troque aqui.
+      android_signing:
+        - creatures_rogue_keystore
     cache:
       <<: *cache_config
     triggering:
@@ -39,6 +45,22 @@ workflows:
     scripts:
       - name: Baixar dependências
         script: flutter pub get
+
+      # O android/app/build.gradle.kts lê estas credenciais de
+      # android/key.properties, que não é versionado. Codemagic não gera esse
+      # arquivo sozinho — daí este passo. Sem ele o build de release falha de
+      # propósito, em vez de sair assinado com a debug key efêmera da máquina
+      # de CI (assinatura diferente a cada build = "conflito de pacote" ao
+      # tentar atualizar o app já instalado).
+      # `>` e não `>>`: reexecução não deve duplicar as chaves.
+      - name: Gerar key.properties para assinatura
+        script: |
+          cat > "$CM_BUILD_DIR/android/key.properties" <<EOF
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=$CM_KEYSTORE_PATH
+          EOF
 
       # --no-fatal-infos --no-fatal-warnings: o projeto tem ~21 avisos de
       # depreciação do Flame (HasGameRef) que não são bugs. Sem essas flags o
@@ -53,49 +75,61 @@ workflows:
       # - name: Rodar testes
       #   script: flutter test
 
-      # Assina com a debug key (ver buildTypes.release no build.gradle.kts).
-      # Instalável por sideload, NÃO publicável na Play Store — pra isso é
-      # preciso subir keystore + senhas como variáveis no Codemagic e gerar AAB.
+      # --build-number=$PROJECT_BUILD_NUMBER: contador que o Codemagic
+      # autoincrementa a cada build do projeto. Vira o versionCode do APK, que o
+      # Android exige crescente pra aceitar update — sem isso ele ficaria travado
+      # no +1 do pubspec.yaml pra sempre. O versionName (1.0.0) continua vindo do
+      # pubspec; suba ele à mão quando quiser marcar uma versão nova de verdade.
       - name: Build APK release
-        script: flutter build apk --release
+        script: flutter build apk --release --build-number=$PROJECT_BUILD_NUMBER
+
+      # `flutter build apk --release` passa mesmo com a assinatura errada, então
+      # build verde não prova nada sobre assinatura. O fingerprint SHA-256 abaixo
+      # é o invariante que faz o update funcionar: tem que ser o MESMO em todo
+      # build. Se mudar, a keystore mudou e o app instalado vai recusar o update.
+      - name: Conferir assinatura do APK
+        script: keytool -printcert -jarfile build/app/outputs/flutter-apk/app-release.apk
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
 
-  web:
-    name: Web
-    # mac_mini_m2 é a única instância do plano free (500 min/mês). linux_x2 e
-    # windows_x2 exigem billing habilitado — daí o erro "selected instance type
-    # is not available with the current billing plan". macOS builda Android e
-    # web normalmente.
-    instance_type: mac_mini_m2
-    max_build_duration: 30
-    environment:
-      <<: *flutter_env
-    cache:
-      <<: *cache_config
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
-    scripts:
-      - name: Baixar dependências
-        script: flutter pub get
-
-      - name: Analisar código
-        script: flutter analyze --no-fatal-infos --no-fatal-warnings
-
-      # base-href "/" serve pra itch.io e qualquer host que sirva na raiz.
-      # Pra GitHub Pages em subpasta, troque por --base-href /creaturesRogue/
-      - name: Build web release
-        script: flutter build web --release --base-href /
-
-      # itch.io e Netlify esperam um .zip com o index.html na raiz.
-      - name: Empacotar para upload
-        script: cd build/web && zip -r ../creatures_rogue_web.zip .
-    artifacts:
-      - build/creatures_rogue_web.zip
+  # Workflow web desativado por enquanto (só Android). Pra reativar,
+  # descomente o bloco abaixo — as anchors *flutter_env e *cache_config
+  # continuam definidas em definitions:.
+  # web:
+  #   name: Web
+  #   # mac_mini_m2 é a única instância do plano free (500 min/mês). linux_x2 e
+  #   # windows_x2 exigem billing habilitado — daí o erro "selected instance type
+  #   # is not available with the current billing plan". macOS builda Android e
+  #   # web normalmente.
+  #   instance_type: mac_mini_m2
+  #   max_build_duration: 30
+  #   environment:
+  #     <<: *flutter_env
+  #   cache:
+  #     <<: *cache_config
+  #   triggering:
+  #     events:
+  #       - push
+  #     branch_patterns:
+  #       - pattern: main
+  #         include: true
+  #   scripts:
+  #     - name: Baixar dependências
+  #       script: flutter pub get
+  #
+  #     - name: Analisar código
+  #       script: flutter analyze --no-fatal-infos --no-fatal-warnings
+  #
+  #     # base-href "/" serve pra itch.io e qualquer host que sirva na raiz.
+  #     # Pra GitHub Pages em subpasta, troque por --base-href /creaturesRogue/
+  #     - name: Build web release
+  #       script: flutter build web --release --base-href /
+  #
+  #     # itch.io e Netlify esperam um .zip com o index.html na raiz.
+  #     - name: Empacotar para upload
+  #       script: cd build/web && zip -r ../creatures_rogue_web.zip .
+  #   artifacts:
+  #     - build/creatures_rogue_web.zip
 
 # Notificação por e-mail ao terminar o build. Preencha o endereço e descomente
 # — deixei em branco pra não commitar e-mail em arquivo versionado.

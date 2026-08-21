@@ -17,8 +17,6 @@ import 'package:flutter/services.dart';
 import '../map/obstacle.dart';
 
 class Player extends PositionComponent with CollisionCallbacks, HasGameRef, KeyboardHandler{
-  Vector2 _previousPosition = Vector2.zero();
-
   final DynamicJoystickComponent moveJoystick;
   final CreatureData creatureData;
 
@@ -62,7 +60,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
   double get maxSpeed => creatureData.stats.speed;
   final double acceleration = 100.0;
-  final double friction = 300.0;
+  final double friction = 500.0;
 
   /// Direção que as habilidades (e a bomba) disparam: sempre o inimigo mais
   /// próximo dentro da sala atual. Sem inimigo à vista, mantém a última mira.
@@ -266,7 +264,6 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
   @override
   void update(double dt) {
-    _previousPosition = position.clone();
     super.update(dt);
 
     if (_cooldown1 > 0) _cooldown1 -= dt;
@@ -399,11 +396,12 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       return;
     }
     if (!moveDelta.isZero()) {
-      velocity += moveDelta * acceleration * dt;
+      //velocity += moveDelta * acceleration * dt;
       plrDir = moveDelta;
-      if (velocity.length > maxSpeed) {
-        velocity = velocity.normalized() * maxSpeed;
-      }
+      velocity = moveDelta * maxSpeed;
+      //if (velocity.length > maxSpeed) {
+      //  velocity = velocity.normalized() * maxSpeed;
+      //}
     } else {
       if (!velocity.isZero()) {
         double drop = friction * dt;
@@ -473,22 +471,21 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       // MÁGICA AQUI: Só para de andar se bater os pés (sombra)!
       if (!isPhysicsCollision(other) || (isAirborne && other is Hole)) return;
 
-      Vector2 collisionCenter = Vector2.zero();
-      for (var point in intersectionPoints) {
-        collisionCenter += point;
-      }
-      collisionCenter /= intersectionPoints.length.toDouble();
+      // Empurra pela profundidade real do overlap. O rect é lido AGORA, não no
+      // começo do frame: numa quina chegam duas chamadas de onCollision no
+      // mesmo frame, e a segunda precisa ver a correção que a primeira fez.
+      final empurrao = empurraoParaFora(
+        corpo: physicsHitbox.toAbsoluteRect(),
+        alvo: other.toAbsoluteRect(),
+      );
+      if (empurrao.isZero()) return;
 
-      // USA O CENTRO DA SOMBRA E NÃO O CENTRO DO CORPO PARA EVITAR GRUDAR NA PAREDE SUPERIOR
-      Vector2 diff = physicsHitbox.absoluteCenter - collisionCenter;
+      position += empurrao;
 
-      if (diff.x.abs() > diff.y.abs()) {
-        position.x = _previousPosition.x;
-        velocity.x = 0;
-      } else {
-        position.y = _previousPosition.y;
-        velocity.y = 0;
-      }
+      // Zera a velocidade só no eixo empurrado — o outro eixo continua, e é
+      // isso que permite deslizar rente à parede em vez de parar de vez.
+      if (empurrao.x != 0) velocity.x = 0;
+      if (empurrao.y != 0) velocity.y = 0;
     }
   }
 

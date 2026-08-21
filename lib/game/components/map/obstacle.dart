@@ -8,6 +8,33 @@ import 'package:creatures_rogue/game/components/items/heart_half_pickup.dart';
 import 'package:creatures_rogue/game/components/items/heart_pickup.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 
+/// Quanto e pra onde empurrar [corpo] pra tirá-lo de dentro de [alvo]: o eixo
+/// de menor penetração (MTV — minimum translation vector). Zero se não há
+/// sobreposição.
+///
+/// Por que empurrar em vez de voltar pra posição do frame anterior: aquela
+/// posição pode JÁ estar dentro do obstáculo — knockback, esbarrão de outro
+/// inimigo, ou resolução incompleta do frame passado colocam a entidade dentro
+/// da parede antes do frame começar. Nesse caso voltar não separa nada, o
+/// mesmo overlap reaparece no frame seguinte, e a entidade fica presa pra
+/// sempre. Empurrar pela profundidade real sempre separa.
+///
+/// Só um eixo é mexido de propósito: preservar o outro é o que faz quem anda
+/// na diagonal deslizar pela parede em vez de travar.
+Vector2 empurraoParaFora({required Rect corpo, required Rect alvo}) {
+  final sobreposicaoX = min(corpo.right, alvo.right) - max(corpo.left, alvo.left);
+  final sobreposicaoY = min(corpo.bottom, alvo.bottom) - max(corpo.top, alvo.top);
+
+  if (sobreposicaoX <= 0 || sobreposicaoY <= 0) return Vector2.zero();
+
+  if (sobreposicaoX < sobreposicaoY) {
+    final sinal = corpo.center.dx < alvo.center.dx ? -1.0 : 1.0;
+    return Vector2(sobreposicaoX * sinal, 0);
+  }
+  final sinal = corpo.center.dy < alvo.center.dy ? -1.0 : 1.0;
+  return Vector2(0, sobreposicaoY * sinal);
+}
+
 abstract class Obstacle extends PositionComponent with HasGameRef {
   late final Sprite obstacleSprite;
   final String spritePath;

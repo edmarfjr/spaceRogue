@@ -47,7 +47,6 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
 
   final String spritePath;
 
-  late Vector2 _previousPosition;
   late final SpriteComponent visual;
   late final Vector2 _visualBasePosition;
   bool isAirborne;
@@ -108,7 +107,6 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
          size: size ?? Vector2(16, 16), // Tamanho VISUAL padrão
          anchor: Anchor.center,
        ) {
-    _previousPosition = position.clone();
     maxHealth = health;
 
     // Hitbox: explícita > da criatura > tamanho visual.
@@ -125,14 +123,14 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
       whiteReplacement: corBranco,
     );
 
-    _visualBasePosition = size / 2;
+    _visualBasePosition = Vector2(size.x / 2, size.y);
     final anim = moveAnim;
     if (anim != null) _moveAnimator = MovementAnimator(anim);
 
     visual = SpriteComponent(
       sprite: Sprite(enemyImage),
       size: size,
-      anchor: Anchor.center,
+      anchor: Anchor.bottomCenter,
       position: _visualBasePosition.clone(),
       paint: Paint()..filterQuality = FilterQuality.none,
     );
@@ -157,8 +155,8 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
 
     enemyHitbox = RectangleHitbox(
       size: hitboxSize,
-      anchor: Anchor.center,
-      position: size / 2, 
+      anchor: Anchor.bottomCenter,
+      position: _visualBasePosition, 
       collisionType: CollisionType.active,
     );
     add(enemyHitbox);
@@ -176,7 +174,7 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     final shadow = CircleComponent(
       radius: hitboxSize.x / 2, // O raio é metade da largura da Hitbox
       anchor: Anchor.center,
-      position: size / 2 + Vector2(0, hitboxSize.y / 2) + shadowOffset,
+      position: _visualBasePosition + shadowOffset,
       paint: shadowPaint,
       priority: -1, 
     )..scale = Vector2(1.0, 0.75);
@@ -186,7 +184,6 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
 
   @override
   void update(double dt) {
-    _previousPosition = position.clone();
     super.update(dt);
 
     shieldVisual.setOpacity(shieldVisualActive ? 1.0 : 0.0);
@@ -382,11 +379,14 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
       if (!isPushable) return;
 
       Vector2 separationVector = absolutePosition - other.absolutePosition;
-      if (separationVector.length > 0) {
-        position += separationVector.normalized() * 0.5; 
-      } else {
-        position.x += 0.5; 
-      }
+      final desvio = separationVector.length > 0
+          ? separationVector.normalized() * 0.5
+          : Vector2(0.5, 0);
+
+      // Só desvia se o destino estiver livre. Sem esta checagem o esbarrão
+      // enfia o inimigo dentro da parede — e como boss tem isPushable false,
+      // ele vira um pistão empurrando os comuns pra dentro do cenário.
+      if (!_paredeNoCaminho(desvio)) position += desvio;
       return;
     }
 
@@ -394,27 +394,42 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     if (other is WallBarrier || other is Obstacle) {
       
       // AQUI ESTÁ A MÁGICA: Se a colisão não foi nos pés (sombra), ignora a parede!
-      if (!isPhysicsCollision(other)) return; 
+      if (!isPhysicsCollision(other)) return;
 
-      knockbackVelocity.setZero();
-      
-      Vector2 collisionCenter = Vector2.zero();
-      for (var point in intersectionPoints) {
-        collisionCenter += point;
-      }
-      collisionCenter /= intersectionPoints.length.toDouble();
+      // Empurra pela profundidade real do overlap. O rect é lido AGORA, não no
+      // começo do frame: numa quina chegam duas chamadas de onCollision no
+      // mesmo frame, e a segunda precisa ver a correção que a primeira fez.
+      final empurrao = empurraoParaFora(
+        corpo: physicsHitbox.toAbsoluteRect(),
+        alvo: other.toAbsoluteRect(),
+      );
+      if (empurrao.isZero()) return;
 
-      Vector2 diff = physicsHitbox.absoluteCenter - collisionCenter;
-      
-      if (diff.x.abs() > diff.y.abs()) {
-        position.x = _previousPosition.x;
-      } else {
-        position.y = _previousPosition.y;
-      }
+      position += empurrao;
+
+      // Corta o knockback só no eixo empurrado. Zerar tudo (como antes) mata
+      // também o empurrão tangencial, que é o que deslizaria pela parede.
+      if (empurrao.x != 0) knockbackVelocity.x = 0;
+      if (empurrao.y != 0) knockbackVelocity.y = 0;
     }
   }
 
-  
+  /// Se mover a sombra por [desvio] encostaria em parede ou obstáculo sólido.
+  /// Usado pelo esbarrão entre inimigos, que escreve position direto e por isso
+  /// não passa pela resolução de parede.
+  bool _paredeNoCaminho(Vector2 desvio) {
+    final destino = physicsHitbox.toAbsoluteRect().shift(Offset(desvio.x, desvio.y));
+
+    for (final componente in parent?.children ?? const Iterable.empty()) {
+      if (componente is! WallBarrier && componente is! Obstacle) continue;
+      if (componente is Obstacle && isAirborne) continue; // voando, passa por cima
+      if (destino.overlaps((componente as PositionComponent).toAbsoluteRect())) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   bool isPhysicsCollision(PositionComponent other) {
     // 1. Se está voando, passa limpo por cima de obstáculos (pedras/buracos)
     if (other is Obstacle && isAirborne) return false;
