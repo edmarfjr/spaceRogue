@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
@@ -24,37 +25,34 @@ class BossRevealOverlay extends StatelessWidget {
     final recompensa = CreatureRegistry.byId(boss.creatureId);
 
     return Material(
-      color: Colors.black87,
+      color: Palette.branco,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               'ANDAR ${CreaturesRogueGame.andaresPorBoss}: BOSS',
-              style: const TextStyle(color: Colors.white54, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2),
+              style: const TextStyle(color: Palette.preto, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2),
             ),
             const SizedBox(height: 8),
             Text(
               boss.nome,
-              style: const TextStyle(color: Colors.redAccent, fontSize: 40, fontWeight: FontWeight.bold),
+              style: const TextStyle(color: Palette.preto, fontSize: 40, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
-            Text(
-              'Ao vencer, libera:',
-              style: TextStyle(color: Colors.white.withAlpha(180), fontSize: 14),
-            ),
-            Text(
-              recompensa.nome,
-              style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 40),
+           
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                backgroundColor: Colors.redAccent,
+                backgroundColor: Palette.branco,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                elevation: 0,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero,
+                  side: BorderSide(color: Palette.preto, width: 2),
+                ),
               ),
               onPressed: game.dismissBossReveal,
-              child: const Text('ENTRAR', style: TextStyle(fontSize: 20, color: Colors.white)),
+              child: const Text(' ENTRAR ', style: TextStyle(fontSize: 20, color: Palette.preto)),
             ),
           ],
         ),

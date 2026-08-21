@@ -28,8 +28,8 @@ import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'components/player/player.dart';
 
 /// Como o jogador aciona as duas habilidades. Os dois caminhos convivem no
-/// código; quem escolhe é `CreaturesRogueGame.controlScheme`, hoje ajustado
-/// pelo seletor do menu inicial e mais tarde pela tela de configurações.
+/// código; quem escolhe é `CreaturesRogueGame.controlScheme`, ajustado pelo
+/// seletor da tela de configurações e persistido por `GameSettings`.
 enum ControlScheme {
   /// Dois botões A/B no canto inferior direito. Ver [AbilityButton].
   botoes,
@@ -79,8 +79,9 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   ControlScheme _controlScheme;
 
   /// Esquema de controle montado agora. Atribuir troca os componentes de
-  /// controle na hora — dá pra alternar no menu inicial e ver o efeito na run
-  /// seguinte sem reiniciar o app.
+  /// controle na hora — dá pra alternar nas configurações e ver o efeito na
+  /// run seguinte sem reiniciar o app. Gravar em disco é papel de
+  /// `GameSettings`, não deste setter (que é síncrono).
   ControlScheme get controlScheme => _controlScheme;
 
   set controlScheme(ControlScheme scheme) {
@@ -212,7 +213,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
       getCurrentLogicalRoom: () {
         return Vector2(currentRoomIndex.x + 50, currentRoomIndex.y + 50);
       },
-      position: Vector2(RoomComponent.roomWidth - 15, 15),
+      position: Vector2(RoomComponent.roomWidth - 5, 5),
     );
     gameCamera.viewport.add(minimapHud);
 
@@ -430,11 +431,9 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   }
 
   void _setupActionButtons() {
-    // Botão A e B: cinza, mais transparente enquanto pressionado. A fatia
-    // escura por cima mostra o cooldown restante e some quando a habilidade
-    // fica pronta de novo.
-    final cooldownColor = Colors.black.withAlpha(170);
-
+    // Botão A e B: cinza, mais transparente enquanto pressionado. O cooldown
+    // não aparece mais aqui — está nos indicadores da Hud, que servem aos dois
+    // esquemas de controle.
     // Raio 30 (60dp de diâmetro) é o piso de alvo de toque do Material —
     // com 18 (36dp) o botão ficava menor que o mínimo recomendado.
     final buttonRadius = (_isDesktop ? 22.0 : 50.0);
@@ -451,11 +450,9 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     _abilityControls.add(
       AbilityButton(
         radius: buttonRadius,
-        text: 'A',
+        spritePath: 'ui/ataque.png',
         baseColor: Palette.burgundy.withAlpha(255),
         pressedColor: Palette.burgundy.withAlpha(140),
-        cooldownColor: cooldownColor,
-        cooldownFraction: () => _runStarted ? player.ability1CooldownFraction : 0.0,
         pointerTracker: pointerTracker,
         margin: EdgeInsets.only(right: marginRightA, bottom: 80),
         // Manter pressionado mantém disparando: o botão só reporta "está sendo
@@ -470,11 +467,9 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     _abilityControls.add(
       AbilityButton(
         radius: buttonRadius,
-        text: 'B',
+        spritePath: 'ui/defesa.png',
         baseColor: Palette.burgundy.withAlpha(255),
         pressedColor: Palette.burgundy.withAlpha(140),
-        cooldownColor: cooldownColor,
-        cooldownFraction: () => _runStarted ? player.ability2CooldownFraction : 0.0,
         pointerTracker: pointerTracker,
         margin: EdgeInsets.only(right: marginRightB, bottom: 35),
         onPressedChanged: (pressed) {

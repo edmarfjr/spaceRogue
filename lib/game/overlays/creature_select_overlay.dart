@@ -58,7 +58,7 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.black87,
+      color: Palette.branco,
       child: SafeArea(
         child: Column(
           children: [
@@ -66,7 +66,7 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
               padding: EdgeInsets.only(top: 16, bottom: 8),
               child: Text(
                 'ESCOLHA SUA CRIATURA',
-                style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                style: TextStyle(color: Palette.preto, fontSize: 24, fontWeight: FontWeight.bold),
               ),
             ),
             Expanded(
@@ -112,8 +112,8 @@ class _CreatureList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.black45,
-        borderRadius: BorderRadius.circular(10),
+        color: Palette.branco,
+        borderRadius: BorderRadius.circular(0),
       ),
       padding: const EdgeInsets.all(6),
       child: ListView.separated(
@@ -158,18 +158,18 @@ class _CreatureListTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? accent.withAlpha(60) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border(left: BorderSide(color: locked ? Colors.white24 : accent, width: 4)),
-        ),
+        //decoration: BoxDecoration(
+        //  color: isSelected ? accent.withAlpha(60) : Colors.transparent,
+        //  borderRadius: BorderRadius.circular(8),
+        //  border: Border(left: BorderSide(color: locked ? Colors.white24 : accent, width: 4)),
+        //),
         child: Row(
           children: [
             Expanded(
               child: Text(
                 locked ? '???' : creature.nome,
                 style: TextStyle(
-                  color: locked ? Colors.white38 : Colors.white,
+                  color: locked ? Palette.indigo : Palette.preto,
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
@@ -194,80 +194,109 @@ class _CreatureDetailPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = CreatureSelectOverlay.typeColor(creature.tipo);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Palette.branco,
-        borderRadius: BorderRadius.circular(0),
-        border: Border.all(color: accent, width: 2),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(width: 20),
-              _CreatureSprite(creature: creature, size: 80),
-              const SizedBox(width: 5),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Palette.branco,
+              borderRadius: BorderRadius.circular(0),
+              border: Border.all(color: Palette.preto, width: 2),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      creature.nome,
-                      style: const TextStyle(color: Palette.preto, fontSize: 22, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      'Tipo: ${CreatureSelectOverlay.typeLabel(creature.tipo)}',
-                      style: TextStyle(color: Palette.preto, fontSize: 15, fontWeight: FontWeight.bold),
-                      textAlign: TextAlign.start,
+                    const SizedBox(width: 20),
+                    _CreatureSprite(creature: creature, size: 80),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(0),
+                              border: Border(
+                                right: BorderSide(color: Palette.preto, width: 2),
+                                bottom: BorderSide(color: Palette.preto, width: 2),
+                              ),
+                            ),
+                            child: Text(
+                              '${creature.nome} \n Tipo: ${CreatureSelectOverlay.typeLabel(creature.tipo)} ',
+                              style: const TextStyle(color: Palette.preto, fontSize: 22, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                const SizedBox(height: 16),
                 Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Palette.preto, width: 2),
-                      borderRadius: BorderRadius.circular(0),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _StatLine('HP', creature.stats.maxHp.toString()),
-                        _StatLine('VELOCIDADE', creature.stats.speed.toInt().toString()),
-                        _StatLine('ATAQUE', creature.stats.ataque.toInt().toString()),
-                        _StatLine('DEFESA', creature.stats.defesa.toInt().toString()),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'A: ${creature.ability1.nome}',
-                        style: const TextStyle(color: Palette.preto, fontSize: 15, fontWeight: FontWeight.bold),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Palette.preto, width: 2),
+                            borderRadius: BorderRadius.circular(0),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _StatLine('SAÚDE', creature.stats.maxHp.toString()),
+                              _StatLine('VELOCIDADE', creature.stats.speed.toInt().toString()),
+                              _StatLine('ATAQUE', creature.stats.ataque.toInt().toString()),
+                              _StatLine('DEFESA', creature.stats.defesa.toInt().toString()),
+                            ],
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'B: ${creature.ability2.nome}',
-                        style: const TextStyle(color: Palette.preto, fontSize: 15, fontWeight: FontWeight.bold),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(0),
+                                border: Border(
+                                  right: BorderSide(color: Palette.preto, width: 2),
+                                  bottom: BorderSide(color: Palette.preto, width: 2),
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Habilidades:',
+                                    style: const TextStyle(color: Palette.preto, fontSize: 22, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    creature.ability1.nome,
+                                    style: const TextStyle(color: Palette.preto, fontSize: 15, fontWeight: FontWeight.bold),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    creature.ability2.nome,
+                                    style: const TextStyle(color: Palette.preto, fontSize: 15, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -275,20 +304,25 @@ class _CreatureDetailPanel extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: onPlay,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: accent,
-                padding: const EdgeInsets.symmetric(vertical: 10),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: onPlay,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Palette.branco,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              elevation: 0,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+                side: BorderSide(color: Palette.preto, width: 2),
               ),
-              child: const Text('JOGAR', style: TextStyle(color: Palette.preto, fontSize: 16, fontWeight: FontWeight.bold)),
             ),
+            child: const Text('JOGAR', style: TextStyle(color: Palette.preto, fontSize: 16, fontWeight: FontWeight.bold)),
           ),
-        ],
-      ),
+                  ),
+      ],
     );
   }
 }

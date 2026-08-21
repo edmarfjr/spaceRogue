@@ -38,7 +38,7 @@ import '../enemies/creatures/urso_planta_enemy.dart';
 class CreatureRegistry {
   static final CreatureData roedorFogo = CreatureData(
     id: 'roedor_fogo',
-    nome: 'Roedor de Fogo',
+    nome: 'Torchmin',
     spritePath: 'actors/ratFogo.png',
     tipo: CreatureType.fogo,
     corClara: Palette.laranja,
@@ -68,7 +68,7 @@ class CreatureRegistry {
 
   static final CreatureData sapoAgua = CreatureData(
     id: 'sapo_agua',
-    nome: 'Sapo de Água',
+    nome: 'Frowago',
     spritePath: 'actors/sapoAgua.png',
     tipo: CreatureType.agua,
     corClara: Palette.azul,

@@ -1,9 +1,7 @@
-import 'dart:ui' as ui;
-
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'package:creatures_rogue/game/components/UI/ability_cooldown_indicator.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
-import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import '../player/player.dart';
 
 class Hud extends PositionComponent with HasGameRef {
@@ -26,17 +24,24 @@ class Hud extends PositionComponent with HasGameRef {
   final Vector2 bombIconSize = Vector2(16, 16);
   final double spacing = -13.0;
 
-  static final Vector2 _shieldBarSize = Vector2(30, 3);
-  final Paint _shieldMoldura = Paint()..color = Palette.preto;
-  final Paint _shieldFundo = Paint()..color = Palette.cinzaEsc;
+  /// Lado dos indicadores de cooldown. 16 é o tamanho nativo dos sprites
+  /// (`ui/ataque.png` e `ui/defesa.png`), então a escala fica 1:1 e o pixel art
+  /// não ganha artefato de reamostragem.
+  static const double _iconeCooldownLado = 16;
+
+  static final Vector2 _shieldBarSize = Vector2(3, 3);
+  final Paint _shieldMoldura = Paint()..color = Palette.branco;
+  final Paint _shieldFundo = Paint()..color = Palette.preto;
   final Paint _shieldPreenchimento = Paint()..color = Palette.azul;
+  final Paint _hpPreenchimento = Paint()..color = Palette.vermelho;
+  
 
   Hud({required this.player}) : super(position: Vector2(2, 2));
 
   @override
   Future<void> onLoad() async {
     super.onLoad();
-
+/*
     final ui.Image heartImg = await PaletteSwapper.createSwappedImage(
       imagePath: 'ui/heart.png',
       lightGrayReplacement: Palette.vermelho,
@@ -64,8 +69,26 @@ class Hud extends PositionComponent with HasGameRef {
     heartSprite = Sprite(heartImg);
     heartHalfSprite = Sprite(heartHalfImg);
     heartEmptySprite = Sprite(heartEmptyImg);
-
+*/
     //bombSprite = Sprite(bombImg);
+
+    // Indicadores de cooldown, logo abaixo das barras de vida/escudo. Ficam
+    // como filhos e não dentro do render() da Hud pra cada um cuidar do seu
+    // próprio sprite e do seu carregamento assíncrono.
+    await addAll([
+      AbilityCooldownIndicator(
+        spritePath: 'ui/ataque.png',
+        cooldownFraction: () => player.ability1CooldownFraction,
+        lado: _iconeCooldownLado,
+        position: Vector2(0, 12),
+      ),
+      AbilityCooldownIndicator(
+        spritePath: 'ui/defesa.png',
+        cooldownFraction: () => player.ability2CooldownFraction,
+        lado: _iconeCooldownLado,
+        position: Vector2(_iconeCooldownLado + 2, 12),
+      ),
+    ]);
 
     textPaint = TextPaint(
       style: const TextStyle(
@@ -84,6 +107,15 @@ class Hud extends PositionComponent with HasGameRef {
   void render(Canvas canvas) {
     super.render(canvas);
 
+    canvas.drawRect(Rect.fromLTWH(-1, 3 - 1, _shieldBarSize.x * player.maxHealth + 2, _shieldBarSize.y + 2), _shieldMoldura);
+    canvas.drawRect(Rect.fromLTWH(0, 3, _shieldBarSize.x * player.maxHealth, _shieldBarSize.y), _shieldFundo);
+    canvas.drawRect(Rect.fromLTWH(0, 3, _shieldBarSize.x * player.currentHealth, _shieldBarSize.y), _hpPreenchimento);
+
+
+    canvas.drawRect(Rect.fromLTWH(-1, 7 - 1, _shieldBarSize.x * player.shieldMax + 2, _shieldBarSize.y + 2), _shieldMoldura);
+    canvas.drawRect(Rect.fromLTWH(0, 7, _shieldBarSize.x * player.shieldMax, _shieldBarSize.y), _shieldFundo);
+    canvas.drawRect(Rect.fromLTWH(0, 7, _shieldBarSize.x * player.shield, _shieldBarSize.y), _shieldPreenchimento);
+/*
     // --- LÓGICA DO MEIO-CORAÇÃO ---
     // Quantos corações INICIAIS (capacidade total) o jogador tem na tela?
     // Como a escala do player é dobrada (maxHealth = 6), dividimos por 2 (3 corações na tela).
@@ -128,6 +160,7 @@ class Hud extends PositionComponent with HasGameRef {
       canvas.drawRect(Rect.fromLTWH(0, shieldY, _shieldBarSize.x, _shieldBarSize.y), _shieldFundo);
       canvas.drawRect(Rect.fromLTWH(0, shieldY, _shieldBarSize.x * fracao, _shieldBarSize.y), _shieldPreenchimento);
     }
+*/
 
     //double bombY = heartSize.y + 2;
     //bombSprite.render(canvas, position: Vector2(0, bombY), size: bombIconSize, overridePaint: paint);

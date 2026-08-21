@@ -12,7 +12,7 @@ class HudOverlay extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: IconButton(
-          icon: const Icon(Icons.pause_circle_outline, color: Colors.white, size: 40),
+          icon: const Icon(Icons.pause_circle_outline, color: Colors.white, size: 56),
           onPressed: () {
             game.pauseEngine(); // Congela o jogo inteiro!
             game.overlays.add('PauseMenu');

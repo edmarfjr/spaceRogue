@@ -1,14 +1,12 @@
-import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
-import 'package:flame/extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/UI/pointer_tracker.dart';
-import 'package:creatures_rogue/game/components/core/palette.dart';
 
-/// Botão de habilidade do HUD: círculo de cor base, a letra no meio e uma fatia
-/// escura por cima indicando quanto falta do cooldown (some conforme fica
-/// pronto).
+/// Botão de habilidade: círculo de cor base com o ícone da habilidade no meio.
+///
+/// Não desenha cooldown: isso agora é do `AbilityCooldownIndicator`, na HUD,
+/// que vale também no esquema de gestos — onde não existe botão em que desenhar.
 ///
 /// Não é um `HudButtonComponent`. Aquele reage só a `TapCallbacks`, ou seja: um
 /// dedo que já estava na tela e desliza para dentro do botão nunca o ativava —
@@ -28,22 +26,28 @@ class AbilityButton extends PositionComponent
     with HasGameReference, ComponentViewportMargin, TapCallbacks {
   final Color baseColor;
   final Color pressedColor;
-  final Color cooldownColor;
-  final double Function() cooldownFraction;
-  final String text;
+
+  /// Ícone da habilidade, caminho dentro de `assets/images/` — o mesmo sprite
+  /// que o indicador de cooldown da HUD usa.
+  final String spritePath;
+
   final PointerTracker pointerTracker;
   final void Function(bool pressed) onPressedChanged;
 
   bool _tapDown = false;
   bool _pressed = false;
 
+  late final Sprite _sprite;
+
+  /// `FilterQuality.none` mantém o pixel art nítido: o sprite é 16x16 e o botão
+  /// tem 100px de diâmetro no mobile.
+  final Paint _spritePaint = Paint()..filterQuality = FilterQuality.none;
+
   AbilityButton({
     required double radius,
     required this.baseColor,
     required this.pressedColor,
-    required this.cooldownColor,
-    required this.cooldownFraction,
-    required this.text,
+    required this.spritePath,
     required this.pointerTracker,
     required this.onPressedChanged,
     EdgeInsets? margin,
@@ -51,6 +55,12 @@ class AbilityButton extends PositionComponent
     // ComponentViewportMargin usa pra calcular a posição a partir da margem.
   }) : super(size: Vector2.all(radius * 2)) {
     this.margin = margin;
+  }
+
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+    _sprite = await Sprite.load(spritePath);
   }
 
   /// Área de toque circular, igual ao círculo desenhado. O `containsLocalPoint`
@@ -107,23 +117,14 @@ class AbilityButton extends PositionComponent
       Paint()..color = _pressed ? pressedColor : baseColor,
     );
 
-    final paint = TextPaint(
-      style: TextStyle(
-        color: Palette.preto,
-        fontSize: radius,
-        fontFamily: 'pixelFont',
-        fontWeight: FontWeight.bold,
-        shadows: [
-          Shadow(color: Palette.preto, offset: const Offset(1, 1)),
-        ],
-      ),
+    // Ícone com 60% do diâmetro, centralizado — folga suficiente pra borda do
+    // círculo continuar visível como alvo de toque.
+    final iconSize = Vector2.all(size.x * 0.6);
+    _sprite.render(
+      canvas,
+      position: (size - iconSize) / 2,
+      size: iconSize,
+      overridePaint: _spritePaint,
     );
-    paint.render(canvas, text, center.toVector2(), anchor: Anchor.center);
-
-    final fraction = cooldownFraction().clamp(0.0, 1.0);
-    if (fraction > 0) {
-      final rect = Rect.fromCircle(center: center, radius: radius);
-      canvas.drawArc(rect, -pi / 2, fraction * 2 * pi, true, Paint()..color = cooldownColor);
-    }
   }
 }

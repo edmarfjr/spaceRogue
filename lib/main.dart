@@ -10,6 +10,8 @@ import 'package:creatures_rogue/game/overlays/creature_select_overlay.dart';
 import 'package:creatures_rogue/game/overlays/game_over_overlay.dart';
 import 'package:creatures_rogue/game/overlays/main_menu_overlay.dart';
 import 'package:creatures_rogue/game/overlays/pause_overlay.dart';
+import 'package:creatures_rogue/game/overlays/settings_overlay.dart';
+import 'package:creatures_rogue/game/game_settings.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 
 bool get isDesktopPlatform {
@@ -27,6 +29,7 @@ bool get isDesktopPlatform {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await CreatureProgress.instance.load();
+  await GameSettings.instance.load();
   await Flame.device.setLandscape();
   await Flame.device.fullScreen();
 
@@ -40,12 +43,20 @@ void main() async {
   runApp(
     MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        fontFamily: 'pixelFont', // Define a fonte padrão para todo o app
+        //primarySwatch: Colors.blue,
+      ),
       home: Scaffold(
         backgroundColor: const Color(0xFF2C2C2C),
         body: GameWidget<CreaturesRogueGame>(
-          game: CreaturesRogueGame(), // Não precisa mais passar onGameOver no construtor
+          game: CreaturesRogueGame(
+            // Esquema escolhido na última sessão (ver GameSettings).
+            controlScheme: GameSettings.instance.controlScheme,
+          ),
           overlayBuilderMap: {
             'MainMenu': (context, game) => MainMenuOverlay(game: game),
+            'Settings': (context, game) => SettingsOverlay(game: game),
             'CreatureSelect': (context, game) => CreatureSelectOverlay(game: game),
             'BossReveal': (context, game) => BossRevealOverlay(game: game),
             'PauseMenu': (context, game) => PauseMenuOverlay(game: game),
