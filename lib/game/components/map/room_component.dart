@@ -218,8 +218,8 @@ class RoomComponent extends PositionComponent with HasGameRef {
       int attempts = 0; 
 
       while (!validPosition && attempts < 30) {
-        px = 32 + _random.nextInt(8) * 16.0;
-        py = 32 + _random.nextInt(8) * 16.0;
+        px = 48 + _random.nextInt(7) * 16.0;
+        py = 48 + _random.nextInt(7) * 16.0;
 
         Rect enemyRect = Rect.fromLTWH(px, py, 16, 16);
         validPosition = true;

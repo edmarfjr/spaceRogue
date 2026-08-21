@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey, KeyDownEvent;
 import 'package:flame/input.dart';
 import 'package:creatures_rogue/game/components/UI/ability_button.dart';
+import 'package:creatures_rogue/game/components/UI/gesture_action_area.dart';
 import 'package:creatures_rogue/game/components/UI/pointer_tracker.dart';
 import 'package:creatures_rogue/game/components/UI/boss_health_bar.dart';
 import 'package:creatures_rogue/game/components/UI/dynamic_joystick_component.dart';
@@ -25,6 +26,33 @@ import 'package:creatures_rogue/game/components/map/room_component.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'components/player/player.dart';
+
+/// Como o jogador aciona as duas habilidades. Os dois caminhos convivem no
+/// código; quem escolhe é `CreaturesRogueGame.controlScheme`, hoje ajustado
+/// pelo seletor do menu inicial e mais tarde pela tela de configurações.
+enum ControlScheme {
+  /// Dois botões A/B no canto inferior direito. Ver [AbilityButton].
+  botoes,
+
+  /// Metade direita da tela vira área de gesto: toque parado = habilidade 1,
+  /// arrastar o dedo = habilidade 2. Ver [GestureActionArea].
+  gestos;
+
+  /// Nome curto pro seletor.
+  String get rotulo => switch (this) {
+    ControlScheme.botoes => 'BOTÕES',
+    ControlScheme.gestos => 'GESTOS',
+  };
+
+  /// Uma linha explicando o esquema, porque nenhum dos dois é óbvio de
+  /// adivinhar só pelo nome.
+  String get descricao => switch (this) {
+    ControlScheme.botoes =>
+      'Botões A e B no canto direito. Segurar mantém disparando.',
+    ControlScheme.gestos =>
+      'Metade direita da tela: toque parado = A, arrastar o dedo = B.',
+  };
+}
 
 class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHandlerComponents {
   // O Mundo onde o mapa, inimigos e jogador existirão
@@ -46,7 +74,21 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   bool _runStarted = false;
   Vector2 currentRoomIndex = Vector2.zero();
 
-  final VoidCallback? onGameOver; 
+  final VoidCallback? onGameOver;
+
+  ControlScheme _controlScheme;
+
+  /// Esquema de controle montado agora. Atribuir troca os componentes de
+  /// controle na hora — dá pra alternar no menu inicial e ver o efeito na run
+  /// seguinte sem reiniciar o app.
+  ControlScheme get controlScheme => _controlScheme;
+
+  set controlScheme(ControlScheme scheme) {
+    if (scheme == _controlScheme) return;
+    _controlScheme = scheme;
+    // Antes do onLoad não há o que remontar: o próprio onLoad monta.
+    if (isLoaded) _setupAbilityControls();
+  }
 
   int currentLevel = 1;
 
@@ -76,7 +118,10 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   double freezeTmr = 0;
   double freezeTime = 0.5;
 
-  CreaturesRogueGame({this.onGameOver});
+  CreaturesRogueGame({
+    this.onGameOver,
+    ControlScheme controlScheme = ControlScheme.botoes,
+  }) : _controlScheme = controlScheme;
 
   @override
   Future<void> onLoad() async {
@@ -92,7 +137,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     add(pointerTracker);
 
     _setupJoysticks();
-    _setupActionButtons();
+    _setupAbilityControls();
 
     // Pré-processa a paleta dos sprites que aparecem em pleno combate.
     // Sem isso, o PRIMEIRO tiro / explosão / morte de inimigo gerava uma
@@ -332,6 +377,58 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     add(moveJoystick);
   }
 
+  /// Componentes de controle montados pelo esquema atual, guardados pra poder
+  /// desmontar na troca. Uma lista própria, e não uma varredura por tipo em
+  /// `children`, porque `add` do Flame é diferido: um componente adicionado e
+  /// trocado no mesmo frame ainda não apareceria em `children`.
+  final List<Component> _abilityControls = [];
+
+  /// (Re)monta o esquema de controle escolhido. Idempotente: derruba o que o
+  /// esquema anterior tinha posto antes de montar o novo, então serve tanto pro
+  /// onLoad quanto pra troca em runtime.
+  void _setupAbilityControls() {
+    for (final control in _abilityControls) {
+      control.removeFromParent();
+    }
+    _abilityControls.clear();
+
+    // Se a troca aconteceu com o dedo na tela, o componente removido nunca vai
+    // mandar o "soltou" — sem isso o jogador ficaria disparando pra sempre.
+    if (_runStarted) {
+      player.touchHoldAbility1 = false;
+      player.touchHoldAbility2 = false;
+    }
+
+    switch (_controlScheme) {
+      case ControlScheme.botoes:
+        _setupActionButtons();
+      case ControlScheme.gestos:
+        _setupGestureControls();
+    }
+
+    addAll(_abilityControls);
+  }
+
+  /// Metade direita da tela como área de gesto, sem botão desenhado. Note que
+  /// nesse esquema não há mais o indicador visual de cooldown que o botão
+  /// desenhava.
+  void _setupGestureControls() {
+    _abilityControls.add(
+      GestureActionArea(
+        // Toque parado = habilidade 1 (o antigo botão A). Manter o dedo mantém
+        // disparando, igual ao botão: quem decide a hora certa de atirar é o
+        // cooldown lá no Player.update().
+        onTapHoldChanged: (active) {
+          if (_runStarted) player.touchHoldAbility1 = active;
+        },
+        // Arrastar = habilidade 2 (o antigo botão B).
+        onDragHoldChanged: (active) {
+          if (_runStarted) player.touchHoldAbility2 = active;
+        },
+      ),
+    );
+  }
+
   void _setupActionButtons() {
     // Botão A e B: cinza, mais transparente enquanto pressionado. A fatia
     // escura por cima mostra o cooldown restante e some quando a habilidade
@@ -351,7 +448,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     final double marginRightA = edgeMargin;
     final double marginRightB = edgeMargin + buttonRadius * 2 + gap;
 
-    add(
+    _abilityControls.add(
       AbilityButton(
         radius: buttonRadius,
         text: 'A',
@@ -370,7 +467,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
       ),
     );
 
-    add(
+    _abilityControls.add(
       AbilityButton(
         radius: buttonRadius,
         text: 'B',

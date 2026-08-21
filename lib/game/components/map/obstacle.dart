@@ -110,6 +110,9 @@ class Hole extends Obstacle {
   Hole({
     required super.position,
     Vector2? size,
+    super.cor1,
+    super.cor2,
+    super.cor3,
   }) : super(
          spritePath: 'tileset/hole.png',
          size: size ?? Vector2(16, 16),

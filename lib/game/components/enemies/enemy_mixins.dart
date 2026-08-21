@@ -284,7 +284,7 @@ mixin JumpMovement on Enemy {
   void setupJumpAnimations({double prepTime = 0.3}) {
     prepDuration = prepTime;
 
-    _baseVisualY = size.y / 2;
+    _baseVisualY = size.y;
     _baseHitboxY = enemyHitbox.position.y;
   }
 
