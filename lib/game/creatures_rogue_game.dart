@@ -340,7 +340,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
 
     // Raio 30 (60dp de diâmetro) é o piso de alvo de toque do Material —
     // com 18 (36dp) o botão ficava menor que o mínimo recomendado.
-    final buttonRadius = (_isDesktop ? 22.0 : 60.0);
+    final buttonRadius = (_isDesktop ? 22.0 : 50.0);
 
     // Margens DERIVADAS do raio, não fixas: isso garante que os dois botões
     // nunca se sobrepõem em X, não importa o valor de buttonRadius. B fica

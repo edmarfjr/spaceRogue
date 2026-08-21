@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 import 'package:flame/components.dart';
+import 'package:flame/flame.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/collisions.dart';
 import 'package:creatures_rogue/game/components/UI/dynamic_joystick_component.dart';
@@ -24,6 +25,8 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   late final SpriteComponent visual;
   late final Vector2 _visualBasePosition;
   late final MovementAnimator _moveAnimator;
+
+  late final SpriteComponent circDir;
 
   // Bolha desenhada por cima do player enquanto uma habilidade defensiva
   // (Bolha Protetora, Casco Fechado) está com o efeito ativo.
@@ -255,6 +258,19 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
     add(shadow);
 
+    final ui.Image circDirImg = await Flame.images.load('actors/circDir.png');
+
+    circDir = SpriteComponent(
+      sprite: Sprite(circDirImg),
+      size: Vector2.all(24),
+      anchor: Anchor.center,
+      position: _visualBasePosition,
+      paint: Paint()..filterQuality = FilterQuality.none,
+      priority: -2,
+    );
+    
+    add(circDir);
+
     // playerHitbox.debugMode = true;
     // physicsHitbox.debugMode = true;
     // visual.debugMode = true;
@@ -315,7 +331,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       _updateJump(dt);
     } else {
       _updateMovement(dt, moveDelta);
-
+      
       _moveAnimator.update(
         visual: visual,
         basePosition: _visualBasePosition,
@@ -398,6 +414,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     if (!moveDelta.isZero()) {
       //velocity += moveDelta * acceleration * dt;
       plrDir = moveDelta;
+      circDir.angle = plrDir.screenAngle();
       velocity = moveDelta * maxSpeed;
       //if (velocity.length > maxSpeed) {
       //  velocity = velocity.normalized() * maxSpeed;
