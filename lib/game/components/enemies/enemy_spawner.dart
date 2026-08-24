@@ -23,7 +23,10 @@ class EnemySpawner {
     SpawnOption(CreatureRegistry.griloEletrico, 14),   // frágil, comum
     SpawnOption(CreatureRegistry.sapoAgua, 12),        // médio
     SpawnOption(CreatureRegistry.slimePlanta, 9),      // médio, suja a arena
+    SpawnOption(CreatureRegistry.pinguimAgua, 8),      // tanque, menos comum
     SpawnOption(CreatureRegistry.tartarugaPlanta, 8),  // tanque, menos comum
+    SpawnOption(CreatureRegistry.ouricoEletrico, 7),   // tanque, menos comum
+    SpawnOption(CreatureRegistry.caranguejoErmitao, 7),// tanque, menos comum
     SpawnOption(CreatureRegistry.bombaFogo, 6),        // ameaça alta, raro
     SpawnOption(CreatureRegistry.cobraAgua, 5),        // ameaça alta, raro
     SpawnOption(CreatureRegistry.tornadoFogo, 4),      // ameaça alta, muito raro

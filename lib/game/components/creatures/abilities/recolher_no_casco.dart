@@ -19,7 +19,7 @@ class RecolherNoCasco extends Ability {
   final double duracaoLentidao;
 
   const RecolherNoCasco({
-    this.reducaoDano = 0.8,
+    this.reducaoDano = 1,
     this.duracao = 2.5,
     this.duracaoCegueira = 2.5,
     this.duracaoLentidao = 3.0,

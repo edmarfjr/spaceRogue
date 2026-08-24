@@ -51,6 +51,8 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   double lifeTimeIni = 10;
   double _age = 0;
 
+  final bool estilhaca;
+
   Projectile({
     required Vector2 position,
     required this.direction,
@@ -73,6 +75,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     this.lentidaoFator = 0.5,
     this.cegoDuracao = 0,
     this.atravessaObstaculos = false,
+    this.estilhaca = false,
     Vector2? size, 
     }): super(
       position: position, 
@@ -130,6 +133,29 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         tipo: tipo,
         isEnemy: isEnemy,
       ));
+    }
+
+    if(estilhaca){
+      final anguloRad = 20 * pi / 180;
+      for (final offset in [-anguloRad, 0.0, anguloRad]) {
+        final rotated = direction.clone()..rotate(offset);
+          parent?.add(Projectile(
+          position: position.clone(),
+          direction: rotated*-1,
+          speed: speed,
+          dmg: dmg,
+          lifeTime: lifeTime,
+          sprPath: sprPath,
+          cor1: cor1,
+          cor2: cor2,
+          // Sem repassar isEnemy, os cacos de um tiro inimigo nasciam como
+          // tiro do jogador e feriam os próprios inimigos — o que zerava a
+          // habilidade no Pinguim inimigo.
+          isEnemy: isEnemy,
+          tipo: tipo,
+        ));
+      }
+
     }
 
     removeFromParent();

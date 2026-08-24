@@ -1,3 +1,5 @@
+import 'package:creatures_rogue/game/components/creatures/abilities/disparada_congelante.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/tiro_de_gelo.dart';
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/choque_eletrico.dart';
@@ -34,6 +36,7 @@ import '../enemies/creatures/caranguejo_ermitao_enemy.dart';
 import '../enemies/creatures/cobra_agua_enemy.dart';
 import '../enemies/creatures/grilo_eletrico_enemy.dart';
 import '../enemies/creatures/ourico_eletrico_enemy.dart';
+import '../enemies/creatures/pinguim_agua_enemy.dart';
 import '../enemies/creatures/roedor_fogo_enemy.dart';
 import '../enemies/creatures/sapo_agua_enemy.dart';
 import '../enemies/creatures/slime_planta_enemy.dart';
@@ -222,6 +225,21 @@ class CreatureRegistry {
     enemyBuilder: (pos, plr) => CaranguejoErmitaoEnemy(position: pos, playerTarget: plr),
   );
 
+  static final CreatureData pinguimAgua = CreatureData(
+    id: 'pinguim_agua',
+    nome: 'Pinguim de Agua',
+    spritePath: 'actors/pinguimAgua.png',
+    tipo: CreatureType.agua,
+    corClara: Palette.azul,
+    corEscura: Palette.azulEsc,
+    stats: BaseStats(maxHp: 18, speed: 34, defesa: 4, ataque: 3),
+    ability1: TiroDeGelo(),
+    ability2: DisparadaCongelante(),
+    moveAnim: MovementAnimation.caminhada,
+    hitboxSize: Vector2(8, 16),
+    enemyBuilder: (pos, plr) => PinguimAguaEnemy(position: pos, playerTarget: plr),
+  );
+
   static final List<CreatureData> all = [
     roedorFogo,
     tartarugaPlanta,
@@ -233,6 +251,7 @@ class CreatureRegistry {
     griloEletrico,
     bombaFogo,
     slimePlanta,
+    pinguimAgua,
     ouricoEletrico,
     caranguejoErmitao,
   ];

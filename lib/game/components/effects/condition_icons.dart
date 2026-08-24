@@ -5,16 +5,9 @@ import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
-/// Ícones de condição exibidos acima do sprite do inimigo. Só os ícones de
-/// condições ativas aparecem, lado a lado, sem se sobrepor.
-///
-/// São cinco condições possíveis num inimigo de 16px dentro de uma sala de
-/// 192px, então o ícone é desenhado em 8px — metade exata dos 16px nativos do
-/// sprite, escala limpa sem artefato de reamostragem. Com os cinco ativos a
-/// fileira ocupa 44px; a 16px ocuparia 84px, quase metade da largura da sala.
 class ConditionIcons extends PositionComponent {
-  static const double _iconSize = 8.0;
-  static const double _gap = 1.0;
+  static const double _iconSize = 16.0;
+  static const double _gap = 0.0;
 
   bool stunAtivo = false;
   bool venenoAtivo = false;
@@ -22,7 +15,6 @@ class ConditionIcons extends PositionComponent {
   bool lentidaoAtivo = false;
   bool cegoAtivo = false;
 
-  /// Ordem fixa de desenho, casada índice a índice com [_estados].
   final List<SpriteComponent> _icones = [];
 
   List<bool> get _estados =>
@@ -37,7 +29,7 @@ class ConditionIcons extends PositionComponent {
       ('effects/poison.png', Palette.verde, Palette.amarelo),    // veneno
       ('effects/fogo.png', Palette.laranja, Palette.vermelho), // queimadura
       ('effects/lento.png', Palette.azul, Palette.indigo),        // lentidão
-      ('effects/cego.png', Palette.cinzaEsc, Palette.roxoEsc),   // cegueira
+      ('effects/cego.png', Palette.cinza, Palette.cinzaEsc),   // cegueira
     ];
 
     for (final (caminho, clara, escura) in definicoes) {

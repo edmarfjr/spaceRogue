@@ -10,6 +10,7 @@ import 'creatures/caranguejo_ermitao_boss_enemy.dart';
 import 'creatures/cobra_agua_boss_enemy.dart';
 import 'creatures/grilo_eletrico_boss_enemy.dart';
 import 'creatures/ourico_eletrico_boss_enemy.dart';
+import 'creatures/pinguim_agua_boss_enemy.dart';
 import 'creatures/roedor_fogo_boss_enemy.dart';
 import 'creatures/sapo_agua_boss_enemy.dart';
 import 'creatures/slime_planta_boss_enemy.dart';
@@ -91,6 +92,10 @@ class BossRegistry {
     BossOption(
       creatureId: 'caranguejo_fogo',
       builder: (pos, plr) => CaranguejoErmitaoBossEnemy(position: pos, playerTarget: plr),
+    ),
+    BossOption(
+      creatureId: 'pinguim_agua',
+      builder: (pos, plr) => PinguimAguaBossEnemy(position: pos, playerTarget: plr),
     ),
   ];
 
