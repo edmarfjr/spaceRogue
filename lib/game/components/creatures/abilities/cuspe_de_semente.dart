@@ -26,6 +26,7 @@ class CuspeDeSemente extends Ability {
       sprPath: 'projeteis/proj1.png',
       cor1: Palette.verde,
       cor2: Palette.verdeEsc,
+      tipo: user.creatureData.tipo,
     ));
   }
 }

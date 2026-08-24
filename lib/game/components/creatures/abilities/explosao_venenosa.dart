@@ -1,6 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
+import 'package:creatures_rogue/game/components/effects/dot.dart';
 import 'package:creatures_rogue/game/components/player/player.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
@@ -11,7 +12,7 @@ class ExplosaoVenenosa extends Ability {
   final double empurrao;
 
   const ExplosaoVenenosa({this.coef = 0.25, this.empurrao = 50})
-      : super(nome: 'Explosao Venenosa', cooldown: 6.0);
+      : super(nome: 'Explosao Venenosa', cooldown: 6.0,tipo: AbilityTipo.defesa);
 
   @override
   void execute(Player user, Vector2 dir) {
@@ -23,6 +24,7 @@ class ExplosaoVenenosa extends Ability {
       size: Vector2(24, 24),
       cor1: Palette.verde,
       cor2: Palette.verdeEsc,
+      tipo: user.creatureData.tipo,
     ));
 
     user.parent?.add(Projectile(
@@ -34,7 +36,9 @@ class ExplosaoVenenosa extends Ability {
       sprPath: 'projeteis/bolaGrande.png',
       cor1: Palette.verde,
       cor2: Palette.verdeEsc,
-      isPoison: true,
+      tipo: user.creatureData.tipo,
+      dotKind: DotKind.veneno,
+      dotTicks: 1, // igual ao poisonCount padrao de antes: nao virou buff
       atravessa: 10,
       size: Vector2(24, 24),
       lifeTime: 3,

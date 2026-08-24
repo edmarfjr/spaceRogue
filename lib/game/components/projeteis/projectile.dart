@@ -5,6 +5,8 @@ import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
+import 'package:creatures_rogue/game/components/effects/dot.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/map/obstacle.dart';
 import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
@@ -25,8 +27,20 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   double explosionSize;
   double radius;
   int atravessa;
-  bool isPoison;
-  int poisonCount;
+
+  /// Tipo elemental do dano, pro multiplicador de vantagem no alvo.
+  /// `neutro` (padrão) vale 1.0 contra tudo.
+  final CreatureType tipo;
+
+  /// Dano ao longo do tempo aplicado no acerto. Null = nenhum.
+  final DotKind? dotKind;
+  final int dotTicks;
+
+  /// Duração das condições de controle aplicadas no acerto. 0 = não aplica.
+  final double lentidaoDuracao;
+  final double lentidaoFator;
+  final double cegoDuracao;
+
   bool atravessaObstaculos;
 
   Map<PositionComponent,double> hits = {};
@@ -52,8 +66,12 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     this.explosionSize = 0,
     this.radius = 5,
     this.atravessa = 1,
-    this.isPoison = false,
-    this.poisonCount = 1,
+    this.tipo = CreatureType.neutro,
+    this.dotKind,
+    this.dotTicks = 1,
+    this.lentidaoDuracao = 0,
+    this.lentidaoFator = 0.5,
+    this.cegoDuracao = 0,
     this.atravessaObstaculos = false,
     Vector2? size, 
     }): super(
@@ -99,13 +117,18 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
           cor1: cor1,
           cor2: cor2,
           isEnemy: isEnemy,
+          tipo: tipo,
+          dotKind: dotKind,
+          dotTicks: dotTicks,
         ));
       }
     }
     if(explosionSize > 0){
       parent?.add(ExplosionHitbox(
         position: position.clone(),
-        size:Vector2(explosionSize, explosionSize)
+        size:Vector2(explosionSize, explosionSize),
+        tipo: tipo,
+        isEnemy: isEnemy,
       ));
     }
 
@@ -143,11 +166,19 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
           refleteProjetil();
           onDestroy();
         }
-        other.takeDamage(dmg.toInt());
-        atravessa--;
-        if(atravessa <= 0){
-          onDestroy();
-        } 
+        // Jogador não sofre DoT (ver decisão de condições assimétricas), mas
+        // sofre controle: é o que dá peso à fumaça do caranguejo.
+        if (lentidaoDuracao > 0) other.aplicarLentidao(lentidaoDuracao, fator: lentidaoFator);
+        if (cegoDuracao > 0) other.aplicarCegueira(cegoDuracao);
+
+        // Nuvem de controle puro (dmg 0) não passa por takeDamage: o piso de
+        // "no mínimo 1" do Player transformaria 0 em 1 de dano por acerto. Ela
+        // também não gasta perfuração — quem a encerra é o lifeTime.
+        if (dmg > 0) {
+          other.takeDamage(dmg.toInt());
+          atravessa--;
+          if (atravessa <= 0) onDestroy();
+        }
       }
     } else {
       if (other is Enemy) {
@@ -158,16 +189,20 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
           return; // Bala passa reto!
         }
         hits[other] = hitCooldown;
-        atravessa--;
-        if(isPoison){
-          other.applyPoison(poisonCount);
+        final kind = dotKind;
+        if (kind != null) other.applyDot(kind, dotTicks);
+        if (lentidaoDuracao > 0) other.applyLentidao(lentidaoDuracao, fator: lentidaoFator);
+        if (cegoDuracao > 0) other.applyCego(cegoDuracao);
+
+        // Mesma regra do lado do jogador: a nuvem de controle não dá dano, e
+        // sem esse guarda ela ainda cuspiria um "0" flutuante sobre cada
+        // inimigo dentro dela.
+        if (dmg > 0) {
+          other.takeDamage(dmg, tipoAtacante: tipo);
+          other.applyKnockback(absolutePosition, kbForce);
+          atravessa--;
+          if (atravessa <= 0) onDestroy();
         }
-        other.takeDamage(dmg);
-        other.applyKnockback(absolutePosition, kbForce);
-        
-        if(atravessa <= 0){
-          onDestroy();
-        } 
       }
     }
   }
@@ -183,6 +218,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
           sprPath: sprPath,
           cor1: cor1,
           cor2: cor2,
+          tipo: tipo, // devolvido como tiro do jogador: agora o tipo conta
         ));
   }
 }

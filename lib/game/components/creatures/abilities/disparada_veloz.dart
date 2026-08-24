@@ -13,7 +13,7 @@ class DisparadaVeloz extends Ability {
   const DisparadaVeloz({
     this.distancia = 24,
     this.duracao = 0.15,
-  }) : super(nome: 'Disparada Veloz', cooldown: 1.0, target: AbilityTarget.plrDir);
+  }) : super(nome: 'Disparada Veloz', cooldown: 1.0, target: AbilityTarget.plrDir,tipo: AbilityTipo.esquiva);
 
   @override
   void execute(Player user, Vector2 dir) {

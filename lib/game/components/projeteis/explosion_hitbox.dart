@@ -3,6 +3,7 @@ import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart'; // Mude para base_enemy se refatorou
 import 'package:creatures_rogue/game/components/map/obstacle.dart';
 import 'package:creatures_rogue/game/components/player/player.dart';
@@ -21,6 +22,14 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
   /// Força de empurrão aplicada aos inimigos atingidos. 0 = não empurra.
   final double knockback;
 
+  /// Tipo elemental do dano, pro multiplicador de vantagem. `neutro` = 1.0.
+  final CreatureType tipo;
+
+  /// Condições de controle aplicadas no acerto. 0 = não aplica.
+  final double lentidaoDuracao;
+  final double lentidaoFator;
+  final double cegoDuracao;
+
   Paint paintV = Paint();
   Paint paintB = Paint();
 
@@ -33,6 +42,10 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
     this.isEnemy = false,
     this.stunDuration = 1.5,
     this.knockback = 0.0,
+    this.tipo = CreatureType.neutro,
+    this.lentidaoDuracao = 0,
+    this.lentidaoFator = 0.5,
+    this.cegoDuracao = 0,
     this.cor1 = Palette.vermelho,
     this.cor2 = Palette.branco,
     Vector2? size,
@@ -85,11 +98,15 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
     if (other is Rock) {
       other.blowUp();
     } else if (other is Enemy && !isEnemy) {
-      other.takeDamage(dmg);
-      if (isStun) other.stunTimer = stunDuration;
+      other.takeDamage(dmg, tipoAtacante: tipo);
+      if (isStun) other.applyStun(stunDuration);
+      if (lentidaoDuracao > 0) other.applyLentidao(lentidaoDuracao, fator: lentidaoFator);
+      if (cegoDuracao > 0) other.applyCego(cegoDuracao);
       if (knockback > 0) other.applyKnockback(absolutePosition, knockback);
     } else if (other is Player && isEnemy) {
       other.takeDamage(dmg.toInt());
+      if (lentidaoDuracao > 0) other.aplicarLentidao(lentidaoDuracao, fator: lentidaoFator);
+      if (cegoDuracao > 0) other.aplicarCegueira(cegoDuracao);
       if (knockback > 0) other.applyKnockback(absolutePosition, knockback);
     }
   }

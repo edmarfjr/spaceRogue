@@ -27,6 +27,7 @@ class SocoFlamejante extends Ability {
       lifeTime: alcanceSegundos,
       cor1: Palette.vermelho,
       cor2: Palette.roxoEsc,
+      tipo: user.creatureData.tipo,
     ));
   }
 }

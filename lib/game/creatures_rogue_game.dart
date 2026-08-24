@@ -11,8 +11,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey, KeyDownEvent;
 import 'package:flame/input.dart';
 import 'package:creatures_rogue/game/components/UI/ability_button.dart';
+import 'package:creatures_rogue/game/components/UI/ability_icons.dart';
 import 'package:creatures_rogue/game/components/UI/gesture_action_area.dart';
 import 'package:creatures_rogue/game/components/UI/pointer_tracker.dart';
+import 'package:creatures_rogue/game/components/UI/blind_overlay.dart';
 import 'package:creatures_rogue/game/components/UI/boss_health_bar.dart';
 import 'package:creatures_rogue/game/components/UI/dynamic_joystick_component.dart';
 import 'package:creatures_rogue/game/components/UI/hud.dart';
@@ -20,6 +22,7 @@ import 'package:creatures_rogue/game/components/enemies/boss_registry.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/UI/minimap_hud.dart';
 //import 'package:creatures_rogue/game/components/enemies/enemy.dart';
+import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/map/dungeon_generator.dart';
 import 'package:creatures_rogue/game/components/map/room_component.dart';
@@ -137,6 +140,11 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     pointerTracker = PointerTracker();
     add(pointerTracker);
 
+    // Os três ícones de habilidade ficam em memória antes dos controles: os
+    // botões nascem aqui, sem jogador ainda, e escolhem o ícone na hora de
+    // desenhar conforme a criatura da run.
+    await AbilityIcons.carregar();
+
     _setupJoysticks();
     _setupAbilityControls();
 
@@ -204,9 +212,12 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     // Barra de boss de uma run anterior: o boss dela já foi removido junto com
     // o mundo, mas a barra vive na viewport e sobraria órfã.
     gameCamera.viewport.children.whereType<BossHealthBar>().toList().forEach((b) => b.removeFromParent());
+    gameCamera.viewport.children.whereType<BlindOverlay>().toList().forEach((c) => c.removeFromParent());
 
     final hud = Hud(player: player);
     gameCamera.viewport.add(hud);
+
+    gameCamera.viewport.add(BlindOverlay(player: player, camera: gameCamera));
 
     minimapHud = MinimapHud(
       mapData: mapData,
@@ -450,7 +461,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     _abilityControls.add(
       AbilityButton(
         radius: buttonRadius,
-        spritePath: 'ui/ataque.png',
+        tipo: () => _runStarted ? player.creatureData.ability1.tipo : AbilityTipo.ataque,
         baseColor: Palette.burgundy.withAlpha(255),
         pressedColor: Palette.burgundy.withAlpha(140),
         pointerTracker: pointerTracker,
@@ -467,7 +478,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     _abilityControls.add(
       AbilityButton(
         radius: buttonRadius,
-        spritePath: 'ui/defesa.png',
+        tipo: () => _runStarted ? player.creatureData.ability2.tipo : AbilityTipo.defesa,
         baseColor: Palette.burgundy.withAlpha(255),
         pressedColor: Palette.burgundy.withAlpha(140),
         pointerTracker: pointerTracker,

@@ -29,6 +29,7 @@ class RajadaDeBrasa extends Ability {
         sprPath: 'projeteis/fogo2.png',
         cor1: Palette.vermelho,
         cor2: Palette.laranja,
+        tipo: user.creatureData.tipo,
       ));
     }
   }

@@ -8,6 +8,7 @@ import 'package:creatures_rogue/game/components/creatures/abilities/esquiva_bomb
 import 'package:creatures_rogue/game/components/creatures/abilities/esquiva_tornado.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/explosao_venenosa.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/soco_flamejante.dart';
+import 'abilities/baforada_de_cinzas.dart';
 import 'abilities/bico_eletrico.dart';
 import 'abilities/bolha_protetora.dart';
 import 'abilities/brado.dart';
@@ -15,19 +16,24 @@ import 'abilities/casco_fechado.dart';
 import 'abilities/corrente_estatica.dart';
 import 'abilities/cuspe_de_semente.dart';
 import 'abilities/disparada_flamejante.dart';
+import 'abilities/ericar.dart';
+import 'abilities/escudo_de_espinhos.dart';
 import 'abilities/jato_aquatico.dart';
 import 'abilities/bola_dagua.dart';
 import 'abilities/jogada_de_corpo.dart';
 import 'abilities/mega_soco.dart';
 import 'abilities/rajada_de_brasa.dart';
+import 'abilities/recolher_no_casco.dart';
 import 'base_stats.dart';
 import 'creature_data.dart';
 import 'creature_type.dart';
 import '../effects/movement_animator.dart';
 import '../enemies/creatures/ave_eletrica_enemy.dart';
 import '../enemies/creatures/bomba_fogo_enemy.dart';
+import '../enemies/creatures/caranguejo_ermitao_enemy.dart';
 import '../enemies/creatures/cobra_agua_enemy.dart';
 import '../enemies/creatures/grilo_eletrico_enemy.dart';
+import '../enemies/creatures/ourico_eletrico_enemy.dart';
 import '../enemies/creatures/roedor_fogo_enemy.dart';
 import '../enemies/creatures/sapo_agua_enemy.dart';
 import '../enemies/creatures/slime_planta_enemy.dart';
@@ -186,6 +192,36 @@ class CreatureRegistry {
     enemyBuilder: (pos, plr) => SlimePlantaEnemy(position: pos, playerTarget: plr),
   );
 
+  static final CreatureData ouricoEletrico = CreatureData(
+    id: 'ourico_eletrico',
+    nome: 'Ouriço Elétrico',
+    spritePath: 'actors/ouricoEletric.png',
+    tipo: CreatureType.eletrico,
+    corClara: Palette.amarelo,
+    corEscura: Palette.cinzaEsc,
+    stats: BaseStats(maxHp: 14, speed: 28, defesa: 5, ataque: 3),
+    ability1: Ericar(),
+    ability2: EscudoDeEspinhos(),
+    moveAnim: MovementAnimation.caminhada,
+    hitboxSize: Vector2(12, 12), // curvo e denso: nem ágil nem frágil
+    enemyBuilder: (pos, plr) => OuricoEletricoEnemy(position: pos, playerTarget: plr),
+  );
+
+  static final CreatureData caranguejoErmitao = CreatureData(
+    id: 'caranguejo_fogo',
+    nome: 'Caranguejo Ermitão de Fogo',
+    spritePath: 'actors/caranguejoFogo.png',
+    tipo: CreatureType.fogo,
+    corClara: Palette.vermelho,
+    corEscura: Palette.cinzaEsc,
+    stats: BaseStats(maxHp: 18, speed: 34, defesa: 4, ataque: 3),
+    ability1: BaforadaDeCinzas(),
+    ability2: RecolherNoCasco(),
+    moveAnim: MovementAnimation.arrastar,
+    hitboxSize: Vector2(14, 12), // largo e baixo: tanque de casco
+    enemyBuilder: (pos, plr) => CaranguejoErmitaoEnemy(position: pos, playerTarget: plr),
+  );
+
   static final List<CreatureData> all = [
     roedorFogo,
     tartarugaPlanta,
@@ -197,6 +233,8 @@ class CreatureRegistry {
     griloEletrico,
     bombaFogo,
     slimePlanta,
+    ouricoEletrico,
+    caranguejoErmitao,
   ];
 
   static CreatureData byId(String id) => all.firstWhere((c) => c.id == id);

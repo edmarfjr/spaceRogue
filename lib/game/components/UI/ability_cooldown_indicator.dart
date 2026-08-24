@@ -1,5 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'package:creatures_rogue/game/components/UI/ability_icons.dart';
+import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 
 /// Indicador de cooldown de uma habilidade na HUD: o ícone da habilidade com um
@@ -13,13 +15,12 @@ import 'package:creatures_rogue/game/components/core/palette.dart';
 /// agora vive na HUD e vale nos dois esquemas de controle, inclusive no de
 /// gestos, que não tem botão nenhum pra desenhar em cima.
 class AbilityCooldownIndicator extends PositionComponent {
-  /// Caminho dentro de `assets/images/`, ex. `ui/ataque.png`.
-  final String spritePath;
+  /// Papel da habilidade, que decide o ícone. Lido a cada frame porque a
+  /// criatura — e portanto o par de habilidades — muda a cada run.
+  final AbilityTipo Function() tipo;
 
   /// 0 = pronto, 1 = acabou de usar. Ver `Player.ability1CooldownFraction`.
   final double Function() cooldownFraction;
-
-  late final Sprite _sprite;
 
   /// `FilterQuality.none` mantém o pixel art nítido quando a câmera de
   /// resolução fixa escala a HUD inteira.
@@ -28,21 +29,15 @@ class AbilityCooldownIndicator extends PositionComponent {
   final Paint _cooldownPaint = Paint()..color = Palette.cinzaEsc.withAlpha(220);
 
   AbilityCooldownIndicator({
-    required this.spritePath,
+    required this.tipo,
     required this.cooldownFraction,
     required double lado,
     super.position,
   }) : super(size: Vector2.all(lado));
 
   @override
-  Future<void> onLoad() async {
-    await super.onLoad();
-    _sprite = await Sprite.load(spritePath);
-  }
-
-  @override
   void render(Canvas canvas) {
-    _sprite.render(canvas, size: size, overridePaint: _spritePaint);
+    AbilityIcons.of(tipo()).render(canvas, size: size, overridePaint: _spritePaint);
 
     final fraction = cooldownFraction().clamp(0.0, 1.0);
     if (fraction > 0) {

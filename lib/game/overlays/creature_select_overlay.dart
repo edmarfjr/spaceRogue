@@ -212,7 +212,7 @@ class _CreatureDetailPanel extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     const SizedBox(width: 20),
-                    _CreatureSprite(creature: creature, size: 80),
+                    CreatureSprite(creature: creature, size: 80),
                     const SizedBox(width: 5),
                     Expanded(
                       child: Column(
@@ -367,11 +367,12 @@ class _StatLine extends StatelessWidget {
 /// em jogo. `Image.asset` não serve aqui: o PNG em disco é cinza-marcador
 /// (169/84), quem pinta é o [PaletteSwapper], que devolve `ui.Image`, não um
 /// asset — daí o FutureBuilder + RawImage.
-class _CreatureSprite extends StatelessWidget {
+class CreatureSprite extends StatelessWidget {
   final CreatureData creature;
   final double size;
+  final bool tudoPreto;
 
-  const _CreatureSprite({required this.creature, required this.size});
+  const CreatureSprite({super.key, required this.creature, required this.size, this.tudoPreto = false});
 
   @override
   Widget build(BuildContext context) {
@@ -383,8 +384,9 @@ class _CreatureSprite extends StatelessWidget {
         // o jogo usa, sem reprocessar a cada rebuild.
         future: PaletteSwapper.createSwappedImage(
           imagePath: creature.spritePath,
-          lightGrayReplacement: creature.corClara,
-          darkGrayReplacement: creature.corEscura,
+          lightGrayReplacement:tudoPreto? Palette.preto : creature.corClara,
+          darkGrayReplacement:tudoPreto? Palette.preto : creature.corEscura,
+          whiteReplacement:tudoPreto? Palette.preto : Palette.branco, 
         ),
         builder: (context, snapshot) {
           final image = snapshot.data;

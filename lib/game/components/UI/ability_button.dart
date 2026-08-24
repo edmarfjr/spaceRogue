@@ -1,7 +1,10 @@
+import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
+import 'package:creatures_rogue/game/components/UI/ability_icons.dart';
 import 'package:creatures_rogue/game/components/UI/pointer_tracker.dart';
+import 'package:creatures_rogue/game/components/creatures/ability.dart';
 
 /// Botão de habilidade: círculo de cor base com o ícone da habilidade no meio.
 ///
@@ -27,9 +30,10 @@ class AbilityButton extends PositionComponent
   final Color baseColor;
   final Color pressedColor;
 
-  /// Ícone da habilidade, caminho dentro de `assets/images/` — o mesmo sprite
-  /// que o indicador de cooldown da HUD usa.
-  final String spritePath;
+  /// Papel da habilidade, que decide o ícone — o mesmo que o indicador de
+  /// cooldown da HUD desenha. Lido a cada frame: o botão é montado no onLoad do
+  /// jogo, antes de existir jogador, e a criatura muda a cada run.
+  final AbilityTipo Function() tipo;
 
   final PointerTracker pointerTracker;
   final void Function(bool pressed) onPressedChanged;
@@ -37,17 +41,15 @@ class AbilityButton extends PositionComponent
   bool _tapDown = false;
   bool _pressed = false;
 
-  late final Sprite _sprite;
-
   /// `FilterQuality.none` mantém o pixel art nítido: o sprite é 16x16 e o botão
   /// tem 100px de diâmetro no mobile.
-  final Paint _spritePaint = Paint()..filterQuality = FilterQuality.none;
+  final Paint _spritePaint = Paint()..filterQuality = FilterQuality.none..colorFilter..color=Palette.roxoEsc..blendMode=BlendMode.multiply;
 
   AbilityButton({
     required double radius,
     required this.baseColor,
     required this.pressedColor,
-    required this.spritePath,
+    required this.tipo,
     required this.pointerTracker,
     required this.onPressedChanged,
     EdgeInsets? margin,
@@ -55,12 +57,6 @@ class AbilityButton extends PositionComponent
     // ComponentViewportMargin usa pra calcular a posição a partir da margem.
   }) : super(size: Vector2.all(radius * 2)) {
     this.margin = margin;
-  }
-
-  @override
-  Future<void> onLoad() async {
-    await super.onLoad();
-    _sprite = await Sprite.load(spritePath);
   }
 
   /// Área de toque circular, igual ao círculo desenhado. O `containsLocalPoint`
@@ -120,7 +116,7 @@ class AbilityButton extends PositionComponent
     // Ícone com 60% do diâmetro, centralizado — folga suficiente pra borda do
     // círculo continuar visível como alvo de toque.
     final iconSize = Vector2.all(size.x * 0.6);
-    _sprite.render(
+    AbilityIcons.of(tipo()).render(
       canvas,
       position: (size - iconSize) / 2,
       size: iconSize,

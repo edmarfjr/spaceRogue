@@ -77,13 +77,13 @@ class Hud extends PositionComponent with HasGameRef {
     // próprio sprite e do seu carregamento assíncrono.
     await addAll([
       AbilityCooldownIndicator(
-        spritePath: 'ui/ataque.png',
+        tipo: () => player.creatureData.ability1.tipo,
         cooldownFraction: () => player.ability1CooldownFraction,
         lado: _iconeCooldownLado,
         position: Vector2(0, 12),
       ),
       AbilityCooldownIndicator(
-        spritePath: 'ui/defesa.png',
+        tipo: () => player.creatureData.ability2.tipo,
         cooldownFraction: () => player.ability2CooldownFraction,
         lado: _iconeCooldownLado,
         position: Vector2(_iconeCooldownLado + 2, 12),

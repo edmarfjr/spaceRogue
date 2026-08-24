@@ -108,35 +108,7 @@ mixin WanderMovement on Enemy {
     isMoving = true;
   }
 
-  // --- NOVA FUNÇÃO DE PREVISÃO DO FUTURO ---
-  bool _isDirectionValid(Vector2 dir) {
-    final room = currentRoom;
-    if (room == null) return true; // Segurança caso ele não esteja na tela ainda
-
-    // Projeta a sombra imaginária para o que aconteceria daqui a 0.6 segundos
-    double lookAheadDistance = speed * 0.6;
-
-    // Calcula o centro do futuro
-    Vector2 futureCenter = physicsHitbox.absoluteCenter + (dir * lookAheadDistance);
-
-    // Cria um retângulo simulando a hitbox de física lá no futuro
-    Rect futureRect = Rect.fromCenter(
-      center: Offset(futureCenter.x, futureCenter.y),
-      width: physicsHitbox.size.x,
-      height: physicsHitbox.size.y,
-    );
-
-    // Vasculha os corpos sólidos da SALA (paredes e obstáculos são filhos dela)
-    for (final child in roomColliders) {
-      if (isAirborne && child is Obstacle) continue;
-
-      if (child.toAbsoluteRect().overlaps(futureRect)) {
-        return false;
-      }
-    }
-
-    return true; // Se o loop terminou sem bater em nada, a direção é perfeita!
-  }
+  bool _isDirectionValid(Vector2 dir) => direcaoLivre(dir);
 
   void cancelWander() {
     if (isMoving && knockbackVelocity.isZero()) {
@@ -209,6 +181,15 @@ mixin ShooterAttack on Enemy {
       return true;
     }
 
+    // Cego não mira: a direção do tiro é calculada a partir da posição do
+    // jogador em cada inimigo, então a única forma honesta de "perder o alvo"
+    // é não deixar a vontade de atirar amadurecer.
+    if (cegoTimer > 0) {
+      wantsToShoot = false;
+      fireTimer = 0.0;
+      return false;
+    }
+
     if (!wantsToShoot) {
       fireTimer += dt;
       if (fireTimer >= fireRate) {
@@ -232,7 +213,18 @@ mixin ShooterAttack on Enemy {
 }
 
 mixin ChaseMovement on Enemy {
+  static const double _cegoTrocaDirecao = 0.7;
+
+  final Random _cegoRandom = Random();
+  Vector2 _cegoDirecao = Vector2.zero();
+  double _cegoTrocaTimer = 0.0;
+
   void updateChaseMovement(double dt) {
+    if (cegoTimer > 0) {
+      _updateCegoMovement(dt);
+      return;
+    }
+
     // Calcula a distância exata entre o inimigo e o jogador
     Vector2 distanceToPlayer = playerTarget.absolutePosition - absolutePosition;
     
@@ -254,6 +246,42 @@ mixin ChaseMovement on Enemy {
     } else {
       animateMovement(dt, isMoving: false);
     }
+  }
+
+  /// Cego: perdeu o rastro do jogador e passa a vagar. Reusa a checagem de
+  /// parede do Enemy — sem ela, o perseguidor cego encosta numa parede e fica
+  /// raspando nela, o que lê como bug e não como cegueira.
+  void _updateCegoMovement(double dt) {
+    _cegoTrocaTimer -= dt;
+
+    if (_cegoDirecao.isZero() || _cegoTrocaTimer <= 0) {
+      _cegoTrocaTimer = _cegoTrocaDirecao;
+      _cegoDirecao = Vector2.zero();
+
+      for (int tentativa = 0; tentativa < 10; tentativa++) {
+        final angulo = _cegoRandom.nextDouble() * 2 * pi;
+        final candidata = Vector2(cos(angulo), sin(angulo));
+        if (direcaoLivre(candidata)) {
+          _cegoDirecao = candidata;
+          break;
+        }
+      }
+    }
+
+    if (_cegoDirecao.isZero()) {
+      animateMovement(dt, isMoving: false);
+      return;
+    }
+
+    position += _cegoDirecao * speed * dt;
+
+    if (_cegoDirecao.x < 0 && !visual.isFlippedHorizontally) {
+      visual.flipHorizontallyAroundCenter();
+    } else if (_cegoDirecao.x > 0 && visual.isFlippedHorizontally) {
+      visual.flipHorizontallyAroundCenter();
+    }
+
+    animateMovement(dt, isMoving: true, horizontalDir: _cegoDirecao.x);
   }
 }
 
@@ -307,7 +335,11 @@ mixin JumpMovement on Enemy {
         visual.position.y = _baseVisualY;
         visual.scale = Vector2(flip, 1.0);
         enemyHitbox.position.y = _baseHitboxY;
-        if (jumpTimer >= idleDuration) {
+
+        // Saltador tem `speed: 0.0` — quem move é o `_calculatedJumpSpeed`,
+        // derivado da distância. Escalar `speed` não faria nada nele, então a
+        // lentidão aparece como descanso mais longo entre um pulo e outro.
+        if (jumpTimer >= idleDuration / lentidaoFator) {
           jumpState = JumpState.preparing;
           jumpTimer = 0.0;
 

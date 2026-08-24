@@ -20,7 +20,9 @@ class CreatureProgress {
     'roedor_fogo',
     'ave_eletrica',
     'tartaruga_planta',
-    'sapo_agua'
+    'sapo_agua',
+    'ourico_eletrico',
+    'caranguejo_fogo'
   ];
 
   late final SharedPreferences _prefs;

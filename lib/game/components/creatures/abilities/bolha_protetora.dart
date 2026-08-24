@@ -7,7 +7,7 @@ class BolhaProtetora extends Ability {
   final double duracao;
 
   const BolhaProtetora({this.duracao = 5.0})
-      : super(nome: 'Bolha Protetora', cooldown: 7.0);
+      : super(nome: 'Bolha Protetora', cooldown: 7.0,tipo: AbilityTipo.defesa);
 
   @override
   void execute(Player user, Vector2 dir) {

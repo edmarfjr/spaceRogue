@@ -1,4 +1,5 @@
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/overlays/creature_select_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
@@ -30,7 +31,7 @@ class BossRevealOverlay extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
+          /*  Text(
               'ANDAR ${CreaturesRogueGame.andaresPorBoss}: BOSS',
               style: const TextStyle(color: Palette.preto, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2),
             ),
@@ -39,8 +40,14 @@ class BossRevealOverlay extends StatelessWidget {
               boss.nome,
               style: const TextStyle(color: Palette.preto, fontSize: 40, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 24),
-           
+            */
+            Text(
+              'VS',
+              style: const TextStyle(color: Palette.preto, fontSize: 40, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            CreatureSprite(creature: recompensa, size: 80, tudoPreto: true,),
+            const SizedBox(height: 12),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Palette.branco,

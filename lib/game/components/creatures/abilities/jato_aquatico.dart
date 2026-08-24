@@ -41,6 +41,7 @@ class JatoAquatico extends Ability {
           sprPath: 'projeteis/proj1.png',
           cor1: Palette.azul,
           cor2: Palette.royal,
+          tipo: user.creatureData.tipo,
         ));
       });
     }

@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
+import 'package:creatures_rogue/game/components/effects/condition_icons.dart';
+import 'package:creatures_rogue/game/components/effects/dot.dart';
 import 'package:creatures_rogue/game/components/effects/movement_animator.dart';
 import 'package:creatures_rogue/game/components/effects/sprite_effect.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
@@ -53,6 +56,8 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
 
   late final SpriteComponent shieldVisual;
   bool shieldVisualActive = false;
+
+  late final ConditionIcons conditionIcons;
   /// Estilo de animação de movimento (ver MovementAnimator). Null = inimigo
   /// sem animação genérica de movimento — ou porque o próprio mecanismo de
   /// movimento já é a animação (ex.: JumpMovement, que pula de verdade), ou
@@ -73,9 +78,27 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   /// padrão: 0.0 não muda nada. Lido em `takeDamage`.
   double damageReduction = 0.0;
 
-  int poisonCount = 0;
-  double poisonTimer = 0.0;
-  double poisonDur = 1.0;
+  /// Danos ao longo do tempo ativos, no máximo um por variante — reaplicar
+  /// veneno em cima de veneno acumula ticks no mesmo Dot em vez de criar um
+  /// segundo. Ver [Dot].
+  final Map<DotKind, Dot> dots = {};
+
+  /// Lentidão: enquanto > 0, a velocidade efetiva é [speed] * [lentidaoFator].
+  /// Reaplicar renova a duração e mantém o fator mais forte — nunca multiplica
+  /// um sobre o outro, senão duas aplicações travam o inimigo de vez.
+  double lentidaoTimer = 0.0;
+  double lentidaoFator = 1.0;
+
+  /// Cegueira: enquanto > 0, o inimigo perde o rastro do jogador — quem
+  /// persegue passa a andar a esmo e quem atira para de mirar. Ver
+  /// ChaseMovement e ShooterAttack.
+  double cegoTimer = 0.0;
+
+  /// Velocidade sem lentidão, fotografada no construtor. Os mixins de
+  /// movimento leem [speed] direto todo frame, então a lentidão escreve nele;
+  /// sem uma base pra restaurar, duas aplicações sobrepostas corromperiam a
+  /// velocidade permanentemente.
+  late final double speedBase;
 
   Enemy({
     required Vector2 position,
@@ -108,6 +131,7 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
          anchor: Anchor.center,
        ) {
     maxHealth = health;
+    speedBase = speed;
 
     // Hitbox: explícita > da criatura > tamanho visual.
     this.hitboxSize = hitboxSize ?? creature?.hitboxSize ?? (size ?? Vector2(16, 16));
@@ -153,6 +177,9 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     shieldVisual.setOpacity(0.0); // só aparece enquanto shieldVisualActive
     add(shieldVisual);
 
+    conditionIcons = ConditionIcons()..position = Vector2(size.x / 2, -2);
+    add(conditionIcons);
+
     enemyHitbox = RectangleHitbox(
       size: hitboxSize,
       anchor: Anchor.bottomCenter,
@@ -188,6 +215,21 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
 
     shieldVisual.setOpacity(shieldVisualActive ? 1.0 : 0.0);
 
+    // Condições correm ANTES dos returns de knockback e stun. Se ficassem no
+    // fim, um atordoamento de 1.5s comeria uma queimadura inteira (0.7s) sem
+    // ela tickar uma vez — o veneno antigo escondia isso por durar 3s.
+    updateCondicoes(dt);
+    // Um tick de DoT pode ter matado o inimigo. `removeFromParent` só tira o
+    // componente no fim do frame, então `isMounted` ainda estaria true aqui —
+    // a vida é o teste confiável.
+    if (health <= 0) return;
+
+    conditionIcons.stunAtivo = stunTimer > 0;
+    conditionIcons.venenoAtivo = dots.containsKey(DotKind.veneno);
+    conditionIcons.queimaduraAtivo = dots.containsKey(DotKind.queimadura);
+    conditionIcons.lentidaoAtivo = lentidaoTimer > 0;
+    conditionIcons.cegoAtivo = cegoTimer > 0;
+
     if (!knockbackVelocity.isZero()) {
       position += knockbackVelocity * dt;
       
@@ -202,27 +244,62 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
 
     if (stunTimer > 0) {
       stunTimer -= dt;
-      return; // Atordoado: também não "pensa"
+      return;
     }
 
     movimento(dt);
-    updateCondicoes(dt);
   }
 
-  void applyPoison(int count){
-    poisonCount = count;
-    poisonTimer = poisonDur;
+  void applyDot(DotKind kind, int ticks) {
+    if (ticks <= 0) return;
+    final atual = dots[kind];
+    if (atual == null) {
+      dots[kind] = Dot.criar(kind, ticks);
+    } else {
+      atual.reaplicar(ticks);
+    }
+  }
+
+  void applyStun(double t){
+    stunTimer = t;
+  }
+
+  /// [fator] é a fração da velocidade original (0.5 = metade). Reaplicar
+  /// renova a duração e fica com o fator mais forte, nunca multiplica um
+  /// sobre o outro.
+  void applyLentidao(double duracao, {double fator = 0.5}) {
+    lentidaoTimer = duracao > lentidaoTimer ? duracao : lentidaoTimer;
+    lentidaoFator = fator < lentidaoFator ? fator : lentidaoFator;
+    speed = speedBase * lentidaoFator;
+  }
+
+  void applyCego(double duracao) {
+    if (duracao > cegoTimer) cegoTimer = duracao;
   }
 
   void updateCondicoes(double dt) {
-    if (poisonCount > 0){
-      poisonTimer -= dt;
-      if (poisonTimer <= 0){
-        poisonCount--;
-        poisonTimer = poisonDur;
-        takeDamage(2, corTxt: Palette.verde);
+    // Cópia da lista: um tick pode remover o Dot ou matar o inimigo.
+    for (final dot in dots.values.toList()) {
+      dot.timer -= dt;
+      if (dot.timer > 0) continue;
+
+      dot.ticks--;
+      dot.timer = dot.intervalo;
+      if (dot.ticks <= 0) dots.remove(dot.kind);
+
+      takeDamage(dot.dano, corTxt: dot.cor, tipoAtacante: dot.tipo);
+      if (health <= 0) return;
+    }
+
+    if (lentidaoTimer > 0) {
+      lentidaoTimer -= dt;
+      if (lentidaoTimer <= 0) {
+        lentidaoFator = 1.0;
+        speed = speedBase;
       }
     }
+
+    if (cegoTimer > 0) cegoTimer -= dt;
   }
 
   void movimento(double dt);
@@ -290,12 +367,19 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
       cor1: bltCor1,
       cor2: bltCor2,
       lifeTime: lifeTime,
+      // Só importa se o tiro for refletido (casco fechado) e virar tiro do
+      // jogador: o Player não sofre multiplicador de tipo.
+      tipo: creature?.tipo ?? CreatureType.neutro,
     ));
   }
 
-  void takeDamage(double amount,{Color corTxt = Palette.amarelo}) {
+  /// [tipoAtacante] aplica a vantagem elemental (ver `typeMultiplier`).
+  /// `neutro` — o padrão — vale 1.0, então quem não passa tipo não muda nada.
+  void takeDamage(double amount,{Color corTxt = Palette.amarelo, CreatureType tipoAtacante = CreatureType.neutro}) {
+    final mult = typeMultiplier(tipoAtacante, creature?.tipo ?? CreatureType.neutro);
+
     // Guarda defensiva ativa (casco fechado) reduz o dano recebido.
-    double amountFinal = amount * (1 - damageReduction);
+    double amountFinal = amount * mult * (1 - damageReduction);
     if (amountFinal < 0) amountFinal = 0;
 
     parent?.add(TextEffect.dano(
@@ -308,6 +392,31 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     if (health <= 0) {
       death();
     }
+  }
+
+  /// Há alguma parede ou obstáculo no caminho se andar em [dir] pelos
+  /// próximos [segundos]? Vive aqui, e não no WanderMovement, porque o
+  /// perambular do inimigo cego (ChaseMovement) precisa da mesma checagem —
+  /// sem ela, quem fica cego encosta numa parede e raspa nela até enxergar.
+  bool direcaoLivre(Vector2 dir, {double segundos = 0.6}) {
+    final room = currentRoom;
+    if (room == null) return true; // Segurança caso ele não esteja na tela ainda
+
+    final double lookAheadDistance = speed * segundos;
+    final Vector2 futureCenter = physicsHitbox.absoluteCenter + (dir * lookAheadDistance);
+
+    final Rect futureRect = Rect.fromCenter(
+      center: Offset(futureCenter.x, futureCenter.y),
+      width: physicsHitbox.size.x,
+      height: physicsHitbox.size.y,
+    );
+
+    for (final child in roomColliders) {
+      if (isAirborne && child is Obstacle) continue;
+      if (child.toAbsoluteRect().overlaps(futureRect)) return false;
+    }
+
+    return true;
   }
 
   void spawnAlerta({double duracao = 0.5}) {

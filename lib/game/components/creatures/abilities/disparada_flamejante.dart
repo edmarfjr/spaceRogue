@@ -17,7 +17,7 @@ class DisparadaFlamejante extends Ability {
     this.distancia = 32,
     this.duracao = 0.15,
     this.coefRastro = 0.67,
-  }) : super(nome: 'Disparada Flamejante', cooldown: 4.0, target: AbilityTarget.plrDir);
+  }) : super(nome: 'Disparada Flamejante', cooldown: 4.0, target: AbilityTarget.plrDir,tipo: AbilityTipo.esquiva);
 
   @override
   void execute(Player user, Vector2 dir) {
@@ -25,7 +25,7 @@ class DisparadaFlamejante extends Ability {
     user.grantInvulnerability(duracao);
 
     final origem = user.position.clone();
-    user.parent?.add(ExplosionHitbox(position: origem,dmg: danoRastro));
+    user.parent?.add(ExplosionHitbox(position: origem, dmg: danoRastro, tipo: user.creatureData.tipo));
 
     GhostEffect.spawnTrail(
       visual: user.visual,
@@ -40,7 +40,8 @@ class DisparadaFlamejante extends Ability {
         user.parent?.add(ExplosionHitbox(
           position: user.position.clone(),
           dmg: danoRastro,
-          cor2: Palette.laranja
+          cor2: Palette.laranja,
+          tipo: user.creatureData.tipo,
         ));
       },
     ));

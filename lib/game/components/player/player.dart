@@ -13,6 +13,7 @@ import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/map/room_component.dart';
 import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
 import 'package:creatures_rogue/game/components/projeteis/bomb.dart';
+import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:flutter/services.dart';
 import '../map/obstacle.dart';
@@ -61,7 +62,15 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   Vector2 knockbackVelocity = Vector2.zero();
   Vector2 plrDir = Vector2(0,1);
 
-  double get maxSpeed => creatureData.stats.speed;
+  double get maxSpeed => creatureData.stats.speed * lentidaoFator;
+
+  /// Lentidão e cegueira são as únicas condições que atingem o jogador — DoT
+  /// fica só do lado dos inimigos, que têm os ícones de condição pra mostrar.
+  /// Aqui a leitura vem do próprio movimento e da vinheta (ver BlindOverlay).
+  double lentidaoTimer = 0.0;
+  double lentidaoFator = 1.0;
+  double cegoTimer = 0.0;
+  double cegoDuracaoInicial = 0.0;
   final double acceleration = 100.0;
   final double friction = 500.0;
 
@@ -78,6 +87,12 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   bool speedLocked = false;
   int shieldHits = 0;
   bool refleteProjetil = false;
+
+  /// Ouriço Elétrico — enquanto true, cada golpe absorvido por [shieldHits]
+  /// dispara uma explosão elétrica em volta do usuário (ver Escudo de Espinhos).
+  bool retaliaEspinhos = false;
+  double retaliaDano = 0.0;
+  double retaliaStunDuration = 0.0;
 
   double _cooldown1 = 0.0;
   double _cooldown2 = 0.0;
@@ -158,6 +173,19 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       _puloAoAterrissar = null;
       aoAterrissar?.call();
     }
+  }
+
+  /// Reaplicar renova a duração e fica com o fator mais forte — nunca
+  /// multiplica um sobre o outro, senão duas nuvens seguidas travam o jogador.
+  void aplicarLentidao(double duracao, {double fator = 0.5}) {
+    if (duracao > lentidaoTimer) lentidaoTimer = duracao;
+    if (fator < lentidaoFator) lentidaoFator = fator;
+  }
+
+  void aplicarCegueira(double duracao) {
+    if (duracao <= cegoTimer) return;
+    cegoTimer = duracao;
+    cegoDuracaoInicial = duracao;
   }
 
   void grantInvulnerability(double seconds) {
@@ -284,6 +312,12 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
     if (_cooldown1 > 0) _cooldown1 -= dt;
     if (_cooldown2 > 0) _cooldown2 -= dt;
+
+    if (lentidaoTimer > 0) {
+      lentidaoTimer -= dt;
+      if (lentidaoTimer <= 0) lentidaoFator = 1.0;
+    }
+    if (cegoTimer > 0) cegoTimer -= dt;
 
     Vector2 moveDelta = moveJoystick.relativeDelta.clone();
     if (moveDelta.isZero() && !_keyboardMove.isZero()) {
@@ -522,6 +556,17 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     if (shieldHits > 0) {
       shieldHits--;
       if (shieldHits <= 0) shieldVisualActive = false; // a bolha estourou
+
+      if (retaliaEspinhos) {
+        parent?.add(ExplosionHitbox(
+          position: position.clone(),
+          dmg: retaliaDano,
+          isStun: true,
+          stunDuration: retaliaStunDuration,
+          cor1: creatureData.corClara,
+          cor2: creatureData.corEscura,
+        ));
+      }
       return;
     }
 

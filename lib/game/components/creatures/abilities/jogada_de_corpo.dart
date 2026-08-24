@@ -23,7 +23,7 @@ class JogadaDeCorpo extends Ability {
     this.altura = 16,
     this.coef = 0.75,
     this.empurrao = 50,
-  }) : super(nome: 'Jogada de Corpo', cooldown: 4.5, target: AbilityTarget.joyDir);
+  }) : super(nome: 'Jogada de Corpo', cooldown: 4.5, target: AbilityTarget.joyDir, tipo: AbilityTipo.esquiva);
 
   @override
   void execute(Player user, Vector2 dir) {
@@ -47,6 +47,7 @@ class JogadaDeCorpo extends Ability {
           dmg: dano,
           knockback: empurrao,
           size: Vector2(40, 40),
+          tipo: user.creatureData.tipo,
         ));
       },
     );

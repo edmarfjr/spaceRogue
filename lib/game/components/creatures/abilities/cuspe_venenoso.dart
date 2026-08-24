@@ -1,6 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
+import 'package:creatures_rogue/game/components/effects/dot.dart';
 import 'package:creatures_rogue/game/components/player/player.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
@@ -24,8 +25,9 @@ class CuspeVenenoso extends Ability {
       sprPath: 'projeteis/proj1.png',
       cor1: Palette.verde,
       cor2: Palette.verdeEsc,
-      isPoison: true,
-      poisonCount: 3,
+      tipo: user.creatureData.tipo,
+      dotKind: DotKind.veneno,
+      dotTicks: 3,
     ));
   }
 }

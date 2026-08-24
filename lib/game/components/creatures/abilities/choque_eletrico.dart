@@ -28,6 +28,7 @@ class ChoqueEletrico extends Ability {
       sprPath: 'projeteis/raio.png',
       cor1: Palette.amarelo,
       cor2: Palette.laranja,
+      tipo: user.creatureData.tipo,
       fragmentos:3
     ));
   }

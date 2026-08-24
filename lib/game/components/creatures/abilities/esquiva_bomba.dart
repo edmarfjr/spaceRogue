@@ -12,7 +12,7 @@ class EsquivaBomba extends Ability {
   const EsquivaBomba({
     this.distancia = 32,
     this.duracao = 0.15,
-  }) : super(nome: 'Esquiva Bomba', cooldown: 4.0, target: AbilityTarget.plrDir);
+  }) : super(nome: 'Esquiva Bomba', cooldown: 4.0, target: AbilityTarget.plrDir,tipo: AbilityTipo.esquiva);
 
   @override
   void execute(Player user, Vector2 dir) {

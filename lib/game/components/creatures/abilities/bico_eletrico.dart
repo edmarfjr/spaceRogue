@@ -27,6 +27,7 @@ class BicoEletrico extends Ability {
       lifeTime: alcanceSegundos,
       cor1: Palette.amarelo,
       cor2: Palette.laranja,
+      tipo: user.creatureData.tipo,
     ));
   }
 }

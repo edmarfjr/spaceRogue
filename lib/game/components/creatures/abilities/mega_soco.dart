@@ -21,6 +21,7 @@ class MegaSoco extends Ability {
       dmg: dano,
       size: Vector2(20, 20),
       knockback: empurrao,
+      tipo: user.creatureData.tipo,
     ));
   }
 }

@@ -9,7 +9,7 @@ class CascoFechado extends Ability {
   final double duracao;
 
   const CascoFechado({this.reducaoDano = 1, this.duracao = 2.5})
-      : super(nome: 'Casco Fechado', cooldown: 6.0);
+      : super(nome: 'Casco Fechado', cooldown: 6.0,tipo: AbilityTipo.defesa);
 
   @override
   void execute(Player user, Vector2 dir) {

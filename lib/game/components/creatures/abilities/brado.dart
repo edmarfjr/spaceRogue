@@ -11,7 +11,7 @@ class Brado extends Ability {
   final double empurrao;
 
   const Brado({this.coef = 0.25, this.empurrao = 100})
-      : super(nome: 'Brado', cooldown: 6.0);
+      : super(nome: 'Brado', cooldown: 6.0, tipo: AbilityTipo.defesa);
 
   @override
   void execute(Player user, Vector2 dir) {
@@ -21,6 +21,7 @@ class Brado extends Ability {
       dmg: dano,
       knockback: empurrao,
       size: Vector2(48, 48),
+      tipo: user.creatureData.tipo,
     ));
   }
 }
