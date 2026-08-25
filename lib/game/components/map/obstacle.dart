@@ -80,7 +80,7 @@ abstract class Obstacle extends PositionComponent with HasGameRef {
 class Rock extends Obstacle {
   Rock({
     required super.position,
-    String sprPath = 'tileset/rock.png',
+    String sprPath = 'tileset/pedra.png',
     super.cor1,
     super.cor2,
     super.cor3,
@@ -117,6 +117,21 @@ class Hole extends Obstacle {
          spritePath: 'tileset/hole.png',
          size: size ?? Vector2(16, 16),
          collisionType: CollisionType.active,
+       );
+  
+}
+
+class Grama extends Obstacle {
+  Grama({
+    required super.position,
+    Vector2? size,
+    super.cor1,
+    super.cor2,
+    super.cor3,
+  }) : super(
+         spritePath: 'tileset/floor3.png',
+         size: size ?? Vector2(16, 16),
+         collisionType: CollisionType.inactive,
        );
   
 }

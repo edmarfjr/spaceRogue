@@ -40,6 +40,12 @@ class SlimePlantaEnemy extends Enemy with WanderMovement {
     }
   }
 
+  /// Bem abaixo de qualquer prioridade Y-sorted de ator (ver `ySortPriority`
+  /// em Player/Enemy) — a poça é mancha de chão, não personagem: precisa
+  /// desenhar por baixo de quem pisar nela, sempre, e não só de quem estiver
+  /// "mais pra cima" na tela no instante em que nasce.
+  static const int _prioridadePoca = -1000000;
+
   void _largarPoca() {
     parent?.add(Projectile(
       position: position.clone(),
@@ -56,6 +62,7 @@ class SlimePlantaEnemy extends Enemy with WanderMovement {
       atravessaObstaculos: true,
       size: Vector2.all(_tamanhoPoca),
       radius: _tamanhoPoca / 2,
+      priority: _prioridadePoca,
     ));
   }
 }

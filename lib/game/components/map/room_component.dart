@@ -14,6 +14,7 @@ import 'package:creatures_rogue/game/components/map/stairs.dart';
 import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
 import 'package:creatures_rogue/game/components/map/wall_tile.dart';
 import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/utils/y_sort.dart';
 import 'dungeon_generator.dart';
 import 'obstacle.dart';
 
@@ -32,6 +33,18 @@ class RoomComponent extends PositionComponent with HasGameRef {
   static const double wallThickness = 16.0;
   static const double doorSize = 32.0;
 
+  /// Piso/paredes/grama ficam SEMPRE atrás de qualquer ator ou obstáculo
+  /// Y-sorted — inclusive nas salas ao norte da origem, onde a coordenada Y
+  /// dos atores fica negativa. Um valor bem abaixo de qualquer Y de mundo
+  /// possível garante isso sem depender de onde a sala está na grade.
+  static const int _prioridadePiso = -1000000;
+
+  /// Retângulos locais (mesmo espaço de `px, py` usado em [_spawnEnemies]) de
+  /// cada obstáculo gerado, pra checar sobreposição no spawn de inimigo —
+  /// funciona independente de o obstáculo continuar filho desta sala (Hole)
+  /// ou ter sido reparentado pro mundo pra entrar no Z-sort global (Rock).
+  final List<Rect> _obstacleRects = [];
+
   //late final Sprite floorSprite;
   //late final Sprite doorSprite;
 
@@ -47,10 +60,12 @@ class RoomComponent extends PositionComponent with HasGameRef {
     this.data, {
     required this.player,
     int currentLevel = 1,
+    int currentFloor = 1,
     this.bossBuilder,
   }) : super(
           size: Vector2(roomWidth, roomHeight),
           position: Vector2((data.x - 50) * roomWidth, (data.y - 50) * roomHeight),
+          priority: _prioridadePiso,
         ) {
     theme = DungeonTheme.getThemeForLevel(currentLevel);
   }
@@ -79,6 +94,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
       ..colorFilter = const ColorFilter.mode(Palette.preto, BlendMode.srcATop); // Deixa a porta escura  
       
     _generateWalls();
+    _generateFloorDetails();
     _generateDoors();
 
     if (data.type == RoomType.normal) {
@@ -103,6 +119,19 @@ class RoomComponent extends PositionComponent with HasGameRef {
     ));
   }
 
+  void _generateFloorDetails() {
+    for (double y = 16.0; y < height - 16.0; y += 16.0) {
+      for (double x = 16.0; x < width - 16.0; x += 16.0) {
+        
+        int roll = _random.nextInt(100);
+
+        if (roll < 45) {
+          add(Grama(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,));
+        } 
+      }
+    }
+  }
+
   void _generateObstacles() {
     for (double y = 16.0; y < height - 16.0; y += 16.0) {
       for (double x = 16.0; x < width - 16.0; x += 16.0) {
@@ -122,9 +151,18 @@ class RoomComponent extends PositionComponent with HasGameRef {
         int roll = _random.nextInt(100);
 
         if (roll < 5) {
-          add(Rock(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,));
+          // Pedra bloqueia e tem altura visual: precisa entrar no Z-sort
+          // global (mundo), senão desenha sempre atrás/na frente do jogador
+          // inteiro, e não conforme quem está "mais pra baixo" na tela — por
+          // isso vai pro `parent` (mundo) em vez de filha desta sala.
+          final rockPos = position + Vector2(x, y);
+          final rock = Rock(position: rockPos, cor1: theme.corClara, cor2: theme.corEscura);
+          rock.priority = ySortPriority(rockPos.y + rock.size.y);
+          _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
+          parent?.add(rock);
         } else if (roll >= 5 && roll < 8) {
-          add(Hole(position: Vector2(x, y)));
+          add(Hole(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,));
+          _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
         }
       }
     }
@@ -135,9 +173,9 @@ class RoomComponent extends PositionComponent with HasGameRef {
     void addDoorHalf(Vector2 pos, double rot, {bool flipX = false}) {
       var d = Door(
         position: pos,
-        angleVal: rot,
+        angleVal: 0,//rot,
         isOpen: initialOpen,
-        flipX: flipX,
+        flipX: false,//flipX,
         cor1: theme.corClara,  
         cor2: theme.corEscura,
         cor3: theme.corBranca,
@@ -222,16 +260,9 @@ class RoomComponent extends PositionComponent with HasGameRef {
         py = 48 + _random.nextInt(7) * 16.0;
 
         Rect enemyRect = Rect.fromLTWH(px, py, 16, 16);
-        validPosition = true;
-
-        for (var child in children) {
-          if (child is Obstacle) {
-            if (child.toRect().overlaps(enemyRect)) {
-              validPosition = false; 
-              break;
-            }
-          }
-        }
+        // `_obstacleRects` (não `children`) porque a Rock foi reparentada pro
+        // mundo pro Z-sort — checar `children` perderia essa colisão.
+        validPosition = !_obstacleRects.any((r) => r.overlaps(enemyRect));
         attempts++;
       }
 
@@ -262,8 +293,8 @@ class RoomComponent extends PositionComponent with HasGameRef {
     final int tilesX = (width / tileSize).round();
     final int tilesY = (height / tileSize).round();
 
-    final String pathWall = 'tileset/wall.png';       
-    final String pathCorner = 'tileset/wallQuina.png'; 
+    final String pathWall = 'tileset/arvore1.png';//'tileset/wall.png';       
+    //final String pathCorner = 'tileset/arvore1.png';//'tileset/wallQuina.png'; 
 
     for (int y = 0; y < tilesY; y++) {
       for (int x = 0; x < tilesX; x++) {
@@ -283,9 +314,10 @@ class RoomComponent extends PositionComponent with HasGameRef {
             continue; 
           }
 
-          String spriteToUse = '';
+          String spriteToUse = pathWall;
           double rotation = 0.0;
 
+          /*
           if (isTop && isLeft)        { spriteToUse = pathCorner; rotation = 0; }
           else if (isTop && isRight)    { spriteToUse = pathCorner; rotation = math.pi / 2; }
           else if (isBottom && isRight) { spriteToUse = pathCorner; rotation = math.pi; }
@@ -294,6 +326,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
           else if (isBottom) { spriteToUse = pathWall; rotation = 3 * math.pi / 2; }
           else if (isLeft)   { spriteToUse = pathWall; rotation = 0; }
           else if (isRight)  { spriteToUse = pathWall; rotation = math.pi; }
+          */
 
           if (spriteToUse.isNotEmpty) {
             add(WallTile(
@@ -343,7 +376,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
   }
 
   // Criado uma única vez (antes era um Paint novo por sala, por frame)
-  late final Paint _roomBackgroundPaint = Paint()..color = theme.corEscura;
+  late final Paint _roomBackgroundPaint = Paint()..color = Palette.branco;
   late final Rect _roomBackgroundRect = Rect.fromLTWH(0, 0, width, height);
 
   @override

@@ -76,11 +76,13 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     this.cegoDuracao = 0,
     this.atravessaObstaculos = false,
     this.estilhaca = false,
-    Vector2? size, 
+    Vector2? size,
+    int priority = 0,
     }): super(
-      position: position, 
+      position: position,
       size: size ?? Vector2(16, 16),
-      anchor: Anchor.center
+      anchor: Anchor.center,
+      priority: priority,
     );
 
   @override
@@ -201,7 +203,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         // "no mínimo 1" do Player transformaria 0 em 1 de dano por acerto. Ela
         // também não gasta perfuração — quem a encerra é o lifeTime.
         if (dmg > 0) {
-          other.takeDamage(dmg.toInt());
+          other.takeDamage(dmg);
           atravessa--;
           if (atravessa <= 0) onDestroy();
         }

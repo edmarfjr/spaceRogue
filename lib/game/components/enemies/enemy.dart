@@ -16,7 +16,8 @@ import 'package:creatures_rogue/game/components/map/room_component.dart';
 import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 import '../player/player.dart';
-import '../utils/palette_swapper.dart'; 
+import '../utils/palette_swapper.dart';
+import '../utils/y_sort.dart';
 
 abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameRef {
   final Player playerTarget;
@@ -213,6 +214,9 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   void update(double dt) {
     super.update(dt);
 
+    // Anchor.center: o "chão" (pés) fica meio size.y abaixo do centro.
+    priority = ySortPriority(position.y + size.y / 2);
+
     shieldVisual.setOpacity(shieldVisualActive ? 1.0 : 0.0);
 
     // Condições correm ANTES dos returns de knockback e stun. Se ficassem no
@@ -322,7 +326,7 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   /// A sala onde este inimigo está.
   ///
   /// Necessário porque o inimigo é filho do World, enquanto as paredes
-  /// (WallBarrier) e os obstáculos (Rock/Hole/Door) são filhos da
+  /// (WallBarrier) e a maioria dos obstáculos (Hole/Door) são filhos da
   /// RoomComponent — ou seja, NETOS do World. Varrer `parent!.children`
   /// nunca encontra parede nenhuma.
   RoomComponent? get currentRoom {
@@ -348,12 +352,26 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   }
 
   /// Todos os corpos sólidos da sala atual (paredes, pedras, buracos, portas).
+  ///
+  /// Pedras (Rock) são um caso à parte: viraram filhas do World (não da
+  /// RoomComponent) pra entrar no Z-sort global por Y, então entram aqui
+  /// filtrando as pedras do World que caem dentro do retângulo da sala.
   Iterable<PositionComponent> get roomColliders {
     final room = currentRoom;
     if (room == null) return const [];
-    return room.children
+
+    final localColliders = room.children
         .whereType<PositionComponent>()
         .where((c) => c is WallBarrier || c is Obstacle);
+
+    final p = parent;
+    final worldRocks = p == null
+        ? const <Rock>[]
+        : p.children.whereType<Rock>().where(
+            (r) => room.toAbsoluteRect().overlaps(r.toAbsoluteRect()),
+          );
+
+    return localColliders.followedBy(worldRocks);
   }
 
   void shoot(Vector2 direction, {double? lifeTime}) {

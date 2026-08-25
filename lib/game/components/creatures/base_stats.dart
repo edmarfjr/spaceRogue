@@ -1,5 +1,5 @@
 class BaseStats {
-  final int maxHp;
+  final double maxHp;
   final double speed;
   final double defesa;
   final double ataque;

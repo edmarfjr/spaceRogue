@@ -14,6 +14,11 @@ class DungeonTheme {
 
   static const List<DungeonTheme> levelThemes = [
     DungeonTheme(
+      corClara: Palette.verde, 
+      corEscura: Palette.verdeEsc,
+      corBranca: Palette.branco,
+    ),
+    /*DungeonTheme(
       corClara: Palette.marromEsc, 
       corEscura: Palette.chocolate,
       corBranca: Palette.pumpkin,
@@ -35,6 +40,7 @@ class DungeonTheme {
       corClara: Palette.cinza, 
       corEscura: Palette.preto,
     ),
+    */
   ];
 
   static DungeonTheme getThemeForLevel(int level) {

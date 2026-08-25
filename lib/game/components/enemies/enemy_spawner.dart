@@ -27,10 +27,13 @@ class EnemySpawner {
     SpawnOption(CreatureRegistry.tartarugaPlanta, 8),  // tanque, menos comum
     SpawnOption(CreatureRegistry.ouricoEletrico, 7),   // tanque, menos comum
     SpawnOption(CreatureRegistry.caranguejoErmitao, 7),// tanque, menos comum
+    SpawnOption(CreatureRegistry.tocoPlanta, 7),       // tanque parado, menos comum
     SpawnOption(CreatureRegistry.bombaFogo, 6),        // ameaça alta, raro
     SpawnOption(CreatureRegistry.cobraAgua, 5),        // ameaça alta, raro
+    SpawnOption(CreatureRegistry.leaoEletrico, 5),     // ameaça alta, raro
     SpawnOption(CreatureRegistry.tornadoFogo, 4),      // ameaça alta, muito raro
     SpawnOption(CreatureRegistry.ursoPlanta, 3),       // ameaça alta, muito raro
+    SpawnOption(CreatureRegistry.tubaraoAgua, 3),      // ameaça alta, muito raro
   ];
 
   static Enemy getRandomEnemy(Vector2 position, Player player) {

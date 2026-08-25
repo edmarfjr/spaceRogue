@@ -15,6 +15,7 @@ import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
 import 'package:creatures_rogue/game/components/projeteis/bomb.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
+import 'package:creatures_rogue/game/components/utils/y_sort.dart';
 import 'package:flutter/services.dart';
 import '../map/obstacle.dart';
 
@@ -40,8 +41,8 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
   final Vector2 _keyboardMove = Vector2.zero();
 
-  int maxHealth;
-  int currentHealth;
+  double maxHealth;
+  double currentHealth;
 
   double _invulnerabilityTimer = 0.0;
   final double _invulnerabilityDuration = 1.5;
@@ -199,7 +200,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
        currentHealth = creatureData.stats.maxHp,
        shieldMax = creatureData.stats.shieldMax,
        shield = creatureData.stats.shieldMax,
-       super(size: Vector2(16, 16), anchor: Anchor.center, priority: 10);
+       super(size: Vector2(16, 16), anchor: Anchor.center);
 
   VoidCallback? onDeath;
 
@@ -309,6 +310,9 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   @override
   void update(double dt) {
     super.update(dt);
+
+    // Anchor.center: o "chão" (pés) fica meio size.y abaixo do centro.
+    priority = ySortPriority(position.y + size.y / 2);
 
     if (_cooldown1 > 0) _cooldown1 -= dt;
     if (_cooldown2 > 0) _cooldown2 -= dt;
@@ -540,11 +544,11 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     }
   }
 
-  void takeDamage(int amount) {
+  void takeDamage(double amount) {
     if (_invulnerabilityTimer > 0) return;
     _invulnerabilityTimer = _invulnerabilityDuration;
 
-    int amountFinal = (amount * (1 - damageReduction)).ceil();
+    double amountFinal = (amount * (1 - damageReduction));
     if (amountFinal < 1) amountFinal = 1;
 
     parent?.add(TextEffect.dano(

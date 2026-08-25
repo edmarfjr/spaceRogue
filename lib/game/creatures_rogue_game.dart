@@ -95,6 +95,8 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   }
 
   int currentLevel = 1;
+  int numFloors = 5;
+  int currentFloor = 1;
 
   /// De quantos em quantos andares aparece um boss. 5 combina com os 5 temas
   /// de `DungeonTheme.levelThemes` (um por andar do ciclo). **Baixe pra 2
@@ -109,7 +111,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
 
   final Random _bossRandom = Random();
 
-  bool get isBossFloor => currentLevel % andaresPorBoss == 0;
+  bool get isBossFloor => currentFloor % andaresPorBoss == 0;
 
   @override
   Color backgroundColor() => const Color(0xFF1E1E1E); // Cor de fundo fora do mapa
@@ -185,6 +187,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     // Run nova: volta pro primeiro andar e sorteia o boss que espera no
     // andar final desta run.
     currentLevel = 1;
+    currentFloor = 1;
     runBoss = BossRegistry.sortearPendente(_bossRandom);
 
     final generator = DungeonGenerator(maxRooms: 12); // Gera uma dungeon com 12 salas
@@ -197,6 +200,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
         roomData,
         player: player,
         currentLevel: currentLevel,
+        currentFloor: currentFloor,
         bossBuilder: isBossFloor ? _buildRunBoss : null,
       );
       loadedRooms['${roomData.x},${roomData.y}'] = room;
@@ -513,7 +517,13 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     // 2. AVANÇA O ANDAR
     // Sem isso o contador ficava travado em 1 pra sempre — e como o tema da
     // sala vem de `getThemeForLevel`, os outros 4 temas nunca apareciam.
-    currentLevel++;
+    
+    currentFloor++;
+
+    if(currentFloor > numFloors){
+      currentLevel++;
+      currentFloor=1;
+    }
 
     // 3. GERAÇÃO DE NOVO MAPA
     // Você pode até aumentar o maxRooms a cada nível se quiser um desafio maior!
@@ -525,6 +535,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
         roomData,
         player: player,
         currentLevel: currentLevel,
+        currentFloor:currentFloor,
         bossBuilder: isBossFloor ? _buildRunBoss : null,
       );
       loadedRooms['${roomData.x},${roomData.y}'] = room;

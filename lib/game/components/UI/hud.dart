@@ -107,9 +107,9 @@ class Hud extends PositionComponent with HasGameRef {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    canvas.drawRect(Rect.fromLTWH(-1, 3 - 1, _shieldBarSize.x * player.maxHealth + 2, _shieldBarSize.y + 2), _shieldMoldura);
-    canvas.drawRect(Rect.fromLTWH(0, 3, _shieldBarSize.x * player.maxHealth, _shieldBarSize.y), _shieldFundo);
-    canvas.drawRect(Rect.fromLTWH(0, 3, _shieldBarSize.x * player.currentHealth, _shieldBarSize.y), _hpPreenchimento);
+    canvas.drawRect(Rect.fromLTWH(-1, 1 - 1, _shieldBarSize.x * player.maxHealth + 2, _shieldBarSize.y + 2), _shieldMoldura);
+    canvas.drawRect(Rect.fromLTWH(0, 1, _shieldBarSize.x * player.maxHealth, _shieldBarSize.y), _shieldFundo);
+    canvas.drawRect(Rect.fromLTWH(0, 1, _shieldBarSize.x * player.currentHealth, _shieldBarSize.y), _hpPreenchimento);
 
 
     canvas.drawRect(Rect.fromLTWH(-1, 7 - 1, _shieldBarSize.x * player.shieldMax + 2, _shieldBarSize.y + 2), _shieldMoldura);

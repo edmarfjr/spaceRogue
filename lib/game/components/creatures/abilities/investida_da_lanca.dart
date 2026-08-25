@@ -1,36 +1,31 @@
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
-import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/effects/ghost_effect.dart';
 import 'package:creatures_rogue/game/components/player/player.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 
-class DisparadaCongelante extends Ability {
+/// Leão Elétrico — botão B. Dash com i-frames na direção do movimento,
+/// golpe de lança só no FINAL do trajeto — diferente das disparadas que
+/// atropelam no caminho inteiro, aqui é o pouso que machuca.
+/// Dano = ataque da criatura × [coef] — ver BaseStats.
+class InvestidaDaLanca extends Ability {
   final double distancia;
   final double duracao;
-  final double coefRastro;
+  final double coef;
+  final double empurrao;
 
-  const DisparadaCongelante({
-    this.distancia = 32,
-    this.duracao = 0.15,
-    this.coefRastro = 0.5,
-  }) : super(nome: 'Disparada Congelante', cooldown: 3.0, target: AbilityTarget.plrDir,tipo: AbilityTipo.esquiva);
+  const InvestidaDaLanca({
+    this.distancia = 36,
+    this.duracao = 0.2,
+    this.coef = 1.2,
+    this.empurrao = 80,
+  }) : super(nome: 'Investida da Lança', cooldown: 4.0, target: AbilityTarget.plrDir, tipo: AbilityTipo.esquiva);
 
   @override
   void execute(Player user, Vector2 dir) {
-    final danoRastro = user.creatureData.stats.ataque * coefRastro;
+    final dano = user.creatureData.stats.ataque * coef;
     user.grantInvulnerability(duracao);
-
-    final origem = user.position.clone();
-    user.parent?.add(ExplosionHitbox(
-      position: origem, 
-      dmg: danoRastro, 
-      cor1: Palette.royal,
-      cor2: Palette.azul,
-      tipo: user.creatureData.tipo,
-      lentidaoDuracao: 3.0,
-    ));
 
     GhostEffect.spawnTrail(
       visual: user.visual,
@@ -44,11 +39,10 @@ class DisparadaCongelante extends Ability {
       onComplete: () {
         user.parent?.add(ExplosionHitbox(
           position: user.position.clone(),
-          dmg: danoRastro,
-          cor1: Palette.royal,
-          cor2: Palette.azul,
+          dmg: dano,
+          knockback: empurrao,
+          size: Vector2(16, 16),
           tipo: user.creatureData.tipo,
-          lentidaoDuracao: 3.0,
         ));
       },
     ));

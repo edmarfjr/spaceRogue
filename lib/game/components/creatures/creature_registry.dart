@@ -18,12 +18,18 @@ import 'abilities/casco_fechado.dart';
 import 'abilities/corrente_estatica.dart';
 import 'abilities/cuspe_de_semente.dart';
 import 'abilities/disparada_flamejante.dart';
+import 'abilities/enraizar.dart';
 import 'abilities/ericar.dart';
 import 'abilities/escudo_de_espinhos.dart';
+import 'abilities/folhas_navalha.dart';
+import 'abilities/estocada_relampago.dart';
+import 'abilities/investida_da_lanca.dart';
 import 'abilities/jato_aquatico.dart';
 import 'abilities/bola_dagua.dart';
 import 'abilities/jogada_de_corpo.dart';
 import 'abilities/mega_soco.dart';
+import 'abilities/mergulho_e_estouro.dart';
+import 'abilities/mordida.dart';
 import 'abilities/rajada_de_brasa.dart';
 import 'abilities/recolher_no_casco.dart';
 import 'base_stats.dart';
@@ -35,13 +41,16 @@ import '../enemies/creatures/bomba_fogo_enemy.dart';
 import '../enemies/creatures/caranguejo_ermitao_enemy.dart';
 import '../enemies/creatures/cobra_agua_enemy.dart';
 import '../enemies/creatures/grilo_eletrico_enemy.dart';
+import '../enemies/creatures/leao_eletrico_enemy.dart';
 import '../enemies/creatures/ourico_eletrico_enemy.dart';
 import '../enemies/creatures/pinguim_agua_enemy.dart';
 import '../enemies/creatures/roedor_fogo_enemy.dart';
 import '../enemies/creatures/sapo_agua_enemy.dart';
 import '../enemies/creatures/slime_planta_enemy.dart';
 import '../enemies/creatures/tartaruga_planta_enemy.dart';
+import '../enemies/creatures/toco_planta_enemy.dart';
 import '../enemies/creatures/tornado_fogo_enemy.dart';
+import '../enemies/creatures/tubarao_agua_enemy.dart';
 import '../enemies/creatures/urso_planta_enemy.dart';
 
 class CreatureRegistry {
@@ -56,7 +65,7 @@ class CreatureRegistry {
     ability1: RajadaDeBrasa(),
     ability2: DisparadaFlamejante(),
     moveAnim: MovementAnimation.caminhada,
-    hitboxSize: Vector2(8, 10), // ágil e frágil: corpo pequeno
+    hitboxSize: Vector2(8, 10), 
     enemyBuilder: (pos, plr) => RoedorFogoEnemy(position: pos, playerTarget: plr),
   );
 
@@ -71,7 +80,7 @@ class CreatureRegistry {
     ability1: CuspeDeSemente(),
     ability2: CascoFechado(),
     moveAnim: MovementAnimation.arrastar,
-    hitboxSize: Vector2(14, 14), // resistente: corpo largo
+    hitboxSize: Vector2(14, 14), 
     enemyBuilder: (pos, plr) => TartarugaPlantaEnemy(position: pos, playerTarget: plr),
   );
 
@@ -86,7 +95,7 @@ class CreatureRegistry {
     ability1: BolaDagua(),
     ability2: BolhaProtetora(),
     moveAnim: MovementAnimation.saltitar,
-    hitboxSize: Vector2(12, 10), // balanceado: tamanho médio
+    hitboxSize: Vector2(12, 10), 
     enemyBuilder: (pos, plr) => SapoAguaEnemy(position: pos, playerTarget: plr),
   );
 
@@ -101,7 +110,7 @@ class CreatureRegistry {
     ability1: BicoEletrico(),
     ability2: CorrenteEstatica(),
     moveAnim: MovementAnimation.flutuar,
-    hitboxSize: Vector2(9, 11), // leve e veloz: corpo estreito
+    hitboxSize: Vector2(9, 11),
     enemyBuilder: (pos, plr) => AveEletricaEnemy(position: pos, playerTarget: plr),
   );
 
@@ -116,7 +125,7 @@ class CreatureRegistry {
     ability1: JatoAquatico(),
     ability2: JogadaDeCorpo(),
     moveAnim: MovementAnimation.arrastar,
-    hitboxSize: Vector2(9, 14), // longa e fina, corpo de cobra
+    hitboxSize: Vector2(9, 14),
     enemyBuilder: (pos, plr) => CobraAguaEnemy(position: pos, playerTarget: plr),
   );
 
@@ -131,7 +140,7 @@ class CreatureRegistry {
     ability1: MegaSoco(),
     ability2: Brado(),
     moveAnim: MovementAnimation.caminhada,
-    hitboxSize: Vector2(15, 16), // o maior e mais pesado do grupo
+    hitboxSize: Vector2(15, 16),
     enemyBuilder: (pos, plr) => UrsoPlantaEnemy(position: pos, playerTarget: plr),
   );
 
@@ -146,7 +155,7 @@ class CreatureRegistry {
     ability1: ChoqueEletrico(),
     ability2: DisparadaVeloz(),
     moveAnim: MovementAnimation.saltitar,
-    hitboxSize: Vector2(8, 10), // ágil e frágil: corpo pequeno
+    hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => GriloEletricoEnemy(position: pos, playerTarget: plr),
   );
 
@@ -161,7 +170,7 @@ class CreatureRegistry {
     ability1: SocoFlamejante(),
     ability2: EsquivaTornado(),
     moveAnim: MovementAnimation.flutuar,
-    hitboxSize: Vector2(8, 10), // ágil e frágil: corpo pequeno
+    hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => TornadoFogoEnemy(position: pos, playerTarget: plr),
   );
 
@@ -206,7 +215,7 @@ class CreatureRegistry {
     ability1: Ericar(),
     ability2: EscudoDeEspinhos(),
     moveAnim: MovementAnimation.caminhada,
-    hitboxSize: Vector2(12, 12), // curvo e denso: nem ágil nem frágil
+    hitboxSize: Vector2(12, 12), 
     enemyBuilder: (pos, plr) => OuricoEletricoEnemy(position: pos, playerTarget: plr),
   );
 
@@ -221,7 +230,7 @@ class CreatureRegistry {
     ability1: BaforadaDeCinzas(),
     ability2: RecolherNoCasco(),
     moveAnim: MovementAnimation.arrastar,
-    hitboxSize: Vector2(14, 12), // largo e baixo: tanque de casco
+    hitboxSize: Vector2(14, 12),
     enemyBuilder: (pos, plr) => CaranguejoErmitaoEnemy(position: pos, playerTarget: plr),
   );
 
@@ -232,12 +241,57 @@ class CreatureRegistry {
     tipo: CreatureType.agua,
     corClara: Palette.azul,
     corEscura: Palette.azulEsc,
-    stats: BaseStats(maxHp: 18, speed: 34, defesa: 4, ataque: 3),
+    stats: BaseStats(maxHp: 12, speed: 40, defesa: 4, ataque: 4),
     ability1: TiroDeGelo(),
     ability2: DisparadaCongelante(),
     moveAnim: MovementAnimation.caminhada,
-    hitboxSize: Vector2(8, 16),
+    hitboxSize: Vector2(8, 14),
     enemyBuilder: (pos, plr) => PinguimAguaEnemy(position: pos, playerTarget: plr),
+  );
+
+  static final CreatureData tocoPlanta = CreatureData(
+    id: 'toco_planta',
+    nome: 'Toco de Madeira',
+    spritePath: 'actors/tocoPlanta.png',
+    tipo: CreatureType.planta,
+    corClara: Palette.verdeEsc,
+    corEscura: Palette.chocolate,
+    stats: BaseStats(maxHp: 16, speed: 45, defesa: 2, ataque: 3),
+    ability1: FolhasNavalha(),
+    ability2: Enraizar(),
+    moveAnim: MovementAnimation.saltitar,
+    hitboxSize: Vector2(10, 10), 
+    enemyBuilder: (pos, plr) => TocoPlantaEnemy(position: pos, playerTarget: plr),
+  );
+
+  static final CreatureData tubaraoAgua = CreatureData(
+    id: 'tubarao_agua',
+    nome: 'Tubarão de Água',
+    spritePath: 'actors/tubaAgua.png',
+    tipo: CreatureType.agua,
+    corClara: Palette.azul,
+    corEscura: Palette.royal,
+    stats: BaseStats(maxHp: 20, speed: 40, defesa: 3, ataque: 5),
+    ability1: Mordida(),
+    ability2: MergulhoEEstouro(),
+    moveAnim: MovementAnimation.caminhada,
+    hitboxSize: Vector2(13, 15),
+    enemyBuilder: (pos, plr) => TubaraoAguaEnemy(position: pos, playerTarget: plr),
+  );
+
+  static final CreatureData leaoEletrico = CreatureData(
+    id: 'leao_eletrico',
+    nome: 'Leão Elétrico',
+    spritePath: 'actors/gatoEletrico.png',
+    tipo: CreatureType.eletrico,
+    corClara: Palette.amarelo,
+    corEscura: Palette.burgundy,
+    stats: BaseStats(maxHp: 20, speed: 55, defesa: 4, ataque: 4),
+    ability1: EstocadaRelampago(),
+    ability2: InvestidaDaLanca(),
+    moveAnim: MovementAnimation.caminhada,
+    hitboxSize: Vector2(10, 15),
+    enemyBuilder: (pos, plr) => LeaoEletricoEnemy(position: pos, playerTarget: plr),
   );
 
   static final List<CreatureData> all = [
@@ -254,6 +308,9 @@ class CreatureRegistry {
     pinguimAgua,
     ouricoEletrico,
     caranguejoErmitao,
+    tocoPlanta,
+    tubaraoAgua,
+    leaoEletrico,
   ];
 
   static CreatureData byId(String id) => all.firstWhere((c) => c.id == id);

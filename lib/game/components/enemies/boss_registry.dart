@@ -9,13 +9,16 @@ import 'creatures/bomba_fogo_boss_enemy.dart';
 import 'creatures/caranguejo_ermitao_boss_enemy.dart';
 import 'creatures/cobra_agua_boss_enemy.dart';
 import 'creatures/grilo_eletrico_boss_enemy.dart';
+import 'creatures/leao_eletrico_boss_enemy.dart';
 import 'creatures/ourico_eletrico_boss_enemy.dart';
 import 'creatures/pinguim_agua_boss_enemy.dart';
 import 'creatures/roedor_fogo_boss_enemy.dart';
 import 'creatures/sapo_agua_boss_enemy.dart';
 import 'creatures/slime_planta_boss_enemy.dart';
 import 'creatures/tartaruga_planta_boss_enemy.dart';
+import 'creatures/toco_planta_boss_enemy.dart';
 import 'creatures/tornado_fogo_boss_enemy.dart';
+import 'creatures/tubarao_agua_boss_enemy.dart';
 import 'creatures/urso_planta_boss_enemy.dart';
 import 'enemy.dart';
 
@@ -96,6 +99,18 @@ class BossRegistry {
     BossOption(
       creatureId: 'pinguim_agua',
       builder: (pos, plr) => PinguimAguaBossEnemy(position: pos, playerTarget: plr),
+    ),
+    BossOption(
+      creatureId: 'toco_planta',
+      builder: (pos, plr) => TocoPlantaBossEnemy(position: pos, playerTarget: plr),
+    ),
+    BossOption(
+      creatureId: 'tubarao_agua',
+      builder: (pos, plr) => TubaraoAguaBossEnemy(position: pos, playerTarget: plr),
+    ),
+    BossOption(
+      creatureId: 'leao_eletrico',
+      builder: (pos, plr) => LeaoEletricoBossEnemy(position: pos, playerTarget: plr),
     ),
   ];
 

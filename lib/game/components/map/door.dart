@@ -48,17 +48,17 @@ class Door extends Obstacle {
     await super.onLoad();
     
     final ui.Image swappedImageClose = await PaletteSwapper.createSwappedImage(
-      imagePath: 'tileset/door1.png',
+      imagePath: 'tileset/arvore2.png',//'tileset/door1.png',
       lightGrayReplacement: cor1,
       darkGrayReplacement: cor2,
       whiteReplacement: cor3,
     );
 
     final ui.Image swappedImage = await PaletteSwapper.createSwappedImage(
-      imagePath: 'tileset/doorOpen1.png',
-      lightGrayReplacement: cor1,
-      darkGrayReplacement: cor2,
-      whiteReplacement: cor3,
+      imagePath: 'tileset/floor.png',//'tileset/doorOpen1.png',
+      lightGrayReplacement: Palette.branco,// cor1,
+      darkGrayReplacement: Palette.branco,//cor2,
+      whiteReplacement: Palette.branco,//cor3,
     );
     
     _closedSprite = Sprite(swappedImageClose);
