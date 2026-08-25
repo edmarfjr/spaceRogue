@@ -18,7 +18,7 @@ class PedestalComponent extends Obstacle {
     
     add(PowerUpItem(
       position: Vector2(8, -4),
-      type: powerUpType,
+      tipo: powerUpType,
     ));
   }
 /*

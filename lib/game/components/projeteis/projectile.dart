@@ -199,9 +199,9 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         if (lentidaoDuracao > 0) other.aplicarLentidao(lentidaoDuracao, fator: lentidaoFator);
         if (cegoDuracao > 0) other.aplicarCegueira(cegoDuracao);
 
-        // Nuvem de controle puro (dmg 0) não passa por takeDamage: o piso de
-        // "no mínimo 1" do Player transformaria 0 em 1 de dano por acerto. Ela
-        // também não gasta perfuração — quem a encerra é o lifeTime.
+        // Nuvem de controle puro (dmg 0) não passa por takeDamage: sem o
+        // guarda ela cuspiria um "0" flutuante sobre o jogador a cada acerto.
+        // Também não gasta perfuração — quem a encerra é o lifeTime.
         if (dmg > 0) {
           other.takeDamage(dmg);
           atravessa--;
@@ -226,7 +226,11 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         // sem esse guarda ela ainda cuspiria um "0" flutuante sobre cada
         // inimigo dentro dela.
         if (dmg > 0) {
-          other.takeDamage(dmg, tipoAtacante: tipo);
+          // `Player.danoMult` (upgrades de dano da run) entra aqui, e não nas
+          // 34 habilidades: este é o único ponto por onde o tiro do jogador
+          // machuca inimigo. O ramo do `isEnemy` acima não usa o multiplicador
+          // — ele é do jogador, não de quem atira nele.
+          other.takeDamage(dmg * Player.danoMult, tipoAtacante: tipo);
           other.applyKnockback(absolutePosition, kbForce);
           atravessa--;
           if (atravessa <= 0) onDestroy();

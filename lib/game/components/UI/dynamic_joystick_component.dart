@@ -1,5 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
+import 'package:creatures_rogue/game/components/UI/consumable_slot_button.dart';
 
 /// Joystick "flutuante": ao contrário do `JoystickComponent` fixo do Flame,
 /// não tem posição própria na tela. Ele cobre uma área (normalmente a metade
@@ -43,7 +44,11 @@ class DynamicJoystickComponent extends PositionComponent with DragCallbacks {
     super.onGameResize(canvasSize);
     // A área de captura acompanha o tamanho real da tela — sem isso, girar o
     // aparelho ou redimensionar a janela deixaria a metade esquerda torta.
-    size = Vector2(canvasSize.x / 2, canvasSize.y);
+    //
+    // A faixa do topo fica de fora: é onde vivem os slots do inventário, e um
+    // toque neles não pode virar movimento (ver ConsumableSlotButton).
+    size = Vector2(canvasSize.x / 2, canvasSize.y - ConsumableSlotButton.alturaFaixa);
+    position = Vector2(0, ConsumableSlotButton.alturaFaixa);
   }
 
   @override

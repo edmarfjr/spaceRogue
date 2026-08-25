@@ -98,7 +98,9 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
     if (other is Rock) {
       other.blowUp();
     } else if (other is Enemy && !isEnemy) {
-      other.takeDamage(dmg, tipoAtacante: tipo);
+      // Mesma razão do Projectile: os upgrades de dano da run entram no ponto
+      // de acerto, não nas habilidades.
+      other.takeDamage(dmg * Player.danoMult, tipoAtacante: tipo);
       if (isStun) other.applyStun(stunDuration);
       if (lentidaoDuracao > 0) other.applyLentidao(lentidaoDuracao, fator: lentidaoFator);
       if (cegoDuracao > 0) other.applyCego(cegoDuracao);

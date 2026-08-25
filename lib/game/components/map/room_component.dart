@@ -7,7 +7,11 @@ import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/enemies/dummy_enemy.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy_spawner.dart';
+import 'package:creatures_rogue/game/components/items/coin_pickup.dart';
+import 'package:creatures_rogue/game/components/items/consumable_item.dart';
+import 'package:creatures_rogue/game/components/items/heart_pickup.dart';
 import 'package:creatures_rogue/game/components/items/power_up_item.dart';
+import 'package:creatures_rogue/game/components/items/shop_stand.dart';
 import 'package:creatures_rogue/game/components/map/door.dart';
 import 'package:creatures_rogue/game/components/map/pedestal.dart';
 import 'package:creatures_rogue/game/components/map/stairs.dart';
@@ -101,6 +105,8 @@ class RoomComponent extends PositionComponent with HasGameRef {
       _generateObstacles();
     } else if (data.type == RoomType.item) {
       _spawnTreasure();
+    } else if (data.type == RoomType.shop) {
+      _spawnShop();
     }else if (data.type == RoomType.start) {
       Enemy enemy = DummyEnemy(
         position: Vector2(width / 2, height / 2 - 32),
@@ -112,11 +118,90 @@ class RoomComponent extends PositionComponent with HasGameRef {
 
   void _spawnTreasure() {
     Vector2 centerPos = position + Vector2(width / 2, height / 2);
-    
+
+    // Sorteado entre TODOS os tipos: antes era `hpUp` fixo, então três dos
+    // quatro upgrades nunca apareciam no jogo.
+    final tipo = PowerUpType.values[_random.nextInt(PowerUpType.values.length)];
+
     parent?.add(PedestalComponent(
       position: centerPos,
-      powerUpType: PowerUpType.hpUp, 
+      powerUpType: tipo,
     ));
+
+    // Um item de uso único ao lado do pedestal — hoje é a única fonte deles,
+    // porque a recompensa de sala limpa é só moeda ou cura. Se preferir que os
+    // consumíveis venham só da loja, é esta chamada que sai.
+    parent?.add(ConsumablePickup(
+      position: centerPos + Vector2(28, 0),
+      tipo: ConsumableType.values[_random.nextInt(ConsumableType.values.length)],
+    ));
+  }
+
+  /// Três balcões, sempre nas mesmas posições: cura, um item de uso único e um
+  /// upgrade permanente. Os dois últimos são sorteados por andar, então a loja
+  /// não vende sempre a mesma coisa.
+  ///
+  /// Os preços são o botão de ajuste da economia: hoje uma sala limpa dá 1
+  /// moeda e um andar tem ~10 salas de combate, ou seja, ~10 moedas por andar.
+  void _spawnShop() {
+    final centro = position + Vector2(width / 2, height / 2);
+
+    final consumivel =
+        ConsumableType.values[_random.nextInt(ConsumableType.values.length)];
+    final upgrade =
+        PowerUpType.values[_random.nextInt(PowerUpType.values.length)];
+
+    parent?.add(ShopStand(
+      position: centro + Vector2(-32, -8),
+      preco: 4,
+      spritePath: 'items/heart.png',
+      cor1: Palette.vermelho,
+      cor2: Palette.roxoEsc,
+      // `heal` devolve false com a vida cheia — e é isso que evita cobrar por
+      // uma cura que não curou.
+      entregar: (p) => p.heal(4),
+      msgFalha: 'VIDA CHEIA',
+    ));
+
+    parent?.add(ShopStand(
+      position: centro + Vector2(0, -8),
+      preco: 7,
+      spritePath: consumivel.spritePath,
+      cor1: consumivel.cor1,
+      cor2: consumivel.cor2,
+      entregar: (p) => p.addConsumable(consumivel),
+    ));
+
+    parent?.add(ShopStand(
+      position: centro + Vector2(32, -8),
+      preco: 14,
+      spritePath: upgrade.spritePath,
+      cor1: upgrade.cor1,
+      cor2: upgrade.cor2,
+      entregar: (p) {
+        upgrade.aplicar(p);
+        return true; // upgrade não tem como falhar
+      },
+    ));
+  }
+
+  /// Recompensa por limpar a sala: quase sempre uma moeda, raramente um
+  /// coração. Nasce 28px abaixo do centro porque o centro já é ocupado — pelo
+  /// pedestal na sala de tesouro e pela escada na sala de boss (a moeda em cima
+  /// da escada seria coletada junto com a troca de andar, e sumiria).
+  void _spawnRecompensa() {
+    final pos = position + Vector2(width / 2, height / 2 + 28);
+
+    // A chance de cura só é rolada com HP faltando: `heal()` devolve false com
+    // a vida cheia, e aí o coração ficaria plantado no chão pra sempre no lugar
+    // da moeda que o jogador teria levado.
+    final podeCurar = player.currentHealth < player.maxHealth;
+
+    if (podeCurar && _random.nextInt(100) < 12) {
+      parent?.add(HeartPickup(position: pos));
+    } else {
+      parent?.add(CoinPickup(position: pos));
+    }
   }
 
   void _generateFloorDetails() {
@@ -230,6 +315,8 @@ class RoomComponent extends PositionComponent with HasGameRef {
         position: position + Vector2(width / 2, height / 2)
       ));
     }
+
+    _spawnRecompensa();
   }
 
   void _spawnEnemies() {

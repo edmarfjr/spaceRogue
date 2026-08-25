@@ -1,6 +1,6 @@
 import 'dart:math';
 
-enum RoomType { start, normal, boss, item }
+enum RoomType { start, normal, boss, item, shop }
 
 class RoomData {
   final int x;
@@ -13,6 +13,12 @@ class RoomData {
   bool doorRight = false;
   bool isCleared = false;
   bool isVisited = false;
+
+  /// Marcada pelo item MAPA: aparece no minimapa sem o jogador ter entrado.
+  /// Campo separado de [isVisited] de propósito — `isVisited` decide se a sala
+  /// tranca ao entrar e se as portas nascem abertas, então reaproveitá-lo pra
+  /// revelar faria o mapa "limpar" a dungeon inteira.
+  bool isRevealed = false;
 
   RoomData(this.x, this.y, {this.type = RoomType.normal});
   
@@ -87,6 +93,26 @@ class DungeonGenerator {
       if (deadEnds.isNotEmpty) {
         var itemRoom = deadEnds.removeLast();
         itemRoom.type = RoomType.item;
+      }
+
+      // Loja: beco sem-saída, se ainda sobrou algum. Senão, qualquer sala
+      // comum serve — um andar sem loja deixaria as moedas juntadas nele sem
+      // onde ser gastas, e o boss e o tesouro já consumiram os becos.
+      RoomData? shopRoom;
+      if (deadEnds.isNotEmpty) {
+        shopRoom = deadEnds.removeLast();
+      } else {
+        final comuns =
+            grid.values.where((r) => r.type == RoomType.normal).toList();
+        if (comuns.isNotEmpty) shopRoom = comuns.last;
+      }
+
+      if (shopRoom != null) {
+        shopRoom.type = RoomType.shop;
+        // Loja já nasce limpa, como a sala inicial: sem isso ela trancaria e
+        // geraria inimigos ao entrar, e o jogador brigaria dentro da loja. É
+        // também o que faz as portas dela nascerem abertas.
+        shopRoom.isCleared = true;
       }
     }
   }

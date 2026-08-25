@@ -18,22 +18,22 @@ class EnemySpawner {
   /// Peso por ameaça: os fracos e rápidos aparecem sempre, os pesados são
   /// raros. Sem isso, uma dungeon de 12 salas pode encher de Urso.
   static final List<SpawnOption> _pool = [
-    SpawnOption(CreatureRegistry.aveEletrica, 20),     // frágil, comum
-    SpawnOption(CreatureRegistry.roedorFogo, 16),      // frágil, comum
-    SpawnOption(CreatureRegistry.griloEletrico, 14),   // frágil, comum
-    SpawnOption(CreatureRegistry.sapoAgua, 12),        // médio
-    SpawnOption(CreatureRegistry.slimePlanta, 9),      // médio, suja a arena
-    SpawnOption(CreatureRegistry.pinguimAgua, 8),      // tanque, menos comum
-    SpawnOption(CreatureRegistry.tartarugaPlanta, 8),  // tanque, menos comum
-    SpawnOption(CreatureRegistry.ouricoEletrico, 7),   // tanque, menos comum
-    SpawnOption(CreatureRegistry.caranguejoErmitao, 7),// tanque, menos comum
-    SpawnOption(CreatureRegistry.tocoPlanta, 7),       // tanque parado, menos comum
-    SpawnOption(CreatureRegistry.bombaFogo, 6),        // ameaça alta, raro
-    SpawnOption(CreatureRegistry.cobraAgua, 5),        // ameaça alta, raro
-    SpawnOption(CreatureRegistry.leaoEletrico, 5),     // ameaça alta, raro
-    SpawnOption(CreatureRegistry.tornadoFogo, 4),      // ameaça alta, muito raro
-    SpawnOption(CreatureRegistry.ursoPlanta, 3),       // ameaça alta, muito raro
-    SpawnOption(CreatureRegistry.tubaraoAgua, 3),      // ameaça alta, muito raro
+    SpawnOption(CreatureRegistry.aveEletrica, 20),     // frágil, comum 20
+    SpawnOption(CreatureRegistry.roedorFogo, 20),      // frágil, comum 16
+    SpawnOption(CreatureRegistry.griloEletrico, 20),   // frágil, comum 14
+    SpawnOption(CreatureRegistry.sapoAgua, 20),        // médio 12
+    SpawnOption(CreatureRegistry.slimePlanta, 20),      // médio, suja a arena 9
+    SpawnOption(CreatureRegistry.pinguimAgua, 20),      // tanque, menos comum8
+    SpawnOption(CreatureRegistry.tartarugaPlanta, 20),  // tanque, menos comum8
+    SpawnOption(CreatureRegistry.ouricoEletrico, 20),   // tanque, menos comum7
+    SpawnOption(CreatureRegistry.caranguejoErmitao, 20),// tanque, menos comum7
+    SpawnOption(CreatureRegistry.tocoPlanta, 20),       // tanque parado, menos comum7
+    SpawnOption(CreatureRegistry.bombaFogo, 20),        // ameaça alta, raro6
+    SpawnOption(CreatureRegistry.cobraAgua, 20),        // ameaça alta, raro5
+    SpawnOption(CreatureRegistry.leaoEletrico, 20),     // ameaça alta, raro5
+    SpawnOption(CreatureRegistry.tornadoFogo, 20),      // ameaça alta, muito raro4
+    SpawnOption(CreatureRegistry.ursoPlanta, 20),       // ameaça alta, muito raro3
+    SpawnOption(CreatureRegistry.tubaraoAgua, 20),      // ameaça alta, muito raro3
   ];
 
   static Enemy getRandomEnemy(Vector2 position, Player player) {

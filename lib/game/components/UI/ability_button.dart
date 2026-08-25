@@ -115,7 +115,7 @@ class AbilityButton extends PositionComponent
 
     // Ícone com 60% do diâmetro, centralizado — folga suficiente pra borda do
     // círculo continuar visível como alvo de toque.
-    final iconSize = Vector2.all(size.x * 0.6);
+    final iconSize = Vector2.all(size.x*0.8);
     AbilityIcons.of(tipo()).render(
       canvas,
       position: (size - iconSize) / 2,

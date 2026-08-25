@@ -1,5 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
+import 'package:creatures_rogue/game/components/UI/consumable_slot_button.dart';
 
 /// Esquema de controle alternativo aos botões A/B: uma área invisível (na
 /// prática, a metade direita da tela) onde o TIPO do gesto escolhe a
@@ -48,8 +49,12 @@ class GestureActionArea extends PositionComponent
     // Metade direita da tela. Acompanha o tamanho real pra não ficar torta ao
     // girar o aparelho ou redimensionar a janela — mesma razão do
     // DynamicJoystickComponent, que cobre a metade esquerda.
-    size = Vector2(canvasSize.x / 2, canvasSize.y);
-    position = Vector2(canvasSize.x / 2, 0);
+    //
+    // Como no joystick, a faixa do topo fica de fora: sem isso um toque num
+    // slot do inventário também dispararia a habilidade 1, ou seja, usar uma
+    // poção gastaria a habilidade no mesmo toque.
+    size = Vector2(canvasSize.x / 2, canvasSize.y - ConsumableSlotButton.alturaFaixa);
+    position = Vector2(canvasSize.x / 2, ConsumableSlotButton.alturaFaixa);
   }
 
   @override

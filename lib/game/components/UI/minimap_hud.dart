@@ -22,6 +22,7 @@ class MinimapHud extends PositionComponent with HasGameRef {
   final Paint visitedRoomPaint = Paint()..color = Palette.indigo;
   final Paint bossRoomPaint = Paint()..color = Palette.vermelho;
   final Paint itemRoomPaint = Paint()..color = Palette.amarelo;
+  final Paint shopRoomPaint = Paint()..color = Palette.verde;
   final Paint unvisitedPaint = Paint()..color = Palette.azulEsc; 
 
   final Paint backgroundPaint = Paint()..color = Palette.preto;
@@ -118,7 +119,8 @@ class MinimapHud extends PositionComponent with HasGameRef {
       bool isAdjacent = ((room.x - currentRoomCoords.x).abs() == 1 && room.y == currentRoomCoords.y) ||
                         ((room.y - currentRoomCoords.y).abs() == 1 && room.x == currentRoomCoords.x);
 
-      if (!room.isVisited && !isCurrentRoom && !isAdjacent) {
+      // `isRevealed` é o item MAPA: a sala aparece sem nunca ter sido pisada.
+      if (!room.isVisited && !room.isRevealed && !isCurrentRoom && !isAdjacent) {
         continue;
       }
 
@@ -130,10 +132,18 @@ class MinimapHud extends PositionComponent with HasGameRef {
       if (room.x == currentRoomCoords.x && room.y == currentRoomCoords.y) {
         roomPaint = currentRoomPaint; 
       } else{
+        // Salas especiais mantêm a cor mesmo reveladas sem visita — é
+        // justamente pra isso que serve o item MAPA.
         if (room.type == RoomType.boss) {
           roomPaint = bossRoomPaint;
         } else if (room.type == RoomType.item) {
           roomPaint = itemRoomPaint;
+        } else if (room.type == RoomType.shop) {
+          roomPaint = shopRoomPaint;
+        } else if (!room.isVisited) {
+          // Sala comum que o jogador ainda não pisou (revelada pelo mapa, ou
+          // apenas adjacente): cor apagada, pra separar do que já foi andado.
+          roomPaint = unvisitedPaint;
         } else {
           roomPaint = visitedRoomPaint; 
         }

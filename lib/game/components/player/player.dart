@@ -10,12 +10,15 @@ import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/effects/movement_animator.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart';
+import 'package:creatures_rogue/game/components/items/consumable_item.dart';
+import 'package:creatures_rogue/game/components/map/dungeon_generator.dart';
 import 'package:creatures_rogue/game/components/map/room_component.dart';
 import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
 import 'package:creatures_rogue/game/components/projeteis/bomb.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:creatures_rogue/game/components/utils/y_sort.dart';
+import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:flutter/services.dart';
 import '../map/obstacle.dart';
 
@@ -59,11 +62,33 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
   int bombsAmount = 3;
 
+  /// Moedas da run, gastas nos balcões da loja (ver ShopStand). Zeram junto
+  /// com o Player, ou seja, a cada run nova.
+  int coins = 0;
+
+  /// Inventário de itens de uso único: dois slots, cada um com no máximo um
+  /// item. `null` = vazio. Uma lista de tamanho fixo em vez de dois campos
+  /// porque os botões da tela são indexados (ver ConsumableSlotButton).
+  final List<ConsumableType?> slots = [null, null];
+
+  // --- Multiplicadores de upgrade da run ---
+  // Ficam aqui, e não em BaseStats, porque BaseStats é `const` (compartilhado
+  // entre todas as instâncias da criatura). Mesmo padrão do `lentidaoFator`
+  // logo abaixo: o valor base nunca muda, quem multiplica é o getter.
+  double velMult = 1.0;
+  double cdMult = 1.0;
+
+  /// Dano do jogador. É `static` porque quem multiplica é o próprio projétil /
+  /// explosão no momento do acerto (ver `Projectile.onCollision`), e eles não
+  /// têm referência ao Player. Aplicar nas 34 habilidades seria 34 edições;
+  /// aqui são duas. Zera no construtor, ou seja, a cada run nova.
+  static double danoMult = 1.0;
+
   Vector2 velocity = Vector2.zero();
   Vector2 knockbackVelocity = Vector2.zero();
   Vector2 plrDir = Vector2(0,1);
 
-  double get maxSpeed => creatureData.stats.speed * lentidaoFator;
+  double get maxSpeed => creatureData.stats.speed * lentidaoFator * velMult;
 
   /// Lentidão e cegueira são as únicas condições que atingem o jogador — DoT
   /// fica só do lado dos inimigos, que têm os ícones de condição pra mostrar.
@@ -97,6 +122,13 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
   double _cooldown1 = 0.0;
   double _cooldown2 = 0.0;
+
+  /// Cooldown cheio do último disparo de cada botão, já com [cdMult] aplicado.
+  /// Só serve de denominador pro indicador da Hud (ver
+  /// `ability1CooldownFraction`). Começa em 1.0 e não em 0 pra nunca dividir
+  /// por zero antes do primeiro disparo.
+  double _cooldownMax1 = 1.0;
+  double _cooldownMax2 = 1.0;
 
   // Segurando o botão (touch ou teclado), a habilidade dispara sozinha assim
   // que o cooldown zerar — não precisa soltar e apertar de novo.
@@ -200,7 +232,12 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
        currentHealth = creatureData.stats.maxHp,
        shieldMax = creatureData.stats.shieldMax,
        shield = creatureData.stats.shieldMax,
-       super(size: Vector2(16, 16), anchor: Anchor.center);
+       super(size: Vector2(16, 16), anchor: Anchor.center) {
+    // Um Player novo é exatamente uma run nova (ver `startRun`), então este é
+    // o lugar certo pra zerar o multiplicador estático de dano — senão os
+    // upgrades da run anterior valeriam na próxima.
+    danoMult = 1.0;
+  }
 
   VoidCallback? onDeath;
 
@@ -483,21 +520,28 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   void useAbility1() {
     if (_cooldown1 > 0) return;
     creatureData.ability1.execute(this, lockedAb1Direction);
-    _cooldown1 = creatureData.ability1.cooldown;
+    _cooldownMax1 = creatureData.ability1.cooldown * cdMult;
+    _cooldown1 = _cooldownMax1;
   }
 
   void useAbility2() {
     if (_cooldown2 > 0) return;
     creatureData.ability2.execute(this, lockedAb2Direction);
-    _cooldown2 = creatureData.ability2.cooldown;
+    _cooldownMax2 = creatureData.ability2.cooldown * cdMult;
+    _cooldown2 = _cooldownMax2;
   }
 
   /// Fração restante de cooldown de cada botão (0 = pronto, 1 = acabou de usar).
   /// Usado pela HUD para desenhar os indicadores (fase 6).
+  ///
+  /// Divide pelo valor que foi REALMENTE usado no último disparo, guardado em
+  /// `_cooldownMaxN` — recalcular `cooldown * cdMult` aqui deixaria o indicador
+  /// travado cheio se um upgrade de cadência fosse pego no meio de um cooldown
+  /// (o denominador encolhia embaixo de um numerador que não mudou).
   double get ability1CooldownFraction =>
-      (_cooldown1 / creatureData.ability1.cooldown).clamp(0.0, 1.0);
+      (_cooldown1 / _cooldownMax1).clamp(0.0, 1.0);
   double get ability2CooldownFraction =>
-      (_cooldown2 / creatureData.ability2.cooldown).clamp(0.0, 1.0);
+      (_cooldown2 / _cooldownMax2).clamp(0.0, 1.0);
 
   // --- NOVA FUNÇÃO DE VALIDAÇÃO DE COLISÃO ---
   bool isPhysicsCollision(PositionComponent other) {
@@ -546,10 +590,14 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
   void takeDamage(double amount) {
     if (_invulnerabilityTimer > 0) return;
-    _invulnerabilityTimer = _invulnerabilityDuration;
 
-    double amountFinal = (amount * (1 - damageReduction));
-    if (amountFinal < 1) amountFinal = 1;
+    // Piso em 0, não em 1: com o piso antigo nenhum item ou habilidade de
+    // redução percentual conseguia fazer diferença num golpe de 1 (o contato
+    // de inimigo), porque 1 * (1 - qualquer coisa) voltava pra 1.
+    double amountFinal = amount * (1 - damageReduction);
+    if (amountFinal <= 0) return; // golpe totalmente mitigado: não gasta i-frame
+
+    _invulnerabilityTimer = _invulnerabilityDuration;
 
     parent?.add(TextEffect.dano(
       amountFinal,
@@ -576,12 +624,21 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
     // Escudo passivo (defesa) absorve antes do HP — segunda barra, não a
     // bolha de habilidade (shieldHits), que já retornou acima se ativa.
+    //
+    // O excedente PASSA pro HP. Antes o escudo comia o golpe inteiro e jogava
+    // o resto fora, então 1 ponto de escudo anulava um golpe de 10 do boss —
+    // qualquer item de escudo ficava absurdo.
     if (shield > 0) {
-      //final absorvido = amountFinal > shield ? shield : amountFinal.toDouble();
-      shield -= amountFinal;
-      //amountFinal -= absorvido.ceil();
+      final absorvido = amountFinal > shield ? shield : amountFinal;
+      shield -= absorvido;
+      amountFinal -= absorvido;
       if (shield < 0) shield = 0;
-      return;
+      // Sem arredondar o resto pra cima: com 0.5 de escudo sobrando, um
+      // arredondamento faria o golpe de 1 (contato de inimigo) chegar inteiro
+      // no HP, ou seja, o último ponto fracionado de escudo sairia de graça pro
+      // atacante. A barra da Hud escala contínuo, então HP fracionado desenha
+      // bem.
+      if (amountFinal <= 0) return;
     }
 
     currentHealth -= amountFinal;
@@ -611,6 +668,14 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     _keyboardHoldAbility1 = keysPressed.contains(LogicalKeyboardKey.keyZ);
     _keyboardHoldAbility2 = keysPressed.contains(LogicalKeyboardKey.keyX);
 
+    // Teclas 1 e 2 = os dois slots do inventário, equivalente a clicar neles.
+    // Só no KeyDownEvent: o teclado repete a tecla segurada, e com isso o
+    // segundo item entraria e sairia do slot no mesmo aperto.
+    if (event is KeyDownEvent) {
+      if (event.logicalKey == LogicalKeyboardKey.digit1) useSlot(0);
+      if (event.logicalKey == LogicalKeyboardKey.digit2) useSlot(1);
+    }
+
    // if (event is KeyDownEvent) {
    //   if (event.logicalKey == LogicalKeyboardKey.space) _placeBomb();
    // }
@@ -631,5 +696,87 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     bombsAmount += amount;
 
     if (bombsAmount > 99) bombsAmount = 99;
+  }
+
+  void addCoins(int amount) {
+    coins += amount;
+  }
+
+  /// Guarda [tipo] no primeiro slot livre. Retorna false com os dois cheios —
+  /// e é esse false que faz o item continuar no chão (ver
+  /// `Collectible.onCollect`), em vez de sumir sem efeito.
+  bool addConsumable(ConsumableType tipo) {
+    for (int i = 0; i < slots.length; i++) {
+      if (slots[i] == null) {
+        slots[i] = tipo;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Gasta o item do slot [index]. Slot vazio é no-op, não erro: o botão da
+  /// tela existe sempre, cheio ou não.
+  ///
+  /// O slot só é limpo se o efeito teve serventia (ver `ConsumableType.aplicar`)
+  /// — poção com vida cheia, ou mapa dentro de sala trancada, não gastam o item.
+  void useSlot(int index) {
+    if (index < 0 || index >= slots.length) return;
+    final tipo = slots[index];
+    if (tipo == null) return;
+
+    if (tipo.aplicar(this)) slots[index] = null;
+  }
+
+  /// Marca todas as salas do andar como reveladas (item Mapa). Só mexe no
+  /// minimapa: `isRevealed` é separado de `isVisited` justamente pra revelar
+  /// não destrancar sala nenhuma nem abrir porta (ver RoomData).
+  ///
+  /// Vale só pro andar atual — `nextLevel` gera RoomData novo, com o campo de
+  /// volta em false, então não há o que resetar aqui.
+  ///
+  /// Devolve false, sem revelar nada, dentro de sala trancada: o minimapa se
+  /// esconde por completo enquanto a sala não está limpa (ver
+  /// `MinimapHud.render`), então usar o mapa ali gastaria o item pra não mostrar
+  /// coisa nenhuma.
+  bool revelarMapa() {
+    final jogo = game;
+    if (jogo is! CreaturesRogueGame) return false;
+
+    final salaAtual = _currentRoom?.data;
+    if (salaAtual != null &&
+        !salaAtual.isCleared &&
+        salaAtual.type != RoomType.start) {
+      return false;
+    }
+
+    for (final sala in jogo.mapData.values) {
+      sala.isRevealed = true;
+    }
+    return true;
+  }
+
+  /// Atordoa todo inimigo da sala atual (item Congelar). Restringe à sala pelo
+  /// mesmo motivo da mira automática: todos os inimigos da dungeon existem ao
+  /// mesmo tempo, então sem o filtro o item congelaria o andar inteiro.
+  ///
+  /// Devolve false quando não havia ninguém pra congelar — assim o item não é
+  /// gasto num clique fora de combate.
+  bool congelarInimigos(double duracao) {
+    final room = _currentRoom;
+    final enemies = parent?.children.whereType<Enemy>() ?? const <Enemy>[];
+    bool congelouAlgum = false;
+
+    for (final enemy in enemies) {
+      if (room != null &&
+          !room.toAbsoluteRect().contains(
+              Offset(enemy.absolutePosition.x, enemy.absolutePosition.y))) {
+        continue;
+      }
+      enemy.applyStun(duracao);
+      congelouAlgum = true;
+    }
+
+    return congelouAlgum;
   }
 }

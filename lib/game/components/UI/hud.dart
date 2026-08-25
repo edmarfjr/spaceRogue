@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/UI/ability_cooldown_indicator.dart';
@@ -7,10 +10,11 @@ import '../player/player.dart';
 class Hud extends PositionComponent with HasGameRef {
   final Player player;
   // Sprites
-  late final Sprite heartSprite;
-  late final Sprite heartHalfSprite;
-  late final Sprite heartEmptySprite;
+  //late final Sprite heartSprite;
+  //late final Sprite heartHalfSprite;
+  //late final Sprite heartEmptySprite;
   //late final Sprite bombSprite;
+  late final Sprite moedaSprite;
   
   final Paint emptyHeartPaint = Paint()
     ..colorFilter = const ColorFilter.mode(Palette.preto, BlendMode.srcATop)
@@ -30,6 +34,19 @@ class Hud extends PositionComponent with HasGameRef {
   static const double _iconeCooldownLado = 16;
 
   static final Vector2 _shieldBarSize = Vector2(3, 3);
+
+  /// Largura máxima das barras de vida/escudo, em px da resolução fixa (192).
+  /// Sem teto, cada `hpUp` somava 3px e a barra saía da tela depois de poucos
+  /// upgrades. Passando desse ponto a barra para de crescer e cada ponto de
+  /// vida passa a valer menos pixel.
+  static const double _barraLarguraMax = 60.0;
+
+  /// Quantos px vale um ponto, dado o total [maxValor] da barra.
+  double _pxPorPonto(double maxValor) => maxValor <= 0
+      ? 0
+      : math.min(_shieldBarSize.x, _barraLarguraMax / maxValor);
+
+  late final TextPaint coinTextPaint;
   final Paint _shieldMoldura = Paint()..color = Palette.branco;
   final Paint _shieldFundo = Paint()..color = Palette.preto;
   final Paint _shieldPreenchimento = Paint()..color = Palette.azul;
@@ -41,6 +58,12 @@ class Hud extends PositionComponent with HasGameRef {
   @override
   Future<void> onLoad() async {
     super.onLoad();
+    final ui.Image moedaImg = await PaletteSwapper.createSwappedImage(
+      imagePath: 'ui/moeda.png',
+      lightGrayReplacement: Palette.amarelo,
+      darkGrayReplacement: Palette.laranja,
+    );
+    moedaSprite = Sprite(moedaImg);
 /*
     final ui.Image heartImg = await PaletteSwapper.createSwappedImage(
       imagePath: 'ui/heart.png',
@@ -97,7 +120,19 @@ class Hud extends PositionComponent with HasGameRef {
         fontSize: 10,
         fontWeight: FontWeight.bold,
         shadows: [
-          Shadow(color: Colors.black, offset: Offset(1, 1), blurRadius: 2), 
+          Shadow(color: Colors.black, offset: Offset(1, 1), blurRadius: 2),
+        ],
+      ),
+    );
+
+    coinTextPaint = TextPaint(
+      style: const TextStyle(
+        fontFamily: 'pixelFont',
+        color: Palette.preto,
+        fontSize: 8,
+        fontWeight: FontWeight.bold,
+        shadows: [
+          Shadow(color: Palette.branco, offset: Offset(1, 1), blurRadius: 5),
         ],
       ),
     );
@@ -107,14 +142,19 @@ class Hud extends PositionComponent with HasGameRef {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    canvas.drawRect(Rect.fromLTWH(-1, 1 - 1, _shieldBarSize.x * player.maxHealth + 2, _shieldBarSize.y + 2), _shieldMoldura);
-    canvas.drawRect(Rect.fromLTWH(0, 1, _shieldBarSize.x * player.maxHealth, _shieldBarSize.y), _shieldFundo);
-    canvas.drawRect(Rect.fromLTWH(0, 1, _shieldBarSize.x * player.currentHealth, _shieldBarSize.y), _hpPreenchimento);
+    final pxHp = _pxPorPonto(player.maxHealth);
+    canvas.drawRect(Rect.fromLTWH(-1, 1 - 1, pxHp * player.maxHealth + 2, _shieldBarSize.y + 2), _shieldMoldura);
+    canvas.drawRect(Rect.fromLTWH(0, 1, pxHp * player.maxHealth, _shieldBarSize.y), _shieldFundo);
+    canvas.drawRect(Rect.fromLTWH(0, 1, pxHp * player.currentHealth, _shieldBarSize.y), _hpPreenchimento);
 
 
-    canvas.drawRect(Rect.fromLTWH(-1, 7 - 1, _shieldBarSize.x * player.shieldMax + 2, _shieldBarSize.y + 2), _shieldMoldura);
-    canvas.drawRect(Rect.fromLTWH(0, 7, _shieldBarSize.x * player.shieldMax, _shieldBarSize.y), _shieldFundo);
-    canvas.drawRect(Rect.fromLTWH(0, 7, _shieldBarSize.x * player.shield, _shieldBarSize.y), _shieldPreenchimento);
+    final pxEscudo = _pxPorPonto(player.shieldMax);
+    canvas.drawRect(Rect.fromLTWH(-1, 7 - 1, pxEscudo * player.shieldMax + 2, _shieldBarSize.y + 2), _shieldMoldura);
+    canvas.drawRect(Rect.fromLTWH(0, 7, pxEscudo * player.shieldMax, _shieldBarSize.y), _shieldFundo);
+    canvas.drawRect(Rect.fromLTWH(0, 7, pxEscudo * player.shield, _shieldBarSize.y), _shieldPreenchimento);
+
+    moedaSprite.render(canvas, position: Vector2(0, 27), size: bombIconSize, overridePaint: paint);
+    coinTextPaint.render(canvas, ': ${player.coins}', Vector2(16, 29));
 /*
     // --- LÓGICA DO MEIO-CORAÇÃO ---
     // Quantos corações INICIAIS (capacidade total) o jogador tem na tela?

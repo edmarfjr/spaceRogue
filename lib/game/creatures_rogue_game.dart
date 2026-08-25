@@ -12,6 +12,7 @@ import 'package:flutter/services.dart' show LogicalKeyboardKey, KeyDownEvent;
 import 'package:flame/input.dart';
 import 'package:creatures_rogue/game/components/UI/ability_button.dart';
 import 'package:creatures_rogue/game/components/UI/ability_icons.dart';
+import 'package:creatures_rogue/game/components/UI/consumable_slot_button.dart';
 import 'package:creatures_rogue/game/components/UI/gesture_action_area.dart';
 import 'package:creatures_rogue/game/components/UI/pointer_tracker.dart';
 import 'package:creatures_rogue/game/components/UI/blind_overlay.dart';
@@ -149,6 +150,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
 
     _setupJoysticks();
     _setupAbilityControls();
+    _setupInventorySlots();
 
     // Pré-processa a paleta dos sprites que aparecem em pleno combate.
     // Sem isso, o PRIMEIRO tiro / explosão / morte de inimigo gerava uma
@@ -443,6 +445,33 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
         },
       ),
     );
+  }
+
+  /// Os dois slots de item de uso único. Montados uma única vez, fora de
+  /// [_abilityControls]: eles não dependem do esquema de controle e não podem
+  /// ser derrubados quando o jogador troca de esquema nas configurações.
+  ///
+  /// Ficam na faixa reservada do topo (ver `ConsumableSlotButton.alturaFaixa`),
+  /// que o joystick e a área de gestos descontam da própria altura.
+  void _setupInventorySlots() {
+    final raio = _isDesktop ? 16.0 : 26.0;
+    const double margemEsquerda = 16.0;
+    const double gap = 10.0;
+
+    for (int i = 0; i < 2; i++) {
+      add(ConsumableSlotButton(
+        radius: raio,
+        // Índice capturado por valor no loop: cada slot lê o seu.
+        conteudo: () => _runStarted ? player.slots[i] : null,
+        onUsar: () {
+          if (_runStarted) player.useSlot(i);
+        },
+        margin: EdgeInsets.only(
+          top: 10,
+          left: margemEsquerda + i * (raio * 2 + gap),
+        ),
+      ));
+    }
   }
 
   void _setupActionButtons() {
