@@ -23,7 +23,7 @@ class MinimapHud extends PositionComponent with HasGameRef {
   final Paint bossRoomPaint = Paint()..color = Palette.vermelho;
   final Paint itemRoomPaint = Paint()..color = Palette.amarelo;
   final Paint shopRoomPaint = Paint()..color = Palette.verde;
-  final Paint unvisitedPaint = Paint()..color = Palette.azulEsc; 
+  final Paint unvisitedPaint = Paint()..color = Palette.cinzaEsc; 
 
   final Paint backgroundPaint = Paint()..color = Palette.preto;
   final Paint borderPaint = Paint()
@@ -178,6 +178,31 @@ class MinimapHud extends PositionComponent with HasGameRef {
           Rect.fromLTWH(
             drawX + centerOffset,      // Centralizado no X
             drawY + cellSize,          // Começa na borda inferior da sala
+            passageThickness,          // Espessura da porta
+            spacing                    // Comprimento = espaço entre salas
+          ), 
+          passagePaint
+        );
+      }
+
+      if (room.doorLeft) {
+        canvas.drawRect(
+          Rect.fromLTWH(
+            drawX - spacing,          // Começa na borda direita da sala
+            drawY + centerOffset,      // Centralizado no Y
+            spacing,                   // Comprimento = espaço entre salas
+            passageThickness           // Espessura da porta
+          ), 
+          passagePaint
+        );
+      }
+
+      // Desenha passagem para BAIXO
+      if (room.doorTop) {
+        canvas.drawRect(
+          Rect.fromLTWH(
+            drawX + centerOffset,      // Centralizado no X
+            drawY - spacing,          // Começa na borda inferior da sala
             passageThickness,          // Espessura da porta
             spacing                    // Comprimento = espaço entre salas
           ), 

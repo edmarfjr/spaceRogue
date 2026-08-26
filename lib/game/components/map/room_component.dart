@@ -211,7 +211,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
         int roll = _random.nextInt(100);
 
         if (roll < 45) {
-          add(Grama(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,));
+          add(Grama(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,cor3: Palette.preto));
         } 
       }
     }
@@ -263,7 +263,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
         flipX: false,//flipX,
         cor1: theme.corClara,  
         cor2: theme.corEscura,
-        cor3: theme.corBranca,
+        cor3: Palette.preto,//theme.corBranca,
       );
       roomDoors.add(d);
       add(d);
@@ -463,7 +463,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
   }
 
   // Criado uma única vez (antes era um Paint novo por sala, por frame)
-  late final Paint _roomBackgroundPaint = Paint()..color = Palette.branco;
+  late final Paint _roomBackgroundPaint = Paint()..color = Palette.preto;
   late final Rect _roomBackgroundRect = Rect.fromLTWH(0, 0, width, height);
 
   @override
