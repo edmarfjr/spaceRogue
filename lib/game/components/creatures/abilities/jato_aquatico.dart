@@ -1,7 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
 /// Cobra de Água — botão A. Rajada curta de tiros em sequência, feito um
@@ -25,7 +25,7 @@ class JatoAquatico extends Ability {
   }) : super(nome: "Jato d'Água", cooldown: 2.5);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
     final direction = dir.clone();
 

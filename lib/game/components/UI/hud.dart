@@ -4,11 +4,43 @@ import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/UI/ability_cooldown_indicator.dart';
+import 'package:creatures_rogue/game/components/UI/companion_portrait_indicator.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/creatures/ability.dart';
+import 'package:creatures_rogue/game/components/creatures/companion.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import '../player/player.dart';
 
 class Hud extends PositionComponent with HasGameRef {
   final Player player;
+
+  /// O companion ativo vive em `CreaturesRogueGame.companion` e pode virar
+  /// null (desmaio) durante a run — por isso um getter, não uma referência
+  /// fixa capturada na construção da Hud.
+  final Companion? Function() companionOf;
+
+  /// Grupo de até três (PIVOT_TREINADOR.md, fase 5b) — cada função recebe o
+  /// índice do slot (0/1/2). `companionCreatureAt` fica fixa mesmo quando o
+  /// companion daquele slot está desmaiado (removido do mundo) ou o slot
+  /// ainda não tem criatura nenhuma (`null` — normal pros slots 1/2 até a
+  /// fase 6, captura, existir de verdade). Ver `CompanionPortraitIndicator`.
+  final CreatureData? Function(int slot) companionCreatureAt;
+
+  /// 0 = companion vivo, 1 = acabou de desmaiar — ver
+  /// `CreaturesRogueGame.companionReviveFraction`.
+  final double Function(int slot) companionReviveFractionAt;
+
+  /// Postura de cada slot — ver PIVOT_TREINADOR.md §2.1.1.
+  final CompanionPostura? Function(int slot) companionPosturaAt;
+
+  /// Qual slot é a criatura ativa agora — o retrato dela ganha o destaque
+  /// visual e o toque nela cicla postura em vez de trocar de ativa.
+  final bool Function(int slot) isCompanionAtivo;
+
+  /// Toque em qualquer um dos três retratos — a decisão de "trocar de ativa"
+  /// vs "ciclar postura da ativa" é de `CreaturesRogueGame.onTapCompanionSlot`,
+  /// não da Hud nem do retrato.
+  final void Function(int slot) onTapCompanionSlot;
   // Sprites
   //late final Sprite heartSprite;
   //late final Sprite heartHalfSprite;
@@ -47,13 +79,21 @@ class Hud extends PositionComponent with HasGameRef {
       : math.min(_shieldBarSize.x, _barraLarguraMax / maxValor);
 
   late final TextPaint coinTextPaint;
-  final Paint _shieldMoldura = Paint()..color = Palette.branco;
+  final Paint _shieldMoldura = Paint()..color = Palette.preto;
   final Paint _shieldFundo = Paint()..color = Palette.preto;
   final Paint _shieldPreenchimento = Paint()..color = Palette.azul;
   final Paint _hpPreenchimento = Paint()..color = Palette.vermelho;
   
 
-  Hud({required this.player}) : super(position: Vector2(2, 2));
+  Hud({
+    required this.player,
+    required this.companionOf,
+    required this.companionCreatureAt,
+    required this.companionReviveFractionAt,
+    required this.companionPosturaAt,
+    required this.isCompanionAtivo,
+    required this.onTapCompanionSlot,
+  }) : super(position: Vector2(2, 2));
 
   @override
   Future<void> onLoad() async {
@@ -99,18 +139,38 @@ class Hud extends PositionComponent with HasGameRef {
     // como filhos e não dentro do render() da Hud pra cada um cuidar do seu
     // próprio sprite e do seu carregamento assíncrono.
     await addAll([
+      // Lêem o Companion ativo, não o treinador — os botões são override dele
+      // (ver PIVOT_TREINADOR.md §2.1). Sem companion (desmaiado, ou ainda não
+      // invocado), mostram cooldown zerado parado — sem indicador nenhum pra
+      // desenhar seria pior: os dois círculos sumiriam e voltariam toda hora.
       AbilityCooldownIndicator(
-        tipo: () => player.creatureData.ability1.tipo,
-        cooldownFraction: () => player.ability1CooldownFraction,
+        tipo: () => companionOf()?.creatureData.ability1.tipo ?? AbilityTipo.ataque,
+        cooldownFraction: () => companionOf()?.ability1CooldownFraction ?? 0.0,
         lado: _iconeCooldownLado,
-        position: Vector2(0, 12),
+        position: Vector2(0, 6),
       ),
       AbilityCooldownIndicator(
-        tipo: () => player.creatureData.ability2.tipo,
-        cooldownFraction: () => player.ability2CooldownFraction,
+        tipo: () => companionOf()?.creatureData.ability2.tipo ?? AbilityTipo.defesa,
+        cooldownFraction: () => companionOf()?.ability2CooldownFraction ?? 0.0,
         lado: _iconeCooldownLado,
-        position: Vector2(_iconeCooldownLado + 2, 12),
+        position: Vector2(_iconeCooldownLado + 2,6),
       ),
+      // Três retratos, um por slot do grupo (PIVOT_TREINADOR.md, fase 5b) —
+      // mesmo cinza de cooldown pro tempo de revive, mais o destaque de quem
+      // é a ativa (ver `CompanionPortraitIndicator`). Tamanho igual pros
+      // três: a distinção "ativa em destaque" já vem dos dois indicadores de
+      // cooldown acima (só a ativa tem os deles detalhados), redesenhar
+      // tamanho por cima seria layout dinâmico sem ganho real de leitura.
+      for (int slot = 0; slot < 3; slot++)
+        CompanionPortraitIndicator(
+          creatureData: () => companionCreatureAt(slot),
+          reviveFraction: () => companionReviveFractionAt(slot),
+          posturaAtual: () => companionPosturaAt(slot),
+          isAtiva: () => isCompanionAtivo(slot),
+          onTap: () => onTapCompanionSlot(slot),
+          lado: _iconeCooldownLado,
+          position: Vector2((_iconeCooldownLado + 2) * (2 + slot), 6),
+        ),
     ]);
 
     textPaint = TextPaint(
@@ -120,7 +180,7 @@ class Hud extends PositionComponent with HasGameRef {
         fontSize: 10,
         fontWeight: FontWeight.bold,
         shadows: [
-          Shadow(color: Colors.black, offset: Offset(1, 1), blurRadius: 2),
+          Shadow(color: Colors.black, offset: Offset(1, 1), blurRadius: 1),
         ],
       ),
     );
@@ -129,10 +189,10 @@ class Hud extends PositionComponent with HasGameRef {
       style: const TextStyle(
         fontFamily: 'pixelFont',
         color: Palette.preto,
-        fontSize: 8,
+        fontSize: 12,
         fontWeight: FontWeight.bold,
         shadows: [
-          Shadow(color: Palette.branco, offset: Offset(1, 1), blurRadius: 5),
+          Shadow(color: Palette.branco, offset: Offset(1, 1), blurRadius: 1),
         ],
       ),
     );
@@ -149,12 +209,12 @@ class Hud extends PositionComponent with HasGameRef {
 
 
     final pxEscudo = _pxPorPonto(player.shieldMax);
-    canvas.drawRect(Rect.fromLTWH(-1, 7 - 1, pxEscudo * player.shieldMax + 2, _shieldBarSize.y + 2), _shieldMoldura);
-    canvas.drawRect(Rect.fromLTWH(0, 7, pxEscudo * player.shieldMax, _shieldBarSize.y), _shieldFundo);
-    canvas.drawRect(Rect.fromLTWH(0, 7, pxEscudo * player.shield, _shieldBarSize.y), _shieldPreenchimento);
+    canvas.drawRect(Rect.fromLTWH(pxHp * player.maxHealth + 0, 0, pxEscudo * player.shieldMax + 2, _shieldBarSize.y + 2), _shieldMoldura);
+    canvas.drawRect(Rect.fromLTWH(pxHp * player.maxHealth + 1, 1, pxEscudo * player.shieldMax, _shieldBarSize.y), _shieldFundo);
+    canvas.drawRect(Rect.fromLTWH(pxHp * player.maxHealth + 1, 1, pxEscudo * player.shield, _shieldBarSize.y), _shieldPreenchimento);
 
-    moedaSprite.render(canvas, position: Vector2(0, 27), size: bombIconSize, overridePaint: paint);
-    coinTextPaint.render(canvas, ': ${player.coins}', Vector2(16, 29));
+    moedaSprite.render(canvas, position: Vector2(0, 22), size: bombIconSize, overridePaint: paint);
+    coinTextPaint.render(canvas, ':${player.coins}', Vector2(16, 23));
 /*
     // --- LÓGICA DO MEIO-CORAÇÃO ---
     // Quantos corações INICIAIS (capacidade total) o jogador tem na tela?

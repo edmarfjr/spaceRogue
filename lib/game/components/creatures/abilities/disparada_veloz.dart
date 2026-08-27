@@ -2,7 +2,7 @@ import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/effects/ghost_effect.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 
 /// Grilo Eletrico — botão B. Dash com i-frames.
 /// Mobilidade é a defesa de uma criatura frágil.
@@ -16,7 +16,7 @@ class DisparadaVeloz extends Ability {
   }) : super(nome: 'Disparada Veloz', cooldown: 1.0, target: AbilityTarget.plrDir,tipo: AbilityTipo.esquiva);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     user.grantInvulnerability(duracao);
 
     GhostEffect.spawnTrail(

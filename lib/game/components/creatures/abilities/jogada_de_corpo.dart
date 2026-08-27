@@ -1,7 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/effects/ghost_effect.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 
 /// Cobra de Água — botão B. Salta na direção apontada com a mesma curva de
@@ -26,7 +26,7 @@ class JogadaDeCorpo extends Ability {
   }) : super(nome: 'Jogada de Corpo', cooldown: 4.5, target: AbilityTarget.joyDir, tipo: AbilityTipo.esquiva);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
     user.grantInvulnerability(duracao);
 

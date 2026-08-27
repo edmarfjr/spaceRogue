@@ -1,6 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 
 /// Tartaruga de Planta — botão B. Reduz dano recebido em troca de ficar parada.
 /// Trocar mobilidade por sobrevivência é a decisão que define a criatura.
@@ -12,7 +12,7 @@ class CascoFechado extends Ability {
       : super(nome: 'Casco Fechado', cooldown: 6.0,tipo: AbilityTipo.defesa);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     user.damageReduction = reducaoDano;
     user.speedLocked = true;
     user.shieldVisualActive = true;

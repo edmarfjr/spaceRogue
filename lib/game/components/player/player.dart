@@ -1,12 +1,17 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flame/components.dart';
+import 'package:flame/effects.dart';
 import 'package:flame/flame.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/collisions.dart';
 import 'package:creatures_rogue/game/components/UI/dynamic_joystick_component.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
-import 'package:creatures_rogue/game/components/creatures/ability.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
+import 'package:creatures_rogue/game/components/creatures/capture_lasso_visual.dart';
+import 'package:creatures_rogue/game/components/creatures/damageable_by_enemy.dart';
+import 'package:creatures_rogue/game/components/effects/ghost_effect.dart';
 import 'package:creatures_rogue/game/components/effects/movement_animator.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart';
@@ -16,15 +21,23 @@ import 'package:creatures_rogue/game/components/map/room_component.dart';
 import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
 import 'package:creatures_rogue/game/components/projeteis/bomb.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
+import 'package:creatures_rogue/game/components/player/trainer_stats.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:creatures_rogue/game/components/utils/y_sort.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:flutter/services.dart';
 import '../map/obstacle.dart';
 
-class Player extends PositionComponent with CollisionCallbacks, HasGameRef, KeyboardHandler{
+class Player extends PositionComponent with CollisionCallbacks, HasGameRef, KeyboardHandler, AbilityUser, DamageableByEnemy {
   final DynamicJoystickComponent moveJoystick;
   final CreatureData creatureData;
+
+  /// Vida, velocidade e escudo do treinador (PIVOT_TREINADOR.md §3.7) — não
+  /// vêm mais de `creatureData.stats`, que é da criatura, não dele.
+  /// `creatureData` continua aqui só pelo visual (sprite/hitbox/animação):
+  /// o treinador ainda não tem sprite próprio, gap conhecido e fora desta
+  /// rodada, não coberto por §3.7.
+  final TrainerStats stats;
 
   // Componente visual único, animado por transformação (escala/flip), não por troca de frame.
   late final SpriteComponent visual;
@@ -35,8 +48,8 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
   // Bolha desenhada por cima do player enquanto uma habilidade defensiva
   // (Bolha Protetora, Casco Fechado) está com o efeito ativo.
+  // `shieldVisualActive` vem de AbilityUser.
   late final SpriteComponent shieldVisual;
-  bool shieldVisualActive = false;
 
   // --- NOVAS VARIÁVEIS DE COLISÃO ---
   late RectangleHitbox playerHitbox;  // Colisor de Combate (Corpo)
@@ -76,7 +89,6 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   // entre todas as instâncias da criatura). Mesmo padrão do `lentidaoFator`
   // logo abaixo: o valor base nunca muda, quem multiplica é o getter.
   double velMult = 1.0;
-  double cdMult = 1.0;
 
   /// Dano do jogador. É `static` porque quem multiplica é o próprio projétil /
   /// explosão no momento do acerto (ver `Projectile.onCollision`), e eles não
@@ -88,7 +100,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   Vector2 knockbackVelocity = Vector2.zero();
   Vector2 plrDir = Vector2(0,1);
 
-  double get maxSpeed => creatureData.stats.speed * lentidaoFator * velMult;
+  double get maxSpeed => stats.speed * lentidaoFator * velMult;
 
   /// Lentidão e cegueira são as únicas condições que atingem o jogador — DoT
   /// fica só do lado dos inimigos, que têm os ícones de condição pra mostrar.
@@ -100,42 +112,19 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   final double acceleration = 100.0;
   final double friction = 500.0;
 
-  /// Direção que as habilidades (e a bomba) disparam: sempre o inimigo mais
-  /// próximo dentro da sala atual. Sem inimigo à vista, mantém a última mira.
+  /// `lockedAb1Direction`/`lockedAb2Direction` (exigidos por `AbilityUser`)
+  /// não são mais computados aqui — o treinador não executa mais habilidade
+  /// de criatura nenhuma (ver PIVOT_TREINADOR.md §2.1: os botões viram
+  /// override do `Companion` ativo). Ficam parados no valor inicial, inertes.
   Vector2 lockedAb1Direction = Vector2(0,1);
   Vector2 lockedAb2Direction = Vector2(0,1);
 
   bool naoMove = false;
 
-  // --- Ganchos usados pelas habilidades das criaturas (Ability) ---
-  // Neutros por padrão: nada muda enquanto nenhuma habilidade os usa.
-  double damageReduction = 0.0;
-  bool speedLocked = false;
-  int shieldHits = 0;
-  bool refleteProjetil = false;
-
-  /// Ouriço Elétrico — enquanto true, cada golpe absorvido por [shieldHits]
-  /// dispara uma explosão elétrica em volta do usuário (ver Escudo de Espinhos).
-  bool retaliaEspinhos = false;
-  double retaliaDano = 0.0;
-  double retaliaStunDuration = 0.0;
-
-  double _cooldown1 = 0.0;
-  double _cooldown2 = 0.0;
-
-  /// Cooldown cheio do último disparo de cada botão, já com [cdMult] aplicado.
-  /// Só serve de denominador pro indicador da Hud (ver
-  /// `ability1CooldownFraction`). Começa em 1.0 e não em 0 pra nunca dividir
-  /// por zero antes do primeiro disparo.
-  double _cooldownMax1 = 1.0;
-  double _cooldownMax2 = 1.0;
-
-  // Segurando o botão (touch ou teclado), a habilidade dispara sozinha assim
-  // que o cooldown zerar — não precisa soltar e apertar de novo.
-  bool _keyboardHoldAbility1 = false;
-  bool _keyboardHoldAbility2 = false;
-  bool touchHoldAbility1 = false;
-  bool touchHoldAbility2 = false;
+  // Ganchos usados pelas habilidades das criaturas (shieldVisualActive,
+  // speedLocked, shieldHits, damageReduction, refleteProjetil, retalia*)
+  // vêm de AbilityUser — não redeclarar aqui. Neutros pra sempre no
+  // treinador agora que só o Companion executa habilidade.
 
   bool isAirborne = false;
 
@@ -225,13 +214,251 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     if (seconds > _invulnerabilityTimer) _invulnerabilityTimer = seconds;
   }
 
+  /// Ação pessoal do treinador — não passa por `Ability`/`Companion` nenhum.
+  /// Resposta direta ao playtest da fase 3: sem isso, os dois botões de
+  /// habilidade agiam sobre a criatura e o treinador não tinha propósito
+  /// nenhum em combate (ver PIVOT_TREINADOR.md §2.1). Mesma receita de
+  /// `EsquivaBomba`: i-frames mais dash com rastro fantasma.
+  double _dodgeCooldown = 0.0;
+  static const double _dodgeCooldownMax = 1.1;
+  static const double _dodgeDuration = 0.18;
+  static const double _dodgeDistance = 30.0;
+
+  void dodge() {
+    if (_dodgeCooldown > 0) return;
+    _dodgeCooldown = _dodgeCooldownMax;
+    grantInvulnerability(_dodgeDuration);
+
+    final dir = velocity.isZero() ? plrDir : velocity.normalized();
+    GhostEffect.spawnTrail(
+      visual: visual,
+      add: (g) => parent?.add(g),
+      overDuration: _dodgeDuration,
+    );
+    add(MoveByEffect(dir * _dodgeDistance, EffectController(duration: _dodgeDuration)));
+  }
+
+  /// Fração restante do cooldown da esquiva (0 = pronta) — pra HUD desenhar
+  /// um indicador, se algum dia precisar de um terceiro.
+  double get dodgeCooldownFraction =>
+      (_dodgeCooldown / _dodgeCooldownMax).clamp(0.0, 1.0);
+
+  // --- Captura (PIVOT_TREINADOR.md §4, fase 6) ---
+  // Também ação pessoal do treinador, fora de `Ability`/`Companion` — a
+  // manobra é do jogador segurando o botão e andando, não de criatura
+  // nenhuma. "Alvo travado no aperto" (regra 1 do §4.1): resolvido uma vez
+  // em [startCapture], nunca reavaliado até soltar/quebrar.
+  Enemy? _capturaAlvo;
+  double _capturaAnguloAcumulado = 0.0;
+  double _capturaUltimoAngulo = 0.0;
+  CaptureLassoVisual? _capturaVisual;
+
+  /// Raio da volta em torno do alvo — geometria fixa do §4.1 (24px cabem na
+  /// sala com folga pequena, calculado contra `RoomComponent.roomWidth`).
+  /// Primeiro corte, não tunado por playtest.
+  static const double captureOrbitRadius = 48.0;
+
+  /// Fração de vida máxima abaixo da qual um inimigo pode ser capturado
+  /// (§4.2 — segundo portão, também é o que empurra a captura pro fim da
+  /// luta). Em 1.0 pra teste (qualquer HP captura, o portão fica desligado
+  /// na prática) — pedido explícito, não é o valor final. Voltar pra algo
+  /// tipo 0.3 quando validar a manobra em si, senão nunca aperta o
+  /// jogador pra deixar o inimigo fraco antes de laçar.
+  static const double captureHpFraction = 0.3;
+
+  bool get capturando => _capturaAlvo != null;
+
+  /// Botão de captura pressionado — ver `CaptureButton`/`_setupCaptureButton`.
+  void startCapture() {
+    if (_capturaAlvo != null) return;
+
+    final alvo = _encontrarAlvoCaptura();
+    if (alvo == null) return;
+
+    _capturaAlvo = alvo;
+    _capturaAnguloAcumulado = 0.0;
+    final delta = position - alvo.position;
+    _capturaUltimoAngulo = math.atan2(delta.y, delta.x);
+    alvo.enraizarParaCaptura(true);
+
+    final visual = CaptureLassoVisual(
+      trainer: this,
+      alvo: alvo,
+      raioAlvo: captureOrbitRadius,
+      fracao: () => (_capturaAnguloAcumulado.abs() / (2 * math.pi)).clamp(0.0, 1.0),
+    );
+    _capturaVisual = visual;
+    parent?.add(visual);
+  }
+
+  /// Botão solto — regra de quebra #1 do §4.1 ("soltar o botão"). As outras
+  /// três quebras (distância, parede, dano) chamam isto também, de dentro de
+  /// [_updateCapture] e de [takeDamage].
+  void cancelCapture() {
+    final alvo = _capturaAlvo;
+    if (alvo == null) return;
+    alvo.enraizarParaCaptura(false);
+    _capturaVisual?.removeFromParent();
+    _capturaVisual = null;
+    _capturaAlvo = null;
+    _capturaAnguloAcumulado = 0.0;
+  }
+
+  /// Inimigo mais próximo, capturável (abaixo do limiar de HP, dentro do
+  /// alcance, não é boss — §4.4), na sala atual. "Mais próximo" já filtrado
+  /// por elegibilidade: travar num alvo que não pode ser capturado não serve
+  /// pra nada.
+  Enemy? _encontrarAlvoCaptura() {
+    final room = currentRoom;
+    final inimigos = parent?.children.whereType<Enemy>() ?? const <Enemy>[];
+    final alcance = stats.captureRange;
+
+    Enemy? maisProximo;
+    double menorDistSq = double.infinity;
+
+    for (final inimigo in inimigos) {
+      if (room != null &&
+          !room.toAbsoluteRect().contains(
+              Offset(inimigo.absolutePosition.x, inimigo.absolutePosition.y))) {
+        continue;
+      }
+      if (inimigo.health > inimigo.maxHealth * captureHpFraction) continue;
+      if (inimigo.currentRoom?.data.type == RoomType.boss) continue;
+
+      final distSq = (inimigo.absolutePosition - absolutePosition).length2;
+      if (distSq > alcance * alcance) continue;
+      if (distSq < menorDistSq) {
+        menorDistSq = distSq;
+        maisProximo = inimigo;
+      }
+    }
+    return maisProximo;
+  }
+
+  /// Há parede entre o treinador e [alvo]? Amostra pontos ao longo do
+  /// segmento em vez de testar a caixa delimitadora inteira (que daria falso
+  /// positivo com qualquer parede fora da linha, só porque está dentro do
+  /// retângulo diagonal entre os dois pontos). Duplica um pedaço pequeno de
+  /// `MovementHost.direcaoLivre` em vez de herdar o mixin inteiro — Player
+  /// não compartilha o resto das dependências dele (mesmo padrão de
+  /// duplicação já aceito entre Player/Enemy/Companion, ver PIVOT_TREINADOR.md
+  /// seção 6, "Armadilhas").
+  bool _paredeEntreCaptura(Enemy alvo) {
+    final room = currentRoom;
+    if (room == null) return false;
+
+    final colliders = room.children
+        .whereType<PositionComponent>()
+        .where((c) => c is WallBarrier || c is Obstacle)
+        .toList();
+    if (colliders.isEmpty) return false;
+
+    const amostras = 8;
+    for (int i = 1; i < amostras; i++) {
+      final t = i / amostras;
+      final ponto = Offset(
+        absolutePosition.x + (alvo.absolutePosition.x - absolutePosition.x) * t,
+        absolutePosition.y + (alvo.absolutePosition.y - absolutePosition.y) * t,
+      );
+      for (final c in colliders) {
+        if (c.toAbsoluteRect().contains(ponto)) return true;
+      }
+    }
+    return false;
+  }
+
+  /// Acumulação de ângulo (regra 3 do §4.1): delta com sinal do rumo do
+  /// treinador em torno da posição ATUAL do alvo (que se move, puxado pro
+  /// centro da sala). Retrocesso subtrai em vez de zerar — o alvo se move
+  /// sozinho, então exigir uma volta monotônica puniria o jogador por
+  /// movimento que não é dele.
+  void _updateCapture(double dt) {
+    final alvo = _capturaAlvo;
+    if (alvo == null) return;
+
+    if (!alvo.isMounted || alvo.health <= 0) {
+      cancelCapture();
+      return;
+    }
+
+    final distancia = (alvo.absolutePosition - absolutePosition).length;
+    if (distancia > stats.captureRange) {
+      cancelCapture();
+      return;
+    }
+   // if (_paredeEntreCaptura(alvo)) {
+    //  cancelCapture();
+    //  return;
+   // }
+
+    final delta = position - alvo.position;
+    if (delta.length == 0) return;
+    final anguloAtual = math.atan2(delta.y, delta.x);
+
+    double diff = anguloAtual - _capturaUltimoAngulo;
+    if (diff > math.pi) diff -= 2 * math.pi;
+    if (diff < -math.pi) diff += 2 * math.pi;
+    _capturaAnguloAcumulado += diff;
+    _capturaUltimoAngulo = anguloAtual;
+
+    if (_capturaAnguloAcumulado.abs() >= 2 * math.pi) {
+      _completarCaptura(alvo);
+    }
+  }
+
+  void _completarCaptura(Enemy alvo) {
+    alvo.enraizarParaCaptura(false);
+    _capturaVisual?.removeFromParent();
+    _capturaVisual = null;
+    _capturaAlvo = null;
+    _capturaAnguloAcumulado = 0.0;
+
+    final jogo = game;
+    if (jogo is CreaturesRogueGame) jogo.capturarCriatura(alvo);
+  }
+
+  // --- Indicador da esquiva, embaixo do sprite ---
+  // Barra que ENCHE conforme a esquiva recarrega (vazia assim que usa, cheia
+  // quando pronta) — oposto do indicador de habilidade da Hud, que ESVAZIA um
+  // cinza por cima do ícone. Não tem ícone aqui pra esvaziar, é só uma cor.
+  static final Paint _dodgeBarraMoldura = Paint()..color = Palette.preto;
+  static final Paint _dodgeBarraFundo = Paint()..color = Palette.cinzaEsc;
+  static final Paint _dodgeBarraPreenchimento = Paint()..color = Palette.verde;
+  static const double _dodgeBarraLargura = 14.0;
+  static const double _dodgeBarraAltura = 2.0;
+
+  void _renderBarraEsquiva(Canvas canvas) {
+    final pronto = 1 - dodgeCooldownFraction;
+    final left = (size.x - _dodgeBarraLargura) / 2;
+    final top = size.y + 4.0;
+
+    canvas.drawRect(
+      Rect.fromLTWH(left - 1, top - 1, _dodgeBarraLargura + 2, _dodgeBarraAltura + 2),
+      _dodgeBarraMoldura,
+    );
+    canvas.drawRect(Rect.fromLTWH(left, top, _dodgeBarraLargura, _dodgeBarraAltura), _dodgeBarraFundo);
+    if (pronto > 0) {
+      canvas.drawRect(
+        Rect.fromLTWH(left, top, _dodgeBarraLargura * pronto, _dodgeBarraAltura),
+        _dodgeBarraPreenchimento,
+      );
+    }
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    _renderBarraEsquiva(canvas);
+  }
+
   Player({
     required this.moveJoystick,
     required this.creatureData,
-  }) : maxHealth = creatureData.stats.maxHp,
-       currentHealth = creatureData.stats.maxHp,
-       shieldMax = creatureData.stats.shieldMax,
-       shield = creatureData.stats.shieldMax,
+    this.stats = TrainerStats.padrao,
+  }) : maxHealth = stats.maxHealth,
+       currentHealth = stats.maxHealth,
+       shieldMax = stats.shieldMax,
+       shield = stats.shieldMax,
        super(size: Vector2(16, 16), anchor: Anchor.center) {
     // Um Player novo é exatamente uma run nova (ver `startRun`), então este é
     // o lugar certo pra zerar o multiplicador estático de dano — senão os
@@ -247,13 +474,13 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     //debugMode = true;
 
     final ui.Image spriteImage = await PaletteSwapper.createSwappedImage(
-      imagePath: creatureData.spritePath,
-      lightGrayReplacement: creatureData.corClara,
-      darkGrayReplacement: creatureData.corEscura,
+      imagePath: 'actors/plr.png',
+      lightGrayReplacement: Palette.bege,
+      darkGrayReplacement: Palette.burgundy,
     );
 
     _visualBasePosition = Vector2(size.x / 2, size.y);
-    _moveAnimator = MovementAnimator(creatureData.moveAnim);
+    _moveAnimator = MovementAnimator(MovementAnimation.caminhada);
 
     visual = SpriteComponent(
       sprite: Sprite(spriteImage),
@@ -351,8 +578,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     // Anchor.center: o "chão" (pés) fica meio size.y abaixo do centro.
     priority = ySortPriority(position.y + size.y / 2);
 
-    if (_cooldown1 > 0) _cooldown1 -= dt;
-    if (_cooldown2 > 0) _cooldown2 -= dt;
+    if (_dodgeCooldown > 0) _dodgeCooldown -= dt;
 
     if (lentidaoTimer > 0) {
       lentidaoTimer -= dt;
@@ -383,25 +609,6 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       }
     }
 
-    if(creatureData.ability1.target == AbilityTarget.enemyDir ){
-      lockedAb1Direction = _findNearestEnemyDirection(lockedAb1Direction);
-    }else if(creatureData.ability1.target == AbilityTarget.plrDir ){
-      lockedAb1Direction = plrDir.normalized();
-    }else if(creatureData.ability1.target == AbilityTarget.joyDir ){
-      lockedAb1Direction = velocity.normalized();
-    }
-
-    if(creatureData.ability2.target == AbilityTarget.enemyDir ){
-      lockedAb2Direction = _findNearestEnemyDirection(lockedAb2Direction);
-    }else if(creatureData.ability2.target == AbilityTarget.plrDir ){
-      lockedAb2Direction = plrDir.normalized();
-    }else if(creatureData.ability2.target == AbilityTarget.joyDir ){
-      lockedAb2Direction = velocity.normalized();
-    }
-
-    if (_keyboardHoldAbility1 || touchHoldAbility1) useAbility1();
-    if (_keyboardHoldAbility2 || touchHoldAbility2) useAbility2();
-
     if (_pulando) {
       _updateJump(dt);
     } else {
@@ -415,10 +622,12 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
         dt: dt,
       );
     }
+
+    _updateCapture(dt);
   }
 
   /// Sala onde o player está agora (mesma lógica usada por `Enemy.currentRoom`).
-  RoomComponent? get _currentRoom {
+  RoomComponent? get currentRoom {
     final p = parent;
     if (p == null) return null;
     final center = Offset(absolutePosition.x, absolutePosition.y);
@@ -426,36 +635,6 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       if (room.toAbsoluteRect().contains(center)) return room;
     }
     return null;
-  }
-
-  /// Direção até o inimigo vivo mais próximo, restrito à sala atual (senão o
-  /// player miraria através de paredes em inimigos de outras salas, já que
-  /// todos os inimigos da dungeon existem simultaneamente). Sem inimigo na
-  /// sala, mantém a última direção conhecida.
-  Vector2 _findNearestEnemyDirection(Vector2 dir) {
-    final room = _currentRoom;
-    final enemies = parent?.children.whereType<Enemy>() ?? const <Enemy>[];
-
-    Enemy? nearest;
-    double nearestDistSq = double.infinity;
-
-    for (final enemy in enemies) {
-      if (room != null &&
-          !room.toAbsoluteRect().contains(
-              Offset(enemy.absolutePosition.x, enemy.absolutePosition.y))) {
-        continue;
-      }
-      final distSq = (enemy.absolutePosition - absolutePosition).length2;
-      if (distSq < nearestDistSq) {
-        nearestDistSq = distSq;
-        nearest = enemy;
-      }
-    }
-
-    if (nearest == null) return dir;
-    final delta = nearest.absolutePosition - absolutePosition;
-    if (delta.length == 0) return dir;
-    return delta.normalized();
   }
 
   /// Empurra o jogador para longe de [sourcePosition]. Usado por explosões
@@ -517,32 +696,6 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     }
   }
 
-  void useAbility1() {
-    if (_cooldown1 > 0) return;
-    creatureData.ability1.execute(this, lockedAb1Direction);
-    _cooldownMax1 = creatureData.ability1.cooldown * cdMult;
-    _cooldown1 = _cooldownMax1;
-  }
-
-  void useAbility2() {
-    if (_cooldown2 > 0) return;
-    creatureData.ability2.execute(this, lockedAb2Direction);
-    _cooldownMax2 = creatureData.ability2.cooldown * cdMult;
-    _cooldown2 = _cooldownMax2;
-  }
-
-  /// Fração restante de cooldown de cada botão (0 = pronto, 1 = acabou de usar).
-  /// Usado pela HUD para desenhar os indicadores (fase 6).
-  ///
-  /// Divide pelo valor que foi REALMENTE usado no último disparo, guardado em
-  /// `_cooldownMaxN` — recalcular `cooldown * cdMult` aqui deixaria o indicador
-  /// travado cheio se um upgrade de cadência fosse pego no meio de um cooldown
-  /// (o denominador encolhia embaixo de um numerador que não mudou).
-  double get ability1CooldownFraction =>
-      (_cooldown1 / _cooldownMax1).clamp(0.0, 1.0);
-  double get ability2CooldownFraction =>
-      (_cooldown2 / _cooldownMax2).clamp(0.0, 1.0);
-
   // --- NOVA FUNÇÃO DE VALIDAÇÃO DE COLISÃO ---
   bool isPhysicsCollision(PositionComponent other) {
     // Se no futuro você adicionar uma mecânica de ROLAR (Dodge/Dash) para o player
@@ -599,6 +752,12 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
     _invulnerabilityTimer = _invulnerabilityDuration;
 
+    // Regra de quebra #4 do §4.1: levar dano cancela o laço de captura — é o
+    // que dá peso real à manobra (a volta é uma janela de vulnerabilidade).
+    // Aqui, não antes: um golpe já mitigado por damageReduction não conta
+    // como "tomar dano" pra essa regra.
+    if (_capturaAlvo != null) cancelCapture();
+
     parent?.add(TextEffect.dano(
       amountFinal,
       position: position.clone() + Vector2(0, -size.y / 2 - 4),
@@ -648,13 +807,11 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     }
   }
 
+  @override
   void placeBomb(Vector2 dir) {
-    //if (bombsAmount > 0) {
-    //  bombsAmount--;
-      parent?.add(Bomb(position: position.clone()+(dir*17)));
-    //} else {
-    //  print("Sem bombas!");
-    //}
+    if (bombsAmount <= 0) return;
+    bombsAmount--;
+    parent?.add(Bomb(position: position.clone()+(dir*17)));
   }
 
   @override
@@ -665,8 +822,21 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     if (keysPressed.contains(LogicalKeyboardKey.arrowUp)) _keyboardMove.y -= 1;
     if (keysPressed.contains(LogicalKeyboardKey.arrowDown)) _keyboardMove.y += 1;
 
-    _keyboardHoldAbility1 = keysPressed.contains(LogicalKeyboardKey.keyZ);
-    _keyboardHoldAbility2 = keysPressed.contains(LogicalKeyboardKey.keyX);
+    // Z/X seguem existindo, mas agora são override do Companion ativo (ver
+    // PIVOT_TREINADOR.md §2.1) — o treinador não executa habilidade nenhuma.
+    final jogoAtual = game;
+    if (jogoAtual is CreaturesRogueGame) {
+      jogoAtual.companion?.touchHoldAbility1 = keysPressed.contains(LogicalKeyboardKey.keyZ);
+      jogoAtual.companion?.touchHoldAbility2 = keysPressed.contains(LogicalKeyboardKey.keyX);
+    }
+
+    // Tecla C = captura, pra testar sem depender do botão — segurar
+    // inicia/mantém, soltar cancela, mesmo padrão de hold do Z/X acima.
+    if (keysPressed.contains(LogicalKeyboardKey.keyC)) {
+      startCapture();
+    } else {
+      cancelCapture();
+    }
 
     // Teclas 1 e 2 = os dois slots do inventário, equivalente a clicar neles.
     // Só no KeyDownEvent: o teclado repete a tecla segurada, e com isso o
@@ -674,11 +844,9 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     if (event is KeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.digit1) useSlot(0);
       if (event.logicalKey == LogicalKeyboardKey.digit2) useSlot(1);
+      // Ação pessoal do treinador — a resposta ao playtest da fase 3.
+      if (event.logicalKey == LogicalKeyboardKey.space) dodge();
     }
-
-   // if (event is KeyDownEvent) {
-   //   if (event.logicalKey == LogicalKeyboardKey.space) _placeBomb();
-   // }
 
     return super.onKeyEvent(event, keysPressed);
   }
@@ -743,7 +911,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     final jogo = game;
     if (jogo is! CreaturesRogueGame) return false;
 
-    final salaAtual = _currentRoom?.data;
+    final salaAtual = currentRoom?.data;
     if (salaAtual != null &&
         !salaAtual.isCleared &&
         salaAtual.type != RoomType.start) {
@@ -763,7 +931,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   /// Devolve false quando não havia ninguém pra congelar — assim o item não é
   /// gasto num clique fora de combate.
   bool congelarInimigos(double duracao) {
-    final room = _currentRoom;
+    final room = currentRoom;
     final enemies = parent?.children.whereType<Enemy>() ?? const <Enemy>[];
     bool congelouAlgum = false;
 

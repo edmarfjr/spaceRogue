@@ -2,7 +2,7 @@ import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/effects/ghost_effect.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 
 /// Leão Elétrico — botão B. Dash com i-frames na direção do movimento,
@@ -23,7 +23,7 @@ class InvestidaDaLanca extends Ability {
   }) : super(nome: 'Investida da Lança', cooldown: 4.0, target: AbilityTarget.plrDir, tipo: AbilityTipo.esquiva);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
     user.grantInvulnerability(duracao);
 

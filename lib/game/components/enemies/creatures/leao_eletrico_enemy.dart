@@ -17,7 +17,7 @@ class LeaoEletricoEnemy extends Enemy with ChaseMovement, ShooterAttack {
          health: 26,  // stats.maxHp 20 / defesa 4 → aguenta a corrida
          dmg: 3,
          bltSpeed: 140,
-         bltImg: 'projeteis/raio.png',
+         bltImg: 'projeteis/proj2.png',
          bltCor1: CreatureRegistry.leaoEletrico.corClara,
          bltCor2: CreatureRegistry.leaoEletrico.corEscura,
        );

@@ -1,12 +1,11 @@
 import 'dart:ui';
 
 import 'package:flame/components.dart';
-import 'package:creatures_rogue/game/components/map/obstacle.dart';
 import 'dart:math';
-import 'enemy.dart'; // Importe sua classe base
+import 'package:creatures_rogue/game/components/creatures/movement_host.dart';
 
 // --- CÉREBRO 1: MOVIMENTO EM GRADE ---
-mixin GridMovement on Enemy {
+mixin GridMovement on MovementHost {
   Vector2? targetPosition;
   Vector2? startPosition;
   double pauseTimer = 0.0;
@@ -55,7 +54,7 @@ mixin GridMovement on Enemy {
 }
 
 // --- CÉREBRO 2: MOVIMENTO LIVRE/VAGANTE ---
-mixin WanderMovement on Enemy {
+mixin WanderMovement on MovementHost {
   double moveTimer = 0.0;
   double pauseTimer = 0.0;
   bool isMoving = false;
@@ -122,7 +121,7 @@ mixin WanderMovement on Enemy {
 // --- CÉREBRO 3: ATIRADOR ---
 // Sprite estático: não há mais spritesheet de ataque pra trocar de frame.
 // O tell visual do ataque é um pulso de escala (esticar/espremer) em vez de animação.
-mixin ShooterAttack on Enemy {
+mixin ShooterAttack on MovementHost {
   bool isAttacking = false;
   bool wantsToShoot = false;
 
@@ -212,7 +211,7 @@ mixin ShooterAttack on Enemy {
   }
 }
 
-mixin ChaseMovement on Enemy {
+mixin ChaseMovement on MovementHost {
   static const double _cegoTrocaDirecao = 0.7;
 
   final Random _cegoRandom = Random();
@@ -226,7 +225,7 @@ mixin ChaseMovement on Enemy {
     }
 
     // Calcula a distância exata entre o inimigo e o jogador
-    Vector2 distanceToPlayer = playerTarget.absolutePosition - absolutePosition;
+    Vector2 distanceToPlayer = currentTarget.absolutePosition - absolutePosition;
     
     // Evita tremedeira caso ele consiga chegar exatamente no mesmo pixel do jogador
     if (distanceToPlayer.length > 1.0) {
@@ -293,7 +292,7 @@ enum JumpMode { targetPlayer, random }
 // Sprite estático: os três estados (parado/agachando/voando) não trocam mais
 // de frame — o tell visual é um agachamento por escala e um deslocamento em Y
 // simulando altura, e o pulo em si continua sendo dados puros (direção/velocidade).
-mixin JumpMovement on Enemy {
+mixin JumpMovement on MovementHost {
   JumpState jumpState = JumpState.idle;
   double jumpTimer = 0.0;
 

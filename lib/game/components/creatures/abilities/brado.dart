@@ -1,6 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 
 /// Urso de Planta — botão B. Um rugido que sacode a área ao redor e empurra
@@ -14,7 +14,7 @@ class Brado extends Ability {
       : super(nome: 'Brado', cooldown: 6.0, tipo: AbilityTipo.defesa);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
     user.parent?.add(ExplosionHitbox(
       position: user.position.clone(),

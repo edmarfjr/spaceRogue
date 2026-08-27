@@ -1,7 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/effects/ghost_effect.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 
 /// Tubarão de Água — botão B. Mira no inimigo mais próximo (target padrão:
@@ -24,7 +24,7 @@ class MergulhoEEstouro extends Ability {
   }) : super(nome: 'Mergulho e Estouro', cooldown: 5.0, tipo: AbilityTipo.esquiva);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
     user.grantInvulnerability(duracao);
 

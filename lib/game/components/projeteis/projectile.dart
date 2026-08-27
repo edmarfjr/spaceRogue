@@ -6,6 +6,7 @@ import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
+import 'package:creatures_rogue/game/components/creatures/damageable_by_enemy.dart';
 import 'package:creatures_rogue/game/components/effects/dot.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/map/obstacle.dart';
@@ -189,7 +190,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     }
 
     if (isEnemy) {
-      if (other is Player) {
+      if (other is DamageableByEnemy) {
         if(other.refleteProjetil){
           refleteProjetil();
           onDestroy();

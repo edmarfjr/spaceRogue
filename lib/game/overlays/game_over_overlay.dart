@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 
@@ -10,19 +11,31 @@ class GameOverMenu extends StatelessWidget {
     return Material(
       color: Colors.black87,
       child: Center(
-        child: Column(
+        child: Container(
+          padding: const EdgeInsets.all(30),
+          decoration: BoxDecoration(
+            color: Palette.branco,
+            border: Border.all(color: Palette.preto, width: 4),
+            borderRadius: BorderRadius.circular(0),
+          ),
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
               "GAME OVER",
-              style: TextStyle(color: Colors.red, fontSize: 50, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Palette.preto, fontSize: 50, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 30),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-              ),
+                  backgroundColor: Palette.branco,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  elevation: 0,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero,
+                    side: BorderSide(color: Palette.preto, width: 2),
+                  ),  
+                ),
               onPressed: () {
                 // 1. Remove a tela de Game Over
                 game.overlays.remove('GameOver');
@@ -32,24 +45,36 @@ class GameOverMenu extends StatelessWidget {
                 game.overlays.add('Hud');
                 game.resumeEngine();
               },
-              child: const Text("RESTART", style: TextStyle(fontSize: 20, color: Colors.white)),
+              child: const Text(" RESTART ", style: TextStyle(fontSize: 20, color: Palette.preto)),
             ),
             const SizedBox(height: 15),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[800],
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-              ),
+                  backgroundColor: Palette.branco,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  elevation: 0,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero,
+                    side: BorderSide(color: Palette.preto, width: 2),
+                  ),  
+                ),
               onPressed: () {
                 game.overlays.remove('GameOver');
-                game.resetGame();
+                // Sem resetGame() aqui: chamar startRun (via resetGame) só pra
+                // esconder a run atrás do menu criava dois "startRun" em
+                // sequência com o motor pausado, e o Player/Companion da run
+                // morta sobrevivia junto com o novo (ver PIVOT_TREINADOR.md).
+                // O CreatureSelectOverlay já chama startRun quando o jogador
+                // de fato escolhe jogar de novo — essa run parada e pausada
+                // fica só esperando, sem custo de gameplay nenhum.
                 game.overlays.add('MainMenu'); // Volta pro Menu Principal
                 // O motor já foi pausado na morte, então continua pausado
               },
-              child: const Text("MENU PRINCIPAL", style: TextStyle(fontSize: 16, color: Colors.white)),
+              child: const Text(" MENU PRINCIPAL ", style: TextStyle(fontSize: 16, color: Palette.preto)),
             ),
           ],
         ),
+      ),
       ),
     );
   }

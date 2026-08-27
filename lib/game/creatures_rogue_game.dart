@@ -12,6 +12,7 @@ import 'package:flutter/services.dart' show LogicalKeyboardKey, KeyDownEvent;
 import 'package:flame/input.dart';
 import 'package:creatures_rogue/game/components/UI/ability_button.dart';
 import 'package:creatures_rogue/game/components/UI/ability_icons.dart';
+import 'package:creatures_rogue/game/components/UI/capture_button.dart';
 import 'package:creatures_rogue/game/components/UI/consumable_slot_button.dart';
 import 'package:creatures_rogue/game/components/UI/gesture_action_area.dart';
 import 'package:creatures_rogue/game/components/UI/pointer_tracker.dart';
@@ -24,12 +25,14 @@ import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/UI/minimap_hud.dart';
 //import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
+import 'package:creatures_rogue/game/components/creatures/companion.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/map/dungeon_generator.dart';
 import 'package:creatures_rogue/game/components/map/room_component.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'components/player/player.dart';
+import 'components/player/trainer_stats.dart';
 
 /// Como o jogador aciona as duas habilidades. Os dois caminhos convivem no
 /// código; quem escolhe é `CreaturesRogueGame.controlScheme`, ajustado pelo
@@ -75,6 +78,48 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   late final PointerTracker pointerTracker;
 
   late Player player;
+
+  /// Grupo de até três criaturas invocadas (PIVOT_TREINADOR.md, fase 5b).
+  /// Slot 0 é sempre a criatura escolhida na seleção; 1 e 2 ficam vazios
+  /// (`null`) até a fase 6 (captura) existir de verdade — nada nesta fase
+  /// preenche eles ainda.
+  static const int maxCompanions = 3;
+  final List<Companion?> companions = List<Companion?>.filled(maxCompanions, null);
+
+  /// Qual dos três recebe o override dos botões/gestos e aparece com o
+  /// destaque de "ativa" na Hud. Troca ao tocar no retrato de um slot
+  /// diferente (ver [onTapCompanionSlot]) — tocar no retrato do slot JÁ
+  /// ativo cicla a postura dele em vez de trocar, então a Hud não precisa de
+  /// um controle a mais só pra isso.
+  int companionAtivoIndex = 0;
+
+  /// Atalho pro companion do slot ativo — a maior parte do código (override
+  /// de botão/gesto/teclado, cooldown da Hud, upgrade de cadência) só fala
+  /// com "a" criatura, sem saber de slot. Nunca escreva aqui: escreva em
+  /// `companions[i]` (ver [onTapCompanionSlot], `startRun`, `_reviveCompanion`).
+  Companion? get companion =>
+      companionAtivoIndex >= 0 && companionAtivoIndex < companions.length
+          ? companions[companionAtivoIndex]
+          : null;
+
+  /// A criatura de cada slot, sobrevivendo ao `Companion` desmaiado (que some
+  /// do mundo) — é o que a Hud usa pra desenhar o retrato durante o timer de
+  /// revive, e o que [_reviveCompanion] usa pra recriar o companion depois.
+  final List<CreatureData?> companionCreatures = List<CreatureData?>.filled(maxCompanions, null);
+
+  final List<double> _companionReviveTimers = List<double>.filled(maxCompanions, 0.0);
+
+  /// Troca a criatura ativa pro slot tocado, ou cicla a postura dela se já
+  /// era a ativa — ver o comentário de [companionAtivoIndex]. Tocar um slot
+  /// vazio não faz nada: não há postura pra ciclar nem criatura pra ativar.
+  void onTapCompanionSlot(int slot) {
+    if (slot == companionAtivoIndex) {
+      companions[slot]?.ciclarPostura();
+    } else if (companions[slot] != null) {
+      companionAtivoIndex = slot;
+    }
+  }
+
   bool _runStarted = false;
   Vector2 currentRoomIndex = Vector2.zero();
 
@@ -123,7 +168,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   late MinimapHud minimapHud;
 
   double freezeTmr = 0;
-  double freezeTime = 0.5;
+  double freezeTime = 0.1;
 
   CreaturesRogueGame({
     this.onGameOver,
@@ -151,6 +196,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     _setupJoysticks();
     _setupAbilityControls();
     _setupInventorySlots();
+    _setupCaptureButton();
 
     // Pré-processa a paleta dos sprites que aparecem em pleno combate.
     // Sem isso, o PRIMEIRO tiro / explosão / morte de inimigo gerava uma
@@ -175,16 +221,40 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   /// chamado mais de uma vez: voltar ao menu e escolher outra criatura
   /// derruba a run anterior (jogador e dungeon) e monta tudo de novo.
   void startRun(CreatureData creature) {
+    // Varredura explícita por tipo além do loop genérico abaixo: encontramos
+    // um caso (Game Over → "Menu Principal") em que dois `startRun` corriam
+    // em sequência com o motor pausado, e o `Player`/`Companion` da run
+    // anterior sobreviviam — o joystick é uma instância única compartilhada
+    // por todo `Player`, então dois montados ao mesmo tempo se moviam juntos
+    // (ver PIVOT_TREINADOR.md). `companion` some primeiro pra Hud/botões não
+    // lerem a referência antiga no frame entre a varredura e a criação nova.
+    for (int i = 0; i < maxCompanions; i++) {
+      companions[i] = null;
+      companionCreatures[i] = null;
+      _companionReviveTimers[i] = 0.0;
+    }
+    companionAtivoIndex = 0;
+    dungeonWorld.children.whereType<Player>().toList().forEach((p) => p.removeFromParent());
+    dungeonWorld.children.whereType<Companion>().toList().forEach((c) => c.removeFromParent());
+
     for (final child in dungeonWorld.children.toList()) {
       child.removeFromParent();
     }
     loadedRooms.clear();
 
-    player = Player(moveJoystick: moveJoystick, creatureData: creature);
+    player = Player(moveJoystick: moveJoystick, creatureData: creature, stats: TrainerStats.padrao);
     _runStarted = true;
     player.onDeath = _handleGameOver;
     player.position = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
     dungeonWorld.add(player);
+
+    companionCreatures[0] = creature;
+    companions[0] = Companion(
+      position: player.position + Vector2(16, 0),
+      trainer: player,
+      creatureData: creature,
+    );
+    dungeonWorld.add(companions[0]!);
 
     // Run nova: volta pro primeiro andar e sorteia o boss que espera no
     // andar final desta run.
@@ -220,7 +290,15 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     gameCamera.viewport.children.whereType<BossHealthBar>().toList().forEach((b) => b.removeFromParent());
     gameCamera.viewport.children.whereType<BlindOverlay>().toList().forEach((c) => c.removeFromParent());
 
-    final hud = Hud(player: player);
+    final hud = Hud(
+      player: player,
+      companionOf: () => companion,
+      companionCreatureAt: (slot) => companionCreatures[slot],
+      companionReviveFractionAt: (slot) => companionReviveFraction(slot),
+      companionPosturaAt: (slot) => companions[slot]?.postura,
+      isCompanionAtivo: (slot) => slot == companionAtivoIndex,
+      onTapCompanionSlot: onTapCompanionSlot,
+    );
     gameCamera.viewport.add(hud);
 
     gameCamera.viewport.add(BlindOverlay(player: player, camera: gameCamera));
@@ -411,11 +489,9 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     _abilityControls.clear();
 
     // Se a troca aconteceu com o dedo na tela, o componente removido nunca vai
-    // mandar o "soltou" — sem isso o jogador ficaria disparando pra sempre.
-    if (_runStarted) {
-      player.touchHoldAbility1 = false;
-      player.touchHoldAbility2 = false;
-    }
+    // mandar o "soltou" — sem isso a criatura ficaria disparando pra sempre.
+    companion?.touchHoldAbility1 = false;
+    companion?.touchHoldAbility2 = false;
 
     switch (_controlScheme) {
       case ControlScheme.botoes:
@@ -430,18 +506,24 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   /// Metade direita da tela como área de gesto, sem botão desenhado. Note que
   /// nesse esquema não há mais o indicador visual de cooldown que o botão
   /// desenhava.
+  ///
+  /// Habilidade 1 não tem gesto: é sempre `tipo: ataque` e já dispara sozinha
+  /// pela IA do Companion (ver PIVOT_TREINADOR.md §3.6) — o toque parado, que
+  /// era dela, virou a esquiva pessoal do treinador.
   void _setupGestureControls() {
     _abilityControls.add(
       GestureActionArea(
-        // Toque parado = habilidade 1 (o antigo botão A). Manter o dedo mantém
-        // disparando, igual ao botão: quem decide a hora certa de atirar é o
-        // cooldown lá no Player.update().
+        // Toque = esquiva do treinador. Ação instantânea, não um hold: só o
+        // início do toque interessa (mesmo padrão do botão de esquiva em
+        // `_setupActionButtons`); soltar o dedo não desfaz nada.
         onTapHoldChanged: (active) {
-          if (_runStarted) player.touchHoldAbility1 = active;
+          if (active) player.dodge();
         },
-        // Arrastar = habilidade 2 (o antigo botão B).
+        // Arrastar = habilidade 2 (defesa/esquiva da criatura) — só dispara
+        // por override do treinador, nunca sozinha (ver
+        // `Companion._tryFire`), então segurar o arraste é o gatilho inteiro.
         onDragHoldChanged: (active) {
-          if (_runStarted) player.touchHoldAbility2 = active;
+          companion?.touchHoldAbility2 = active;
         },
       ),
     );
@@ -454,7 +536,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   /// Ficam na faixa reservada do topo (ver `ConsumableSlotButton.alturaFaixa`),
   /// que o joystick e a área de gestos descontam da própria altura.
   void _setupInventorySlots() {
-    final raio = _isDesktop ? 16.0 : 26.0;
+    final raio = _isDesktop ? 22.0 : 50.0;
     const double margemEsquerda = 16.0;
     const double gap = 10.0;
 
@@ -474,6 +556,40 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     }
   }
 
+  /// Botão de captura (PIVOT_TREINADOR.md §2.1.1/§4.1) — fora de
+  /// [_abilityControls] pelo mesmo motivo dos slots de item: não depende do
+  /// esquema de controle, existe nos dois igual.
+  ///
+  /// Fica no canto inferior direito, centralizado ACIMA dos dois botões de
+  /// habilidade/esquiva — mesma coluna, uma fileira a mais em cima. Só faz
+  /// sentido visualmente no esquema de botões (é onde A/B moram); no esquema
+  /// de gestos esse canto é coberto pela `GestureActionArea` (metade direita
+  /// da tela) — um botão ali por cima dela ainda deveria roubar o toque por
+  /// estar num componente menor e mais específico, mas isso nunca foi testado
+  /// nesse esquema. Se sumir/atrapalhar no modo gestos, é o primeiro suspeito.
+  void _setupCaptureButton() {
+    final raio = _isDesktop ? 22.0 : 50.0;
+    const double edgeMargin = 20;
+    const double gap = 10;
+
+    add(CaptureButton(
+      radius: raio,
+      pointerTracker: pointerTracker,
+      margin: EdgeInsets.only(
+        right: edgeMargin + raio + gap / 2,
+        bottom: 35 + raio * 2 + gap,
+      ),
+      onPressedChanged: (pressed) {
+        if (!_runStarted) return;
+        if (pressed) {
+          player.startCapture();
+        } else {
+          player.cancelCapture();
+        }
+      },
+    ));
+  }
+
   void _setupActionButtons() {
     // Botão A e B: cinza, mais transparente enquanto pressionado. O cooldown
     // não aparece mais aqui — está nos indicadores da Hud, que servem aos dois
@@ -486,6 +602,12 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     // nunca se sobrepõem em X, não importa o valor de buttonRadius. B fica
     // "gap" de distância à esquerda de A, sempre — ajustar só o raio nunca
     // quebra esse espaçamento.
+    //
+    // Só dois botões: habilidade 1 não tem mais controle nenhum, nem aqui
+    // nem no esquema de gestos — é sempre `tipo: ataque` e já dispara sozinha
+    // pela IA do Companion (ver PIVOT_TREINADOR.md §3.6), override nunca fez
+    // diferença nela na prática. Sobram habilidade 2 (defesa/esquiva — só
+    // dispara por override) e a esquiva pessoal do treinador.
     const double edgeMargin = 20;
     const double gap = 10;
     final double marginRightA = edgeMargin;
@@ -494,30 +616,31 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     _abilityControls.add(
       AbilityButton(
         radius: buttonRadius,
-        tipo: () => _runStarted ? player.creatureData.ability1.tipo : AbilityTipo.ataque,
+        tipo: () => companion?.creatureData.ability2.tipo ?? AbilityTipo.defesa,
         baseColor: Palette.burgundy.withAlpha(255),
         pressedColor: Palette.burgundy.withAlpha(140),
         pointerTracker: pointerTracker,
-        margin: EdgeInsets.only(right: marginRightA, bottom: 80),
-        // Manter pressionado mantém disparando: o botão só reporta "está sendo
-        // pressionado", quem decide a hora certa de atirar é o cooldown lá no
-        // Player.update().
+        margin: EdgeInsets.only(right: marginRightA, bottom: 35),
         onPressedChanged: (pressed) {
-          if (_runStarted) player.touchHoldAbility1 = pressed;
+          companion?.touchHoldAbility2 = pressed;
         },
       ),
     );
 
+    // Ação pessoal do treinador (esquiva), não uma habilidade de criatura —
+    // ver `Player.dodge` e PIVOT_TREINADOR.md §2.1. Ícone `esquiva` por
+    // semelhança temática; sem cooldown desenhado aqui (a barra própria da
+    // esquiva vive embaixo do sprite do treinador, ver `Player.render`).
     _abilityControls.add(
       AbilityButton(
         radius: buttonRadius,
-        tipo: () => _runStarted ? player.creatureData.ability2.tipo : AbilityTipo.defesa,
+        tipo: () => AbilityTipo.esquiva,
         baseColor: Palette.burgundy.withAlpha(255),
         pressedColor: Palette.burgundy.withAlpha(140),
         pointerTracker: pointerTracker,
         margin: EdgeInsets.only(right: marginRightB, bottom: 35),
         onPressedChanged: (pressed) {
-          if (_runStarted) player.touchHoldAbility2 = pressed;
+          if (pressed) player.dodge();
         },
       ),
     );
@@ -531,6 +654,73 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     }
     super.update(dt);
     _checkCameraTransition();
+
+    if (_runStarted) {
+      for (int i = 0; i < maxCompanions; i++) {
+        if (companions[i] == null && _companionReviveTimers[i] > 0) {
+          _companionReviveTimers[i] -= dt;
+          if (_companionReviveTimers[i] <= 0) _reviveCompanion(i);
+        }
+      }
+    }
+  }
+
+  /// Tempo, em segundos, até um Companion desmaiado voltar sozinho. Decisão
+  /// pós-playtest: esperar a sala inteira ser limpa (a ideia original de
+  /// PIVOT_TREINADOR.md §2.3) era frustrante quando não sobrava mais nada pra
+  /// fazer com a criatura fora de combate. Primeiro corte, sem tuning. Mesmo
+  /// valor pros três slots — não há motivo pra um voltar mais rápido que outro.
+  static const double companionReviveDuration = 10.0;
+
+  /// 0 = companion vivo (ou pronto de novo), 1 = acabou de desmaiar — pro
+  /// retrato da Hud desenhar o mesmo cinza que os indicadores de habilidade
+  /// (ver `CompanionPortraitIndicator`).
+  double companionReviveFraction(int slot) => companionReviveDuration <= 0
+      ? 0.0
+      : (_companionReviveTimers[slot] / companionReviveDuration).clamp(0.0, 1.0);
+
+  /// Chamado por `Companion._faint()` quando desmaia. Não revive na hora:
+  /// só arma o timer que o `update` acima conta.
+  void scheduleCompanionRevive(int slot) {
+    _companionReviveTimers[slot] = companionReviveDuration;
+  }
+
+  /// Chamado por `Player._completarCaptura` quando o laço fecha a volta
+  /// inteira. Converte o inimigo capturado num companion novo, no primeiro
+  /// slot vazio.
+  ///
+  /// Simplificação desta rodada, registrada e não escondida: §4.3 do doc
+  /// pede um prompt de troca (escolher quem dispensar) resolvido só ao
+  /// limpar a sala, quando o grupo já está cheio. Não implementado — com o
+  /// grupo cheio, a captura simplesmente FALHA (o inimigo sobrevive, nada
+  /// muda) em vez de ficar pendente. O prompt de troca é trabalho de UI novo
+  /// (uma tela a mais), fora desta rodada.
+  void capturarCriatura(Enemy alvo) {
+    final creature = alvo.creature;
+    if (creature == null) return; // inimigo sem CreatureData (não deveria existir)
+
+    final slotVazio = companions.indexWhere((c) => c == null);
+    if (slotVazio == -1) return; // grupo cheio — ver simplificação acima
+
+    companionCreatures[slotVazio] = creature;
+    companions[slotVazio] = Companion(
+      position: alvo.position,
+      trainer: player,
+      creatureData: creature,
+    );
+    dungeonWorld.add(companions[slotVazio]!);
+    alvo.removeFromParent();
+  }
+
+  void _reviveCompanion(int slot) {
+    final creature = companionCreatures[slot];
+    if (creature == null) return;
+    companions[slot] = Companion(
+      position: player.position + Vector2(16, 0),
+      trainer: player,
+      creatureData: creature,
+    );
+    dungeonWorld.add(companions[slot]!);
   }
 // NOVO MÉTODO: Limpa e recria a fase!
   void nextLevel() {
@@ -602,7 +792,52 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     startRun(player.creatureData);
   }
 
+  /// Empurra o jogador de volta pro interior da sala trancada. Trabalha na
+  /// hitbox dos pés, a mesma que as paredes bloqueiam, e usa a espessura de
+  /// parede (16px) como borda.
+  void _prendeJogadorNaSala(
+      double roomLeft, double roomTop, double roomRight, double roomBottom) {
+    const double parede = 16.0;
+    final pes = player.physicsHitbox.toAbsoluteRect();
+
+    double dx = 0;
+    double dy = 0;
+
+    if (pes.left < roomLeft + parede) {
+      dx = (roomLeft + parede) - pes.left;
+    } else if (pes.right > roomRight - parede) {
+      dx = (roomRight - parede) - pes.right;
+    }
+
+    if (pes.top < roomTop + parede) {
+      dy = (roomTop + parede) - pes.top;
+    } else if (pes.bottom > roomBottom - parede) {
+      dy = (roomBottom - parede) - pes.bottom;
+    }
+
+    if (dx == 0 && dy == 0) return;
+
+    player.position += Vector2(dx, dy);
+    if (dx != 0) player.velocity.x = 0;
+    if (dy != 0) player.velocity.y = 0;
+  }
+
   void _checkCameraTransition() {
+    // `physicsHitbox` só existe depois do onLoad do jogador (que espera as
+    // trocas de paleta); até lá não há o que checar.
+    if (!player.isLoaded) return;
+
+    // Sem essa guarda, uma transição já em andamento (`player.naoMove`,
+    // câmera ainda no `MoveToEffect` de 0.4s) não impedia esta função de
+    // rodar de novo todo frame e achar `currentRoomIndex` de novo do lado
+    // errado da fronteira (empurrão de parede/obstáculo perto da porta, ou
+    // qualquer reposicionamento no meio do pan) — cada chamada empilhava
+    // outro `MoveToEffect` competindo com o anterior e trocava
+    // `currentRoomIndex` de novo, e de novo, sem nunca assentar: minimapa
+    // alternando entre as duas salas, jogador travado sem controle porque
+    // `naoMove` nunca volta a `false` de vez. Uma transição por vez, ponto.
+    if (player.naoMove) return;
+
     final double roomWidth = RoomComponent.roomWidth;
     final double roomHeight = RoomComponent.roomHeight;
     final double threshold = 8.0; 
@@ -616,33 +851,66 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     int newRoomY = currentRoomIndex.y.toInt();
     bool transitioned = false;
 
-    if (player.position.x > roomRight - threshold) {
+    // Sala trancada não deixa passar, ponto: nem troca de sala, nem sair pela
+    // borda. Recusar só a troca não bastava — o jogador continuava andando
+    // pra fora com a câmera parada, porque a resolução de colisão empurra
+    // pelo lado MAIS PERTO: quem afunda mais da metade dos 16px da parede é
+    // cuspido pro lado de fora em vez de voltar pra dentro. Com a sala
+    // trancada a regra é dura, então prendemos os pés no interior dela.
+    final salaAtual = loadedRooms[
+        '${currentRoomIndex.x.toInt() + 50},${currentRoomIndex.y.toInt() + 50}'];
+    if (salaAtual != null && salaAtual.isLocked) {
+      _prendeJogadorNaSala(roomLeft, roomTop, roomRight, roomBottom);
+      return;
+    }
+
+    // O gatilho lê a hitbox de física (os pés), não `player.position`. Eram
+    // duas referências diferentes: a porta bloqueia os pés, mas a troca de
+    // sala olhava o centro do componente, que fica `hitboxSize.y / 2` acima
+    // dos pés. Em criaturas altas sobrava só ~3px entre "a porta empurra" e
+    // "a sala troca", e qualquer frame mais longo pulava essa margem — o
+    // jogador atravessava a porta trancada. Com os pés dos dois lados da
+    // conta, a folga vira 8px fixos pra qualquer criatura.
+    final pes = player.physicsHitbox.toAbsoluteRect();
+
+    if (pes.right > roomRight - threshold) {
       newRoomX++;
       transitioned = true;
-    } else if (player.position.x < roomLeft + threshold) {
+    } else if (pes.left < roomLeft + threshold) {
       newRoomX--;
       transitioned = true;
-    } else if (player.position.y > roomBottom - threshold) {
+    } else if (pes.bottom > roomBottom - threshold) {
       newRoomY++;
       transitioned = true;
-    } else if (player.position.y < roomTop + threshold) {
+    } else if (pes.top < roomTop + threshold) {
       newRoomY--;
       transitioned = true;
     }
 
     if (transitioned) {
       player.naoMove = true;
-      
-      double pushDistance = 40.0; 
+
+      // Empurrão derivado da borda TRASEIRA do `physicsHitbox`, não uma
+      // constante fixa. A constante (22px) só levava o CENTRO do jogador pra
+      // além da fronteira — a borda de trás (a que importa: é ela que o
+      // próximo `_checkCameraTransition` compara contra o threshold da sala
+      // nova) ficava a `hitboxSize.x` de distância além disso. Toda criatura
+      // com hitbox largo o bastante (>6px, ou seja, qualquer uma) reentrava
+      // no threshold assim que o congelamento acabava e revertia a troca —
+      // o jogador ficava entrando e saindo da mesma porta sem fim. Só não
+      // aparecia numa sala nova porque `onPlayerEnter` tranca a sala e
+      // `_prendeJogadorNaSala` mascara o ping-pong; numa sala já limpa
+      // (`isLocked` nunca liga) o bug ficava visível.
+      const double margem = 4.0;
 
       if (newRoomX > currentRoomIndex.x) {
-        player.position.x += pushDistance;
+        player.position.x += (roomRight + threshold + margem) - pes.left;
       } else if (newRoomX < currentRoomIndex.x) {
-        player.position.x -= pushDistance;
+        player.position.x -= pes.right - (roomLeft - threshold - margem);
       } else if (newRoomY > currentRoomIndex.y) {
-        player.position.y += pushDistance;
+        player.position.y += (roomBottom + threshold + margem) - pes.top;
       } else if (newRoomY < currentRoomIndex.y) {
-        player.position.y -= pushDistance;
+        player.position.y -= pes.bottom - (roomTop - threshold - margem);
       }
 
       currentRoomIndex = Vector2(newRoomX.toDouble(), newRoomY.toDouble());

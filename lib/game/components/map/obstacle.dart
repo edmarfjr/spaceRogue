@@ -27,15 +27,39 @@ Vector2 empurraoParaFora({required Rect corpo, required Rect alvo}) {
 
   if (sobreposicaoX <= 0 || sobreposicaoY <= 0) return Vector2.zero();
 
-  if (sobreposicaoX < sobreposicaoY) {
-    final sinal = corpo.center.dx < alvo.center.dx ? -1.0 : 1.0;
-    return Vector2(sobreposicaoX * sinal, 0);
+  // Distância real pra sair por cada um dos quatro lados. A versão anterior
+  // comparava a SOBREPOSIÇÃO de cada eixo, que satura no tamanho do corpo
+  // quando o corpo é menor que o obstáculo — e a hitbox dos pés é sempre 2:1
+  // (largura `x`, altura `x / 2`). Numa parede lateral (alta), a sobreposição
+  // em Y travava na altura dos pés enquanto a de X crescia, então bastava
+  // afundar essa mesma altura pra que o eixo Y virasse "o mais raso": o
+  // empurrão saía pra cima/baixo em vez de devolver o corpo pra dentro da
+  // sala. O corpo escorregava rente à parede, continuava afundando e saía do
+  // outro lado. Com distância de saída em vez de sobreposição, o eixo só
+  // inverte depois de passar da metade da parede.
+  final paraEsquerda = corpo.right - alvo.left;
+  final paraDireita = alvo.right - corpo.left;
+  final paraCima = corpo.bottom - alvo.top;
+  final paraBaixo = alvo.bottom - corpo.top;
+
+  final saidaX = min(paraEsquerda, paraDireita);
+  final saidaY = min(paraCima, paraBaixo);
+
+  if (saidaX < saidaY) {
+    return Vector2(paraEsquerda < paraDireita ? -paraEsquerda : paraDireita, 0);
   }
-  final sinal = corpo.center.dy < alvo.center.dy ? -1.0 : 1.0;
-  return Vector2(0, sobreposicaoY * sinal);
+  return Vector2(0, paraCima < paraBaixo ? -paraCima : paraBaixo);
 }
 
 abstract class Obstacle extends PositionComponent with HasGameRef {
+  /// Criado junto com o componente, não dentro do `onLoad`. A porta liga e
+  /// desliga a colisão pelo hitbox, e enquanto ele só existia depois do
+  /// `onLoad` (que espera trocas de paleta) um `close()` chamado antes disso
+  /// buscava o filho, não achava nada e virava no-op silencioso — a porta
+  /// ficava trancada na lógica e atravessável na prática.
+  late final RectangleHitbox hitbox =
+      RectangleHitbox(collisionType: collisionType);
+
   late final Sprite obstacleSprite;
   final String spritePath;
   final Color cor1;
@@ -57,7 +81,7 @@ abstract class Obstacle extends PositionComponent with HasGameRef {
 
   @override
   Future<void> onLoad() async {
-    add(RectangleHitbox(collisionType: collisionType));
+    add(hitbox);
     
     final ui.Image swappedImage = await PaletteSwapper.createSwappedImage(
       imagePath: spritePath,

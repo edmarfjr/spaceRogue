@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/projeteis/orbit_projectile.dart';
 
 /// Toco de Madeira — botão A. Sem mira: [quantidade] espinhos passam a girar
@@ -25,7 +25,7 @@ class FolhasNavalha extends Ability {
   }) : super(nome: 'Folhas Navalha', cooldown: 6.5);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
     for (int i = 0; i < quantidade; i++) {
       final anguloInicial = (2 * pi / quantidade) * i;

@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/components/map/obstacle.dart';
@@ -22,7 +23,7 @@ class TocoPlantaEnemy extends Enemy with WanderMovement {
     required super.playerTarget,
   }) : super(
          creature: CreatureRegistry.tocoPlanta,
-         speed: 8.0, // mal se move: a ameaça é a órbita, não a perseguição
+         speed: 20.0, // mal se move: a ameaça é a órbita, não a perseguição
          health: 24, // stats.maxHp 16 / defesa 2 → aguenta, mas não é o foco
          dmg: 3,     // dano de cada espinho orbital, não de toque corporal
        );
@@ -38,9 +39,10 @@ class TocoPlantaEnemy extends Enemy with WanderMovement {
         velocidadeAngular: _velocidadeAngular,
         dmg: dmg.toDouble(),
         isEnemy: true,
-        sprPath: 'projeteis/proj3.png',
-        cor1: corClara,
-        cor2: corEscura,
+        sprPath: 'projeteis/folha.png',
+        cor1: Palette.verde,
+        cor2: Palette.verdeEsc,
+        lifeTime: 999
       );
       _espinhos.add(espinho);
       parent?.add(espinho);

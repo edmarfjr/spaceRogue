@@ -12,7 +12,7 @@ import '../enemy_mixins.dart';
 /// do tornado da Esquiva Tornado. Sem ShooterAttack: a cadência é um timer
 /// simples, e `arrastar` precisa do visual.scale só pra si.
 class SlimePlantaEnemy extends Enemy with WanderMovement {
-  static const double _intervaloPoca = 2.2;
+  static const double _intervaloPoca = 0.5;
   static const double _duracaoPoca = 5.0;
   static const double _danoPoca = 2.0;
   static const double _tamanhoPoca = 16.0;

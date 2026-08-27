@@ -1,6 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
 /// Caranguejo Ermitão de Fogo — botão B. Recolhe no casco: reduz dano recebido
@@ -26,7 +26,7 @@ class RecolherNoCasco extends Ability {
   }) : super(nome: 'Recolher no Casco', cooldown: 6.5, tipo: AbilityTipo.defesa);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     user.damageReduction = reducaoDano;
     user.speedLocked = true;
     user.shieldVisualActive = true;

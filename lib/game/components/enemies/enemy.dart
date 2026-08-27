@@ -6,20 +6,21 @@ import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
+import 'package:creatures_rogue/game/components/creatures/movement_host.dart';
 import 'package:creatures_rogue/game/components/effects/condition_icons.dart';
 import 'package:creatures_rogue/game/components/effects/dot.dart';
 import 'package:creatures_rogue/game/components/effects/movement_animator.dart';
 import 'package:creatures_rogue/game/components/effects/sprite_effect.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
+import 'package:creatures_rogue/game/components/map/door.dart';
 import 'package:creatures_rogue/game/components/map/obstacle.dart';
-import 'package:creatures_rogue/game/components/map/room_component.dart';
 import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 import '../player/player.dart';
 import '../utils/palette_swapper.dart';
 import '../utils/y_sort.dart';
 
-abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameRef {
+abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameRef, MovementHost {
   final Player playerTarget;
   
   double speed;
@@ -53,7 +54,9 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
 
   late final SpriteComponent visual;
   late final Vector2 _visualBasePosition;
-  bool isAirborne;
+  // `isAirborne` vem de MovementHost; valor inicial é atribuído no corpo do
+  // construtor (ver abaixo), já que `this.isAirborne` shorthand só funciona
+  // pra campo declarado na própria classe.
 
   late final SpriteComponent shieldVisual;
   bool shieldVisualActive = false;
@@ -69,11 +72,22 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   /// Se false, o inimigo não é empurrado por outros inimigos (planta, torreta...)
   bool isPushable;
 
-  Vector2 knockbackVelocity = Vector2.zero();
+  // `knockbackVelocity` vem de MovementHost.
 
   /// Gancho usado por habilidades de controle de grupo (ex.: Corrente
   /// Estática). Enquanto > 0, o inimigo não chama `movimento`.
   double stunTimer = 0.0;
+
+  /// Enraizado pelo laço de captura (PIVOT_TREINADOR.md §4.1, regra 2): a IA
+  /// própria para de rodar e o inimigo fica parado de vez (ver `update`) —
+  /// também vira invulnerável enquanto isso (ver `takeDamage`). O plano
+  /// original da regra 2 era puxar o alvo pro centro da sala em vez de só
+  /// parar (descolaria um alvo encurralado numa parede); trocado por parada
+  /// total a pedido, pra testar a volta sem o alvo virando alvo móvel — ver
+  /// PIVOT_TREINADOR.md pro motivo completo. Encurralado numa parede volta a
+  /// ser um problema sem solução por ora.
+  bool enraizadoPeloLaco = false;
+  void enraizarParaCaptura(bool ativo) => enraizadoPeloLaco = ativo;
 
   /// Gancho de guarda defensiva (ex.: casco fechado da tartaruga). Neutro por
   /// padrão: 0.0 não muda nada. Lido em `takeDamage`.
@@ -87,13 +101,12 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   /// Lentidão: enquanto > 0, a velocidade efetiva é [speed] * [lentidaoFator].
   /// Reaplicar renova a duração e mantém o fator mais forte — nunca multiplica
   /// um sobre o outro, senão duas aplicações travam o inimigo de vez.
+  /// `lentidaoFator` vem de MovementHost.
   double lentidaoTimer = 0.0;
-  double lentidaoFator = 1.0;
 
-  /// Cegueira: enquanto > 0, o inimigo perde o rastro do jogador — quem
-  /// persegue passa a andar a esmo e quem atira para de mirar. Ver
-  /// ChaseMovement e ShooterAttack.
-  double cegoTimer = 0.0;
+  // `cegoTimer` vem de MovementHost. Cegueira: enquanto > 0, o inimigo perde
+  // o rastro do jogador — quem persegue passa a andar a esmo e quem atira
+  // para de mirar. Ver ChaseMovement e ShooterAttack.
 
   /// Velocidade sem lentidão, fotografada no construtor. Os mixins de
   /// movimento leem [speed] direto todo frame, então a lentidão escreve nele;
@@ -113,7 +126,7 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     this.health = 1,
     this.dmg = 1,
     this.bltSpeed = 75,
-    this.isAirborne = false,
+    bool isAirborne = false,
     this.bltCor1 = Palette.vermelho,
     this.bltCor2 = Palette.laranja,
     this.bltImg = 'projeteis/tiro2.png',
@@ -133,11 +146,17 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
        ) {
     maxHealth = health;
     speedBase = speed;
+    this.isAirborne = isAirborne;
 
     // Hitbox: explícita > da criatura > tamanho visual.
     this.hitboxSize = hitboxSize ?? creature?.hitboxSize ?? (size ?? Vector2(16, 16));
     this.shadowOffset = shadowOffset ?? Vector2.zero();
   }
+
+  /// O treinador — alvo fixo de todo `Enemy` (ver PIVOT_TREINADOR.md §3.4).
+  /// Companion tem sua própria lógica de alvo, conforme a natureza.
+  @override
+  PositionComponent get currentTarget => playerTarget;
 
   @override
   Future onLoad() async {
@@ -217,6 +236,16 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     // Anchor.center: o "chão" (pés) fica meio size.y abaixo do centro.
     priority = ySortPriority(position.y + size.y / 2);
 
+    if (stunTimer > 0) {
+      stunTimer -= dt;
+      return;
+    }
+
+    if (enraizadoPeloLaco) {
+      animateMovement(dt, isMoving: false);
+      return;
+    }
+
     shieldVisual.setOpacity(shieldVisualActive ? 1.0 : 0.0);
 
     // Condições correm ANTES dos returns de knockback e stun. Se ficassem no
@@ -246,12 +275,37 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
       return; // Pula o método de movimento, o inimigo não "pensa" enquanto voa pra trás
     }
 
-    if (stunTimer > 0) {
-      stunTimer -= dt;
-      return;
-    }
-
+    
     movimento(dt);
+  }
+
+  static final Paint _hpBarraMoldura = Paint()..color = Palette.preto;
+  static final Paint _hpBarraFundo = Paint()..color = Palette.cinzaEsc;
+  static const double _hpBarraLargura = 14.0;
+  static const double _hpBarraAltura = 2.0;
+
+  void _renderBarraEsquiva(Canvas canvas) {
+    final porcentagem = (health/maxHealth);
+    final left = (size.x - _hpBarraLargura) / 2;
+    final top = - 4.0;
+
+    Paint hpBarraPreenchimento = Paint()..color = (health/maxHealth) < 0.3? Palette.vermelho : Palette.verde;
+
+    canvas.drawRect(
+      Rect.fromLTWH(left - 1, top - 1, _hpBarraLargura + 2, _hpBarraAltura + 2),
+      _hpBarraMoldura,
+    );
+    canvas.drawRect(Rect.fromLTWH(left, top, _hpBarraLargura, _hpBarraAltura), _hpBarraFundo);
+    canvas.drawRect(
+        Rect.fromLTWH(left, top, _hpBarraLargura * porcentagem, _hpBarraAltura),
+        hpBarraPreenchimento,
+      );
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    _renderBarraEsquiva(canvas);
   }
 
   void applyDot(DotKind kind, int ticks) {
@@ -321,58 +375,7 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     );
   }
 
-  RoomComponent? _cachedRoom;
-
-  /// A sala onde este inimigo está.
-  ///
-  /// Necessário porque o inimigo é filho do World, enquanto as paredes
-  /// (WallBarrier) e a maioria dos obstáculos (Hole/Door) são filhos da
-  /// RoomComponent — ou seja, NETOS do World. Varrer `parent!.children`
-  /// nunca encontra parede nenhuma.
-  RoomComponent? get currentRoom {
-    final center = Offset(absolutePosition.x, absolutePosition.y);
-
-    final cached = _cachedRoom;
-    if (cached != null && cached.isMounted && cached.toAbsoluteRect().contains(center)) {
-      return cached;
-    }
-
-    final p = parent;
-    if (p == null) return null;
-
-    for (final room in p.children.whereType<RoomComponent>()) {
-      if (room.toAbsoluteRect().contains(center)) {
-        _cachedRoom = room;
-        return room;
-      }
-    }
-
-    _cachedRoom = null;
-    return null;
-  }
-
-  /// Todos os corpos sólidos da sala atual (paredes, pedras, buracos, portas).
-  ///
-  /// Pedras (Rock) são um caso à parte: viraram filhas do World (não da
-  /// RoomComponent) pra entrar no Z-sort global por Y, então entram aqui
-  /// filtrando as pedras do World que caem dentro do retângulo da sala.
-  Iterable<PositionComponent> get roomColliders {
-    final room = currentRoom;
-    if (room == null) return const [];
-
-    final localColliders = room.children
-        .whereType<PositionComponent>()
-        .where((c) => c is WallBarrier || c is Obstacle);
-
-    final p = parent;
-    final worldRocks = p == null
-        ? const <Rock>[]
-        : p.children.whereType<Rock>().where(
-            (r) => room.toAbsoluteRect().overlaps(r.toAbsoluteRect()),
-          );
-
-    return localColliders.followedBy(worldRocks);
-  }
+  // `currentRoom` e `roomColliders` vêm de MovementHost.
 
   void shoot(Vector2 direction, {double? lifeTime}) {
     parent?.add(Projectile(
@@ -394,6 +397,14 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   /// [tipoAtacante] aplica a vantagem elemental (ver `typeMultiplier`).
   /// `neutro` — o padrão — vale 1.0, então quem não passa tipo não muda nada.
   void takeDamage(double amount,{Color corTxt = Palette.amarelo, CreatureType tipoAtacante = CreatureType.neutro}) {
+    // Enraizado pelo laço de captura = invulnerável. Pedido explícito pra
+    // testar a manobra sem o companion matando o alvo antes da volta
+    // completar — mas também faz sentido como regra permanente: sem isso, o
+    // próprio time do jogador pode sabotar uma captura em andamento sem
+    // querer, o que não é o tipo de risco que a manobra deveria ter (o risco
+    // é do TREINADOR andando exposto, não do alvo morrer de fogo amigo).
+    
+
     final mult = typeMultiplier(tipoAtacante, creature?.tipo ?? CreatureType.neutro);
 
     // Guarda defensiva ativa (casco fechado) reduz o dano recebido.
@@ -412,44 +423,7 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     }
   }
 
-  /// Há alguma parede ou obstáculo no caminho se andar em [dir] pelos
-  /// próximos [segundos]? Vive aqui, e não no WanderMovement, porque o
-  /// perambular do inimigo cego (ChaseMovement) precisa da mesma checagem —
-  /// sem ela, quem fica cego encosta numa parede e raspa nela até enxergar.
-  bool direcaoLivre(Vector2 dir, {double segundos = 0.6}) {
-    final room = currentRoom;
-    if (room == null) return true; // Segurança caso ele não esteja na tela ainda
-
-    final double lookAheadDistance = speed * segundos;
-    final Vector2 futureCenter = physicsHitbox.absoluteCenter + (dir * lookAheadDistance);
-
-    final Rect futureRect = Rect.fromCenter(
-      center: Offset(futureCenter.x, futureCenter.y),
-      width: physicsHitbox.size.x,
-      height: physicsHitbox.size.y,
-    );
-
-    for (final child in roomColliders) {
-      if (isAirborne && child is Obstacle) continue;
-      if (child.toAbsoluteRect().overlaps(futureRect)) return false;
-    }
-
-    return true;
-  }
-
-  void spawnAlerta({double duracao = 0.5}) {
-    final effect = SpriteEffect(
-      position: position.clone() - Vector2(0, size.y), 
-      size: Vector2(16, 16), 
-      corClara: Palette.indigo,
-      corEscura: Palette.vermelho,
-      corBranco: Palette.branco,
-      spritePath: 'effects/exclamacao.png', 
-      textureSize: Vector2(16, 16), 
-      stepTime: duracao
-    );
-    parent?.add(effect);
-  }
+  // `direcaoLivre` e `spawnAlerta` vêm de MovementHost.
 
   void death() {
     // Sem await de propósito: death() não é async (chamado de dentro de
@@ -480,7 +454,7 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   @override
   void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) { 
     super.onCollisionStart(intersectionPoints.cast<Vector2>(), other);
-
+    if (enraizadoPeloLaco) return;
     if (other is Projectile) {
       if (other.isEnemy) return; 
 
@@ -549,7 +523,11 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
 
     for (final componente in parent?.children ?? const Iterable.empty()) {
       if (componente is! WallBarrier && componente is! Obstacle) continue;
-      if (componente is Obstacle && isAirborne) continue; // voando, passa por cima
+      // Voando passa por cima de pedra/buraco, mas NUNCA de porta: `Door`
+      // também é `Obstacle`, e sem esta exceção o inimigo voador saía da sala
+      // trancada — e, como ele continua em `activeEnemies`, a sala nunca
+      // destrancava.
+      if (componente is Obstacle && componente is! Door && isAirborne) continue;
       if (destino.overlaps((componente as PositionComponent).toAbsoluteRect())) {
         return true;
       }
@@ -558,8 +536,10 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   }
 
   bool isPhysicsCollision(PositionComponent other) {
-    // 1. Se está voando, passa limpo por cima de obstáculos (pedras/buracos)
-    if (other is Obstacle && isAirborne) return false;
+    // 1. Se está voando, passa limpo por cima de obstáculos (pedras/buracos).
+    //    Porta fica de fora: `Door` estende `Obstacle`, e deixá-la aqui fazia o
+    //    inimigo voador atravessar porta trancada.
+    if (other is Obstacle && other is! Door && isAirborne) return false;
     
     // 2. Só valida a colisão se a hitbox da SOMBRA (pés) encostar no objeto.
     // Isso permite que a cabeça/corpo cruze a parede visualmente lá no alto.

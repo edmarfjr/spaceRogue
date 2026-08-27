@@ -1,7 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
 /// Sapo de Água — botão A. Projétil reto e rápido, sem truque: é a linha
@@ -15,7 +15,7 @@ class BolaDagua extends Ability {
       : super(nome: "Bola d'Água", cooldown: 0.6);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
     user.parent?.add(Projectile(
       position: user.position.clone(),

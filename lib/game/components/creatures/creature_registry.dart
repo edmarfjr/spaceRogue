@@ -67,6 +67,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(8, 10), 
     enemyBuilder: (pos, plr) => RoedorFogoEnemy(position: pos, playerTarget: plr),
+    companionBehavior: CompanionBehavior.cacador,
   );
 
   static final CreatureData tartarugaPlanta = CreatureData(
@@ -82,6 +83,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.arrastar,
     hitboxSize: Vector2(14, 14), 
     enemyBuilder: (pos, plr) => TartarugaPlantaEnemy(position: pos, playerTarget: plr),
+    companionBehavior: CompanionBehavior.guarda,
   );
 
   static final CreatureData sapoAgua = CreatureData(
@@ -91,12 +93,13 @@ class CreatureRegistry {
     tipo: CreatureType.agua,
     corClara: Palette.azul,
     corEscura: Palette.indigo,
-    stats: BaseStats(maxHp: 14, speed: 50, defesa: 2, ataque: 2),
+    stats: BaseStats(maxHp: 12, speed: 50, defesa: 2, ataque: 2),
     ability1: BolaDagua(),
     ability2: BolhaProtetora(),
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(12, 10), 
     enemyBuilder: (pos, plr) => SapoAguaEnemy(position: pos, playerTarget: plr),
+    companionBehavior: CompanionBehavior.guarda,
   );
 
   static final CreatureData aveEletrica = CreatureData(
@@ -106,12 +109,13 @@ class CreatureRegistry {
     tipo: CreatureType.eletrico,
     corClara: Palette.amarelo,
     corEscura: Palette.laranja,
-    stats: BaseStats(maxHp: 12, speed: 80, defesa: 3, ataque: 1),
+    stats: BaseStats(maxHp: 10, speed: 80, defesa: 3, ataque: 1),
     ability1: BicoEletrico(),
     ability2: CorrenteEstatica(),
     moveAnim: MovementAnimation.flutuar,
     hitboxSize: Vector2(9, 11),
     enemyBuilder: (pos, plr) => AveEletricaEnemy(position: pos, playerTarget: plr),
+    companionBehavior: CompanionBehavior.cacador,
   );
 
   static final CreatureData cobraAgua = CreatureData(
@@ -121,12 +125,13 @@ class CreatureRegistry {
     tipo: CreatureType.agua,
     corClara: Palette.azul,
     corEscura: Palette.laranja,
-    stats: BaseStats(maxHp: 15, speed: 48, defesa: 4, ataque: 4),
+    stats: BaseStats(maxHp: 18, speed: 48, defesa: 4, ataque: 4),
     ability1: JatoAquatico(),
     ability2: JogadaDeCorpo(),
     moveAnim: MovementAnimation.arrastar,
     hitboxSize: Vector2(9, 14),
     enemyBuilder: (pos, plr) => CobraAguaEnemy(position: pos, playerTarget: plr),
+    companionBehavior: CompanionBehavior.cacador,
   );
 
   static final CreatureData ursoPlanta = CreatureData(
@@ -142,6 +147,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(15, 16),
     enemyBuilder: (pos, plr) => UrsoPlantaEnemy(position: pos, playerTarget: plr),
+    companionBehavior: CompanionBehavior.guarda,
   );
 
   static final CreatureData griloEletrico = CreatureData(
@@ -157,6 +163,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => GriloEletricoEnemy(position: pos, playerTarget: plr),
+    companionBehavior: CompanionBehavior.cacador,
   );
 
   static final CreatureData tornadoFogo = CreatureData(
@@ -172,6 +179,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.flutuar,
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => TornadoFogoEnemy(position: pos, playerTarget: plr),
+    companionBehavior: CompanionBehavior.cacador,
   );
 
   static final CreatureData bombaFogo = CreatureData(
@@ -187,6 +195,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => BombaFogoEnemy(position: pos, playerTarget: plr),
+    companionBehavior: CompanionBehavior.guarda,
   );
 
   static final CreatureData slimePlanta = CreatureData(
@@ -202,6 +211,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.arrastar,
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => SlimePlantaEnemy(position: pos, playerTarget: plr),
+    companionBehavior: CompanionBehavior.guarda,
   );
 
   static final CreatureData ouricoEletrico = CreatureData(
@@ -217,6 +227,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(12, 12), 
     enemyBuilder: (pos, plr) => OuricoEletricoEnemy(position: pos, playerTarget: plr),
+    companionBehavior: CompanionBehavior.guarda,
   );
 
   static final CreatureData caranguejoErmitao = CreatureData(
@@ -232,6 +243,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.arrastar,
     hitboxSize: Vector2(14, 12),
     enemyBuilder: (pos, plr) => CaranguejoErmitaoEnemy(position: pos, playerTarget: plr),
+    companionBehavior: CompanionBehavior.guarda,
   );
 
   static final CreatureData pinguimAgua = CreatureData(
@@ -241,12 +253,13 @@ class CreatureRegistry {
     tipo: CreatureType.agua,
     corClara: Palette.azul,
     corEscura: Palette.azulEsc,
-    stats: BaseStats(maxHp: 12, speed: 40, defesa: 4, ataque: 4),
+    stats: BaseStats(maxHp: 18, speed: 40, defesa: 4, ataque: 4),
     ability1: TiroDeGelo(),
     ability2: DisparadaCongelante(),
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(8, 14),
     enemyBuilder: (pos, plr) => PinguimAguaEnemy(position: pos, playerTarget: plr),
+    companionBehavior: CompanionBehavior.guarda,
   );
 
   static final CreatureData tocoPlanta = CreatureData(
@@ -262,6 +275,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(10, 10), 
     enemyBuilder: (pos, plr) => TocoPlantaEnemy(position: pos, playerTarget: plr),
+    companionBehavior: CompanionBehavior.orbital,
   );
 
   static final CreatureData tubaraoAgua = CreatureData(
@@ -277,6 +291,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(13, 15),
     enemyBuilder: (pos, plr) => TubaraoAguaEnemy(position: pos, playerTarget: plr),
+    companionBehavior: CompanionBehavior.cacador,
   );
 
   static final CreatureData leaoEletrico = CreatureData(
@@ -284,14 +299,15 @@ class CreatureRegistry {
     nome: 'Leão Elétrico',
     spritePath: 'actors/gatoEletrico.png',
     tipo: CreatureType.eletrico,
-    corClara: Palette.amarelo,
-    corEscura: Palette.burgundy,
+    corClara: Palette.laranja,
+    corEscura: Palette.chocolate,
     stats: BaseStats(maxHp: 20, speed: 55, defesa: 4, ataque: 4),
     ability1: EstocadaRelampago(),
     ability2: InvestidaDaLanca(),
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(10, 15),
     enemyBuilder: (pos, plr) => LeaoEletricoEnemy(position: pos, playerTarget: plr),
+    companionBehavior: CompanionBehavior.cacador,
   );
 
   static final List<CreatureData> all = [

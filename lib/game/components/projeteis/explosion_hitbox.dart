@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
+import 'package:creatures_rogue/game/components/creatures/damageable_by_enemy.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart'; // Mude para base_enemy se refatorou
 import 'package:creatures_rogue/game/components/map/obstacle.dart';
 import 'package:creatures_rogue/game/components/player/player.dart';
@@ -60,11 +61,13 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
     paintV = Paint()
     ..color = cor1
     ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.25
     ..filterQuality = FilterQuality.none;
 
     paintB = Paint()
     ..color = cor2
     ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.25
     ..filterQuality = FilterQuality.none;
   }
 
@@ -105,7 +108,7 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
       if (lentidaoDuracao > 0) other.applyLentidao(lentidaoDuracao, fator: lentidaoFator);
       if (cegoDuracao > 0) other.applyCego(cegoDuracao);
       if (knockback > 0) other.applyKnockback(absolutePosition, knockback);
-    } else if (other is Player && isEnemy) {
+    } else if (other is DamageableByEnemy && isEnemy) {
       other.takeDamage(dmg);
       if (lentidaoDuracao > 0) other.aplicarLentidao(lentidaoDuracao, fator: lentidaoFator);
       if (cegoDuracao > 0) other.aplicarCegueira(cegoDuracao);

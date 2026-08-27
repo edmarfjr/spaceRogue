@@ -1,7 +1,7 @@
 import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
 /// Ouriço Elétrico — botão A. Sem mira: uma saraivada de espinhos em todas as
@@ -17,7 +17,7 @@ class Ericar extends Ability {
       : super(nome: 'Eriçar', cooldown: 2.2);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
     for (int i = 0; i < quantidade; i++) {
       final angulo = (2 * pi / quantidade) * i;

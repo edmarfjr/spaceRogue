@@ -3,8 +3,8 @@ import 'dart:ui' as ui;
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'package:creatures_rogue/game/components/creatures/damageable_by_enemy.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
@@ -76,7 +76,7 @@ class Bomb extends SpriteAnimationComponent with CollisionCallbacks, HasGameRef 
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
 
-    if (other is Player) {
+    if (other is DamageableByEnemy) {
       Vector2 pushDir = (absolutePosition - other.absolutePosition).normalized();
       velocity = pushDir * acc;
       

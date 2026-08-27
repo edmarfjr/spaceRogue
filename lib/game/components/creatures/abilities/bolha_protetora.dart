@@ -1,6 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 
 /// Sapo de Água — botão B. Escudo que absorve um golpe, com duração limitada.
 class BolhaProtetora extends Ability {
@@ -10,7 +10,7 @@ class BolhaProtetora extends Ability {
       : super(nome: 'Bolha Protetora', cooldown: 7.0,tipo: AbilityTipo.defesa);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     user.shieldHits = 1;
     user.shieldVisualActive = true;
 

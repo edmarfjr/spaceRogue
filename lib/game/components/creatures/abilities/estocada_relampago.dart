@@ -1,6 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
 /// Leão Elétrico — botão A. Lança fina e rápida, atravessa até 3 alvos numa
@@ -15,7 +15,7 @@ class EstocadaRelampago extends Ability {
       : super(nome: 'Estocada Relâmpago', cooldown: 1.4);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
     user.parent?.add(Projectile(
       position: user.position.clone() + dir.normalized() * user.size.x / 2,

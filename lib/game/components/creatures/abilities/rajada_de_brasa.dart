@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
 /// Roedor de Fogo — botão A. Três projéteis em leque, dano alto e perto.
@@ -16,7 +16,7 @@ class RajadaDeBrasa extends Ability {
       : super(nome: 'Rajada de Brasa', cooldown: 0.8);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
     final anguloRad = anguloLequeGraus * pi / 180;
     for (final offset in [-anguloRad, 0.0, anguloRad]) {

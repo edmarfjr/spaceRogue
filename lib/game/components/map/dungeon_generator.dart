@@ -28,7 +28,9 @@ class RoomData {
 class DungeonGenerator {
   final int maxRooms;
   final Random _random = Random();
-  
+
+  static const List<List<int>> _direcoes = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+
   DungeonGenerator({this.maxRooms = 15});
 
   Map<String, RoomData> generate() {
@@ -43,37 +45,40 @@ class DungeonGenerator {
 
     int roomCount = 1;
 
-    while (roomQueue.isNotEmpty && roomCount < maxRooms) {
+    while (roomCount < maxRooms) {
+      if (roomQueue.isEmpty) {
+        // A expansão é probabilística (50% por direção), então a fila pode
+        // secar muito antes de `maxRooms`. No pior caso a própria sala inicial
+        // sorteia "não" nas quatro direções (6,25% das vezes) e o andar nasce
+        // com uma sala só — sem beco sem-saída, ou seja, sem boss e sem saída
+        // do andar. Quando a fila seca, forçamos uma sala nova a partir de
+        // qualquer sala que ainda tenha vizinho livre, até bater `maxRooms`.
+        final expansiveis = grid.values
+            .where((r) => _direcoesLivres(grid, r).isNotEmpty)
+            .toList();
+        if (expansiveis.isEmpty) break;
+
+        final origem = expansiveis[_random.nextInt(expansiveis.length)];
+        final livres = _direcoesLivres(grid, origem);
+        roomQueue.add(
+            _criarSala(grid, origem, livres[_random.nextInt(livres.length)]));
+        roomCount++;
+        continue;
+      }
+
       RoomData current = roomQueue.removeAt(0);
       
-      List<List<int>> directions = [[0, -1], [0, 1], [-1, 0], [1, 0]];
-      directions.shuffle(_random); // 
+      final directions = List<List<int>>.from(_direcoes)..shuffle(_random);
 
       for (var dir in directions) {
         if (roomCount >= maxRooms) break;
         
         if (_random.nextDouble() > 0.5) {
-          int nx = current.x + dir[0];
-          int ny = current.y + dir[1];
-          String key = '$nx,$ny';
-
-          if (!grid.containsKey(key)) {
-            var newRoom = RoomData(nx, ny);
-            
-            if (dir[0] == 0 && dir[1] == -1) { 
-              current.doorTop = true; newRoom.doorBottom = true; 
-            } else if (dir[0] == 0 && dir[1] == 1) { 
-              current.doorBottom = true; newRoom.doorTop = true; 
-            } else if (dir[0] == -1 && dir[1] == 0) { 
-              current.doorLeft = true; newRoom.doorRight = true; 
-            } else if (dir[0] == 1 && dir[1] == 0) { 
-              current.doorRight = true; newRoom.doorLeft = true; 
-            }
-
-            grid[key] = newRoom;
-            roomQueue.add(newRoom);
-            roomCount++;
+          if (grid.containsKey('${current.x + dir[0]},${current.y + dir[1]}')) {
+            continue;
           }
+          roomQueue.add(_criarSala(grid, current, dir));
+          roomCount++;
         }
       }
     }
@@ -81,6 +86,32 @@ class DungeonGenerator {
     _assignSpecialRooms(grid);
 
     return grid;
+  }
+
+  /// Direções a partir de [room] cuja célula vizinha ainda está vazia.
+  List<List<int>> _direcoesLivres(Map<String, RoomData> grid, RoomData room) =>
+      _direcoes
+          .where((d) => !grid.containsKey('${room.x + d[0]},${room.y + d[1]}'))
+          .toList();
+
+  /// Cria a sala vizinha de [origem] na direção [dir], já ligando as portas dos
+  /// dois lados, e registra ela no grid.
+  RoomData _criarSala(
+      Map<String, RoomData> grid, RoomData origem, List<int> dir) {
+    final nova = RoomData(origem.x + dir[0], origem.y + dir[1]);
+
+    if (dir[0] == 0 && dir[1] == -1) {
+      origem.doorTop = true; nova.doorBottom = true;
+    } else if (dir[0] == 0 && dir[1] == 1) {
+      origem.doorBottom = true; nova.doorTop = true;
+    } else if (dir[0] == -1 && dir[1] == 0) {
+      origem.doorLeft = true; nova.doorRight = true;
+    } else {
+      origem.doorRight = true; nova.doorLeft = true;
+    }
+
+    grid['${nova.x},${nova.y}'] = nova;
+    return nova;
   }
   
   void _assignSpecialRooms(Map<String, RoomData> grid) {

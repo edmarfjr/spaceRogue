@@ -68,12 +68,12 @@ class Door extends Obstacle {
 
   void open() {
     _isOpen = true;
-    firstChild<RectangleHitbox>()?.collisionType = CollisionType.inactive;
+    hitbox.collisionType = CollisionType.inactive;
   }
 
   void close() {
     _isOpen = false;
-    firstChild<RectangleHitbox>()?.collisionType = CollisionType.passive;
+    hitbox.collisionType = CollisionType.passive;
   }
 
   @override

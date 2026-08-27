@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart';
@@ -48,7 +49,7 @@ void main() async {
         //primarySwatch: Colors.blue,
       ),
       home: Scaffold(
-        backgroundColor: const Color(0xFF2C2C2C),
+        backgroundColor: Palette.cinza,
         body: GameWidget<CreaturesRogueGame>(
           game: CreaturesRogueGame(
             // Esquema escolhido na última sessão (ver GameSettings).

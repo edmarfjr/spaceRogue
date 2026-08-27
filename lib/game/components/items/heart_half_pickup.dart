@@ -6,7 +6,7 @@ import '../player/player.dart';
 class HeartHalfPickup extends Collectible {
   HeartHalfPickup({required super.position}) 
       // Passamos a imagem pro 'super' carregar!
-      : super(spritePath: 'items/heartHalf.png',cor1: Palette.vermelho,cor2: Palette.roxoEsc);
+      : super(spritePath: 'items/meiaFruta.png',cor1: Palette.laranja,cor2: Palette.verdeEsc);
 
   // Apenas implementamos a lógica do jogo
   @override

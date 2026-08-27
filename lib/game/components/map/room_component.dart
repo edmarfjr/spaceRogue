@@ -107,13 +107,13 @@ class RoomComponent extends PositionComponent with HasGameRef {
       _spawnTreasure();
     } else if (data.type == RoomType.shop) {
       _spawnShop();
-    }else if (data.type == RoomType.start) {
-      Enemy enemy = DummyEnemy(
-        position: Vector2(width / 2, height / 2 - 32),
-        playerTarget: player,
-      );
-      parent?.add(enemy);
-    }
+    }//else if (data.type == RoomType.start) {
+    //  Enemy enemy = DummyEnemy(
+    //    position: Vector2(width / 2, height / 2 - 32),
+    //    playerTarget: player,
+    //  );
+    //  parent?.add(enemy);
+    //}
   }
 
   void _spawnTreasure() {
@@ -211,7 +211,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
         int roll = _random.nextInt(100);
 
         if (roll < 45) {
-          add(Grama(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,cor3: Palette.preto));
+          add(Grama(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,cor3: Palette.branco));
         } 
       }
     }
@@ -263,7 +263,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
         flipX: false,//flipX,
         cor1: theme.corClara,  
         cor2: theme.corEscura,
-        cor3: Palette.preto,//theme.corBranca,
+        cor3: theme.corBranca,
       );
       roomDoors.add(d);
       add(d);
@@ -343,8 +343,8 @@ class RoomComponent extends PositionComponent with HasGameRef {
       int attempts = 0; 
 
       while (!validPosition && attempts < 30) {
-        px = 48 + _random.nextInt(7) * 16.0;
-        py = 48 + _random.nextInt(7) * 16.0;
+        px = 48 + _random.nextInt(6) * 16.0;
+        py = 48 + _random.nextInt(6) * 16.0;
 
         Rect enemyRect = Rect.fromLTWH(px, py, 16, 16);
         // `_obstacleRects` (não `children`) porque a Rock foi reparentada pro
@@ -463,7 +463,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
   }
 
   // Criado uma única vez (antes era um Paint novo por sala, por frame)
-  late final Paint _roomBackgroundPaint = Paint()..color = Palette.preto;
+  late final Paint _roomBackgroundPaint = Paint()..color = Palette.branco;
   late final Rect _roomBackgroundRect = Rect.fromLTWH(0, 0, width, height);
 
   @override

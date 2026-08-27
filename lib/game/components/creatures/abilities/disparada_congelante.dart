@@ -3,7 +3,7 @@ import 'package:flame/effects.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/effects/ghost_effect.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 
 class DisparadaCongelante extends Ability {
@@ -18,7 +18,7 @@ class DisparadaCongelante extends Ability {
   }) : super(nome: 'Disparada Congelante', cooldown: 3.0, target: AbilityTarget.plrDir,tipo: AbilityTipo.esquiva);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     final danoRastro = user.creatureData.stats.ataque * coefRastro;
     user.grantInvulnerability(duracao);
 

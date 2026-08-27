@@ -255,7 +255,7 @@ class _CreatureDetailPanel extends StatelessWidget {
                               _StatLine('SAÚDE', creature.stats.maxHp.toString()),
                               _StatLine('VELOCIDADE', creature.stats.speed.toInt().toString()),
                               _StatLine('ATAQUE', creature.stats.ataque.toInt().toString()),
-                              _StatLine('DEFESA', creature.stats.defesa.toInt().toString()),
+                             // _StatLine('DEFESA', creature.stats.defesa.toInt().toString()),
                             ],
                           ),
                         ),

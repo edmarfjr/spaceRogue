@@ -1,6 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 
 /// Toco de Madeira — botão B. Crava raízes: reduz o dano recebido em troca de
 /// ficar parado, igual Casco Fechado, mas parcial — o toco não fecha de vez,
@@ -13,7 +13,7 @@ class Enraizar extends Ability {
       : super(nome: 'Enraizar', cooldown: 7.0, tipo: AbilityTipo.defesa);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     user.damageReduction = reducaoDano;
     user.speedLocked = true;
     user.shieldVisualActive = true;

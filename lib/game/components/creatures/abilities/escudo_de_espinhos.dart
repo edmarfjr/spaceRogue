@@ -1,6 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 
 /// Ouriço Elétrico — botão B. Não evita dano, converte: por [duracao], os
 /// próximos [golpes] hits que o usuário levar são absorvidos e cada um
@@ -21,7 +21,7 @@ class EscudoDeEspinhos extends Ability {
   }) : super(nome: 'Escudo de Espinhos', cooldown: 7.0, tipo: AbilityTipo.defesa);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     user.shieldHits = golpes;
     user.shieldVisualActive = true;
     user.retaliaEspinhos = true;

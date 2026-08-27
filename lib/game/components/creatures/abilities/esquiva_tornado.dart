@@ -3,7 +3,7 @@ import 'package:flame/effects.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/effects/ghost_effect.dart';
-import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
 /// Tornado de Fogo — botão B. Evasiva com i-frames, deixa rastro de dano.
@@ -20,7 +20,7 @@ class EsquivaTornado extends Ability {
   }) : super(nome: 'Esquiva Tornado', cooldown: 4.0, target: AbilityTarget.plrDir, tipo: AbilityTipo.esquiva);
 
   @override
-  void execute(Player user, Vector2 dir) {
+  void execute(AbilityUser user, Vector2 dir) {
     final danoRastro = user.creatureData.stats.ataque * coefRastro;
     user.grantInvulnerability(duracao);
 
