@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
@@ -28,6 +29,7 @@ import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/UI/minimap_hud.dart';
 //import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/components/creatures/companion.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/map/dungeon_generator.dart';
@@ -355,7 +357,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
         roomData,
         player: player,
         currentLevel: currentLevel,
-        currentFloor: currentFloor,
+        floor: currentFloor,
         bossBuilder: isBossFloor ? _buildRunBoss : null,
       );
       loadedRooms['${roomData.x},${roomData.y}'] = room;
@@ -474,8 +476,31 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     // moveJoystick.position = Vector2(80, canvasSize.y - 80);
   }
 
+  /// Pré-processa toda combinação caminho+cores que o jogo pode desenhar em
+  /// pleno jogo, pra que a PRIMEIRA vez que ela aparecer (primeiro inimigo
+  /// de uma espécie nova numa sala, primeira captura de uma criatura nova,
+  /// primeiro tiro de uma habilidade) não trave gerando a textura na hora.
+  /// `PaletteSwapper` já cacheia por caminho+cores (ver `_keyFor`); isto só
+  /// garante que o cache já está quente ANTES da run começar.
+  ///
+  /// Três blocos:
+  /// 1. Sprites genéricos (tiros/itens padrão, sem depender de criatura).
+  /// 2. Combinações fixas: os 5 ícones de condição, o alerta de ataque
+  ///    (`Enemy.spawnAlerta`), e as habilidades/passivas cuja arte usa
+  ///    cor de uma criatura específica só (`Ericar` é sempre a cor do
+  ///    Ouriço, por exemplo) — não dá pra derivar isso do `CreatureRegistry`
+  ///    genericamente, porque `Ability`/`Passive` não expõem sprite/cor como
+  ///    dado; precisa ser mantido à mão quando a arte de uma habilidade
+  ///    mudar (ver comentário de cada entrada).
+  /// 3. Um laço sobre as 16 criaturas do registro: cada uma aparece em até
+  ///    três formas visuais distintas (companion — sem `whiteReplacement`;
+  ///    inimigo/boss e escudo passivo do treinador — com
+  ///    `whiteReplacement: Palette.branco`), e as três precisam do próprio
+  ///    cache, mesmo caminho+cores gerando chaves diferentes por causa do
+  ///    branco. Autossuficiente: uma 17ª criatura no registry já entra
+  ///    sozinha, sem editar esta função.
   Future<void> _preloadCombatSprites() async {
-    await PaletteSwapper.warmUp([
+    final warmUps = <Future<ui.Image>>[
       // Tiro do player (Projectile padrão)
       PaletteSwapper.createSwappedImage(
         imagePath: 'projeteis/tiro.png',
@@ -520,7 +545,178 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
         darkGrayReplacement: Palette.azulEsc,
         whiteReplacement: Palette.branco,
       ),
-    ]);
+
+      // --- Ícones de condição (ConditionIcons) — 5 combinações fixas,
+      // iguais pra qualquer inimigo. Sem preload, o primeiro inimigo
+      // atordoado/envenenado/queimado/lento/cego da run travava um pouco.
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'effects/stun.png',
+        lightGrayReplacement: Palette.cinza,
+        darkGrayReplacement: Palette.laranja,
+        whiteReplacement: Palette.branco,
+      ),
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'effects/poison.png',
+        lightGrayReplacement: Palette.verde,
+        darkGrayReplacement: Palette.amarelo,
+        whiteReplacement: Palette.branco,
+      ),
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'effects/fogo.png',
+        lightGrayReplacement: Palette.laranja,
+        darkGrayReplacement: Palette.vermelho,
+        whiteReplacement: Palette.branco,
+      ),
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'effects/lento.png',
+        lightGrayReplacement: Palette.azul,
+        darkGrayReplacement: Palette.indigo,
+        whiteReplacement: Palette.branco,
+      ),
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'effects/cego.png',
+        lightGrayReplacement: Palette.cinza,
+        darkGrayReplacement: Palette.cinzaEsc,
+        whiteReplacement: Palette.branco,
+      ),
+      // Alerta antes do inimigo atacar (Enemy.spawnAlerta)
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'effects/exclamacao.png',
+        lightGrayReplacement: Palette.indigo,
+        darkGrayReplacement: Palette.vermelho,
+        whiteReplacement: Palette.branco,
+      ),
+
+      // --- Projéteis de habilidade/passiva com cor fixa (não derivada de
+      // `creatureData` na hora do disparo). Mantido à mão — ver comentário
+      // do método.
+      // Roedor de Fogo — RajadaDeBrasa
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/fogo2.png',
+        lightGrayReplacement: Palette.vermelho,
+        darkGrayReplacement: Palette.laranja,
+      ),
+      // Tartaruga de Planta / Slime de Planta — CuspeDeSemente / CuspeVenenoso
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/proj1.png',
+        lightGrayReplacement: Palette.verde,
+        darkGrayReplacement: Palette.verdeEsc,
+      ),
+      // Sapo de Água — BolaDagua
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/proj1.png',
+        lightGrayReplacement: Palette.azul,
+        darkGrayReplacement: Palette.azulEsc,
+      ),
+      // Ave Elétrica — BicoEletrico
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/proj2.png',
+        lightGrayReplacement: Palette.amarelo,
+        darkGrayReplacement: Palette.laranja,
+      ),
+      // Tornado de Fogo — SocoFlamejante
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/soco.png',
+        lightGrayReplacement: Palette.vermelho,
+        darkGrayReplacement: Palette.roxoEsc,
+      ),
+      // Cobra de Água — JatoAquatico
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/proj1.png',
+        lightGrayReplacement: Palette.azul,
+        darkGrayReplacement: Palette.royal,
+      ),
+      // Grilo Elétrico — ChoqueEletrico
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/raio.png',
+        lightGrayReplacement: Palette.amarelo,
+        darkGrayReplacement: Palette.laranja,
+      ),
+      // Pinguim de Água — TiroDeGelo
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/proj1.png',
+        lightGrayReplacement: Palette.azul,
+        darkGrayReplacement: Palette.indigo,
+      ),
+      // Toco de Madeira — FolhasNavalha
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/folha.png',
+        lightGrayReplacement: Palette.verde,
+        darkGrayReplacement: Palette.verdeEsc,
+      ),
+      // Tornado de Fogo — TornadoResidual (passiva)
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/tornado.png',
+        lightGrayReplacement: Palette.vermelho,
+        darkGrayReplacement: Palette.laranja,
+      ),
+      // Slime de Planta — PecoenhaReflexiva (passiva)
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/bolaGrande.png',
+        lightGrayReplacement: Palette.verde,
+        darkGrayReplacement: Palette.verdeEsc,
+      ),
+
+      // --- Habilidades/passivas cuja arte usa a cor da PRÓPRIA criatura
+      // (`user.creatureData.corClara/corEscura` no código da habilidade) —
+      // a combinação abaixo é a cor real de quem usa cada uma, não um valor
+      // genérico.
+      // Ouriço Elétrico — Ericar
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/raio.png',
+        lightGrayReplacement: CreatureRegistry.ouricoEletrico.corClara,
+        darkGrayReplacement: CreatureRegistry.ouricoEletrico.corEscura,
+      ),
+      // Caranguejo Ermitão de Fogo — BaforadaDeCinzas
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/nuvemP.png',
+        lightGrayReplacement: CreatureRegistry.caranguejoErmitao.corClara,
+        darkGrayReplacement: CreatureRegistry.caranguejoErmitao.corEscura,
+      ),
+      // Caranguejo Ermitão de Fogo — FumacaAoLacar (passiva)
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/nuvem.png',
+        lightGrayReplacement: CreatureRegistry.caranguejoErmitao.corClara,
+        darkGrayReplacement: CreatureRegistry.caranguejoErmitao.corEscura,
+      ),
+      // Leão Elétrico — EstocadaRelampago
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/proj2.png',
+        lightGrayReplacement: CreatureRegistry.leaoEletrico.corClara,
+        darkGrayReplacement: CreatureRegistry.leaoEletrico.corEscura,
+      ),
+    ];
+
+    // --- Uma vez por criatura do registro: as três formas visuais que ela
+    // pode assumir em jogo (ver doc do método).
+    for (final c in CreatureRegistry.all) {
+      // Inimigo comum/boss (Enemy.onLoad) e escudo passivo do treinador
+      // (Player.onLoad) — as duas usam `whiteReplacement: Palette.branco`,
+      // então compartilham exatamente esta chave de cache.
+      warmUps.add(PaletteSwapper.createSwappedImage(
+        imagePath: c.spritePath,
+        lightGrayReplacement: c.corClara,
+        darkGrayReplacement: c.corEscura,
+        whiteReplacement: Palette.branco,
+      ));
+      warmUps.add(PaletteSwapper.createSwappedImage(
+        imagePath: 'projeteis/bolha.png',
+        lightGrayReplacement: c.corClara,
+        darkGrayReplacement: c.corEscura,
+        whiteReplacement: Palette.branco,
+      ));
+      // Companion (Companion.onLoad) — sem `whiteReplacement`, chave
+      // diferente da forma inimigo/escudo acima. Cobre tanto a criatura
+      // inicial (slot 0) quanto qualquer captura futura de uma espécie
+      // ainda não vista na run.
+      warmUps.add(PaletteSwapper.createSwappedImage(
+        imagePath: c.spritePath,
+        lightGrayReplacement: c.corClara,
+        darkGrayReplacement: c.corEscura,
+      ));
+    }
+
+    await PaletteSwapper.warmUp(warmUps);
   }
 
   /// Desktop usa mouse, não polegar: não precisa do piso de 48dp do Material.
@@ -651,18 +847,20 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
 
     // Margens DERIVADAS do raio, não fixas: garante que os três nunca se
     // sobrepõem em X, não importa o valor de buttonRadius.
-    const double edgeMargin = 20;
+    const double edgeMarginX = 20;
+    const double edgeMarginY = 35;
     const double gap = 10;
-    final double marginRightA = edgeMargin;
-    final double marginRightB = edgeMargin + buttonRadius * 2 + gap;
-    final double marginRightC = edgeMargin + (buttonRadius * 2 + gap) * 2;
+    final double marginRightA = edgeMarginX;
+    final double marginRightB = edgeMarginX + buttonRadius * 2 + gap;
+    final double marginBottomC = edgeMarginY + buttonRadius * 2 + gap;
+    //final double marginRightC = edgeMargin + (buttonRadius * 2 + gap) * 2;
 
     // Recolher/liberar o grupo — ação em massa, ver
     // `CreaturesRogueGame.alternarRecuoGrupo`.
     _abilityControls.add(
       RecallButton(
         radius: buttonRadius,
-        margin: EdgeInsets.only(right: marginRightA, bottom: 35),
+        margin: EdgeInsets.only(right: marginRightA, bottom: edgeMarginY),
         recolhido: () => companionCreatures.asMap().entries.every(
             (e) => e.value == null || companionPocketed[e.key]),
         onToggle: () {
@@ -682,7 +880,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
         baseColor: Palette.burgundy.withAlpha(255),
         pressedColor: Palette.burgundy.withAlpha(140),
         pointerTracker: pointerTracker,
-        margin: EdgeInsets.only(right: marginRightB, bottom: 35),
+        margin: EdgeInsets.only(right: marginRightB, bottom: edgeMarginY),
         onPressedChanged: (pressed) {
           if (pressed) player.dodge();
         },
@@ -695,7 +893,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
       CaptureButton(
         radius: buttonRadius,
         pointerTracker: pointerTracker,
-        margin: EdgeInsets.only(right: marginRightC, bottom: 35),
+        margin: EdgeInsets.only(right: marginRightA, bottom: marginBottomC),
         onPressedChanged: (pressed) {
           if (!_runStarted) return;
           if (pressed) {
@@ -810,7 +1008,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
         roomData,
         player: player,
         currentLevel: currentLevel,
-        currentFloor:currentFloor,
+        floor:currentFloor,
         bossBuilder: isBossFloor ? _buildRunBoss : null,
       );
       loadedRooms['${roomData.x},${roomData.y}'] = room;

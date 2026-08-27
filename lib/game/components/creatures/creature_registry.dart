@@ -35,6 +35,22 @@ import 'abilities/recolher_no_casco.dart';
 import 'base_stats.dart';
 import 'creature_data.dart';
 import 'creature_type.dart';
+import 'passives/rastro_flamejante.dart';
+import 'passives/casco_reflexivo.dart';
+import 'passives/bolha_autonoma.dart';
+import 'passives/corrente_reflexa.dart';
+import 'passives/tornado_residual.dart';
+import 'passives/salto_aquatico.dart';
+import 'passives/brado_reflexo.dart';
+import 'passives/reflexo_eletrico.dart';
+import 'passives/bomba_na_esquiva.dart';
+import 'passives/pecoenha_reflexiva.dart';
+import 'passives/rastro_congelante.dart';
+import 'passives/retaliacao_eletrica.dart';
+import 'passives/fumaca_ao_lacar.dart';
+import 'passives/raizes_do_laco.dart';
+import 'passives/investida_predatoria.dart';
+import 'passives/golpe_de_lanca.dart';
 import '../effects/movement_animator.dart';
 import '../enemies/creatures/ave_eletrica_enemy.dart';
 import '../enemies/creatures/bomba_fogo_enemy.dart';
@@ -67,6 +83,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(8, 10), 
     enemyBuilder: (pos, plr) => RoedorFogoEnemy(position: pos, playerTarget: plr),
+    passive: RastroFlamejante(),
     companionBehavior: CompanionBehavior.cacador,
   );
 
@@ -83,6 +100,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.arrastar,
     hitboxSize: Vector2(14, 14), 
     enemyBuilder: (pos, plr) => TartarugaPlantaEnemy(position: pos, playerTarget: plr),
+    passive: CascoReflexivo(),
     companionBehavior: CompanionBehavior.guarda,
   );
 
@@ -99,6 +117,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(12, 10), 
     enemyBuilder: (pos, plr) => SapoAguaEnemy(position: pos, playerTarget: plr),
+    passive: BolhaAutonoma(),
     companionBehavior: CompanionBehavior.guarda,
   );
 
@@ -115,6 +134,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.flutuar,
     hitboxSize: Vector2(9, 11),
     enemyBuilder: (pos, plr) => AveEletricaEnemy(position: pos, playerTarget: plr),
+    passive: CorrenteReflexa(),
     companionBehavior: CompanionBehavior.cacador,
   );
 
@@ -131,6 +151,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.arrastar,
     hitboxSize: Vector2(9, 14),
     enemyBuilder: (pos, plr) => CobraAguaEnemy(position: pos, playerTarget: plr),
+    passive: SaltoAquatico(),
     companionBehavior: CompanionBehavior.cacador,
   );
 
@@ -147,6 +168,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(15, 16),
     enemyBuilder: (pos, plr) => UrsoPlantaEnemy(position: pos, playerTarget: plr),
+    passive: BradoReflexo(),
     companionBehavior: CompanionBehavior.guarda,
   );
 
@@ -163,6 +185,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => GriloEletricoEnemy(position: pos, playerTarget: plr),
+    passive: ReflexoEletrico(),
     companionBehavior: CompanionBehavior.cacador,
   );
 
@@ -179,6 +202,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.flutuar,
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => TornadoFogoEnemy(position: pos, playerTarget: plr),
+    passive: TornadoResidual(),
     companionBehavior: CompanionBehavior.cacador,
   );
 
@@ -195,6 +219,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => BombaFogoEnemy(position: pos, playerTarget: plr),
+    passive: BombaNaEsquiva(),
     companionBehavior: CompanionBehavior.guarda,
   );
 
@@ -211,6 +236,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.arrastar,
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => SlimePlantaEnemy(position: pos, playerTarget: plr),
+    passive: PecoenhaReflexiva(),
     companionBehavior: CompanionBehavior.guarda,
   );
 
@@ -227,6 +253,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(12, 12), 
     enemyBuilder: (pos, plr) => OuricoEletricoEnemy(position: pos, playerTarget: plr),
+    passive: RetaliacaoEletrica(),
     companionBehavior: CompanionBehavior.guarda,
   );
 
@@ -243,6 +270,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.arrastar,
     hitboxSize: Vector2(14, 12),
     enemyBuilder: (pos, plr) => CaranguejoErmitaoEnemy(position: pos, playerTarget: plr),
+    passive: FumacaAoLacar(),
     companionBehavior: CompanionBehavior.guarda,
   );
 
@@ -259,6 +287,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(8, 14),
     enemyBuilder: (pos, plr) => PinguimAguaEnemy(position: pos, playerTarget: plr),
+    passive: RastroCongelante(),
     companionBehavior: CompanionBehavior.guarda,
   );
 
@@ -275,6 +304,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(10, 10), 
     enemyBuilder: (pos, plr) => TocoPlantaEnemy(position: pos, playerTarget: plr),
+    passive: RaizesDoLaco(),
     companionBehavior: CompanionBehavior.orbital,
   );
 
@@ -291,6 +321,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(13, 15),
     enemyBuilder: (pos, plr) => TubaraoAguaEnemy(position: pos, playerTarget: plr),
+    passive: InvestidaPredatoria(),
     companionBehavior: CompanionBehavior.cacador,
   );
 
@@ -307,6 +338,7 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(10, 15),
     enemyBuilder: (pos, plr) => LeaoEletricoEnemy(position: pos, playerTarget: plr),
+    passive: GolpeDeLanca(),
     companionBehavior: CompanionBehavior.cacador,
   );
 

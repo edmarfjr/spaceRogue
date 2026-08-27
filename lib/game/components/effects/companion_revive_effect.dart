@@ -27,7 +27,12 @@ class CompanionReviveEffect extends PositionComponent {
     final raio = _raioMax * t;
     if (raio <= 0) return;
 
-    final alpha = ((1 - t) * 255).round().clamp(0, 255);
-    canvas.drawCircle(Offset.zero, raio, Paint()..color = Palette.branco.withAlpha(alpha));
+    //final alpha = 255;//((1 - t) * 255).round().clamp(0, 255);
+    final Paint borda = Paint()..color = Palette.preto..style = PaintingStyle.stroke..strokeWidth = 1;
+
+    canvas.drawCircle(Offset.zero, raio, Paint()..color = Palette.vermelho..style = PaintingStyle.stroke..strokeWidth = 1);
+    canvas.drawCircle(Offset.zero, raio+1,borda);
+    canvas.drawCircle(Offset.zero, raio-1,borda);
+    
   }
 }

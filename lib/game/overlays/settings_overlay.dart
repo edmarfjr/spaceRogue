@@ -1,5 +1,6 @@
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flutter/material.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:creatures_rogue/game/game_settings.dart';
 
@@ -18,6 +19,13 @@ class SettingsOverlay extends StatefulWidget {
 /// A escolha é gravada em disco por [GameSettings], então sobrevive ao
 /// fechamento do app.
 class _SettingsOverlayState extends State<SettingsOverlay> {
+  bool _resetado = false;
+
+  Future<void> _resetar() async {
+    await CreatureProgress.instance.resetIntro();
+    if (mounted) setState(() => _resetado = true);
+  }
+
   Future<void> _escolher(ControlScheme scheme) async {
     widget.game.controlScheme = scheme;
     await GameSettings.instance.setControlScheme(scheme);
@@ -84,7 +92,27 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                 style: const TextStyle(color: Palette.preto, fontSize: 13),
               ),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 24),
+            // Apaga a flag de intro e as criaturas liberadas. Sem isto a
+            // intro aparece uma vez na vida do aparelho, e não dá pra
+            // revê-la sem reinstalar o app.
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Palette.branco,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                elevation: 0,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.zero,
+                  side: BorderSide(color: Palette.preto, width: 2),
+                ),
+              ),
+              onPressed: _resetado ? null : _resetar,
+              child: Text(
+                _resetado ? ' PROGRESSO RESETADO ' : ' RESETAR PROGRESSO ',
+                style: const TextStyle(fontSize: 14, color: Palette.preto),
+              ),
+            ),
+            const SizedBox(height: 24),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Palette.branco,

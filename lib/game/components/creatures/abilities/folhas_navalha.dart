@@ -18,11 +18,11 @@ class FolhasNavalha extends Ability {
 
   const FolhasNavalha({
     this.coef = 0.35,
-    this.quantidade = 3,
+    this.quantidade = 5,
     this.raio = 20,
-    this.velocidadeAngular = 3.0,
+    this.velocidadeAngular = 4.0,
     this.duracao = 4.0,
-  }) : super(nome: 'Folhas Navalha', cooldown: 6.5);
+  }) : super(nome: 'Folhas Navalha', descricao: 'Espinhos giram ao redor do usuário, acertando quem encostar.', cooldown: 6.5);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
@@ -40,6 +40,7 @@ class FolhasNavalha extends Ability {
         cor1: Palette.verde,
         cor2: Palette.verdeEsc,
         tipo: user.creatureData.tipo,
+        
       ));
     }
   }

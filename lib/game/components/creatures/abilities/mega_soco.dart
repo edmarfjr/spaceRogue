@@ -11,7 +11,7 @@ class MegaSoco extends Ability {
   final double empurrao;
 
   const MegaSoco({this.coef = 1.25, this.alcance = 12, this.empurrao = 50})
-      : super(nome: 'Mega Soco', cooldown: 1.3);
+      : super(nome: 'Mega Soco', descricao: 'Soco curto e pesado bem na frente, com empurrão.', cooldown: 1.3);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

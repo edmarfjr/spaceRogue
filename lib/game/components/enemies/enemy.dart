@@ -318,8 +318,12 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     }
   }
 
+  /// Reaplicar renova a duração e fica com a maior — nunca sobrescreve seco,
+  /// mesma regra de [applyLentidao] logo abaixo. Sem isso, duas retaliações
+  /// de passiva atordoando no mesmo frame (ver PIVOT_TREINADOR.md) deixavam
+  /// a duração final depender só da ordem de processamento da lista.
   void applyStun(double t){
-    stunTimer = t;
+    stunTimer = t > stunTimer ? t : stunTimer;
   }
 
   /// [fator] é a fração da velocidade original (0.5 = metade). Reaplicar

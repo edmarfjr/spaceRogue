@@ -20,11 +20,17 @@ class RecallButton extends PositionComponent
   final bool Function() recolhido;
 
   final Paint _baseColor = Paint()..color = Palette.royal.withAlpha(255);
-  final Paint _glifo = Paint()
-    ..color = Palette.branco
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 2
-    ..strokeCap = StrokeCap.round;
+  final Paint _spritePaint = Paint()
+    ..filterQuality = FilterQuality.none
+    ..colorFilter = const ColorFilter.mode(Palette.royal, BlendMode.modulate);
+
+  /// Carregados uma vez em [onLoad], nunca em [render] — `render` é chamado
+  /// de forma síncrona pelo motor (não é aguardado), então um `await
+  /// Sprite.load(...)` ali dentro desenha no canvas de um frame que já
+  /// terminou, e o ícone nunca aparece de forma confiável. Mesmo padrão de
+  /// `CompanionPortraitIndicator`.
+  Sprite? _spriteLiberar;
+  Sprite? _spriteRetorno;
 
   RecallButton({
     required double radius,
@@ -33,6 +39,13 @@ class RecallButton extends PositionComponent
     EdgeInsets? margin,
   }) : super(size: Vector2.all(radius * 2)) {
     this.margin = margin;
+  }
+
+  @override
+  Future<void> onLoad() async {
+    super.onLoad();
+    _spriteLiberar = await Sprite.load('ui/liberar.png');
+    _spriteRetorno = await Sprite.load('ui/retorno.png');
   }
 
   @override
@@ -53,20 +66,15 @@ class RecallButton extends PositionComponent
 
     canvas.drawCircle(center, radius, _baseColor);
 
-    // Seta pra dentro (recolher) ou pra fora (liberar) — dois traços em V,
-    // apontando pro centro ou pra fora dele.
-    final ponta = radius * 0.5;
-    final cauda = radius * 0.85;
-    if (recolhido()) {
-      // Setas apontando pra FORA do centro — "liberar".
-      canvas.drawLine(center, center - Offset(cauda, 0), _glifo);
-      canvas.drawLine(center - Offset(cauda, 0), center - Offset(ponta, ponta * 0.6), _glifo);
-      canvas.drawLine(center - Offset(cauda, 0), center - Offset(ponta, -ponta * 0.6), _glifo);
-    } else {
-      // Setas apontando PRA o centro — "recolher".
-      canvas.drawLine(center + Offset(cauda, 0), center, _glifo);
-      canvas.drawLine(center + Offset(ponta, ponta * 0.6), center, _glifo);
-      canvas.drawLine(center + Offset(ponta, -ponta * 0.6), center, _glifo);
+    final iconSize = Vector2.all(size.x * 0.6);
+    final sprite = recolhido() ? _spriteLiberar : _spriteRetorno;
+    if (sprite != null) {
+      sprite.render(
+        canvas,
+        position: (size - iconSize) / 2,
+        size: iconSize,
+        overridePaint: _spritePaint,
+      );
     }
   }
 }

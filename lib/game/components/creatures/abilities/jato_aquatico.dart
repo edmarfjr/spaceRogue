@@ -22,7 +22,7 @@ class JatoAquatico extends Ability {
     this.coef = 0.5,
     this.velocidade = 200,
     this.alcanceSegundos = 0.25,
-  }) : super(nome: "Jato d'Água", cooldown: 2.5);
+  }) : super(nome: "Jato d'Água", descricao: "Rajada curta de tiros em sequência.", cooldown: 2.5);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

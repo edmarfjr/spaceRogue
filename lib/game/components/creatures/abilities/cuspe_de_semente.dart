@@ -12,7 +12,7 @@ class CuspeDeSemente extends Ability {
   final double kbForce;
 
   const CuspeDeSemente({this.coef = 1.33, this.velocidade = 90, this.kbForce = 30})
-      : super(nome: 'Cuspe de Semente', cooldown: 1.4);
+      : super(nome: 'Cuspe de Semente', descricao: 'Projétil lento e pesado, empurra bastante.', cooldown: 1.4);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

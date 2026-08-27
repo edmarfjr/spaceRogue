@@ -14,7 +14,7 @@ class Ericar extends Ability {
   final double velocidade;
 
   const Ericar({this.coef = 0.5, this.quantidade = 8, this.velocidade = 110})
-      : super(nome: 'Eriçar', cooldown: 2.2);
+      : super(nome: 'Eriçar', descricao: 'Saraivada de espinhos em todas as direções, sem mira.', cooldown: 2.2);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

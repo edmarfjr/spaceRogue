@@ -12,22 +12,12 @@ class CreatureProgress {
 
   static const _unlockedKey = 'creatures_rogue.unlocked_ids';
   static const _killCountPrefix = 'creatures_rogue.kills.';
+  static const _introKey = 'creatures_rogue.intro_concluida';
 
-  /// Quem começa liberado antes de qualquer partida: uma criatura de tipo
-  /// diferente cada, pra primeira escolha ser escolha de verdade e não só
-  /// "a única opção".
-  static const List<String> defaultUnlocked = [
-    'roedor_fogo',
-    'ave_eletrica',
-    'tartaruga_planta',
-    'sapo_agua',
-    'pinguim_agua',
-    'ourico_eletrico',
-    'caranguejo_fogo',
-    'toco_planta',
-    'tubarao_agua',
-    'leao_eletrico'
-  ];
+  /// Ninguém começa liberado: a primeira criatura vem da escolha no fim da
+  /// intro (ver `IntroOverlay`), e é a única jogável na primeira run. A lista
+  /// com 10 ids que morava aqui era atalho de teste.
+  static const List<String> defaultUnlocked = [];
 
   late final SharedPreferences _prefs;
   Set<String> _unlockedIds = {};
@@ -43,6 +33,29 @@ class CreatureProgress {
   }
 
   bool isUnlocked(String creatureId) => _unlockedIds.contains(creatureId);
+
+  /// A intro (diálogo + escolha da criatura inicial) já foi concluída alguma
+  /// vez. Enquanto for falso, "NOVO JOGO" leva pra intro em vez do seletor.
+  bool get introConcluida => _prefs.getBool(_introKey) ?? false;
+
+  /// Fecha a intro liberando a criatura escolhida. Uma chamada só de
+  /// propósito: se a flag e o unlock fossem gravados em momentos diferentes,
+  /// o app morto no meio deixaria zero criatura liberada E nenhuma intro pra
+  /// liberar uma — e o seletor abriria com uma criatura travada selecionada.
+  Future<void> concluirIntro(String starterId) async {
+    _unlockedIds.add(starterId);
+    await _prefs.setStringList(_unlockedKey, _unlockedIds.toList());
+    await _prefs.setBool(_introKey, true);
+  }
+
+  /// Desfaz a intro e os desbloqueios (as contagens de morte por criatura
+  /// continuam). Existe pra dar pra ver a intro de novo sem reinstalar o app
+  /// — sem isso ela aparece uma vez na vida do aparelho.
+  Future<void> resetIntro() async {
+    _unlockedIds = defaultUnlocked.toSet();
+    await _prefs.setStringList(_unlockedKey, _unlockedIds.toList());
+    await _prefs.setBool(_introKey, false);
+  }
 
   Future<void> unlock(String creatureId) async {
     if (_unlockedIds.add(creatureId)) {

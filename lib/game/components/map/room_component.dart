@@ -53,6 +53,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
   //late final Sprite doorSprite;
 
   late final DungeonTheme theme;
+  final int floor;
 
   /// Quando não-nulo, esta sala de boss recebe O BOSS em vez de inimigos
   /// comuns. Quem constrói é o jogo (que também pendura a barra de vida na
@@ -64,7 +65,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
     this.data, {
     required this.player,
     int currentLevel = 1,
-    int currentFloor = 1,
+    this.floor = 1,
     this.bossBuilder,
   }) : super(
           size: Vector2(roomWidth, roomHeight),
@@ -319,21 +320,27 @@ class RoomComponent extends PositionComponent with HasGameRef {
     _spawnRecompensa();
   }
 
-  void _spawnEnemies() {
-    // Andar de boss: um adversário só, no centro, e nada de turma comum.
-    // Entra em activeEnemies como qualquer inimigo, então a sala destranca
-    // pela mesma regra de sempre — quando ele morre.
+  void _spawnBoss(){
     final construirBoss = bossBuilder;
-    if (data.type == RoomType.boss && construirBoss != null) {
+    if (construirBoss != null) {
       final boss = construirBoss(position + Vector2(width / 2, height / 2 - 24));
       if (boss != null) {
         activeEnemies.add(boss);
         parent?.add(boss);
-        return;
       }
-      // Boss nulo (nada pendente pra desbloquear): cai no spawn normal.
     }
+  }
 
+  void _spawnEnemies() {
+    // Andar de boss: um adversário só, no centro, e nada de turma comum.
+    // Entra em activeEnemies como qualquer inimigo, então a sala destranca
+    // pela mesma regra de sempre — quando ele morre.
+
+    if (floor % 5 == 0){
+      _spawnBoss();
+      return;
+    }
+    
     int count = 2 + _random.nextInt(3);
     
     for (int i = 0; i < count; i++) {

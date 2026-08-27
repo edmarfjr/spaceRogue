@@ -10,7 +10,7 @@ class TiroDeGelo extends Ability {
   final double coef;
 
   const TiroDeGelo({this.coef = 1.33})
-      : super(nome: 'Tiro de Gelo', cooldown: 1.0);
+      : super(nome: 'Tiro de Gelo', descricao: 'Projétil que estilhaça ao acertar.', cooldown: 1.0);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

@@ -42,7 +42,7 @@ class DisparadaCongelante extends Ability {
       dir.normalized() * distancia,
       EffectController(duration: duracao),
       onComplete: () {
-        user.parent?.add(ExplosionHitbox(
+      /*  user.parent?.add(ExplosionHitbox(
           position: user.position.clone(),
           dmg: danoRastro,
           cor1: Palette.royal,
@@ -50,7 +50,7 @@ class DisparadaCongelante extends Ability {
           tipo: user.creatureData.tipo,
           lentidaoDuracao: 3.0,
         ));
-      },
+      */},
     ));
   }
 }

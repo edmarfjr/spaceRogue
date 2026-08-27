@@ -21,6 +21,9 @@ class CaptureLassoVisual extends PositionComponent {
   final Paint _linha = Paint()
     ..color = Palette.branco
     ..strokeWidth = 1;
+  final Paint _contorno = Paint()
+    ..color = Palette.preto
+    ..strokeWidth = 3;
   final Paint _arcoFundo = Paint()
     ..color = Palette.cinzaEsc.withAlpha(180)
     ..style = PaintingStyle.stroke
@@ -46,6 +49,7 @@ class CaptureLassoVisual extends PositionComponent {
   @override
   void render(Canvas canvas) {
     final ateTreinador = trainer.absolutePosition - alvo.absolutePosition;
+    canvas.drawLine(Offset.zero, Offset(ateTreinador.x, ateTreinador.y), _contorno);
     canvas.drawLine(Offset.zero, Offset(ateTreinador.x, ateTreinador.y), _linha);
 
     final rect = Rect.fromCircle(center: Offset.zero, radius: raioAlvo);

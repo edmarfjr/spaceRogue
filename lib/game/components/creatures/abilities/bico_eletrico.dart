@@ -13,7 +13,7 @@ class BicoEletrico extends Ability {
   final double alcanceSegundos;
 
   const BicoEletrico({this.coef = 1.0, this.velocidade = 260, this.alcanceSegundos = 0.25})
-      : super(nome: 'Bico Elétrico', cooldown: 0.25);
+      : super(nome: 'Bico Elétrico', descricao: 'Cooldown baixíssimo, dano baixo — o DPS vem do volume de disparos.', cooldown: 0.25);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

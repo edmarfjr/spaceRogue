@@ -11,6 +11,7 @@ import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/creatures/capture_lasso_visual.dart';
 import 'package:creatures_rogue/game/components/creatures/damageable_by_enemy.dart';
+import 'package:creatures_rogue/game/components/creatures/passive.dart';
 import 'package:creatures_rogue/game/components/effects/ghost_effect.dart';
 import 'package:creatures_rogue/game/components/effects/movement_animator.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
@@ -20,7 +21,6 @@ import 'package:creatures_rogue/game/components/map/dungeon_generator.dart';
 import 'package:creatures_rogue/game/components/map/room_component.dart';
 import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
 import 'package:creatures_rogue/game/components/projeteis/bomb.dart';
-import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 import 'package:creatures_rogue/game/components/player/trainer_stats.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:creatures_rogue/game/components/utils/y_sort.dart';
@@ -59,6 +59,12 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
   double maxHealth;
   double currentHealth;
+
+  /// Tempo desde o último golpe realmente recebido (resetado em
+  /// `takeDamage`, mesmo ponto que dispara retaliação) — usado por passivas
+  /// que observam o tempo passando (ex.: Bolha Autônoma, do Sapo de Água).
+  double _tempoSemApanhar = 0.0;
+  double get tempoSemApanhar => _tempoSemApanhar;
 
   double _invulnerabilityTimer = 0.0;
   final double _invulnerabilityDuration = 1.5;
@@ -224,18 +230,55 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   static const double _dodgeDuration = 0.18;
   static const double _dodgeDistance = 30.0;
 
+  /// Duração dos i-frames da esquiva, exposta pra fora — algumas passivas
+  /// (ex.: Casco Reflexivo, Rastro Flamejante) agendam efeito pra terminar
+  /// junto com a janela de invulnerabilidade, sem duplicar o número aqui.
+  double get dodgeIframeDuration => _dodgeDuration;
+
+  /// Passivas das criaturas do grupo (ver `Passive`, PIVOT_TREINADOR.md) —
+  /// vale enquanto a criatura estiver no grupo do treinador, capturada ou
+  /// não, no bolso ou fora dele. Por isso lê `companionCreatures` (sobrevive
+  /// ao bolso), não `companions` (só as fora dele). Sempre recomputado no
+  /// uso, nunca cacheado — elimina qualquer ponto de recálculo que
+  /// precisaria ser lembrado em captura/dispensa/início de run.
+  List<Passive> get passivasAtivas {
+    final jogo = game;
+    if (jogo is! CreaturesRogueGame) return const [];
+    return jogo.companionCreatures
+        .whereType<CreatureData>()
+        .map((c) => c.passive)
+        .toList(growable: false);
+  }
+
   void dodge() {
     if (_dodgeCooldown > 0) return;
-    _dodgeCooldown = _dodgeCooldownMax;
+    final passivas = passivasAtivas;
+
+    double cooldownMult = 1.0;
+    double distanciaMult = 1.0;
+    for (final p in passivas) {
+      cooldownMult *= p.dodgeCooldownMult;
+      distanciaMult *= p.dodgeDistanceMult;
+    }
+    _dodgeCooldown = _dodgeCooldownMax * cooldownMult;
     grantInvulnerability(_dodgeDuration);
 
-    final dir = velocity.isZero() ? plrDir : velocity.normalized();
+    var dir = velocity.isZero() ? plrDir : velocity.normalized();
+    for (final p in passivas) {
+      final override = p.direcaoEsquivaOverride(this, dir);
+      if (override != null) dir = override;
+    }
+
     GhostEffect.spawnTrail(
       visual: visual,
       add: (g) => parent?.add(g),
       overDuration: _dodgeDuration,
     );
-    add(MoveByEffect(dir * _dodgeDistance, EffectController(duration: _dodgeDuration)));
+    add(MoveByEffect(dir * _dodgeDistance * distanciaMult, EffectController(duration: _dodgeDuration)));
+
+    for (final p in passivas) {
+      p.aoEsquivar(this, dir);
+    }
   }
 
   /// Fração restante do cooldown da esquiva (0 = pronta) — pra HUD desenhar
@@ -280,6 +323,9 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     final delta = position - alvo.position;
     _capturaUltimoAngulo = math.atan2(delta.y, delta.x);
     alvo.enraizarParaCaptura(true);
+    for (final p in passivasAtivas) {
+      p.aoIniciarLaco(this);
+    }
 
     final visual = CaptureLassoVisual(
       trainer: this,
@@ -579,6 +625,10 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     priority = ySortPriority(position.y + size.y / 2);
 
     if (_dodgeCooldown > 0) _dodgeCooldown -= dt;
+    _tempoSemApanhar += dt;
+    for (final p in passivasAtivas) {
+      p.aoAtualizar(this, dt);
+    }
 
     if (lentidaoTimer > 0) {
       lentidaoTimer -= dt;
@@ -747,15 +797,34 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     // Piso em 0, não em 1: com o piso antigo nenhum item ou habilidade de
     // redução percentual conseguia fazer diferença num golpe de 1 (o contato
     // de inimigo), porque 1 * (1 - qualquer coisa) voltava pra 1.
-    double amountFinal = amount * (1 - damageReduction);
+    //
+    // `reducaoDuranteLaco` (passiva, ex.: Toco de Madeira) some junto com
+    // `damageReduction` — lida direto de `capturando`, sem hook de
+    // início/fim de laço nenhum.
+    final reducaoLaco = capturando
+        ? passivasAtivas.fold<double>(
+            0.0, (acc, p) => p.reducaoDuranteLaco > acc ? p.reducaoDuranteLaco : acc)
+        : 0.0;
+    double amountFinal = amount * (1 - damageReduction) * (1 - reducaoLaco);
     if (amountFinal <= 0) return; // golpe totalmente mitigado: não gasta i-frame
 
     _invulnerabilityTimer = _invulnerabilityDuration;
+    _tempoSemApanhar = 0.0;
+
+    // Passivas de retaliação (ex.: Retaliação Elétrica do Ouriço) — ANTES de
+    // qualquer escudo, de forma que disparem sempre que o treinador tenta
+    // tomar dano, mesmo que o golpe seja inteiramente absorvido pelo escudo
+    // logo abaixo. Se o grupo tiver mais de uma criatura com retaliação,
+    // todas executam — decisão travada com o usuário, não é "a mais forte
+    // vence" (ver PIVOT_TREINADOR.md).
+    for (final p in passivasAtivas) {
+      p.aoTentarTomarDano(this, amountFinal);
+    }
 
     // Regra de quebra #4 do §4.1: levar dano cancela o laço de captura — é o
     // que dá peso real à manobra (a volta é uma janela de vulnerabilidade).
-    // Aqui, não antes: um golpe já mitigado por damageReduction não conta
-    // como "tomar dano" pra essa regra.
+    // Aqui, não antes: um golpe já mitigado por damageReduction/reducaoLaco
+    // não conta como "tomar dano" pra essa regra.
     if (_capturaAlvo != null) cancelCapture();
 
     parent?.add(TextEffect.dano(
@@ -767,17 +836,6 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     if (shieldHits > 0) {
       shieldHits--;
       if (shieldHits <= 0) shieldVisualActive = false; // a bolha estourou
-
-      if (retaliaEspinhos) {
-        parent?.add(ExplosionHitbox(
-          position: position.clone(),
-          dmg: retaliaDano,
-          isStun: true,
-          stunDuration: retaliaStunDuration,
-          cor1: creatureData.corClara,
-          cor2: creatureData.corEscura,
-        ));
-      }
       return;
     }
 

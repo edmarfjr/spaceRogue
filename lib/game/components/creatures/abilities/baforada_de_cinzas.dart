@@ -22,7 +22,7 @@ class BaforadaDeCinzas extends Ability {
     this.velocidade = 70,
     this.alcanceSegundos = 0.35,
     this.ticksQueimadura = 2,
-  }) : super(nome: 'Baforada de Cinzas', cooldown: 1.6);
+  }) : super(nome: 'Baforada de Cinzas', descricao: 'Baforada curta de cinzas quentes que grudam e continuam queimando.', cooldown: 1.6);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

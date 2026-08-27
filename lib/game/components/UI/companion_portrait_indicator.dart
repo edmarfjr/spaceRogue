@@ -47,7 +47,7 @@ class CompanionPortraitIndicator extends PositionComponent with TapCallbacks {
   bool _carregandoSprite = false;
 
   final Paint _spritePaint = Paint()..filterQuality = FilterQuality.none;
-  final Paint _cooldownPaint = Paint()..color = Palette.cinzaEsc.withAlpha(220);
+  final Paint _cooldownPaint = Paint()..color = Palette.vermelho.withAlpha(220);
   final Paint _posturaAgressivo = Paint()..color = Palette.vermelho;
   final Paint _posturaSegurar = Paint()..color = Palette.azul;
   final Paint _fundoVazio = Paint()..color = Palette.cinzaEsc.withAlpha(80);
@@ -106,6 +106,21 @@ class CompanionPortraitIndicator extends PositionComponent with TapCallbacks {
 
     canvas.drawRect(quadro, _fundo);
 
+    // Cresce de baixo pra cima conforme cura (pedido do usuário) — o
+    // inverso de `fraction` (que É quanto falta curar), então a barra usa
+    // `progresso` (quanto já curou) pra altura: começa em 0 no instante do
+    // recolhimento e enche até sumir de vez quando `fraction` chega em 0
+    // (curado, `if` abaixo não desenha mais nada).
+    final fraction = pocketFraction().clamp(0.0, 1.0);
+    if (fraction > 0) {
+      final progresso = 1 - fraction;
+      final altura = size.y * progresso;
+      canvas.drawRect(
+        Rect.fromLTWH(0, size.y - altura, size.x, altura),
+        _cooldownPaint,
+      );
+    }
+
     final sprite = _sprite;
     if (sprite != null) {
       sprite.render(canvas, size: size, overridePaint: _spritePaint);
@@ -115,13 +130,6 @@ class CompanionPortraitIndicator extends PositionComponent with TapCallbacks {
 
     canvas.drawRect(quadro, isAtiva() ? _bordaAtiva : _bordaInativa);
 
-    final fraction = pocketFraction().clamp(0.0, 1.0);
-    if (fraction > 0) {
-      canvas.drawRect(
-        Rect.fromLTWH(0, size.y * (1 - fraction), size.x, size.y * fraction),
-        _cooldownPaint,
-      );
-    }
 
     // Marcador de postura: um quadradinho no canto, só quando não é `seguir`
     // (o default não precisa de indicador — vermelho = agressivo, azul =

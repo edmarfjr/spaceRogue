@@ -24,10 +24,16 @@ class CaptureButton extends PositionComponent
 
   final Paint _baseColor = Paint()..color = Palette.roxoEsc.withAlpha(255);
   final Paint _pressedColor = Paint()..color = Palette.roxoEsc.withAlpha(140);
-  final Paint _glifo = Paint()
-    ..color = Palette.branco
-    ..style = PaintingStyle.stroke
-    ..strokeWidth = 2;
+  final Paint _spritePaint = Paint()
+    ..filterQuality = FilterQuality.none
+    ..colorFilter = const ColorFilter.mode(Palette.roxoEsc, BlendMode.modulate);
+
+  /// Carregado uma vez em [onLoad], nunca em [render] — `render` é chamado
+  /// de forma síncrona pelo motor (não é aguardado), então um `await
+  /// Sprite.load(...)` ali dentro desenha no canvas de um frame que já
+  /// terminou, e o ícone nunca aparece de forma confiável. Mesmo padrão de
+  /// `CompanionPortraitIndicator`.
+  Sprite? _sprite;
 
   CaptureButton({
     required double radius,
@@ -36,6 +42,12 @@ class CaptureButton extends PositionComponent
     EdgeInsets? margin,
   }) : super(size: Vector2.all(radius * 2)) {
     this.margin = margin;
+  }
+
+  @override
+  Future<void> onLoad() async {
+    super.onLoad();
+    _sprite = await Sprite.load('ui/laco.png');
   }
 
   /// Área de toque circular, igual ao círculo desenhado — mesmo motivo do
@@ -83,8 +95,18 @@ class CaptureButton extends PositionComponent
   void render(Canvas canvas) {
     final center = Offset(size.x / 2, size.y / 2);
     final radius = size.x / 2;
+    final iconSize = Vector2.all(size.x * 0.6);
 
     canvas.drawCircle(center, radius, _pressed ? _pressedColor : _baseColor);
-    canvas.drawCircle(center, radius * 0.45, _glifo);
+
+    final sprite = _sprite;
+    if (sprite != null) {
+      sprite.render(
+        canvas,
+        position: (size - iconSize) / 2,
+        size: iconSize,
+        overridePaint: _spritePaint,
+      );
+    }
   }
 }

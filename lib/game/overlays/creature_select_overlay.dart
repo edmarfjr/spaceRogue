@@ -66,7 +66,11 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
               padding: EdgeInsets.only(top: 16, bottom: 8),
               child: Text(
                 'ESCOLHA SUA CRIATURA',
-                style: TextStyle(color: Palette.preto, fontSize: 24, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: Palette.preto,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             Expanded(
@@ -79,7 +83,8 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
                       width: 160,
                       child: _CreatureList(
                         selected: _selected,
-                        onSelect: (creature) => setState(() => _selected = creature),
+                        onSelect: (creature) =>
+                            setState(() => _selected = creature),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -222,13 +227,23 @@ class _CreatureDetailPanel extends StatelessWidget {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(0),
                               border: Border(
-                                right: BorderSide(color: Palette.preto, width: 2),
-                                bottom: BorderSide(color: Palette.preto, width: 2),
+                                right: BorderSide(
+                                  color: Palette.preto,
+                                  width: 2,
+                                ),
+                                bottom: BorderSide(
+                                  color: Palette.preto,
+                                  width: 2,
+                                ),
                               ),
                             ),
                             child: Text(
                               '${creature.nome} \n Tipo: ${CreatureSelectOverlay.typeLabel(creature.tipo)} ',
-                              style: const TextStyle(color: Palette.preto, fontSize: 22, fontWeight: FontWeight.bold),
+                              style: const TextStyle(
+                                color: Palette.preto,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ],
@@ -252,10 +267,19 @@ class _CreatureDetailPanel extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              _StatLine('SAÚDE', creature.stats.maxHp.toString()),
-                              _StatLine('VELOCIDADE', creature.stats.speed.toInt().toString()),
-                              _StatLine('ATAQUE', creature.stats.ataque.toInt().toString()),
-                             // _StatLine('DEFESA', creature.stats.defesa.toInt().toString()),
+                              _StatLine(
+                                'SAÚDE',
+                                creature.stats.maxHp.toString(),
+                              ),
+                              _StatLine(
+                                'VELOCIDADE',
+                                creature.stats.speed.toInt().toString(),
+                              ),
+                              _StatLine(
+                                'ATAQUE',
+                                creature.stats.ataque.toInt().toString(),
+                              ),
+                              // _StatLine('DEFESA', creature.stats.defesa.toInt().toString()),
                             ],
                           ),
                         ),
@@ -266,33 +290,98 @@ class _CreatureDetailPanel extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(0),
-                                border: Border(
-                                  right: BorderSide(color: Palette.preto, width: 2),
-                                  bottom: BorderSide(color: Palette.preto, width: 2),
+                            // Nome+descrição da habilidade e da passiva
+                            // podem passar da altura disponível em
+                            // landscape de celular — mesma faixa estreita
+                            // que já causou "BOTTOM OVERFLOWED" com só 4
+                            // linhas de stat (ver _StatLine). `Expanded` +
+                            // `SingleChildScrollView` rola em vez de
+                            // estourar; sem efeito quando o texto cabe.
+                            Expanded(
+                              child: SingleChildScrollView(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(0),
+                                    border: Border(
+                                      right: BorderSide(
+                                        color: Palette.preto,
+                                        width: 2,
+                                      ),
+                                      bottom: BorderSide(
+                                        color: Palette.preto,
+                                        width: 2,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Habilidade:',
+                                        style: const TextStyle(
+                                          color: Palette.preto,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        creature.ability1.nome,
+                                        style: const TextStyle(
+                                          color: Palette.preto,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      if (creature
+                                          .ability1
+                                          .descricao
+                                          .isNotEmpty) ...[
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          creature.ability1.descricao,
+                                          style: const TextStyle(
+                                            color: Palette.preto,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Passiva:',
+                                        style: const TextStyle(
+                                          color: Palette.preto,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        creature.passive.nome,
+                                        style: const TextStyle(
+                                          color: Palette.preto,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      if (creature
+                                          .passive
+                                          .descricao
+                                          .isNotEmpty) ...[
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          creature.passive.descricao,
+                                          style: const TextStyle(
+                                            color: Palette.preto,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Habilidades:',
-                                    style: const TextStyle(color: Palette.preto, fontSize: 22, fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    creature.ability1.nome,
-                                    style: const TextStyle(color: Palette.preto, fontSize: 15, fontWeight: FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    creature.ability2.nome,
-                                    style: const TextStyle(color: Palette.preto, fontSize: 15, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
                               ),
                             ),
                           ],
@@ -319,9 +408,16 @@ class _CreatureDetailPanel extends StatelessWidget {
                 side: BorderSide(color: Palette.preto, width: 2),
               ),
             ),
-            child: const Text('JOGAR', style: TextStyle(color: Palette.preto, fontSize: 16, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'JOGAR',
+              style: TextStyle(
+                color: Palette.preto,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
-                  ),
+        ),
       ],
     );
   }
@@ -348,14 +444,22 @@ class _StatLine extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(color: Palette.preto, fontSize: 11, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                color: Palette.preto,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: 8),
           Text(
             value,
-            style: const TextStyle(color: Palette.preto, fontSize: 17, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Palette.preto,
+              fontSize: 17,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
@@ -372,7 +476,12 @@ class CreatureSprite extends StatelessWidget {
   final double size;
   final bool tudoPreto;
 
-  const CreatureSprite({super.key, required this.creature, required this.size, this.tudoPreto = false});
+  const CreatureSprite({
+    super.key,
+    required this.creature,
+    required this.size,
+    this.tudoPreto = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -384,14 +493,19 @@ class CreatureSprite extends StatelessWidget {
         // o jogo usa, sem reprocessar a cada rebuild.
         future: PaletteSwapper.createSwappedImage(
           imagePath: creature.spritePath,
-          lightGrayReplacement:tudoPreto? Palette.preto : creature.corClara,
-          darkGrayReplacement:tudoPreto? Palette.preto : creature.corEscura,
-          whiteReplacement:tudoPreto? Palette.preto : Palette.branco, 
+          lightGrayReplacement: tudoPreto ? Palette.preto : creature.corClara,
+          darkGrayReplacement: tudoPreto ? Palette.preto : creature.corEscura,
+          whiteReplacement: tudoPreto ? Palette.preto : Palette.branco,
         ),
         builder: (context, snapshot) {
           final image = snapshot.data;
           if (image == null) {
-            return const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black45));
+            return const Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.black45,
+              ),
+            );
           }
           return RawImage(
             image: image,

@@ -12,7 +12,7 @@ class Mordida extends Ability {
   final double empurrao;
 
   const Mordida({this.coef = 1.1, this.alcance = 10, this.empurrao = 60})
-      : super(nome: 'Mordida', cooldown: 1.3);
+      : super(nome: 'Mordida', descricao: 'Mordida curta e pesada com empurrão forte.', cooldown: 1.3);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

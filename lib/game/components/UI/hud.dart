@@ -145,12 +145,13 @@ class Hud extends PositionComponent with HasGameRef {
       // pra desenhar seria pior: o círculo sumiria e voltaria toda hora.
       // Só ability1: a criatura tem uma habilidade ativa só agora (pedido
       // do usuário) — o indicador de ability2 saiu.
-      AbilityCooldownIndicator(
+      /*AbilityCooldownIndicator(
         tipo: () => companionOf()?.creatureData.ability1.tipo ?? AbilityTipo.ataque,
         cooldownFraction: () => companionOf()?.ability1CooldownFraction ?? 0.0,
         lado: _iconeCooldownLado,
         position: Vector2(0, 6),
       ),
+      */
       // Três retratos, um por slot do grupo (PIVOT_TREINADOR.md, fase 5b) —
       // mesmo cinza que o indicador de cooldown usa, agora mostrando quanto
       // falta curar no bolso, mais o destaque de quem é a ativa (ver
@@ -166,7 +167,7 @@ class Hud extends PositionComponent with HasGameRef {
           isAtiva: () => isCompanionAtivo(slot),
           onTap: () => onTapCompanionSlot(slot),
           lado: _iconeCooldownLado,
-          position: Vector2((_iconeCooldownLado + 2) * (1 + slot), 6),
+          position: Vector2((_iconeCooldownLado + 2) * (slot), 6),
         ),
     ]);
 

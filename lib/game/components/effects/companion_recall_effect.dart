@@ -26,7 +26,8 @@ class CompanionRecallEffect extends PositionComponent {
   double _tempo = 0.0;
   late final Vector2 _origem;
 
-  final Paint _paint = Paint()..color = Palette.vermelho;
+  final Paint _paint = Paint()..color = Palette.vermelho..style = PaintingStyle.stroke..strokeWidth = 1;
+  final Paint _paintBorda = Paint()..color = Palette.preto..style = PaintingStyle.stroke..strokeWidth = 1;
 
   CompanionRecallEffect({
     required Vector2 position,
@@ -71,5 +72,7 @@ class CompanionRecallEffect extends PositionComponent {
     }
     if (raio <= 0) return;
     canvas.drawCircle(Offset.zero, raio, _paint);
+    canvas.drawCircle(Offset.zero, raio-1, _paintBorda);
+    canvas.drawCircle(Offset.zero, raio+1, _paintBorda);
   }
 }

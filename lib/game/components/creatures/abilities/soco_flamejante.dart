@@ -13,7 +13,7 @@ class SocoFlamejante extends Ability {
   final double alcanceSegundos;
 
   const SocoFlamejante({this.coef = 1.0, this.velocidade = 260, this.alcanceSegundos = 0.15})
-      : super(nome: 'Soco Flamejante', cooldown: 0.4);
+      : super(nome: 'Soco Flamejante', descricao: 'Cooldown baixo, dano alto, alcance curto.', cooldown: 0.4);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

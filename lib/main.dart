@@ -9,6 +9,7 @@ import 'package:creatures_rogue/game/overlays/boss_reveal_overlay.dart';
 import 'package:creatures_rogue/game/overlays/console_overlay.dart';
 import 'package:creatures_rogue/game/overlays/creature_select_overlay.dart';
 import 'package:creatures_rogue/game/overlays/game_over_overlay.dart';
+import 'package:creatures_rogue/game/overlays/intro_overlay.dart';
 import 'package:creatures_rogue/game/overlays/main_menu_overlay.dart';
 import 'package:creatures_rogue/game/overlays/pause_overlay.dart';
 import 'package:creatures_rogue/game/overlays/settings_overlay.dart';
@@ -58,6 +59,7 @@ void main() async {
           overlayBuilderMap: {
             'MainMenu': (context, game) => MainMenuOverlay(game: game),
             'Settings': (context, game) => SettingsOverlay(game: game),
+            'Intro': (context, game) => IntroOverlay(game: game),
             'CreatureSelect': (context, game) => CreatureSelectOverlay(game: game),
             'BossReveal': (context, game) => BossRevealOverlay(game: game),
             'PauseMenu': (context, game) => PauseMenuOverlay(game: game),

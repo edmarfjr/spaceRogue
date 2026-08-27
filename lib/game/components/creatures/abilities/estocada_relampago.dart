@@ -12,7 +12,7 @@ class EstocadaRelampago extends Ability {
   final int atravessa;
 
   const EstocadaRelampago({this.coef = 0.9, this.velocidade = 160, this.atravessa = 3})
-      : super(nome: 'Estocada Relâmpago', cooldown: 1.4);
+      : super(nome: 'Estocada Relâmpago', descricao: 'Lança fina e rápida que atravessa até 3 alvos numa linha.', cooldown: 1.4);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

@@ -6,6 +6,7 @@ import '../player/player.dart';
 import 'ability.dart';
 import 'base_stats.dart';
 import 'creature_type.dart';
+import 'passive.dart';
 
 typedef EnemyBuilder = Enemy Function(Vector2 position, Player playerTarget);
 
@@ -25,7 +26,18 @@ class CreatureData {
   final Color corEscura;
   final BaseStats stats;
   final Ability ability1;
+
+  /// Habilidade B original — sem execução própria desde que o companion
+  /// passou a disparar só `ability1` autonomamente (ver PIVOT_TREINADOR.md).
+  /// Mantida no dado: guarda a intenção original de cada criatura, e é a
+  /// referência que cada `Passive` correspondente porta pra baixo (ver
+  /// `creatures/passives/`).
   final Ability ability2;
+
+  /// Habilidade passiva desta criatura (substitui `ability2` como algo que
+  /// de fato acontece) — vale enquanto ela estiver no grupo do treinador,
+  /// capturada ou não, no bolso ou fora dele. Ver `Passive`.
+  final Passive passive;
 
   /// Estilo de animação do sprite enquanto anda (ver MovementAnimator).
   final MovementAnimation moveAnim;
@@ -54,6 +66,7 @@ class CreatureData {
     required this.stats,
     required this.ability1,
     required this.ability2,
+    required this.passive,
     required this.moveAnim,
     required this.hitboxSize,
     this.enemyBuilder,
