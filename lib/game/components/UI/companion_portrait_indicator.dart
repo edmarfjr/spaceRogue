@@ -9,11 +9,11 @@ import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 
 /// Retrato de UM slot do grupo (0/1/2 — PIVOT_TREINADOR.md, fase 5b) na Hud —
 /// sprite da criatura daquele slot, com o mesmo indicador cinza de cooldown
-/// que `AbilityCooldownIndicator` usa, mostrando quanto falta pro companion
-/// voltar de um desmaio (ver `CreaturesRogueGame.companionReviveDuration`).
-/// Existe mesmo com o companion morto — é o único lugar que mostra status
-/// dele nesse intervalo, já que o componente em si some do mundo enquanto o
-/// timer conta.
+/// que `AbilityCooldownIndicator` usa, agora mostrando quanto falta curar no
+/// bolso do treinador (ver `CreaturesRogueGame.companionPocketFraction`).
+/// Existe mesmo com o companion recolhido — é o único lugar que mostra
+/// status dele nesse intervalo, já que o componente em si some do mundo
+/// enquanto cura.
 ///
 /// `creatureData` é uma função, não um valor fixo: os slots 1 e 2 nascem
 /// vazios (`null`) e só ganham criatura quando a fase 6 (captura) existir —
@@ -28,12 +28,12 @@ import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 class CompanionPortraitIndicator extends PositionComponent with TapCallbacks {
   final CreatureData? Function() creatureData;
 
-  /// 0 = companion vivo (ou pronto de novo), 1 = acabou de desmaiar. Mesma
-  /// convenção de `AbilityCooldownIndicator.cooldownFraction`.
-  final double Function() reviveFraction;
+  /// 0 = fora lutando (ou vida cheia no bolso), 1 = acabou de recolher com a
+  /// vida zerada. Mesma convenção de `AbilityCooldownIndicator.cooldownFraction`.
+  final double Function() pocketFraction;
 
   /// Postura atual, lida a cada frame — `null` com o slot vazio ou o
-  /// companion desmaiado (nada pra ciclar).
+  /// companion recolhido (nada pra ciclar).
   final CompanionPostura? Function() posturaAtual;
 
   /// Se este é o slot que recebe o override dos botões agora — desenha um
@@ -63,7 +63,7 @@ class CompanionPortraitIndicator extends PositionComponent with TapCallbacks {
 
   CompanionPortraitIndicator({
     required this.creatureData,
-    required this.reviveFraction,
+    required this.pocketFraction,
     required this.posturaAtual,
     required this.isAtiva,
     required this.onTap,
@@ -115,7 +115,7 @@ class CompanionPortraitIndicator extends PositionComponent with TapCallbacks {
 
     canvas.drawRect(quadro, isAtiva() ? _bordaAtiva : _bordaInativa);
 
-    final fraction = reviveFraction().clamp(0.0, 1.0);
+    final fraction = pocketFraction().clamp(0.0, 1.0);
     if (fraction > 0) {
       canvas.drawRect(
         Rect.fromLTWH(0, size.y * (1 - fraction), size.x, size.y * fraction),

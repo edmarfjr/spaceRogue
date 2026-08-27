@@ -96,26 +96,12 @@ class Companion extends PositionComponent
   }
 
   Vector2 _lockedAb1Direction = Vector2(0, 1);
-  Vector2 _lockedAb2Direction = Vector2(0, 1);
 
   double _cooldown1 = 0.0;
-  double _cooldown2 = 0.0;
   double _cooldownMax1 = 1.0;
-  double _cooldownMax2 = 1.0;
 
-  /// Override do treinador (ver PIVOT_TREINADOR.md §2.1) — segurando o
-  /// botão/tecla, a habilidade dispara assim que o cooldown zerar, igual ao
-  /// antigo hold-to-fire do `Player`. É o ÚNICO jeito de disparar uma
-  /// habilidade `defesa`/`esquiva`: essas nunca disparam sozinhas (ver
-  /// [_tryFire]) — sem alvo em vista não há "perigo" pra IA reagir, e uma
-  /// defesa em cooldown fixo sem gatilho de perigo é só ruído.
-  bool touchHoldAbility1 = false;
-  bool touchHoldAbility2 = false;
-
-  /// Fração restante de cooldown de cada botão (0 = pronto) — mesmo
-  /// propósito que tinha em `Player`, agora lido pela Hud a partir daqui.
+  /// Fração restante de cooldown (0 = pronto) — lido pela Hud.
   double get ability1CooldownFraction => (_cooldown1 / _cooldownMax1).clamp(0.0, 1.0);
-  double get ability2CooldownFraction => (_cooldown2 / _cooldownMax2).clamp(0.0, 1.0);
 
   // --- Indicador de vida/escudo acima do sprite ---
   // O treinador não tem HP visível de criatura nenhuma na Hud (só o dele
@@ -272,8 +258,13 @@ class Companion extends PositionComponent
   // --- AbilityUser ---
   @override
   Vector2 get lockedAb1Direction => _lockedAb1Direction;
+
+  /// A criatura só tem uma habilidade ativa agora (PIVOT_TREINADOR.md, pedido
+  /// do usuário) — `ability2` continua nos dados de `CreatureData`, só
+  /// ninguém aqui a executa. O getter existe só pra satisfazer o contrato de
+  /// `AbilityUser`; valor neutro, nunca lido de verdade.
   @override
-  Vector2 get lockedAb2Direction => _lockedAb2Direction;
+  Vector2 get lockedAb2Direction => _lockedAb1Direction;
 
   /// Bombas são recurso do treinador, não do companion (PIVOT_TREINADOR.md
   /// §3.2) — delega direto.
@@ -336,7 +327,7 @@ class Companion extends PositionComponent
     }
 */
     currentHealth -= amountFinal;
-    if (currentHealth <= 0) _faint();
+    if (currentHealth <= 0) _pocketarPorMorte();
   }
 
   @override
@@ -357,28 +348,18 @@ class Companion extends PositionComponent
     knockbackVelocity = direction.normalized() * force;
   }
 
-  /// Desmaiado, o companion some da run por um tempo — não até a sala ser
-  /// limpa (a ideia original de PIVOT_TREINADOR.md §2.3), decisão trocada
-  /// pós-playtest: esperar o resto do combate sem poder fazer nada com a
-  /// criatura era frustrante. `CreaturesRogueGame.scheduleCompanionRevive`
-  /// arma o timer do slot; o `update` do jogo é quem recria a criatura ao
-  /// zerar.
-  ///
-  /// Precisa zerar a referência em `CreaturesRogueGame.companions[slot]`: sem
-  /// isso, Hud e os botões continuam lendo cooldown de um componente morto
-  /// (cujo `update` nunca mais roda) e escrevendo override que nunca chega a
-  /// lugar nenhum. `indexOf` funciona porque `Companion` não sobrescreve
-  /// `==` — é comparação de identidade, a mesma que `identical()` fazia.
-  void _faint() {
+  /// HP zerado em combate recolhe pro bolso — substitui o desmaio+timer fixo
+  /// de antes (pedido do usuário, ver checklist do PIVOT_TREINADOR.md).
+  /// Delega tudo (salvar vida, efeito de recall, remoção do mundo) pra
+  /// `CreaturesRogueGame.pocketarSlot`, a mesma rotina que a ação em massa de
+  /// recolher/liberar usa — os dois motivos de recolher (morte em combate,
+  /// botão do jogador) viram exatamente o mesmo estado. `indexOf` funciona
+  /// porque `Companion` não sobrescreve `==` — é comparação de identidade.
+  void _pocketarPorMorte() {
     final jogo = game;
-    if (jogo is CreaturesRogueGame) {
-      final slot = jogo.companions.indexOf(this);
-      if (slot != -1) {
-        jogo.companions[slot] = null;
-        jogo.scheduleCompanionRevive(slot);
-      }
-    }
-    removeFromParent();
+    if (jogo is! CreaturesRogueGame) return;
+    final slot = jogo.companions.indexOf(this);
+    if (slot != -1) jogo.pocketarSlot(slot);
   }
 
   @override
@@ -388,7 +369,6 @@ class Companion extends PositionComponent
 
     if (_invulnerabilityTimer > 0) _invulnerabilityTimer -= dt;
     if (_cooldown1 > 0) _cooldown1 -= dt;
-    if (_cooldown2 > 0) _cooldown2 -= dt;
     if (_lentidaoTimer > 0) {
       _lentidaoTimer -= dt;
       if (_lentidaoTimer <= 0) lentidaoFator = 1.0;
@@ -442,73 +422,29 @@ class Companion extends PositionComponent
     return nearest;
   }
 
+  /// Única habilidade ativa da criatura (PIVOT_TREINADOR.md, pedido do
+  /// usuário) — sempre `ataque`, sempre autônoma: dispara sozinha contra o
+  /// hostil mais próximo, sem override nenhum de botão/tecla. `ability2`
+  /// continua nos dados de `CreatureData`, só não é chamada por ninguém aqui.
   void _updateAimAndFire() {
     final target = _nearestEnemy();
 
-    Vector2 aimAt(Vector2 fallback) {
-      if (target == null) return fallback;
-      final delta = target.absolutePosition - absolutePosition;
-      if (delta.length == 0) return fallback;
-      return delta.normalized();
-    }
-
     if (creatureData.ability1.target == AbilityTarget.enemyDir) {
-      _lockedAb1Direction = aimAt(_lockedAb1Direction);
+      if (target != null) {
+        final delta = target.absolutePosition - absolutePosition;
+        if (delta.length != 0) _lockedAb1Direction = delta.normalized();
+      }
     } else if (creatureData.ability1.target == AbilityTarget.plrDir) {
       _lockedAb1Direction = (_visual.isFlippedHorizontally ? Vector2(-1, 0) : Vector2(1, 0));
     }
 
-    if (creatureData.ability2.target == AbilityTarget.enemyDir) {
-      _lockedAb2Direction = aimAt(_lockedAb2Direction);
-    } else if (creatureData.ability2.target == AbilityTarget.plrDir) {
-      _lockedAb2Direction = (_visual.isFlippedHorizontally ? Vector2(-1, 0) : Vector2(1, 0));
-    }
+    if (_cooldown1 > 0) return;
+    if (target == null) return; // sem hostil à vista, nada pra atirar
+    if (!creatureData.ability1.canExecute(this)) return;
 
-    final hostilAvista = target != null;
-    _tryFire(
-      ability: creatureData.ability1,
-      dir: _lockedAb1Direction,
-      hostilAvista: hostilAvista,
-      overridePressed: touchHoldAbility1,
-      cooldownAtual: _cooldown1,
-      setCooldown: (v) => _cooldown1 = v,
-      setCooldownMax: (v) => _cooldownMax1 = v,
-    );
-    _tryFire(
-      ability: creatureData.ability2,
-      dir: _lockedAb2Direction,
-      hostilAvista: hostilAvista,
-      overridePressed: touchHoldAbility2,
-      cooldownAtual: _cooldown2,
-      setCooldown: (v) => _cooldown2 = v,
-      setCooldownMax: (v) => _cooldownMax2 = v,
-    );
-  }
-
-  /// Regra da natureza guarda: `ataque` dispara sozinho contra o hostil mais
-  /// próximo; `defesa`/`esquiva` só disparam por override do treinador — ver
-  /// [touchHoldAbility1]/[touchHoldAbility2]. Segurar o botão também force-
-  /// dispara `ataque`, o que é inofensivo (o jogador só está confirmando o
-  /// que a IA já faria).
-  void _tryFire({
-    required Ability ability,
-    required Vector2 dir,
-    required bool hostilAvista,
-    required bool overridePressed,
-    required double cooldownAtual,
-    required void Function(double) setCooldown,
-    required void Function(double) setCooldownMax,
-  }) {
-    if (cooldownAtual > 0) return;
-    if (!ability.canExecute(this)) return;
-
-    final autoDispara = ability.tipo == AbilityTipo.ataque && hostilAvista;
-    if (!autoDispara && !overridePressed) return;
-
-    ability.execute(this, dir);
-    final max = ability.cooldown * cdMult;
-    setCooldownMax(max);
-    setCooldown(max);
+    creatureData.ability1.execute(this, _lockedAb1Direction);
+    _cooldownMax1 = creatureData.ability1.cooldown * cdMult;
+    _cooldown1 = _cooldownMax1;
   }
 
   void _updateMovement(double dt) {

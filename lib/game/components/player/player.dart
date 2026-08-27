@@ -822,16 +822,10 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     if (keysPressed.contains(LogicalKeyboardKey.arrowUp)) _keyboardMove.y -= 1;
     if (keysPressed.contains(LogicalKeyboardKey.arrowDown)) _keyboardMove.y += 1;
 
-    // Z/X seguem existindo, mas agora são override do Companion ativo (ver
-    // PIVOT_TREINADOR.md §2.1) — o treinador não executa habilidade nenhuma.
     final jogoAtual = game;
-    if (jogoAtual is CreaturesRogueGame) {
-      jogoAtual.companion?.touchHoldAbility1 = keysPressed.contains(LogicalKeyboardKey.keyZ);
-      jogoAtual.companion?.touchHoldAbility2 = keysPressed.contains(LogicalKeyboardKey.keyX);
-    }
 
     // Tecla C = captura, pra testar sem depender do botão — segurar
-    // inicia/mantém, soltar cancela, mesmo padrão de hold do Z/X acima.
+    // inicia/mantém, soltar cancela.
     if (keysPressed.contains(LogicalKeyboardKey.keyC)) {
       startCapture();
     } else {
@@ -846,6 +840,11 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       if (event.logicalKey == LogicalKeyboardKey.digit2) useSlot(1);
       // Ação pessoal do treinador — a resposta ao playtest da fase 3.
       if (event.logicalKey == LogicalKeyboardKey.space) dodge();
+      // Recolher/liberar o grupo, pra testar sem depender do botão — troca
+      // de estado, então KeyDown (uma vez por aperto), não hold como C.
+      if (event.logicalKey == LogicalKeyboardKey.keyX && jogoAtual is CreaturesRogueGame) {
+        jogoAtual.alternarRecuoGrupo();
+      }
     }
 
     return super.onKeyEvent(event, keysPressed);

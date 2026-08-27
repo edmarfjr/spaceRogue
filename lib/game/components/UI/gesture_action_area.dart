@@ -1,113 +1,136 @@
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
+import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:creatures_rogue/game/components/UI/consumable_slot_button.dart';
 
-/// Esquema de controle alternativo aos botões A/B: uma área invisível (na
-/// prática, a metade direita da tela) onde o TIPO do gesto escolhe a
-/// habilidade, em vez da posição do dedo.
+/// Esquema de controle alternativo aos três botões — uma área invisível (na
+/// prática, a metade direita da tela) onde o TIPO do gesto escolhe a ação:
 ///
-/// - Toque parado (e mantido) dispara [onTapHoldChanged] — o antigo botão A.
-/// - Arrastar o dedo dispara [onDragHoldChanged] — o antigo botão B.
+/// - Toque parado (e mantido) dispara [onCaptureHoldChanged] — o laço de
+///   captura (PIVOT_TREINADOR.md §4.1), que precisa de um hold contínuo
+///   enquanto o jogador anda a volta com o outro polegar no joystick.
+/// - Arrastar o dedo pra CIMA dispara [onDodge] — uma vez só, a esquiva
+///   pessoal do treinador.
+/// - Arrastar o dedo pra BAIXO dispara [onRecallToggle] — uma vez só,
+///   recolher/liberar o grupo.
+/// - Arrastar na diagonal ou de lado não faz nada: sem eixo dominante claro,
+///   melhor não adivinhar do que disparar a ação errada.
 ///
-/// A separação entre os dois sai de graça do próprio Flutter: o
+/// A separação toque-parado/arraste sai de graça do próprio Flutter: o
 /// `ImmediateMultiDragGestureRecognizer` só promove um toque a arraste depois
 /// que o dedo anda mais que `kTouchSlop` (~18px). Até lá o gesto é um tap; a
-/// partir dali o tap é cancelado e o arraste assume. Ou seja, "parado" e
+/// partir dali o tap é cancelado e o arraste assume — então "parado" e
 /// "arrastando" já são estados mutuamente exclusivos decididos pela arena de
-/// gestos — não precisa de limiar próprio.
+/// gestos, sem precisar de limiar próprio pra essa parte.
 ///
-/// Uma vez que o gesto virou arraste ele NÃO volta a ser toque parado: parar o
-/// dedo no meio do caminho mantém a habilidade 2. O gesto só acaba quando o
-/// dedo sai da tela.
+/// A classificação de DIREÇÃO do arraste (cima/baixo) é nossa: acumula o
+/// deslocamento total desde o início do arraste, e assim que ultrapassa
+/// [_limiarDirecao] classifica pelo eixo dominante NAQUELE instante e
+/// dispara uma vez — o gesto não reavalia depois disso até o dedo soltar e
+/// um toque novo começar. Reavaliar continuamente deixaria um arraste que
+/// começa ambíguo (diagonal) e endireita depois disparar tarde, ou pior,
+/// disparar de novo se o dedo mudar de direção no meio do caminho.
 ///
-/// O estado é por ponteiro, não global: dois dedos na metade direita são
-/// independentes, e soltar um não cancela o gesto do outro.
+/// O estado é por ponteiro, não global: dois dedos na metade direita agem
+/// independentes.
 class GestureActionArea extends PositionComponent
     with TapCallbacks, DragCallbacks {
-  /// Chamado quando o conjunto de toques parados passa de vazio pra não-vazio
-  /// e vice-versa.
-  final void Function(bool active) onTapHoldChanged;
+  final void Function(bool active) onCaptureHoldChanged;
+  final VoidCallback onDodge;
+  final VoidCallback onRecallToggle;
 
-  /// Mesma ideia, para os arrastes.
-  final void Function(bool active) onDragHoldChanged;
+  static const double _limiarDirecao = 20.0;
 
-  final Set<int> _tapPointers = {};
-  final Set<int> _dragPointers = {};
+  final Set<int> _holdPointers = {};
+  bool _holdActive = false;
 
-  bool _tapActive = false;
-  bool _dragActive = false;
+  final Map<int, Vector2> _arrasteAcumulado = {};
+  final Set<int> _classificados = {};
 
   GestureActionArea({
-    required this.onTapHoldChanged,
-    required this.onDragHoldChanged,
+    required this.onCaptureHoldChanged,
+    required this.onDodge,
+    required this.onRecallToggle,
     super.priority,
   });
 
   @override
   void onGameResize(Vector2 canvasSize) {
     super.onGameResize(canvasSize);
-    // Metade direita da tela. Acompanha o tamanho real pra não ficar torta ao
-    // girar o aparelho ou redimensionar a janela — mesma razão do
-    // DynamicJoystickComponent, que cobre a metade esquerda.
-    //
-    // Como no joystick, a faixa do topo fica de fora: sem isso um toque num
-    // slot do inventário também dispararia a habilidade 1, ou seja, usar uma
-    // poção gastaria a habilidade no mesmo toque.
+    // Metade direita da tela, abaixo da faixa reservada do topo — mesma
+    // razão do DynamicJoystickComponent (metade esquerda) e do
+    // `ConsumableSlotButton.alturaFaixa`: sem essa exclusão, um toque num
+    // slot de inventário também cairia aqui.
     size = Vector2(canvasSize.x / 2, canvasSize.y - ConsumableSlotButton.alturaFaixa);
     position = Vector2(canvasSize.x / 2, ConsumableSlotButton.alturaFaixa);
   }
 
   @override
   void onTapDown(TapDownEvent event) {
-    _tapPointers.add(event.pointerId);
-    _notify();
+    _holdPointers.add(event.pointerId);
+    _arrasteAcumulado[event.pointerId] = Vector2.zero();
+    _atualizarHold();
   }
 
   @override
-  void onTapUp(TapUpEvent event) => _releaseTap(event.pointerId);
+  void onTapUp(TapUpEvent event) => _soltarPonteiro(event.pointerId);
 
   @override
-  void onTapCancel(TapCancelEvent event) => _releaseTap(event.pointerId);
+  void onTapCancel(TapCancelEvent event) => _soltarPonteiro(event.pointerId);
 
   @override
   void onDragStart(DragStartEvent event) {
     super.onDragStart(event);
-    // O tap deste mesmo dedo está sendo cancelado pela arena de gestos neste
-    // instante, mas a ordem das duas notificações não é garantida — então é o
-    // próprio onDragStart que tira o ponteiro do conjunto de toques. É o ÚNICO
-    // lugar que muda o canal do gesto, e por isso os métodos de fim de gesto
-    // abaixo mexem só no canal deles: se `onTapCancel` também limpasse o
-    // arraste, um cancelamento que chegasse depois do onDragStart derrubaria a
-    // habilidade 2 no mesmo frame em que ela começou.
-    _tapPointers.remove(event.pointerId);
-    _dragPointers.add(event.pointerId);
-    _notify();
+    // O toque parado deste dedo virou arraste — sai do canal de hold (a
+    // arena de gestos já decidiu que isto não é mais um toque parado).
+    _holdPointers.remove(event.pointerId);
+    _atualizarHold();
+    _arrasteAcumulado[event.pointerId] = Vector2.zero();
+  }
+
+  @override
+  void onDragUpdate(DragUpdateEvent event) {
+    super.onDragUpdate(event);
+    final id = event.pointerId;
+    if (_classificados.contains(id)) return;
+
+    final acumulado = _arrasteAcumulado[id];
+    if (acumulado == null) return;
+    acumulado.add(event.localDelta);
+
+    if (acumulado.length < _limiarDirecao) return;
+
+    _classificados.add(id);
+    if (acumulado.y.abs() <= acumulado.x.abs()) return; // lateral/diagonal: sem ação
+
+    if (acumulado.y < 0) {
+      onDodge();
+    } else {
+      onRecallToggle();
+    }
   }
 
   @override
   void onDragEnd(DragEndEvent event) {
     super.onDragEnd(event);
-    _releaseDrag(event.pointerId);
+    _limparPonteiro(event.pointerId);
   }
 
-  void _releaseTap(int pointerId) {
-    if (_tapPointers.remove(pointerId)) _notify();
+  void _soltarPonteiro(int pointerId) {
+    _holdPointers.remove(pointerId);
+    _atualizarHold();
+    _limparPonteiro(pointerId);
   }
 
-  void _releaseDrag(int pointerId) {
-    if (_dragPointers.remove(pointerId)) _notify();
+  void _limparPonteiro(int pointerId) {
+    _arrasteAcumulado.remove(pointerId);
+    _classificados.remove(pointerId);
   }
 
-  void _notify() {
-    final tap = _tapPointers.isNotEmpty;
-    final drag = _dragPointers.isNotEmpty;
-    if (tap != _tapActive) {
-      _tapActive = tap;
-      onTapHoldChanged(tap);
-    }
-    if (drag != _dragActive) {
-      _dragActive = drag;
-      onDragHoldChanged(drag);
-    }
+  void _atualizarHold() {
+    final ativo = _holdPointers.isNotEmpty;
+    if (ativo == _holdActive) return;
+    _holdActive = ativo;
+    onCaptureHoldChanged(ativo);
   }
 }

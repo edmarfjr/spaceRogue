@@ -26,9 +26,9 @@ class Hud extends PositionComponent with HasGameRef {
   /// fase 6, captura, existir de verdade). Ver `CompanionPortraitIndicator`.
   final CreatureData? Function(int slot) companionCreatureAt;
 
-  /// 0 = companion vivo, 1 = acabou de desmaiar — ver
-  /// `CreaturesRogueGame.companionReviveFraction`.
-  final double Function(int slot) companionReviveFractionAt;
+  /// 0 = fora lutando (ou vida cheia no bolso), 1 = acabou de recolher com a
+  /// vida zerada — ver `CreaturesRogueGame.companionPocketFraction`.
+  final double Function(int slot) companionPocketFractionAt;
 
   /// Postura de cada slot — ver PIVOT_TREINADOR.md §2.1.1.
   final CompanionPostura? Function(int slot) companionPosturaAt;
@@ -89,7 +89,7 @@ class Hud extends PositionComponent with HasGameRef {
     required this.player,
     required this.companionOf,
     required this.companionCreatureAt,
-    required this.companionReviveFractionAt,
+    required this.companionPocketFractionAt,
     required this.companionPosturaAt,
     required this.isCompanionAtivo,
     required this.onTapCompanionSlot,
@@ -139,37 +139,34 @@ class Hud extends PositionComponent with HasGameRef {
     // como filhos e não dentro do render() da Hud pra cada um cuidar do seu
     // próprio sprite e do seu carregamento assíncrono.
     await addAll([
-      // Lêem o Companion ativo, não o treinador — os botões são override dele
-      // (ver PIVOT_TREINADOR.md §2.1). Sem companion (desmaiado, ou ainda não
-      // invocado), mostram cooldown zerado parado — sem indicador nenhum pra
-      // desenhar seria pior: os dois círculos sumiriam e voltariam toda hora.
+      // Lê o Companion ativo, não o treinador — os botões são override dele
+      // (ver PIVOT_TREINADOR.md §2.1). Sem companion (recolhido, ou ainda
+      // não invocado), mostra cooldown zerado parado — sem indicador nenhum
+      // pra desenhar seria pior: o círculo sumiria e voltaria toda hora.
+      // Só ability1: a criatura tem uma habilidade ativa só agora (pedido
+      // do usuário) — o indicador de ability2 saiu.
       AbilityCooldownIndicator(
         tipo: () => companionOf()?.creatureData.ability1.tipo ?? AbilityTipo.ataque,
         cooldownFraction: () => companionOf()?.ability1CooldownFraction ?? 0.0,
         lado: _iconeCooldownLado,
         position: Vector2(0, 6),
       ),
-      AbilityCooldownIndicator(
-        tipo: () => companionOf()?.creatureData.ability2.tipo ?? AbilityTipo.defesa,
-        cooldownFraction: () => companionOf()?.ability2CooldownFraction ?? 0.0,
-        lado: _iconeCooldownLado,
-        position: Vector2(_iconeCooldownLado + 2,6),
-      ),
       // Três retratos, um por slot do grupo (PIVOT_TREINADOR.md, fase 5b) —
-      // mesmo cinza de cooldown pro tempo de revive, mais o destaque de quem
-      // é a ativa (ver `CompanionPortraitIndicator`). Tamanho igual pros
-      // três: a distinção "ativa em destaque" já vem dos dois indicadores de
-      // cooldown acima (só a ativa tem os deles detalhados), redesenhar
-      // tamanho por cima seria layout dinâmico sem ganho real de leitura.
+      // mesmo cinza que o indicador de cooldown usa, agora mostrando quanto
+      // falta curar no bolso, mais o destaque de quem é a ativa (ver
+      // `CompanionPortraitIndicator`). Tamanho igual pros três: a distinção
+      // "ativa em destaque" já vem do indicador de cooldown acima (só a
+      // ativa tem o dele detalhado), redesenhar tamanho por cima seria
+      // layout dinâmico sem ganho real de leitura.
       for (int slot = 0; slot < 3; slot++)
         CompanionPortraitIndicator(
           creatureData: () => companionCreatureAt(slot),
-          reviveFraction: () => companionReviveFractionAt(slot),
+          pocketFraction: () => companionPocketFractionAt(slot),
           posturaAtual: () => companionPosturaAt(slot),
           isAtiva: () => isCompanionAtivo(slot),
           onTap: () => onTapCompanionSlot(slot),
           lado: _iconeCooldownLado,
-          position: Vector2((_iconeCooldownLado + 2) * (2 + slot), 6),
+          position: Vector2((_iconeCooldownLado + 2) * (1 + slot), 6),
         ),
     ]);
 

@@ -618,6 +618,12 @@ ou a textura nasce em pleno combate.
   cai pra 2 botões (habilidade 2 + esquiva); no esquema de gestos, toque parado deixa
   de ser habilidade 1 e vira a esquiva do treinador, arrastar continua sendo
   habilidade 2
+- [x] Efeito de desmaio/revive, pedido do usuário: `CompanionRecallEffect` (círculo
+  vermelho fecha em cima da posição onde o companion desmaiou, a bolinha resultante
+  arca até o treinador — segue a posição atual dele, não onde estava no instante do
+  desmaio) tocado em `Companion._faint()`; `CompanionReviveEffect` (círculo branco
+  abrindo rápido e sumindo) tocado em `CreaturesRogueGame._reviveCompanion`. Os dois
+  puramente Canvas, sem sprite novo, mesmo espírito do `CaptureLassoVisual`
 - [x] Indicador de vida/escudo do companion, desenhado acima do sprite (dois retângulos
   no próprio `render`, sem asset novo) — antes disso o companion não tinha HP visível
   em lugar nenhum, morrer lia como aleatório
@@ -709,6 +715,50 @@ ou a textura nasce em pleno combate.
 - [ ] **Jogar de novo** — confirmar que trocar de ativa e ciclar postura no mesmo
   retrato não se confundem na prática (mesmo toque, comportamento decidido pelo estado
   atual — pode ser menos óbvio do que parece na teoria)
+- [x] **Reestruturação pedida pelo usuário, com brainstorm/arquitetura antes de codar**:
+  três mudanças de mecânica e controle, decididas via pergunta direta (não assumidas):
+  1. Criatura só tem UMA habilidade ativa agora (`ability1`, sempre `ataque`,
+     autônoma). `ability2` continua nos dados de `CreatureData` (16 criaturas), só
+     ninguém chama mais — decisão explícita de guardar o dado pra decidir depois.
+     `Companion._updateAimAndFire`/cooldown simplificados pra uma habilidade só,
+     `_tryFire` (genérico, multi-habilidade) removido.
+  2. **Recolher/liberar substitui desmaio+timer fixo inteiro** (decisão do usuário via
+     pergunta): `CreaturesRogueGame.companionPocketed` (por SLOT, não um bool global —
+     uma criatura morrendo em combate não pode arrastar as outras duas pro bolso
+     junto), `companionSavedHealth` (snapshot, já que o `Companion` some do mundo),
+     `curaBolsoFracaoPorSegundo = 0.10` (10%/s, primeiro corte). `alternarRecuoGrupo()`
+     é a ação em massa: se alguém tá fora, recolhe todo mundo fora; se todo mundo já
+     tá dentro, libera todo mundo. `pocketarSlot`/`liberarSlot` são a rotina real —
+     usada tanto pela ação em massa quanto por `Companion.takeDamage` quando a vida
+     zera (mesmo estado, dois gatilhos). `companionReviveDuration`/
+     `_companionReviveTimers`/`scheduleCompanionRevive`/`_reviveCompanion` antigos,
+     todos apagados. Retrato da Hud reaproveitado: o cinza que mostrava "tempo até
+     reviver" agora mostra "fração de vida faltando no bolso" (`companionPocketFraction`).
+  3. **Três botões**: recolher/liberar (novo `RecallButton`, TOQUE não segurar — é
+     troca de estado) + esquiva + captura, todos agora dentro de `_abilityControls`
+     (antes captura era sempre montada, fora da troca de esquema — corrigido: só faz
+     sentido no esquema de botões). Esquema de GESTOS reescrito do zero
+     (`gesture_action_area.dart`): antes só distinguia toque-parado/arraste (2
+     estados); agora toque-parado-e-segurando = captura (contínuo), arrastar pra cima
+     = esquiva (uma vez), arrastar pra baixo = recolher/liberar (uma vez). Direção
+     classificada por eixo dominante do deslocamento acumulado ao cruzar 20px, uma vez
+     só por toque (não reavalia depois) — diagonal/lateral não dispara nada.
+  4. Teclado: tecla X (era override morto de ability2) virou recolher/liberar
+     (`KeyDownEvent`, dispara uma vez). Tecla Z (override morto de ability1) removida
+     de vez — não fazia nada desde a fase 4, e agora nem ability2 sobrou pra justificar
+     manter o padrão de duas teclas.
+- [ ] **Jogar de novo** — nada disso foi testado. Cura de 10%/s, limiar de classificação
+  de gesto (20px) e a interação capture-hold-vs-swipe no mesmo componente são os
+  primeiros suspeitos se algo sentir errado
+- [x] Achado no quarto teste: capturar com a criatura ativa desmaiada (em timer de
+  revive) fazia a nova substituir a antiga, e depois não dava mais pra capturar mais
+  nada. Causa: `CreaturesRogueGame.capturarCriatura` procurava slot livre em
+  `companions` (o `Companion` MONTADO) em vez de `companionCreatures` (o DONO do
+  slot) — um slot com companion desmaiado tem `companions[i] == null` mas
+  `companionCreatures[i]` continua preenchido (é o que permite reviver), então a
+  busca achava esse slot como "livre", sobrescrevia o dono errado, e o timer de
+  revive daquele companion ficava apontando pra uma criatura que não era mais dele.
+  Trocado pra procurar em `companionCreatures`
 - [x] **Achado, fora de escopo desta rodada**: `Enemy.currentTarget` ainda é sempre
   `playerTarget` fixo — §2.3/§3.4 do doc travam "aggro por proximidade, sem
   preferência entre treinador e companion", mas isso nunca foi implementado; inimigos
