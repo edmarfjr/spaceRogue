@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
+import 'package:creatures_rogue/game/audio/game_audio.dart';
+import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
 import 'package:creatures_rogue/game/components/creatures/damageable_by_enemy.dart';
@@ -88,6 +90,8 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
 
   @override
   Future<void> onLoad() async {
+    final sfx = tipo.attackSfx;
+    if (sfx != null) GameAudio.instance.play(sfx);
 
     lifeTimeIni = lifeTime ?? 10;
 

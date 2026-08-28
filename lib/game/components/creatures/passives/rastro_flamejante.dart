@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/effects/dot.dart';
 import 'package:flame/components.dart';
 import '../../core/palette.dart';
 import '../../player/player.dart';
@@ -14,17 +15,17 @@ class RastroFlamejante extends Passive {
   const RastroFlamejante({this.coef = 0.5})
       : super(
           nome: 'Rastro Flamejante',
-          descricao: 'Toda esquiva do treinador incendeia o ponto de partida e o de chegada.',
+          descricao: 'Toda esquiva do treinador incendeia o de chegada.',
         );
 
   @override
   void aoEsquivar(Player player, Vector2 direcao) {
     final dano = player.creatureData.stats.ataque * coef;
-    player.parent?.add(ExplosionHitbox(
+   /* player.parent?.add(ExplosionHitbox(
       position: player.position.clone(),
       dmg: dano,
       cor2: Palette.laranja,
-    ));
+    )); */
     final duracao = player.dodgeIframeDuration;
     Future.delayed(Duration(milliseconds: (duracao * 1000).round()), () {
       if (player.isMounted) {
@@ -32,6 +33,8 @@ class RastroFlamejante extends Passive {
           position: player.position.clone(),
           dmg: dano,
           cor2: Palette.laranja,
+          dotKind: DotKind.queimadura,
+          dotTicks: 5,
         ));
       }
     });

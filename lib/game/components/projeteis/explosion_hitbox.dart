@@ -1,4 +1,7 @@
 import 'dart:ui';
+import 'package:creatures_rogue/game/audio/game_audio.dart';
+import 'package:creatures_rogue/game/audio/sfx.dart';
+import 'package:creatures_rogue/game/components/effects/dot.dart';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +33,8 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
   final double lentidaoDuracao;
   final double lentidaoFator;
   final double cegoDuracao;
+  final DotKind? dotKind;
+  final int dotTicks;
 
   Paint paintV = Paint();
   Paint paintB = Paint();
@@ -47,6 +52,8 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
     this.lentidaoDuracao = 0,
     this.lentidaoFator = 0.5,
     this.cegoDuracao = 0,
+    this.dotKind,
+    this.dotTicks = 1,
     this.cor1 = Palette.vermelho,
     this.cor2 = Palette.branco,
     Vector2? size,
@@ -55,6 +62,9 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
 
   @override
   Future<void> onLoad() async {
+    final sfx = tipo.attackSfx;
+    if (sfx != null) GameAudio.instance.play(sfx);
+
     // CORREÇÃO 1: isSolid = true garante que o interior do círculo também seja "sólido"
     add(CircleHitbox(isSolid: true, collisionType: CollisionType.active));
 
@@ -108,6 +118,8 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
       if (lentidaoDuracao > 0) other.applyLentidao(lentidaoDuracao, fator: lentidaoFator);
       if (cegoDuracao > 0) other.applyCego(cegoDuracao);
       if (knockback > 0) other.applyKnockback(absolutePosition, knockback);
+      final kind = dotKind;
+      if (kind != null) other.applyDot(kind, dotTicks);
     } else if (other is DamageableByEnemy && isEnemy) {
       other.takeDamage(dmg);
       if (lentidaoDuracao > 0) other.aplicarLentidao(lentidaoDuracao, fator: lentidaoFator);

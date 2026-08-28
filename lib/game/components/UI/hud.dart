@@ -186,11 +186,14 @@ class Hud extends PositionComponent with HasGameRef {
     coinTextPaint = TextPaint(
       style: const TextStyle(
         fontFamily: 'pixelFont',
-        color: Palette.preto,
+        color: Palette.branco,
         fontSize: 12,
         fontWeight: FontWeight.bold,
         shadows: [
-          Shadow(color: Palette.branco, offset: Offset(1, 1), blurRadius: 1),
+          Shadow(color: Palette.preto, offset: Offset(1, 1)),
+          Shadow(color: Palette.preto, offset: Offset(-1, -1)),
+          Shadow(color: Palette.preto, offset: Offset(1, -1)),
+          Shadow(color: Palette.preto, offset: Offset(-1, 1)),
         ],
       ),
     );

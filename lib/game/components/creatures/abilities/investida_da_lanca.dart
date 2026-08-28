@@ -18,7 +18,7 @@ class InvestidaDaLanca extends Ability {
   const InvestidaDaLanca({
     this.distancia = 36,
     this.duracao = 0.2,
-    this.coef = 1.2,
+    this.coef = 2.5,
     this.empurrao = 80,
   }) : super(nome: 'Investida da Lança', cooldown: 4.0, target: AbilityTarget.plrDir, tipo: AbilityTipo.esquiva);
 
@@ -41,7 +41,7 @@ class InvestidaDaLanca extends Ability {
           position: user.position.clone(),
           dmg: dano,
           knockback: empurrao,
-          size: Vector2(16, 16),
+          size: Vector2(24, 24),
           tipo: user.creatureData.tipo,
         ));
       },

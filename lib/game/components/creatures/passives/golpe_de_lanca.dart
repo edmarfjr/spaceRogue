@@ -10,7 +10,7 @@ import '../passive.dart';
 class GolpeDeLanca extends Passive {
   final double coef;
   final double empurrao;
-  const GolpeDeLanca({this.coef = 0.5, this.empurrao = 40})
+  const GolpeDeLanca({this.coef = 2.5, this.empurrao = 40})
       : super(nome: 'Golpe de Lança', descricao: 'A esquiva do treinador termina num golpe com empurrão no ponto de chegada.');
 
   @override

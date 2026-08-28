@@ -29,10 +29,11 @@ class CompanionReviveEffect extends PositionComponent {
 
     //final alpha = 255;//((1 - t) * 255).round().clamp(0, 255);
     final Paint borda = Paint()..color = Palette.preto..style = PaintingStyle.stroke..strokeWidth = 1;
+    final Paint borda2 = Paint()..color = Palette.branco..style = PaintingStyle.stroke..strokeWidth = 1;
 
     canvas.drawCircle(Offset.zero, raio, Paint()..color = Palette.vermelho..style = PaintingStyle.stroke..strokeWidth = 1);
     canvas.drawCircle(Offset.zero, raio+1,borda);
-    canvas.drawCircle(Offset.zero, raio-1,borda);
+    canvas.drawCircle(Offset.zero, raio-1,borda2);
     
   }
 }

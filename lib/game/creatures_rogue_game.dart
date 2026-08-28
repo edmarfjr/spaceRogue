@@ -11,6 +11,8 @@ import 'package:flutter/material.dart';
 //import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey, KeyDownEvent;
 import 'package:flame/input.dart';
+import 'package:creatures_rogue/game/audio/game_audio.dart';
+import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:creatures_rogue/game/components/UI/ability_button.dart';
 import 'package:creatures_rogue/game/components/UI/ability_icons.dart';
 import 'package:creatures_rogue/game/components/UI/capture_button.dart';
@@ -167,6 +169,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
 
     companionSavedHealth[slot] = c.currentHealth;
     companionPocketed[slot] = true;
+    GameAudio.instance.play(Sfx.retorno);
 
     dungeonWorld.add(CompanionRecallEffect(
       position: c.position.clone(),
@@ -319,6 +322,11 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
       companionSavedHealth[i] = 0.0;
     }
     companionAtivoIndex = 0;
+    // Sem isso, um laço fechado bem na hora do Game Over deixava a próxima
+    // run já nascendo com uma `CaptureSwapOverlay` pendente de uma criatura
+    // que não existe mais.
+    capturaPendente = null;
+    overlays.remove('CaptureSwap');
     dungeonWorld.children.whereType<Player>().toList().forEach((p) => p.removeFromParent());
     dungeonWorld.children.whereType<Companion>().toList().forEach((c) => c.removeFromParent());
 
@@ -941,35 +949,69 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     return (1 - companionSavedHealth[slot] / creature.stats.maxHp).clamp(0.0, 1.0);
   }
 
+  /// Criatura recém-capturada esperando o jogador decidir quem sai, com o
+  /// grupo já cheio (ver [capturarCriatura] / [resolverTrocaCaptura]). `null`
+  /// sempre que a `CaptureSwapOverlay` não está na tela.
+  CreatureData? capturaPendente;
+
   /// Chamado por `Player._completarCaptura` quando o laço fecha a volta
-  /// inteira. Converte o inimigo capturado num companion novo, no primeiro
-  /// slot vazio.
-  ///
-  /// Simplificação desta rodada, registrada e não escondida: §4.3 do doc
-  /// pede um prompt de troca (escolher quem dispensar) resolvido só ao
-  /// limpar a sala, quando o grupo já está cheio. Não implementado — com o
-  /// grupo cheio, a captura simplesmente FALHA (o inimigo sobrevive, nada
-  /// muda) em vez de ficar pendente. O prompt de troca é trabalho de UI novo
-  /// (uma tela a mais), fora desta rodada.
+  /// inteira. A manobra sempre "pega" a criatura — o inimigo sai da sala
+  /// aqui dentro, mesmo se o grupo estiver cheio; ela só não entra
+  /// automaticamente. Com slot livre, vira companion na hora, como sempre.
+  /// Com o grupo cheio, fica em [capturaPendente] e abre a `CaptureSwapOverlay`
+  /// (pedido do usuário: decisão na hora, mesmo em combate — o motor pausa
+  /// enquanto isso, então nenhum inimigo ainda de pé ataca de graça).
   void capturarCriatura(Enemy alvo) {
     final creature = alvo.creature;
     if (creature == null) return; // inimigo sem CreatureData (não deveria existir)
+
+    final posicao = alvo.position.clone();
+    alvo.removeFromParent();
 
     // `companionCreatures`, não `companions`: um slot recolhido (bolso ou
     // combate) tem `companions[i] == null` mas ainda TEM DONO
     // (`companionCreatures[i]` != null). Procurar em `companions` achava
     // esse slot como "livre" e a captura nova sobrescrevia o dono errado.
     final slotVazio = companionCreatures.indexWhere((c) => c == null);
-    if (slotVazio == -1) return; // grupo cheio de verdade (3 donos) — ver simplificação acima
+    if (slotVazio != -1) {
+      companionCreatures[slotVazio] = creature;
+      companions[slotVazio] = Companion(
+        position: posicao,
+        trainer: player,
+        creatureData: creature,
+      );
+      dungeonWorld.add(companions[slotVazio]!);
+      return;
+    }
 
-    companionCreatures[slotVazio] = creature;
-    companions[slotVazio] = Companion(
-      position: alvo.position,
-      trainer: player,
-      creatureData: creature,
-    );
-    dungeonWorld.add(companions[slotVazio]!);
-    alvo.removeFromParent();
+    capturaPendente = creature;
+    pauseEngine();
+    overlays.add('CaptureSwap');
+  }
+
+  /// Resolve a `CaptureSwapOverlay` — chamado por ela, nunca direto.
+  /// [slotParaLiberar] é o índice (0..2) do integrante atual a soltar; `null`
+  /// significa "soltar a recém-capturada, manter o grupo como estava". A
+  /// dispensada some de vez (pedido do usuário) — sem reserva, sem fila.
+  void resolverTrocaCaptura(int? slotParaLiberar) {
+    final nova = capturaPendente;
+    capturaPendente = null;
+
+    if (nova != null && slotParaLiberar != null) {
+      companionCreatures[slotParaLiberar] = nova;
+      companionPocketed[slotParaLiberar] = false;
+      companionSavedHealth[slotParaLiberar] = 0.0;
+      companions[slotParaLiberar]?.removeFromParent();
+      companions[slotParaLiberar] = Companion(
+        position: player.position + Vector2(16, 0),
+        trainer: player,
+        creatureData: nova,
+      );
+      dungeonWorld.add(companions[slotParaLiberar]!);
+    }
+
+    overlays.remove('CaptureSwap');
+    resumeEngine();
   }
 // NOVO MÉTODO: Limpa e recria a fase!
   void nextLevel() {

@@ -161,7 +161,7 @@ class _EquipeCard extends StatelessWidget {
             ),
           const SizedBox(height: 4),
           Text(
-            'Hab: ${creature.ability1.nome}:\n${creature.ability1.descricao}',
+            'Hab: ${creature.ability1.nome}\n${creature.ability1.descricao}',
             textAlign: TextAlign.center,
             //maxLines: 1,
             //overflow: TextOverflow.ellipsis,

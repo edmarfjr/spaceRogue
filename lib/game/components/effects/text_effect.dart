@@ -52,8 +52,8 @@ class TextEffect extends PositionComponent {
   void render(Canvas canvas) {
     super.render(canvas);
 
-    final t = (_elapsed / duration).clamp(0.0, 1.0);
-    final alpha = ((1 - t) * 255).round().clamp(0, 255);
+    //final t = (_elapsed / duration).clamp(0.0, 1.0);
+    final alpha = 255;//((1 - t) * 255).round().clamp(0, 255);
 
     final paint = TextPaint(
       style: TextStyle(
@@ -62,7 +62,10 @@ class TextEffect extends PositionComponent {
         fontFamily: 'pixelFont',
         fontWeight: FontWeight.bold,
         shadows: [
-          Shadow(color: Colors.black.withAlpha(alpha), offset: const Offset(1, 1)),
+          Shadow(color: Palette.preto, offset: Offset(1, 1)),
+          Shadow(color: Palette.preto, offset: Offset(-1, -1)),
+          Shadow(color: Palette.preto, offset: Offset(1, -1)),
+          Shadow(color: Palette.preto, offset: Offset(-1, 1)),
         ],
       ),
     );

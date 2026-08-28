@@ -2,6 +2,8 @@ import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
+import 'package:creatures_rogue/game/audio/game_audio.dart';
+import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
@@ -113,6 +115,10 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   /// sem uma base pra restaurar, duas aplicações sobrepostas corromperiam a
   /// velocidade permanentemente.
   late final double speedBase;
+
+  /// Relógio do pisca-pisca de vida baixa (< 30% de maxHealth). Só avança
+  /// enquanto a condição vale; ver `update`.
+  double _lowHpBlinkClock = 0.0;
 
   Enemy({
     required Vector2 position,
@@ -235,6 +241,19 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
 
     // Anchor.center: o "chão" (pés) fica meio size.y abaixo do centro.
     priority = ySortPriority(position.y + size.y / 2);
+
+    // Pisca vermelho com vida abaixo de 30%. Roda independente de stun/raiz/
+    // knockback — é indicador de vida, não movimento — mas só enquanto o
+    // inimigo está vivo, senão `death()` já matou o componente.
+    if (health > 0 && (health / maxHealth) < 0.3) {
+      _lowHpBlinkClock += dt;
+      visual.paint.colorFilter = (_lowHpBlinkClock % 0.4) < 0.2
+          ? const ColorFilter.mode(Palette.vermelho, BlendMode.srcATop)
+          : null;
+    } else if (_lowHpBlinkClock != 0.0) {
+      _lowHpBlinkClock = 0.0;
+      visual.paint.colorFilter = null;
+    }
 
     if (stunTimer > 0) {
       stunTimer -= dt;
@@ -414,6 +433,7 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     // Guarda defensiva ativa (casco fechado) reduz o dano recebido.
     double amountFinal = amount * mult * (1 - damageReduction);
     if (amountFinal < 0) amountFinal = 0;
+    if (amountFinal > 0) GameAudio.instance.play(Sfx.hit);
 
     parent?.add(TextEffect.dano(
       amountFinal,

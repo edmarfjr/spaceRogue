@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
+import 'package:creatures_rogue/game/audio/game_audio.dart';
+import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
@@ -110,7 +112,7 @@ class Companion extends PositionComponent
   // são só dois retângulos, não precisa de asset nem de onLoad assíncrono.
   static final Paint _barraMoldura = Paint()..color = Palette.preto;
   static final Paint _barraFundo = Paint()..color = Palette.cinzaEsc;
-  static final Paint _hpPreenchimento = Paint()..color = Palette.vermelho;
+  static final Paint _hpPreenchimento = Paint()..color = Palette.verde;
  // static final Paint _shieldPreenchimento = Paint()..color = Palette.azul;
   static const double _barraLargura = 14.0;
   static const double _barraAltura = 2.0;
@@ -152,6 +154,8 @@ class Companion extends PositionComponent
   void render(Canvas canvas) {
     super.render(canvas);
     _renderBarraStatus(canvas);
+    canvas.drawCircle(Offset(size.x/2,size.y), _physicsHitbox.size.x/2 + 2, Paint()..color=Palette.preto..style=PaintingStyle.stroke..strokeWidth=3);
+    canvas.drawCircle(Offset(size.x/2,size.y), _physicsHitbox.size.x/2 + 2, Paint()..color=Palette.branco..style=PaintingStyle.stroke..strokeWidth=1);
   }
 
   Vector2 offPos = Vector2.zero();
@@ -299,6 +303,7 @@ class Companion extends PositionComponent
     if (_invulnerabilityTimer > 0) return;
     double amountFinal = amount * (1 - damageReduction);
     if (amountFinal <= 0) return;
+    GameAudio.instance.play(Sfx.hit);
 
     _invulnerabilityTimer = _invulnerabilityDuration;
 

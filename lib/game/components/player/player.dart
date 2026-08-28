@@ -5,6 +5,8 @@ import 'package:flame/effects.dart';
 import 'package:flame/flame.dart';
 import 'package:flutter/material.dart';
 import 'package:flame/collisions.dart';
+import 'package:creatures_rogue/game/audio/game_audio.dart';
+import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:creatures_rogue/game/components/UI/dynamic_joystick_component.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
@@ -250,8 +252,22 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
         .toList(growable: false);
   }
 
+  /// Piso do produto de `dodgeCooldownMult` de todas as passivas ativas —
+  /// pedido do usuário: passiva repetida (duas ou três criaturas da mesma
+  /// espécie) DEVE empilhar, é build válido. Mas sem piso, três cópias de
+  /// `ReflexoEletrico` (0.6 cada) dão `0.6³ ≈ 0.22`, ou seja `_dodgeCooldownMax`
+  /// (1.1s) vira ~0.24s — menor que a folga entre o fim de uma esquiva e o
+  /// início da próxima ser maior que a duração dos i-frames (0.18s), o que
+  /// destrava esquiva encadeada = invulnerabilidade quase permanente. Isso
+  /// não é "build forte", é o sistema de esquiva inteiro deixando de
+  /// importar. 0.3 (30% do cooldown base, ~0.33s) deixa empilhar valer muito
+  /// sem zerar a janela de risco. Só no cooldown: `dodgeDistanceMult` não
+  /// tem essa classe de risco (não cria invulnerabilidade), fica sem piso.
+  static const double _dodgeCooldownMultFloor = 0.3;
+
   void dodge() {
     if (_dodgeCooldown > 0) return;
+    GameAudio.instance.play(Sfx.dash);
     final passivas = passivasAtivas;
 
     double cooldownMult = 1.0;
@@ -260,6 +276,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       cooldownMult *= p.dodgeCooldownMult;
       distanciaMult *= p.dodgeDistanceMult;
     }
+    cooldownMult = cooldownMult < _dodgeCooldownMultFloor ? _dodgeCooldownMultFloor : cooldownMult;
     _dodgeCooldown = _dodgeCooldownMax * cooldownMult;
     grantInvulnerability(_dodgeDuration);
 
@@ -807,6 +824,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
         : 0.0;
     double amountFinal = amount * (1 - damageReduction) * (1 - reducaoLaco);
     if (amountFinal <= 0) return; // golpe totalmente mitigado: não gasta i-frame
+    GameAudio.instance.play(Sfx.hit);
 
     _invulnerabilityTimer = _invulnerabilityDuration;
     _tempoSemApanhar = 0.0;

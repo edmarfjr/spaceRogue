@@ -24,7 +24,7 @@ class DisparadaFlamejante extends Ability {
     final danoRastro = user.creatureData.stats.ataque * coefRastro;
     user.grantInvulnerability(duracao);
 
-    final origem = user.position.clone();
+ //   final origem = user.position.clone();
    // user.parent?.add(ExplosionHitbox(position: origem, dmg: danoRastro, tipo: user.creatureData.tipo));
 
     GhostEffect.spawnTrail(
