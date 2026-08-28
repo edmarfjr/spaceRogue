@@ -258,7 +258,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   late MinimapHud minimapHud;
 
   double freezeTmr = 0;
-  double freezeTime = 0.1;
+  double freezeTime = 0.5;
 
   CreaturesRogueGame({
     this.onGameOver,

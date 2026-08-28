@@ -12,7 +12,7 @@ class HudOverlay extends StatelessWidget {
     return Align(
       alignment: Alignment.topRight,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(32.0),
         child: GestureDetector(
           onTap: () {
             game.pauseEngine(); // Congela o jogo inteiro!
@@ -39,11 +39,11 @@ class _GameboyCapsuleButton extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 52,
-          height: 18,
+          width: 104,
+          height: 36,
           decoration: BoxDecoration(
             color: UiTheme.pauseCapsule,
-            borderRadius: BorderRadius.circular(9),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(color: Palette.preto, width: 2),
           ),
         ),
@@ -52,9 +52,10 @@ class _GameboyCapsuleButton extends StatelessWidget {
           label,
           style: const TextStyle(
             fontFamily: 'pixelFont',
-            fontSize: 9,
-            color: Palette.branco,
-            shadows: [Shadow(color: Palette.preto, offset: Offset(1, 1))],
+            fontSize: 20, 
+            fontWeight: FontWeight.bold,
+            color: Palette.cinzaEsc,
+            //shadows: [Shadow(color: Palette.preto, offset: Offset(1, 1))],
           ),
         ),
       ],

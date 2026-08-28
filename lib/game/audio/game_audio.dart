@@ -46,6 +46,15 @@ class GameAudio {
   Future<void> preload() async {
     if (_ready) return;
     try {
+      // `flame_audio` resolve caminho como `<prefix><path>`, e o prefixo
+      // padrão é `assets/audio/` — não bate com `assets/sounds/`, que é onde
+      // o projeto guarda tudo (sfx e música). Sem isso, `loadAll`/`createPool`
+      // buscam um arquivo que não existe; no web isso não falha na hora (o
+      // dev server devolve o fallback da SPA em vez de 404), só quebra depois
+      // ao tocar, como "Format error" — parecia problema de codec do .wav,
+      // mas era o caminho errado o tempo todo. `updatePrefix` acerta tanto o
+      // cache de efeitos quanto o de `FlameAudio.bgm` (música) numa chamada só.
+      FlameAudio.updatePrefix('assets/sounds/');
       await FlameAudio.audioCache.loadAll(_paths.values.toList());
       for (final entry in _paths.entries) {
         _pools[entry.key] = await FlameAudio.createPool(

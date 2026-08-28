@@ -131,7 +131,7 @@ class _EquipeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 330,
+      width: 280,
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: Palette.branco,

@@ -4,8 +4,10 @@ import 'package:flame_audio/flame_audio.dart';
 /// ainda (o jogo não tem trilha de fundo por enquanto, só o efeito sonoro do
 /// `GameAudio`). Pra ligar uma faixa no futuro: solte o arquivo em
 /// `assets/sounds/music/`, declare em `pubspec.yaml` se for arquivo novo, e
-/// chame `GameMusic.instance.play('nome_do_arquivo.mp3')` (ex.: ao entrar na
-/// masmorra, ao trocar de bioma, na luta de boss).
+/// chame `GameMusic.instance.play('music/nome_do_arquivo.mp3')` (ex.: ao
+/// entrar na masmorra, ao trocar de bioma, na luta de boss) — o caminho é
+/// relativo a `assets/sounds/` (prefixo acertado em `GameAudio.preload`, que
+/// roda antes de qualquer partida começar).
 ///
 /// Separado de `GameAudio` de propósito: música é um único player em loop
 /// (`FlameAudio.bgm`), efeito sonoro é pool de vários players tocando ao

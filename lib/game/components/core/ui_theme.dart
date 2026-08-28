@@ -20,5 +20,5 @@ class UiTheme {
   static const Color screenBezel = Palette.preto;
 
   /// Cor da cápsula do botão de pause (estilo START/SELECT do Game Boy).
-  static const Color pauseCapsule = Palette.roxoEsc;
+  static const Color pauseCapsule = Palette.cinzaEsc;
 }
