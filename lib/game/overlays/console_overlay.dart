@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 
 class HudOverlay extends StatelessWidget {
@@ -11,14 +13,51 @@ class HudOverlay extends StatelessWidget {
       alignment: Alignment.topRight,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: IconButton(
-          icon: const Icon(Icons.pause_circle_outline, color: Colors.white, size: 56),
-          onPressed: () {
+        child: GestureDetector(
+          onTap: () {
             game.pauseEngine(); // Congela o jogo inteiro!
             game.overlays.add('PauseMenu');
           },
+          child: const _GameboyCapsuleButton(label: 'PAUSE'),
         ),
       ),
+    );
+  }
+}
+
+/// Botão em forma de cápsula, no estilo dos botões START/SELECT do Game Boy
+/// original: pílula de plástico escuro com o nome impresso embaixo (sem
+/// ícone dentro — igual ao hardware de verdade, que não tem símbolo nenhum
+/// no botão em si).
+class _GameboyCapsuleButton extends StatelessWidget {
+  final String label;
+  const _GameboyCapsuleButton({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 52,
+          height: 18,
+          decoration: BoxDecoration(
+            color: UiTheme.pauseCapsule,
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(color: Palette.preto, width: 2),
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'pixelFont',
+            fontSize: 9,
+            color: Palette.branco,
+            shadows: [Shadow(color: Palette.preto, offset: Offset(1, 1))],
+          ),
+        ),
+      ],
     );
   }
 }

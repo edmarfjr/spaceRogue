@@ -12,6 +12,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey, KeyDownEvent;
 import 'package:flame/input.dart';
 import 'package:creatures_rogue/game/audio/game_audio.dart';
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
+import 'package:creatures_rogue/game/components/UI/gameboy_bezel.dart';
 import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:creatures_rogue/game/components/UI/ability_button.dart';
 import 'package:creatures_rogue/game/components/UI/ability_icons.dart';
@@ -248,7 +250,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   bool get isBossFloor => currentFloor % andaresPorBoss == 0;
 
   @override
-  Color backgroundColor() => const Color(0xFF1E1E1E); // Cor de fundo fora do mapa
+  Color backgroundColor() => UiTheme.screenBackground;
 
   Map loadedRooms = {};
 
@@ -300,6 +302,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     );
     gameCamera.viewfinder.position = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
     add(gameCamera);
+    add(GameboyBezel(camera: gameCamera));
 
     pauseEngine();
   }
