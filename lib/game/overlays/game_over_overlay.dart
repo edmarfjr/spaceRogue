@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
@@ -36,7 +37,7 @@ class GameOverMenu extends StatelessWidget {
                     side: BorderSide(color: Palette.preto, width: 2),
                   ),  
                 ),
-              onPressed: () {
+              onPressed: withBtnSfx(() {
                 // 1. Remove a tela de Game Over
                 game.overlays.remove('GameOver');
                 // 2. Chama a função de limpar e resetar variáveis
@@ -44,7 +45,7 @@ class GameOverMenu extends StatelessWidget {
                 // 3. Volta o botão de Pause e descongela o jogo
                 game.overlays.add('Hud');
                 game.resumeEngine();
-              },
+              }),
               child: const Text(" RESTART ", style: TextStyle(fontSize: 20, color: Palette.preto)),
             ),
             const SizedBox(height: 15),
@@ -58,7 +59,7 @@ class GameOverMenu extends StatelessWidget {
                     side: BorderSide(color: Palette.preto, width: 2),
                   ),  
                 ),
-              onPressed: () {
+              onPressed: withBtnSfx(() {
                 game.overlays.remove('GameOver');
                 // Sem resetGame() aqui: chamar startRun (via resetGame) só pra
                 // esconder a run atrás do menu criava dois "startRun" em
@@ -69,7 +70,7 @@ class GameOverMenu extends StatelessWidget {
                 // fica só esperando, sem custo de gameplay nenhum.
                 game.overlays.add('MainMenu'); // Volta pro Menu Principal
                 // O motor já foi pausado na morte, então continua pausado
-              },
+              }),
               child: const Text(" MENU PRINCIPAL ", style: TextStyle(fontSize: 16, color: Palette.preto)),
             ),
           ],

@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
@@ -32,7 +33,7 @@ class MainMenuOverlay extends StatelessWidget {
                   side: BorderSide(color: Palette.preto, width: 2),
                 ),
               ),
-              onPressed: () {
+              onPressed: withBtnSfx(() {
                 // Leva pro seletor de criaturas. A run só começa de fato
                 // (e o motor só despausa) quando uma criatura é escolhida.
                 //
@@ -43,7 +44,7 @@ class MainMenuOverlay extends StatelessWidget {
                 game.overlays.add(
                   CreatureProgress.instance.introConcluida ? 'CreatureSelect' : 'Intro',
                 );
-              },
+              }),
               child: const Text(' NOVO JOGO ', style: TextStyle(fontSize: 24, color: Palette.preto)),
             ),
             const SizedBox(height: 15),
@@ -57,10 +58,10 @@ class MainMenuOverlay extends StatelessWidget {
                   side: BorderSide(color: Palette.preto, width: 2),
                 ),
               ),
-              onPressed: () {
+              onPressed: withBtnSfx(() {
                 game.overlays.remove('MainMenu');
                 game.overlays.add('Settings');
-              },
+              }),
               child: const Text(' CONFIGURAÇÕES ', style: TextStyle(fontSize: 20, color: Palette.preto)),
             ),
           ],

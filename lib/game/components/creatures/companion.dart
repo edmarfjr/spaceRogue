@@ -154,8 +154,8 @@ class Companion extends PositionComponent
   void render(Canvas canvas) {
     super.render(canvas);
     _renderBarraStatus(canvas);
-    canvas.drawCircle(Offset(size.x/2,size.y), _physicsHitbox.size.x/2 + 2, Paint()..color=Palette.preto..style=PaintingStyle.stroke..strokeWidth=3);
-    canvas.drawCircle(Offset(size.x/2,size.y), _physicsHitbox.size.x/2 + 2, Paint()..color=Palette.branco..style=PaintingStyle.stroke..strokeWidth=1);
+    canvas.drawCircle(Offset(size.x/2,size.y), _physicsHitbox.size.x/2 + 2, Paint()..color=Palette.preto..style=PaintingStyle.stroke..strokeWidth=3..filterQuality = FilterQuality.none);
+    canvas.drawCircle(Offset(size.x/2,size.y), _physicsHitbox.size.x/2 + 2, Paint()..color=Palette.branco..style=PaintingStyle.stroke..strokeWidth=1..filterQuality = FilterQuality.none);
   }
 
   Vector2 offPos = Vector2.zero();

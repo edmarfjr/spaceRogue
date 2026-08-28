@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:flutter/material.dart';
@@ -159,7 +160,7 @@ class _CreatureListTile extends StatelessWidget {
     final accent = CreatureSelectOverlay.typeColor(creature.tipo);
 
     return InkWell(
-      onTap: onTap,
+      onTap: withBtnSfx(onTap),
       borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
@@ -398,7 +399,7 @@ class _CreatureDetailPanel extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: onPlay,
+            onPressed: withBtnSfx(onPlay),
             style: ElevatedButton.styleFrom(
               backgroundColor: Palette.branco,
               padding: const EdgeInsets.symmetric(vertical: 10),

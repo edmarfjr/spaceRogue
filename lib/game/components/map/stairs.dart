@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/utils/y_sort.dart';
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
@@ -17,6 +18,7 @@ class Stairs extends PositionComponent with CollisionCallbacks, HasGameRef<Creat
     // Crie um trapdoor.png na sua pasta de assets
     sprite = await gameRef.loadSprite('tileset/stairs.png');
     add(RectangleHitbox(collisionType: CollisionType.passive));
+    priority = ySortPriority(position.y + size.y / 2);
   }
 
   @override

@@ -2,6 +2,7 @@ import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:creatures_rogue/game/components/UI/ability_icons.dart';
 import 'package:creatures_rogue/game/components/UI/pointer_tracker.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
@@ -43,7 +44,7 @@ class AbilityButton extends PositionComponent
 
   /// `FilterQuality.none` mantém o pixel art nítido: o sprite é 16x16 e o botão
   /// tem 100px de diâmetro no mobile.
-  final Paint _spritePaint = Paint()..filterQuality = FilterQuality.none..colorFilter..color=Palette.roxoEsc..blendMode=BlendMode.multiply;
+  final Paint _spritePaint = Paint()..filterQuality = FilterQuality.none..colorFilter..color=Palette.cinza..blendMode=BlendMode.multiply;
 
   AbilityButton({
     required double radius,
@@ -81,6 +82,7 @@ class AbilityButton extends PositionComponent
     final down = _tapDown || pointerTracker.anyInside(this);
     if (down == _pressed) return;
     _pressed = down;
+    if (down) HapticFeedback.lightImpact();
     onPressedChanged(down);
   }
 
@@ -106,6 +108,12 @@ class AbilityButton extends PositionComponent
   void render(Canvas canvas) {
     final center = Offset(size.x / 2, size.y / 2);
     final radius = size.x / 2;
+
+    canvas.drawCircle(
+      center,
+      radius*1.1,
+      Paint()..color = Palette.preto,
+    );
 
     canvas.drawCircle(
       center,

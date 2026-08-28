@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/overlays/creature_select_overlay.dart';
 import 'package:flutter/material.dart';
@@ -58,7 +59,7 @@ class BossRevealOverlay extends StatelessWidget {
                   side: BorderSide(color: Palette.preto, width: 2),
                 ),
               ),
-              onPressed: game.dismissBossReveal,
+              onPressed: withBtnSfx(game.dismissBossReveal),
               child: const Text(' ENTRAR ', style: TextStyle(fontSize: 20, color: Palette.preto)),
             ),
           ],

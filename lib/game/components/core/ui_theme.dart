@@ -12,7 +12,7 @@ class UiTheme {
   /// Preenche a tela inteira atrás do mundo do jogo — visível nas margens
   /// laterais onde os controles ficam, já que o mapa só ocupa a resolução
   /// fixa da câmera. Cinza claro = plástico do Game Boy original.
-  static const Color screenBackground = Palette.cinza;
+  static const Color screenBackground = Palette.indigo;
 
   /// Moldura escura ao redor da área jogável — o "vão" preto que cerca a
   /// tela de LCD no Game Boy de verdade, separando o plástico do shell do
@@ -20,5 +20,5 @@ class UiTheme {
   static const Color screenBezel = Palette.preto;
 
   /// Cor da cápsula do botão de pause (estilo START/SELECT do Game Boy).
-  static const Color pauseCapsule = Palette.cinzaEsc;
+  static const Color pauseCapsule = Palette.cinza;
 }

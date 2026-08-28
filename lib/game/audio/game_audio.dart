@@ -21,6 +21,11 @@ class GameAudio {
   static const Map<Sfx, String> _paths = {
     Sfx.dash: 'sfx/dash.wav',
     Sfx.retorno: 'sfx/retorno.wav',
+    Sfx.liberar: 'sfx/liberar.wav',
+    Sfx.enemy_die: 'sfx/enemy_die.wav',
+    Sfx.die: 'sfx/die.wav',
+    Sfx.stairs: 'sfx/enterStairs.wav',
+    Sfx.btn: 'sfx/btn.wav',
     Sfx.hit: 'sfx/hit.wav',
     Sfx.fogo: 'sfx/fogo.wav',
     Sfx.agua: 'sfx/agua.wav',

@@ -20,22 +20,22 @@ class CaptureLassoVisual extends PositionComponent {
 
   final Paint _linha = Paint()
     ..color = Palette.branco
-    ..strokeWidth = 1;
+    ..strokeWidth = 1..filterQuality = FilterQuality.none;
   final Paint _contorno = Paint()
     ..color = Palette.preto
-    ..strokeWidth = 3;
+    ..strokeWidth = 3..filterQuality = FilterQuality.none;
   final Paint _arcoContorno = Paint()
     ..color = Palette.preto
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 4;
+    ..strokeWidth = 4..filterQuality = FilterQuality.none;
   final Paint _arcoFundo = Paint()
     ..color = Palette.cinzaEsc
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 2;
+    ..strokeWidth = 2..filterQuality = FilterQuality.none;
   final Paint _arcoProgresso = Paint()
     ..color = Palette.amarelo
     ..style = PaintingStyle.stroke
-    ..strokeWidth = 2;
+    ..strokeWidth = 2..filterQuality = FilterQuality.none;
 
   CaptureLassoVisual({
     required this.trainer,

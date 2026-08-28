@@ -11,9 +11,9 @@ import '../enemy_mixins.dart';
 /// é a única que pode conviver com o pulso de ataque do ShooterAttack no mesmo
 /// frame sem disputar canal.
 class TornadoFogoEnemy extends Enemy with ChaseMovement, ShooterAttack {
-  static const double _alcanceSoco = 26.0;
+  static const double _alcanceSoco = 16.0;
   static const double _fireRate = 1.1;
-  static const double _alcanceSegundos = 0.15;
+  static const double _alcanceSegundos = 0.05;
 
   TornadoFogoEnemy({
     required super.position,
@@ -23,7 +23,7 @@ class TornadoFogoEnemy extends Enemy with ChaseMovement, ShooterAttack {
          speed: 50.0, // stats.speed 70 → um dos mais rápidos
          health: 20,  // stats.maxHp 10 / defesa 1 → morre rápido se for cercado
          dmg: 4,      // stats.ataque 4 → o soco dói de verdade
-         bltSpeed: 260,
+         bltSpeed: 100,
          bltImg: 'projeteis/soco.png',
          bltCor1: CreatureRegistry.tornadoFogo.corClara,
          bltCor2: CreatureRegistry.tornadoFogo.corEscura,

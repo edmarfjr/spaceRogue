@@ -450,6 +450,7 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   // `direcaoLivre` e `spawnAlerta` vêm de MovementHost.
 
   void death() {
+    GameAudio.instance.play(Sfx.enemy_die);
     // Sem await de propósito: death() não é async (chamado de dentro de
     // takeDamage, síncrono), e a contagem não precisa bloquear a morte —
     // só precisa acabar gravada eventualmente.

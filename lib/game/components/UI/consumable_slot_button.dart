@@ -1,6 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/items/consumable_item.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
@@ -76,7 +77,9 @@ class ConsumableSlotButton extends PositionComponent
 
   @override
   void onTapUp(TapUpEvent event) {
-    if (conteudo() != null) onUsar();
+    if (conteudo() == null) return;
+    HapticFeedback.lightImpact();
+    onUsar();
   }
 
   @override

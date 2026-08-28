@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
@@ -40,10 +41,10 @@ class PauseMenuOverlay extends StatelessWidget {
                     side: BorderSide(color: Palette.preto, width: 2),
                   ),
                 ),
-                onPressed: () {
+                onPressed: withBtnSfx(() {
                   game.overlays.remove('PauseMenu');
                   game.resumeEngine();
-                },
+                }),
                 child: const Text(
                   ' CONTINUAR ',
                   style: TextStyle(fontSize: 20, color: Palette.preto),
@@ -60,13 +61,13 @@ class PauseMenuOverlay extends StatelessWidget {
                     side: BorderSide(color: Palette.preto, width: 2),
                   ),
                 ),
-                onPressed: () {
+                onPressed: withBtnSfx(() {
                   game.overlays.remove('PauseMenu');
                   game.overlays.remove('Hud');
                   game.overlays.add('MainMenu');
                   // Chama a sua função de limpar/reiniciar a fase!
                   //game.resetGame();
-                },
+                }),
                 child: const Text(
                   ' SAIR PARA O MENU ',
                   style: TextStyle(fontSize: 20, color: Palette.preto),

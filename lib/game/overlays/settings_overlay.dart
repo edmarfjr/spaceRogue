@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
@@ -71,7 +72,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                           side: BorderSide(color: Palette.preto, width: 5),
                         ),
                       ),
-                      onPressed: scheme == atual ? null : () => _escolher(scheme),
+                      onPressed: withBtnSfx(scheme == atual ? null : () => _escolher(scheme)),
                       child: Text(
                         scheme.rotulo,
                         style: TextStyle(
@@ -106,7 +107,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                   side: BorderSide(color: Palette.preto, width: 2),
                 ),
               ),
-              onPressed: _resetado ? null : _resetar,
+              onPressed: withBtnSfx(_resetado ? null : _resetar),
               child: Text(
                 _resetado ? ' PROGRESSO RESETADO ' : ' RESETAR PROGRESSO ',
                 style: const TextStyle(fontSize: 14, color: Palette.preto),
@@ -123,10 +124,10 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                   side: BorderSide(color: Palette.preto, width: 2),
                 ),
               ),
-              onPressed: () {
+              onPressed: withBtnSfx(() {
                 widget.game.overlays.remove('Settings');
                 widget.game.overlays.add('MainMenu');
-              },
+              }),
               child: const Text(' VOLTAR ', style: TextStyle(fontSize: 20, color: Palette.preto)),
             ),
           ],

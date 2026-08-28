@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
@@ -14,10 +15,10 @@ class HudOverlay extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(32.0),
         child: GestureDetector(
-          onTap: () {
+          onTap: withBtnSfx(() {
             game.pauseEngine(); // Congela o jogo inteiro!
             game.overlays.add('PauseMenu');
-          },
+          }),
           child: const _GameboyCapsuleButton(label: 'PAUSE'),
         ),
       ),

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
@@ -148,7 +149,7 @@ class _IntroOverlayState extends State<IntroOverlay> {
       children: [
         GestureDetector(
           behavior: HitTestBehavior.opaque,
-          onTap: _avancar,
+          onTap: withBtnSfx(_avancar),
           child: Center(
             child: _CaixaDialogo(
               texto: _textoAtual.substring(0, _revelados),
@@ -162,7 +163,7 @@ class _IntroOverlayState extends State<IntroOverlay> {
           top: 8,
           right: 12,
           child: TextButton(
-            onPressed: _irParaEscolha,
+            onPressed: withBtnSfx(_irParaEscolha),
             child: const Text(
               'PULAR',
               style: TextStyle(color: Palette.preto, fontSize: 14, letterSpacing: 2),
@@ -211,7 +212,7 @@ class _IntroOverlayState extends State<IntroOverlay> {
             ),
             // Toque no cartão seleciona, este botão confirma: escolha
             // permanente merece dois toques.
-            onPressed: _confirmando ? null : _confirmar,
+            onPressed: withBtnSfx(_confirmando ? null : _confirmar),
             child: const Text(
               ' ESCOLHER ',
               style: TextStyle(fontSize: 18, color: Palette.preto, fontWeight: FontWeight.bold),
@@ -300,7 +301,7 @@ class _CartaoCandidata extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 6),
       child: InkWell(
-        onTap: onTap,
+        onTap: withBtnSfx(onTap),
         child: Container(
           width: 116,
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),

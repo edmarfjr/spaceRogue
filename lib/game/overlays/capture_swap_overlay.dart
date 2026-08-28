@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
@@ -136,7 +137,7 @@ class _TrocaCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: onSoltar,
+              onPressed: withBtnSfx(onSoltar),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Palette.branco,
                 padding: const EdgeInsets.symmetric(vertical: 6),

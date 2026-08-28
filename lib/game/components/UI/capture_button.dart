@@ -1,6 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:creatures_rogue/game/components/UI/pointer_tracker.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 
@@ -22,11 +23,11 @@ class CaptureButton extends PositionComponent
   bool _tapDown = false;
   bool _pressed = false;
 
-  final Paint _baseColor = Paint()..color = Palette.roxoEsc.withAlpha(255);
-  final Paint _pressedColor = Paint()..color = Palette.roxoEsc.withAlpha(140);
+  final Paint _baseColor = Paint()..color = Palette.cinza.withAlpha(255);
+  final Paint _pressedColor = Paint()..color = Palette.cinza.withAlpha(140);
   final Paint _spritePaint = Paint()
     ..filterQuality = FilterQuality.none
-    ..colorFilter = const ColorFilter.mode(Palette.roxoEsc, BlendMode.modulate);
+    ..colorFilter = const ColorFilter.mode(Palette.cinza, BlendMode.modulate);
 
   /// Carregado uma vez em [onLoad], nunca em [render] — `render` é chamado
   /// de forma síncrona pelo motor (não é aguardado), então um `await
@@ -70,6 +71,7 @@ class CaptureButton extends PositionComponent
     final down = _tapDown || pointerTracker.anyInside(this);
     if (down == _pressed) return;
     _pressed = down;
+    if (down) HapticFeedback.lightImpact();
     onPressedChanged(down);
   }
 
@@ -96,6 +98,12 @@ class CaptureButton extends PositionComponent
     final center = Offset(size.x / 2, size.y / 2);
     final radius = size.x / 2;
     final iconSize = Vector2.all(size.x * 0.6);
+
+    canvas.drawCircle(
+      center,
+      radius*1.1,
+      Paint()..color = Palette.preto,
+    );
 
     canvas.drawCircle(center, radius, _pressed ? _pressedColor : _baseColor);
 

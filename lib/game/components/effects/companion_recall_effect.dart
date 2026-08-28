@@ -26,9 +26,9 @@ class CompanionRecallEffect extends PositionComponent {
   double _tempo = 0.0;
   late final Vector2 _origem;
 
-  final Paint _paint = Paint()..color = Palette.vermelho..style = PaintingStyle.stroke..strokeWidth = 1;
-  final Paint _paintBorda = Paint()..color = Palette.preto..style = PaintingStyle.stroke..strokeWidth = 1;
-  final Paint _paintBorda2 = Paint()..color = Palette.branco..style = PaintingStyle.stroke..strokeWidth = 1;
+  final Paint _paint = Paint()..color = Palette.vermelho..style = PaintingStyle.stroke..strokeWidth = 1..filterQuality = FilterQuality.none ;
+  final Paint _paintBorda = Paint()..color = Palette.preto..style = PaintingStyle.stroke..strokeWidth = 1..filterQuality = FilterQuality.none;
+  final Paint _paintBorda2 = Paint()..color = Palette.branco..style = PaintingStyle.stroke..strokeWidth = 1..filterQuality = FilterQuality.none;
 
   CompanionRecallEffect({
     required Vector2 position,

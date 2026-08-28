@@ -6,6 +6,11 @@ import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
 enum Sfx {
   dash,
   retorno,
+  liberar,
+  enemy_die,
+  btn,
+  stairs,
+  die,
   hit,
   fogo,
   agua,

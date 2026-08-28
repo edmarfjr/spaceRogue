@@ -188,7 +188,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   void liberarSlot(int slot) {
     final creature = companionCreatures[slot];
     if (creature == null || !companionPocketed[slot]) return;
-
+    GameAudio.instance.play(Sfx.liberar);
     final posicao = player.position + Vector2(16, 0);
     final novo = Companion(position: posicao, trainer: player, creatureData: creature);
     novo.currentHealth = companionSavedHealth[slot];
@@ -888,8 +888,8 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
       AbilityButton(
         radius: buttonRadius,
         tipo: () => AbilityTipo.esquiva,
-        baseColor: Palette.burgundy.withAlpha(255),
-        pressedColor: Palette.burgundy.withAlpha(140),
+        baseColor: Palette.cinza.withAlpha(255),
+        pressedColor: Palette.cinza.withAlpha(140),
         pointerTracker: pointerTracker,
         margin: EdgeInsets.only(right: marginRightB, bottom: edgeMarginY),
         onPressedChanged: (pressed) {
@@ -1025,6 +1025,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     // `Companion` montados eram removidos daqui mas `companions[]` continuava
     // apontando pra eles — a Hud/botões liam referência morta, e nada
     // recriava, então o grupo simplesmente sumia ao trocar de andar.
+    GameAudio.instance.play(Sfx.stairs);
     for (var child in dungeonWorld.children) {
       if (child != player && child is! Companion) {
         child.removeFromParent();

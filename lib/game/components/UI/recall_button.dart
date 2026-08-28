@@ -1,6 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 
 /// Botão de recolher/liberar o grupo (PIVOT_TREINADOR.md, pedido do
@@ -19,10 +20,10 @@ class RecallButton extends PositionComponent
   /// `CreaturesRogueGame.alternarRecuoGrupo`).
   final bool Function() recolhido;
 
-  final Paint _baseColor = Paint()..color = Palette.royal.withAlpha(255);
+  final Paint _baseColor = Paint()..color = Palette.cinza.withAlpha(255);
   final Paint _spritePaint = Paint()
     ..filterQuality = FilterQuality.none
-    ..colorFilter = const ColorFilter.mode(Palette.royal, BlendMode.modulate);
+    ..colorFilter = const ColorFilter.mode(Palette.cinza, BlendMode.modulate);
 
   /// Carregados uma vez em [onLoad], nunca em [render] — `render` é chamado
   /// de forma síncrona pelo motor (não é aguardado), então um `await
@@ -57,12 +58,21 @@ class RecallButton extends PositionComponent
   }
 
   @override
+  void onTapDown(TapDownEvent event) => HapticFeedback.lightImpact();
+
+  @override
   void onTapUp(TapUpEvent event) => onToggle();
 
   @override
   void render(Canvas canvas) {
     final center = Offset(size.x / 2, size.y / 2);
     final radius = size.x / 2;
+
+    canvas.drawCircle(
+      center,
+      radius*1.1,
+      Paint()..color = Palette.preto,
+    );
 
     canvas.drawCircle(center, radius, _baseColor);
 
