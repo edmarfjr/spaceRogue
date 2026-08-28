@@ -1,3 +1,5 @@
+import 'package:creatures_rogue/game/audio/game_audio.dart';
+import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
@@ -43,6 +45,7 @@ extension ConsumableTypeData on ConsumableType {
   /// senão o jogador veria o item desaparecer sem nada acontecer, o que lê como
   /// bug e não como regra.
   bool aplicar(Player player) {
+    GameAudio.instance.play(Sfx.use);
     switch (this) {
       case ConsumableType.pocao:
         return player.heal(4);

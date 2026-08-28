@@ -31,6 +31,8 @@ class GameAudio {
     Sfx.agua: 'sfx/agua.wav',
     Sfx.raio: 'sfx/raio.wav',
     Sfx.veneno: 'sfx/veneno.wav',
+    Sfx.pick: 'sfx/pick.wav',
+    Sfx.use: 'sfx/pick.wav',
   };
 
   static const int _maxPlayersPerSfx = 4;
@@ -45,11 +47,20 @@ class GameAudio {
   double volume = 0.7;
   bool enabled = true;
 
-  /// Chamado uma vez no boot (`main.dart`). Se o áudio do dispositivo falhar
-  /// (driver ausente, permissão negada, etc.), o jogo segue mudo em vez de
-  /// travar: [play] já sai cedo enquanto `_ready` for false.
-  Future<void> preload() async {
-    if (_ready) return;
+  Future<void>? _preloadFuture;
+
+  /// Chamado no boot (`main.dart`, sem `await` — só pra começar cedo) e de
+  /// novo no `onLoad` do jogo (`CreaturesRogueGame`, com `await`, mesmo
+  /// tratamento de `_preloadCombatSprites`: nenhum som deve faltar no
+  /// primeiro uso). "Single-flight": a segunda chamada não recarrega nada,
+  /// só espera o mesmo `Future` da primeira — sem isso as duas chamadas
+  /// disparariam `loadAll`/`createPool` em paralelo, duplicando trabalho.
+  Future<void> preload() => _preloadFuture ??= _doPreload();
+
+  /// Se o áudio do dispositivo falhar (driver ausente, permissão negada,
+  /// etc.), o jogo segue mudo em vez de travar: [play] já sai cedo enquanto
+  /// `_ready` for false.
+  Future<void> _doPreload() async {
     try {
       // `flame_audio` resolve caminho como `<prefix><path>`, e o prefixo
       // padrão é `assets/audio/` — não bate com `assets/sounds/`, que é onde

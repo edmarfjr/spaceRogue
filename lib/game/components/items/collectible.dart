@@ -1,4 +1,6 @@
 import 'dart:ui' as ui;
+import 'package:creatures_rogue/game/audio/game_audio.dart';
+import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
@@ -57,6 +59,7 @@ abstract class Collectible extends PositionComponent with CollisionCallbacks, Ha
       bool wasCollected = onCollect(other); 
       
       if (wasCollected) {
+        GameAudio.instance.play(Sfx.pick);
         removeFromParent();
       }
     }

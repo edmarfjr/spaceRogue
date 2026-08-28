@@ -16,6 +16,8 @@ enum Sfx {
   agua,
   raio,
   veneno,
+  pick,
+  use,
 }
 
 /// Som de ataque elemental de cada [CreatureType] — usado nos pontos onde o

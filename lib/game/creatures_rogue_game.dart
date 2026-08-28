@@ -292,6 +292,13 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     // textura nova em tempo de execução (travadinha na hora do disparo).
     await _preloadCombatSprites();
 
+    // Mesmo tratamento pros efeitos sonoros: `main.dart` já disparou isto
+    // sem esperar (só pra começar cedo, antes do GameWidget existir), mas o
+    // jogo em si só é dado como carregado depois que os sons também
+    // estiverem prontos — `preload()` é "single-flight", então não recarrega
+    // nada, só espera terminar.
+    await GameAudio.instance.preload();
+
     // 2. Configura a Câmera (Resolução Fixa: 160 x 144). Não depende do
     // jogador, então já pode ser montada aqui — a run em si só começa
     // quando o jogador escolhe uma criatura no CreatureSelectOverlay.

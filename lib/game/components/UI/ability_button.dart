@@ -45,7 +45,7 @@ class AbilityButton extends PositionComponent
   /// `FilterQuality.none` mantém o pixel art nítido: o sprite é 16x16 e o botão
   /// tem 100px de diâmetro no mobile.
   final Paint _spritePaint = Paint()..filterQuality = FilterQuality.none..colorFilter..color=Palette.cinza..blendMode=BlendMode.multiply;
-
+  Sprite? _sprite;
   AbilityButton({
     required double radius,
     required this.baseColor,
@@ -58,6 +58,12 @@ class AbilityButton extends PositionComponent
     // ComponentViewportMargin usa pra calcular a posição a partir da margem.
   }) : super(size: Vector2.all(radius * 2)) {
     this.margin = margin;
+  }
+
+  @override
+  Future<void> onLoad() async {
+    super.onLoad();
+    _sprite = await Sprite.load('ui/esquiva.png');
   }
 
   /// Área de toque circular, igual ao círculo desenhado. O `containsLocalPoint`
@@ -121,14 +127,15 @@ class AbilityButton extends PositionComponent
       Paint()..color = _pressed ? pressedColor : baseColor,
     );
 
-    // Ícone com 60% do diâmetro, centralizado — folga suficiente pra borda do
-    // círculo continuar visível como alvo de toque.
-    final iconSize = Vector2.all(size.x*0.6);
-    AbilityIcons.of(tipo()).render(
-      canvas,
-      position: (size - iconSize) / 2,
-      size: iconSize,
-      overridePaint: _spritePaint,
-    );
+    final iconSize = Vector2.all(size.x * 0.6);
+    final sprite = _sprite;
+    if (sprite != null) {
+      sprite.render(
+        canvas,
+        position: (size - iconSize) / 2,
+        size: iconSize,
+        overridePaint: _spritePaint,
+      );
+    }
   }
 }
