@@ -332,16 +332,18 @@ class RoomComponent extends PositionComponent with HasGameRef {
   }
 
   void _spawnEnemies() {
-    // Andar de boss: um adversário só, no centro, e nada de turma comum.
-    // Entra em activeEnemies como qualquer inimigo, então a sala destranca
-    // pela mesma regra de sempre — quando ele morre.
-
-    if (floor % 5 == 0){
+    // Sala final (RoomType.boss, onde a escada nasce): nunca turma comum. Só
+    // spawna adversário de verdade no andar de boss (`bossBuilder` não nulo);
+    // nos outros andares essa sala fica vazia e destranca na hora, sem briga.
+    // Sem esse desvio por tipo de sala, o `floor % 5 == 0` de baixo valia pra
+    // QUALQUER sala do andar — no andar de boss, até a loja spawnava boss.
+    if (data.type == RoomType.boss) {
       _spawnBoss();
       return;
     }
     
-    int count = 2 + _random.nextInt(3);
+    int count = floor + _random.nextInt(3);
+    //int count = floor + 1;
     
     for (int i = 0; i < count; i++) {
       double px = 0;

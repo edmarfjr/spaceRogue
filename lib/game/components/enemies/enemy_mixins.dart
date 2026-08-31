@@ -2,6 +2,8 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'dart:math';
+import 'package:creatures_rogue/game/audio/game_audio.dart';
+import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:creatures_rogue/game/components/creatures/movement_host.dart';
 
 // --- CÉREBRO 1: MOVIMENTO EM GRADE ---
@@ -122,6 +124,11 @@ mixin WanderMovement on MovementHost {
 // Sprite estático: não há mais spritesheet de ataque pra trocar de frame.
 // O tell visual do ataque é um pulso de escala (esticar/espremer) em vez de animação.
 mixin ShooterAttack on MovementHost {
+  /// Som do ataque, tocado quando a premeditação começa — quem usa este
+  /// mixin implementa (ver `Enemy.attackSfx`, que segue o tipo elemental da
+  /// criatura, o mesmo mapa de `CreatureTypeSfx`).
+  Sfx? get attackSfx;
+
   bool isAttacking = false;
   bool wantsToShoot = false;
 
@@ -206,6 +213,9 @@ mixin ShooterAttack on MovementHost {
     telegraphTimer = 0.0;
     wantsToShoot = false;
     attackTimer = 0.0;
+
+    final sfx = attackSfx;
+    if (sfx != null) GameAudio.instance.play(sfx);
 
     spawnAlerta(duracao: telegraphDuration);
   }

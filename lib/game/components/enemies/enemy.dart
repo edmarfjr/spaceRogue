@@ -52,6 +52,11 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   /// classe, usando `creature.stats` apenas como referência de projeto.
   final CreatureData? creature;
 
+  /// Satisfaz o contrato de `ShooterAttack` (ver `enemy_mixins.dart`) pra
+  /// quem usa esse mixin — não precisa reimplementar por inimigo, já que o
+  /// som é sempre o do tipo elemental da própria criatura.
+  Sfx? get attackSfx => creature?.tipo.attackSfx;
+
   final String spritePath;
 
   late final SpriteComponent visual;
