@@ -78,8 +78,12 @@ class GameAudio {
   /// Piso entre QUAISQUER dois toques, não importa o som — sem isso, sons
   /// diferentes tocando ao mesmo tempo (cada um dentro do próprio throttle)
   /// ainda somam uma rajada de chamadas de canal de plataforma no mesmo
-  /// frame.
-  static const int _globalThrottleMs = 50;
+  /// frame. 120ms (~8 toques/s) — teste de campo isolou o gargalo em
+  /// trabalho nativo por toque (cada `SoundPool.play()` aloca `AudioTrack`
+  /// de verdade), não em fila do lado Dart: com áudio desligado a vibração
+  /// (mesma thread de plataforma) ficava instantânea. Vozes/pool não
+  /// resolvem isso — é a taxa de chamada nativa que precisa cair.
+  static const int _globalThrottleMs = 120;
 
   bool _ready = false;
   bool get isReady => _ready;
