@@ -236,22 +236,31 @@ class GameAudio {
   /// `seek(0)` DE VERDADE espera a posição mudar antes de tocar — no
   /// `PlayerMode.mediaPlayer` isso é seguro (callback de conclusão real, ver
   /// doc da classe), diferente do `lowLatency`/`SoundPool` onde o mesmo
-  /// `await` pendurava 30s. Por isso aqui vale esperar em sequência, não
-  /// disparar solto: uma voz só deve "resumir" depois que o `seek` de fato
-  /// aterrissou, senão o restart vira continuação do ponto onde tocava.
+  /// `await` pendurava 30s. Por isso vale esperar ELE — é o que evita duas
+  /// chamadas de `seek` correndo ao mesmo tempo na mesma voz.
   ///
-  /// TODO(diagnóstico): `catch` com log foi o que expôs o bug do `seek` no
-  /// modo antigo (ver histórico do arquivo). Mantido por enquanto pra pegar
+  /// `resume()` já dispara solto, sem esperar: uma vez que a posição voltou
+  /// pro zero, começar a tocar não tem corrida nenhuma pra evitar, e segurar
+  /// a voz "ocupada" até o `resume()` também confirmar só encurtava a folga
+  /// pra dois sons do mesmo tipo tocarem quase juntos (achado de campo: a
+  /// guarda descartava som demais em rajada, ex. dois ataques de água quase
+  /// simultâneos). Liberar a voz assim que o `seek` aterrissa é suficiente.
+  ///
+  /// TODO(diagnóstico): `catch`/log foi o que expôs o bug do `seek` no modo
+  /// antigo (ver histórico do arquivo). Mantido por enquanto pra pegar
   /// qualquer outro caso escondido; reverter pra silencioso quando o áudio
   /// em combate ficar estável por um tempo.
   Future<void> _restart(Sfx sfx, AudioPlayer player) async {
     try {
       await player.seek(Duration.zero);
-      await player.resume();
     } catch (e) {
-      debugPrint('GameAudio.play(${sfx.name}) falhou: $e');
-    } finally {
+      debugPrint('GameAudio.play(${sfx.name}) seek falhou: $e');
       _busy.remove(player);
+      return;
     }
+    _busy.remove(player);
+    player.resume().catchError(
+      (e, st) => debugPrint('GameAudio.play(${sfx.name}) resume falhou: $e'),
+    );
   }
 }

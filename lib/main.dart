@@ -46,7 +46,7 @@ void main() async {
   //if (!isDesktopPlatform) {
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
     ]);
  // }
 
