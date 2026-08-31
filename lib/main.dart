@@ -40,6 +40,12 @@ void main() async {
   // atrasa a primeira tela. `GameAudio.play()` já é seguro de chamar antes
   // disso terminar — só fica mudo até o pool ficar pronto.
   unawaited(GameAudio.instance.preload());
+  // TODO(diagnóstico): desligado de propósito por UMA rodada de teste —
+  // pra descobrir se o atraso de vibração/som em combate é o áudio nativo
+  // saturando a thread de plataforma, ou o próprio jogo pesando o frame
+  // (nesse segundo caso a vibração continuaria atrasada mesmo com o áudio
+  // mudo). Religar assim que o teste voltar.
+  GameAudio.instance.enabled = false;
   await Flame.device.setLandscape();
   await Flame.device.fullScreen();
 

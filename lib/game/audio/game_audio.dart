@@ -100,6 +100,7 @@ class GameAudio {
   /// isolado em pico de combate é aceitável, acumular um estoque de sons
   /// atrasados não é.
   final Set<AudioPlayer> _busy = {};
+  int _droppedByBusy = 0;
 
   double volume = 0.7;
   bool enabled = true;
@@ -190,7 +191,16 @@ class GameAudio {
     _nextVoice[sfx] = (i + 1) % players.length;
 
     final player = players[i];
-    if (_busy.contains(player)) return; // voz ainda em voo — descarta o toque
+    if (_busy.contains(player)) {
+      // TODO(diagnóstico): contador temporário — preciso saber se a guarda
+      // de vozes ocupadas está de fato descartando toques em combate, ou se
+      // (com o throttle atual) uma voz nunca chega a estar ocupada de novo
+      // antes do próximo toque, o que provaria que o atraso não é fila do
+      // lado Dart. Reverter junto com o resto do diagnóstico.
+      _droppedByBusy++;
+      debugPrint('GameAudio: descartou ${sfx.name} (voz ocupada), total=$_droppedByBusy');
+      return;
+    }
     _busy.add(player);
 
     // Reinicia do zero via `stop()` + `resume()`, NUNCA `seek(Duration.zero)`
