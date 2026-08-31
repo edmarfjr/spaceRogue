@@ -175,25 +175,39 @@ class GameAudio {
     _nextVoice[sfx] = (i + 1) % players.length;
 
     final player = players[i];
-    // Reinicia do zero em vez de tocar de onde parou — é assim que uma
-    // "voz" reaproveitada soa como um novo disparo, não como a anterior
-    // pulando pra frente. Volume é fixado uma vez no preload (acima); só
-    // manda `setVolume` de novo se ALGUÉM pediu um volume diferente pra
-    // este toque específico — no caminho comum isso é uma chamada de canal
-    // de plataforma a menos por som tocado.
-    // TODO(diagnóstico): `.catchError` temporário nas três chamadas —
-    // fire-and-forget sem isso vira exceção não tratada que nunca chegava
-    // no console (ver TODO em `_doPreload`). Reverter junto.
+    // Reinicia do zero via `stop()` + `resume()`, NUNCA `seek(Duration.zero)`
+    // — achado em teste de campo (log real do dispositivo): no Android,
+    // `PlayerMode.lowLatency` é `SoundPool`, e o `seekTo(0)` do plugin nem
+    // sempre devolve resultado pro canal de plataforma; o `Future` do lado
+    // Dart fica pendurado até estourar o timeout interno de 30s do
+    // `audioplayers`. Cada toque durante um combate empilhava mais um desses
+    // — foi isso, não o SoundPool em si, que travava a thread principal por
+    // segundos. `stop()` é síncrono e sempre completa; `resume()` depois,
+    // com a voz já parada, cai no caminho do SoundPool que começa a
+    // reprodução do zero de novo (`soundPool.play`, não `soundPool.resume`).
+    //
+    // Volume é fixado uma vez no preload (acima); só manda `setVolume` de
+    // novo se ALGUÉM pediu um volume diferente pra este toque específico —
+    // no caminho comum isso é uma chamada de canal de plataforma a menos.
+    //
+    // TODO(diagnóstico): `.catchError` nas chamadas abaixo foi o que expôs
+    // o bug do `seek` (ver log). Mantido por enquanto pra pegar qualquer
+    // outro caso escondido; reverter pra silencioso quando o áudio em
+    // combate ficar estável por um tempo.
     if (volume != null) {
       player.setVolume(volume).catchError(
         (e, st) => debugPrint('GameAudio.play(${sfx.name}) setVolume falhou: $e'),
       );
     }
-    player.seek(Duration.zero).catchError(
-      (e, st) => debugPrint('GameAudio.play(${sfx.name}) seek falhou: $e'),
-    );
-    player.resume().catchError(
-      (e, st) => debugPrint('GameAudio.play(${sfx.name}) resume falhou: $e'),
-    );
+    _restart(sfx, player);
+  }
+
+  Future<void> _restart(Sfx sfx, AudioPlayer player) async {
+    try {
+      await player.stop();
+      await player.resume();
+    } catch (e) {
+      debugPrint('GameAudio.play(${sfx.name}) falhou: $e');
+    }
   }
 }
