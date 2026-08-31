@@ -1,4 +1,5 @@
 import 'package:flame_audio/flame_audio.dart';
+import 'package:flutter/foundation.dart';
 
 import 'sfx.dart';
 
@@ -144,8 +145,14 @@ class GameAudio {
         _nextVoice[entry.key] = 0;
       }
       _ready = true;
-    } catch (_) {
-      // Sem áudio, não sem jogo.
+    } catch (e, st) {
+      // TODO(diagnóstico): trocado de `catch (_) {}` pra log temporário —
+      // o app travando em campo sem nenhuma exceção Dart aparecendo no
+      // console sugere que o erro real estava sendo engolido aqui ou no
+      // fire-and-forget de `play()`. Reverter pra silencioso assim que o
+      // crash em combate estiver resolvido de vez (áudio não deve nunca
+      // travar o jogo, mas precisamos ver o erro pra saber o que corrigir).
+      debugPrint('GameAudio.preload falhou: $e\n$st');
     }
   }
 
@@ -174,8 +181,19 @@ class GameAudio {
     // manda `setVolume` de novo se ALGUÉM pediu um volume diferente pra
     // este toque específico — no caminho comum isso é uma chamada de canal
     // de plataforma a menos por som tocado.
-    if (volume != null) player.setVolume(volume);
-    player.seek(Duration.zero);
-    player.resume();
+    // TODO(diagnóstico): `.catchError` temporário nas três chamadas —
+    // fire-and-forget sem isso vira exceção não tratada que nunca chegava
+    // no console (ver TODO em `_doPreload`). Reverter junto.
+    if (volume != null) {
+      player.setVolume(volume).catchError(
+        (e, st) => debugPrint('GameAudio.play(${sfx.name}) setVolume falhou: $e'),
+      );
+    }
+    player.seek(Duration.zero).catchError(
+      (e, st) => debugPrint('GameAudio.play(${sfx.name}) seek falhou: $e'),
+    );
+    player.resume().catchError(
+      (e, st) => debugPrint('GameAudio.play(${sfx.name}) resume falhou: $e'),
+    );
   }
 }
