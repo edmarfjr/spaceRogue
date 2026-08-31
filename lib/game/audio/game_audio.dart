@@ -79,7 +79,7 @@ class GameAudio {
   /// diferentes tocando ao mesmo tempo (cada um dentro do próprio throttle)
   /// ainda somam uma rajada de chamadas de canal de plataforma no mesmo
   /// frame.
-  static const int _globalThrottleMs = 30;
+  static const int _globalThrottleMs = 50;
 
   bool _ready = false;
   bool get isReady => _ready;
@@ -88,6 +88,18 @@ class GameAudio {
   final Map<Sfx, int> _nextVoice = {};
   final Map<Sfx, int> _lastPlayedAtMs = {};
   int _lastPlayedAnyAtMs = 0;
+
+  /// Vozes com um `stop()`/`resume()` em voo agora — achado de campo #2
+  /// (depois do `seek` travado): nada limitava quantos `_restart` ficavam
+  /// pendurados ao mesmo tempo. Em combate pesado, disparo mais rápido que o
+  /// canal de plataforma consegue confirmar vira fila crescente — os sons
+  /// não tocam na hora, tocam depois, todos de uma vez, quando o combate já
+  /// acabou. Esta guarda faz o teto real ser o número de vozes (35), não a
+  /// taxa de disparo: se a voz escolhida no rodízio já está ocupada, ESTE
+  /// toque é descartado (não tenta outra voz, não enfileira) — perder um som
+  /// isolado em pico de combate é aceitável, acumular um estoque de sons
+  /// atrasados não é.
+  final Set<AudioPlayer> _busy = {};
 
   double volume = 0.7;
   bool enabled = true;
@@ -172,19 +184,26 @@ class GameAudio {
     _lastPlayedAnyAtMs = nowMs;
 
     final i = _nextVoice[sfx]!;
+    // Sempre avança o rodízio, mesmo se esta voz estiver ocupada e o toque
+    // for descartado — é isso que faz a PRÓXIMA chamada cair numa voz
+    // diferente em vez de tentar a mesma de novo.
     _nextVoice[sfx] = (i + 1) % players.length;
 
     final player = players[i];
+    if (_busy.contains(player)) return; // voz ainda em voo — descarta o toque
+    _busy.add(player);
+
     // Reinicia do zero via `stop()` + `resume()`, NUNCA `seek(Duration.zero)`
     // — achado em teste de campo (log real do dispositivo): no Android,
     // `PlayerMode.lowLatency` é `SoundPool`, e o `seekTo(0)` do plugin nem
     // sempre devolve resultado pro canal de plataforma; o `Future` do lado
     // Dart fica pendurado até estourar o timeout interno de 30s do
-    // `audioplayers`. Cada toque durante um combate empilhava mais um desses
-    // — foi isso, não o SoundPool em si, que travava a thread principal por
-    // segundos. `stop()` é síncrono e sempre completa; `resume()` depois,
-    // com a voz já parada, cai no caminho do SoundPool que começa a
+    // `audioplayers`. `stop()` é síncrono e sempre completa; `resume()`
+    // depois, com a voz já parada, cai no caminho do SoundPool que começa a
     // reprodução do zero de novo (`soundPool.play`, não `soundPool.resume`).
+    // As duas chamadas são disparadas sem `await` entre elas — canal de
+    // plataforma entrega na ordem que foi chamado, então não precisa da
+    // barreira, e esperar dobra o tempo de vida de cada corrente pendurada.
     //
     // Volume é fixado uma vez no preload (acima); só manda `setVolume` de
     // novo se ALGUÉM pediu um volume diferente pra este toque específico —
@@ -199,15 +218,11 @@ class GameAudio {
         (e, st) => debugPrint('GameAudio.play(${sfx.name}) setVolume falhou: $e'),
       );
     }
-    _restart(sfx, player);
-  }
-
-  Future<void> _restart(Sfx sfx, AudioPlayer player) async {
-    try {
-      await player.stop();
-      await player.resume();
-    } catch (e) {
-      debugPrint('GameAudio.play(${sfx.name}) falhou: $e');
-    }
+    player.stop().catchError(
+      (e, st) => debugPrint('GameAudio.play(${sfx.name}) stop falhou: $e'),
+    );
+    player.resume().catchError(
+      (e, st) => debugPrint('GameAudio.play(${sfx.name}) resume falhou: $e'),
+    ).whenComplete(() => _busy.remove(player));
   }
 }
