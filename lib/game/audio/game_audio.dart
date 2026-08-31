@@ -5,27 +5,37 @@ import 'sfx.dart';
 /// Efeitos sonoros do jogo — dash, retorno de criatura, dano e ataques
 /// elementais (ver [Sfx]). Ponto único de leitura de `assets/sounds/sfx/`.
 ///
-/// Três decisões carregam o peso da parte "performático" do pedido:
+/// Decisões que carregam o peso da parte "performático" do pedido:
 ///
 /// 1. `PlayerMode.lowLatency` em vez do padrão do `AudioPool`
-///    (`PlayerMode.mediaPlayer`, elemento `<audio>` do HTML no web). O modo
-///    padrão tem overhead real por chamada — em combate, com vários sons
-///    disparando no mesmo frame (AoE acertando vários inimigos, rajada de
-///    projéteis do mesmo elemento), esse overhead empilha e o som passa a
-///    tocar atrasado ("travando"). `lowLatency` usa Web Audio API no web
-///    (e o equivalente nativo mais leve nas outras plataformas) — é
-///    literalmente pra isso que existe, ver doc de `AudioPool` no pacote
-///    `audioplayers`: "extremely quick firing, repetitive, or simultaneous
-///    sounds".
-/// 2. Vozes fixas por som ([_voicesPerSfx]), criadas uma vez em [preload] e
+///    (`PlayerMode.mediaPlayer`). No Android isso é `SoundPool` — a API do
+///    próprio sistema pra "disparo rápido, repetitivo ou simultâneo"; no web,
+///    Web Audio API em vez do elemento `<audio>` do HTML.
+/// 2. `AudioContextConfig(focus: mixWithOthers)` em CADA voz, setado antes de
+///    tocar. Sem isso (regressão real, pegou num teste em campo: som
+///    engasgando em combate até o app travar e fechar) cada `resume()` pede
+///    foco de áudio ao sistema, o que dispara `AUDIOFOCUS_LOSS` em toda
+///    outra voz ativa — com dezenas de vozes isso é uma tempestade de
+///    handlers de foco disparando uns nos outros (O(n²) no número de vozes),
+///    e é ela, não o SoundPool, que travava a thread principal por segundos
+///    até o Android matar o app por ANR. `mixWithOthers` desliga esse
+///    comportamento: cada voz toca sem brigar pelo foco com as outras.
+/// 3. Vozes fixas por som ([_voiceCounts]), criadas uma vez em [preload] e
 ///    nunca mais — sem usar `AudioPool` (aquele cria player novo sem limite
 ///    quando fica sem um disponível em `lowLatency`, porque nesse modo ele
 ///    não escuta o fim da reprodução pra devolver o player ao pool; usar o
-///    pool nesse modo vazaria um `AudioPlayer` por toque). Aqui o `play()`
-///    sempre reaproveita em turno (round-robin): a voz mais antiga é cortada
-///    e reiniciada, nunca cria player novo.
-/// 3. Throttle por som ([_throttleMs]). Mesmo com vozes baratas, disparar
-///    dezenas por segundo é ruído, não efeito — o piso corta isso.
+///    pool nesse modo vazaria um `AudioPlayer` por toque). `play()` sempre
+///    reaproveita em turno (round-robin): a voz mais antiga é cortada e
+///    reiniciada, nunca cria player novo. A contagem por som é proporcional
+///    a quanto ele realmente sobrepõe (hit/elementais pedem mais que um
+///    efeito de UI ou de evento único) — cada voz é um `AudioPlayer` nativo
+///    vivo o jogo inteiro, então não faz sentido dar 4 pra `stairs`.
+/// 4. Throttle por som ([_throttleMs]) mais um piso global
+///    ([_globalThrottleMs]): um som sozinho não passa de N vezes por
+///    segundo, e a soma de sons diferentes tocando ao mesmo tempo (combate
+///    com vários elementos em cena) também não passa de um teto — sem o
+///    piso global, sete throttles por-som passando ao mesmo tempo ainda é
+///    sete chamadas de canal de plataforma no mesmo frame.
 class GameAudio {
   GameAudio._();
   static final GameAudio instance = GameAudio._();
@@ -47,8 +57,28 @@ class GameAudio {
     Sfx.use: 'sfx/pick.wav',
   };
 
-  static const int _voicesPerSfx = 4;
+  /// Quantas vozes cada som ganha — só os que realmente se sobrepõem em
+  /// combate (dano e ataques elementais) precisam de mais de duas. O padrão
+  /// pra quem não está aqui é [_defaultVoiceCount].
+  static const Map<Sfx, int> _voiceCounts = {
+    Sfx.hit: 4,
+    Sfx.fogo: 3,
+    Sfx.agua: 3,
+    Sfx.raio: 3,
+    Sfx.veneno: 3,
+    Sfx.stairs: 1,
+    Sfx.pick: 1,
+    Sfx.use: 1,
+  };
+  static const int _defaultVoiceCount = 2;
+
   static const int _throttleMs = 60;
+
+  /// Piso entre QUAISQUER dois toques, não importa o som — sem isso, sons
+  /// diferentes tocando ao mesmo tempo (cada um dentro do próprio throttle)
+  /// ainda somam uma rajada de chamadas de canal de plataforma no mesmo
+  /// frame.
+  static const int _globalThrottleMs = 30;
 
   bool _ready = false;
   bool get isReady => _ready;
@@ -56,6 +86,7 @@ class GameAudio {
   final Map<Sfx, List<AudioPlayer>> _voices = {};
   final Map<Sfx, int> _nextVoice = {};
   final Map<Sfx, int> _lastPlayedAtMs = {};
+  int _lastPlayedAnyAtMs = 0;
 
   double volume = 0.7;
   bool enabled = true;
@@ -84,18 +115,28 @@ class GameAudio {
       // mas era o caminho errado o tempo todo. `updatePrefix` acerta tanto o
       // cache de efeitos quanto o de `FlameAudio.bgm` (música) numa chamada só.
       FlameAudio.updatePrefix('assets/sounds/');
-      // Aquece o cache de bytes uma vez: sem isso, cada uma das
-      // `_voicesPerSfx` chamadas de `setSource` abaixo buscaria o mesmo
-      // arquivo de novo.
+      // Aquece o cache de bytes uma vez: sem isso, cada voz chamando
+      // `setSource` abaixo buscaria o mesmo arquivo de novo.
       await FlameAudio.audioCache.loadAll(_paths.values.toList());
 
+      // `mixWithOthers`: cada voz toca sem pedir foco de áudio exclusivo —
+      // é o que evita a tempestade de AUDIOFOCUS_LOSS entre as próprias
+      // vozes do jogo (ver doc da classe). Uma instância só, reaproveitada
+      // em todas as vozes.
+      final audioContext = AudioContextConfig(
+        focus: AudioContextConfigFocus.mixWithOthers,
+      ).build();
+
       for (final entry in _paths.entries) {
+        final voiceCount = _voiceCounts[entry.key] ?? _defaultVoiceCount;
         final players = <AudioPlayer>[];
-        for (var i = 0; i < _voicesPerSfx; i++) {
+        for (var i = 0; i < voiceCount; i++) {
           final player = AudioPlayer(playerId: '${entry.key.name}_$i')
             ..audioCache = FlameAudio.audioCache;
           await player.setPlayerMode(PlayerMode.lowLatency);
+          await player.setAudioContext(audioContext);
           await player.setReleaseMode(ReleaseMode.stop);
+          await player.setVolume(volume);
           await player.setSource(AssetSource(entry.value));
           players.add(player);
         }
@@ -109,17 +150,19 @@ class GameAudio {
   }
 
   /// Toca [sfx] se as vozes já estiverem prontas, habilitado, e fora do
-  /// throttle. Nunca lança e nunca bloqueia o frame — chamável direto de
-  /// qualquer `update`/`onCollision` sem `await`.
+  /// throttle (por som e global). Nunca lança e nunca bloqueia o frame —
+  /// chamável direto de qualquer `update`/`onCollision` sem `await`.
   void play(Sfx sfx, {double? volume}) {
     if (!_ready || !enabled) return;
     final players = _voices[sfx];
     if (players == null || players.isEmpty) return;
 
     final nowMs = DateTime.now().millisecondsSinceEpoch;
+    if (nowMs - _lastPlayedAnyAtMs < _globalThrottleMs) return;
     final last = _lastPlayedAtMs[sfx] ?? 0;
     if (nowMs - last < _throttleMs) return;
     _lastPlayedAtMs[sfx] = nowMs;
+    _lastPlayedAnyAtMs = nowMs;
 
     final i = _nextVoice[sfx]!;
     _nextVoice[sfx] = (i + 1) % players.length;
@@ -127,8 +170,11 @@ class GameAudio {
     final player = players[i];
     // Reinicia do zero em vez de tocar de onde parou — é assim que uma
     // "voz" reaproveitada soa como um novo disparo, não como a anterior
-    // pulando pra frente.
-    player.setVolume(volume ?? this.volume);
+    // pulando pra frente. Volume é fixado uma vez no preload (acima); só
+    // manda `setVolume` de novo se ALGUÉM pediu um volume diferente pra
+    // este toque específico — no caminho comum isso é uma chamada de canal
+    // de plataforma a menos por som tocado.
+    if (volume != null) player.setVolume(volume);
     player.seek(Duration.zero);
     player.resume();
   }
