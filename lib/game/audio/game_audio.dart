@@ -77,11 +77,11 @@ class GameAudio {
   /// combate (dano e ataques elementais) precisam de mais de duas. O padrão
   /// pra quem não está aqui é [_defaultVoiceCount].
   static const Map<Sfx, int> _voiceCounts = {
-    Sfx.hit: 4,
-    Sfx.fogo: 3,
-    Sfx.agua: 3,
-    Sfx.raio: 3,
-    Sfx.veneno: 3,
+    Sfx.hit: 6,
+    Sfx.fogo: 5,
+    Sfx.agua: 5,
+    Sfx.raio: 5,
+    Sfx.veneno: 5,
     Sfx.stairs: 1,
     Sfx.pick: 1,
     Sfx.use: 1,
@@ -93,12 +93,12 @@ class GameAudio {
   /// Piso entre QUAISQUER dois toques, não importa o som — sem isso, sons
   /// diferentes tocando ao mesmo tempo (cada um dentro do próprio throttle)
   /// ainda somam uma rajada de chamadas de canal de plataforma no mesmo
-  /// frame. 120ms (~8 toques/s) — teste de campo isolou o gargalo em
-  /// trabalho nativo por toque (cada `SoundPool.play()` aloca `AudioTrack`
-  /// de verdade), não em fila do lado Dart: com áudio desligado a vibração
-  /// (mesma thread de plataforma) ficava instantânea. Vozes/pool não
-  /// resolvem isso — é a taxa de chamada nativa que precisa cair.
-  static const int _globalThrottleMs = 120;
+  /// frame. Era 120ms enquanto o modo era `lowLatency`/`SoundPool` (cada
+  /// `play()` alocava `AudioTrack` nativo de verdade); depois da troca pra
+  /// `PlayerMode.mediaPlayer` (item 1 da doc da classe) esse custo por toque
+  /// já não existe mais — 80ms (~12 toques/s) volta a dar folga sem reabrir
+  /// a saturação antiga.
+  static const int _globalThrottleMs = 80;
 
   bool _ready = false;
   bool get isReady => _ready;

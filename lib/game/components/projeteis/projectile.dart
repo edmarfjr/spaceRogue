@@ -56,6 +56,12 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
 
   final bool estilhaca;
 
+  /// Falso pros cacos de `fragmentos`/`estilhaca`: são vários componentes
+  /// nascendo no mesmo frame pro mesmo estilhaçar, e cada um chamando
+  /// `GameAudio.play` de novo satura o pool de vozes por um único evento que
+  /// o jogador só ouve como um som.
+  final bool playSfx;
+
   Projectile({
     required Vector2 position,
     required this.direction,
@@ -79,6 +85,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     this.cegoDuracao = 0,
     this.atravessaObstaculos = false,
     this.estilhaca = false,
+    this.playSfx = true,
     Vector2? size,
     int priority = 0,
     }): super(
@@ -91,7 +98,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   @override
   Future<void> onLoad() async {
     final sfx = tipo.attackSfx;
-    if (sfx != null) GameAudio.instance.play(sfx);
+    if (sfx != null && playSfx) GameAudio.instance.play(sfx);
 
     lifeTimeIni = lifeTime ?? 10;
 
@@ -130,6 +137,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
           tipo: tipo,
           dotKind: dotKind,
           dotTicks: dotTicks,
+          playSfx: false,
         ));
       }
     }
@@ -160,6 +168,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
           // habilidade no Pinguim inimigo.
           isEnemy: isEnemy,
           tipo: tipo,
+          playSfx: false,
         ));
       }
 
