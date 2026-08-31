@@ -6,37 +6,52 @@ import 'sfx.dart';
 /// Efeitos sonoros do jogo — dash, retorno de criatura, dano e ataques
 /// elementais (ver [Sfx]). Ponto único de leitura de `assets/sounds/sfx/`.
 ///
-/// Decisões que carregam o peso da parte "performático" do pedido:
+/// Decisões que carregam o peso da parte "performático" do pedido — cada uma
+/// veio de um teste real em campo (log de dispositivo Android), não de
+/// suposição:
 ///
-/// 1. `PlayerMode.lowLatency` em vez do padrão do `AudioPool`
-///    (`PlayerMode.mediaPlayer`). No Android isso é `SoundPool` — a API do
-///    próprio sistema pra "disparo rápido, repetitivo ou simultâneo"; no web,
-///    Web Audio API em vez do elemento `<audio>` do HTML.
-/// 2. `AudioContextConfig(focus: mixWithOthers)` em CADA voz, setado antes de
-///    tocar. Sem isso (regressão real, pegou num teste em campo: som
-///    engasgando em combate até o app travar e fechar) cada `resume()` pede
-///    foco de áudio ao sistema, o que dispara `AUDIOFOCUS_LOSS` em toda
-///    outra voz ativa — com dezenas de vozes isso é uma tempestade de
-///    handlers de foco disparando uns nos outros (O(n²) no número de vozes),
-///    e é ela, não o SoundPool, que travava a thread principal por segundos
-///    até o Android matar o app por ANR. `mixWithOthers` desliga esse
-///    comportamento: cada voz toca sem brigar pelo foco com as outras.
-/// 3. Vozes fixas por som ([_voiceCounts]), criadas uma vez em [preload] e
-///    nunca mais — sem usar `AudioPool` (aquele cria player novo sem limite
-///    quando fica sem um disponível em `lowLatency`, porque nesse modo ele
-///    não escuta o fim da reprodução pra devolver o player ao pool; usar o
-///    pool nesse modo vazaria um `AudioPlayer` por toque). `play()` sempre
-///    reaproveita em turno (round-robin): a voz mais antiga é cortada e
-///    reiniciada, nunca cria player novo. A contagem por som é proporcional
-///    a quanto ele realmente sobrepõe (hit/elementais pedem mais que um
-///    efeito de UI ou de evento único) — cada voz é um `AudioPlayer` nativo
-///    vivo o jogo inteiro, então não faz sentido dar 4 pra `stairs`.
-/// 4. Throttle por som ([_throttleMs]) mais um piso global
-///    ([_globalThrottleMs]): um som sozinho não passa de N vezes por
-///    segundo, e a soma de sons diferentes tocando ao mesmo tempo (combate
-///    com vários elementos em cena) também não passa de um teto — sem o
-///    piso global, sete throttles por-som passando ao mesmo tempo ainda é
-///    sete chamadas de canal de plataforma no mesmo frame.
+/// 1. `PlayerMode.mediaPlayer`, NÃO `lowLatency`. No Android, `lowLatency` é
+///    `SoundPool`: cada `play()` faz o sistema alocar um `AudioTrack` nativo
+///    de verdade (visto se repetindo no log, `createTrack_l`, durante o
+///    próprio combate) — com um pool fixo de vozes reaproveitadas isso soma
+///    trabalho nativo real por toque, saturando a MESMA thread de
+///    plataforma que processa outras coisas (confirmado desligando o áudio:
+///    a vibração, que usa essa thread, ficou instantânea). `SoundPool`
+///    existe pra "várias vozes tocando ao mesmo tempo sem gerência manual"
+///    — MAS este arquivo já faz a própria gerência de vozes (item 3), então
+///    a vantagem do SoundPool não vale nada aqui, só o custo. `MediaPlayer`
+///    aloca o `AudioTrack` uma vez por player e reaproveita — o preço fica
+///    só no preload, não a cada toque.
+/// 2. `player.seek(Duration.zero)` antes de `player.resume()` pra reiniciar
+///    uma voz — e SÓ nesse modo. No `SoundPool` o `seekTo(0)` do plugin não
+///    completa de forma confiável (achado real: `Future` pendurado até
+///    estourar os 30s de timeout do `audioplayers`, um por toque, empilhando
+///    até travar o app). No `MediaPlayer`, `seekTo` é implementação de
+///    verdade, com callback de conclusão — o padrão que quebrava num modo é
+///    o correto no outro. NUNCA chamar `stop()` aqui: no `MediaPlayer` isso
+///    força o estado "Stopped", que exige `prepare()` de novo antes do
+///    próximo `start()` — o oposto do que uma voz reaproveitável precisa.
+/// 3. `AudioContextConfig(focus: mixWithOthers)` em CADA voz, setado antes de
+///    tocar. Sem isso cada `resume()` pede foco de áudio ao sistema, o que
+///    dispara `AUDIOFOCUS_LOSS` em toda outra voz ativa — com dezenas de
+///    vozes isso é uma tempestade de handlers de foco disparando uns nos
+///    outros (O(n²) no número de vozes), travando a thread principal até o
+///    Android matar o app por ANR. `mixWithOthers` desliga isso.
+/// 4. Vozes fixas por som ([_voiceCounts]), criadas uma vez em [preload] e
+///    nunca mais. `play()` sempre reaproveita em turno (round-robin): a voz
+///    mais antiga é cortada e reiniciada, nunca cria player novo. A
+///    contagem por som é proporcional a quanto ele realmente sobrepõe
+///    (hit/elementais pedem mais que um efeito de UI ou de evento único).
+/// 5. Throttle por som ([_throttleMs]) mais um piso global
+///    ([_globalThrottleMs]): mesmo com trabalho nativo mais barato por
+///    trigger (item 1), ainda existe um teto de quantas chamadas de canal de
+///    plataforma por segundo fazem sentido — sem o piso global, sons
+///    diferentes tocando juntos ainda somam uma rajada no mesmo frame.
+/// 6. Guarda de voz ocupada ([_busy]): uma voz só aceita um
+///    `seek()`+`resume()` em voo por vez. Se o rodízio cai numa voz ainda em
+///    voo, o toque é DESCARTADO (não enfileira, não tenta outra voz) — o
+///    teto de chamadas simultâneas em voo passa a ser o número de vozes, não
+///    a taxa de disparo do combate.
 class GameAudio {
   GameAudio._();
   static final GameAudio instance = GameAudio._();
@@ -151,7 +166,7 @@ class GameAudio {
         for (var i = 0; i < voiceCount; i++) {
           final player = AudioPlayer(playerId: '${entry.key.name}_$i')
             ..audioCache = FlameAudio.audioCache;
-          await player.setPlayerMode(PlayerMode.lowLatency);
+          await player.setPlayerMode(PlayerMode.mediaPlayer);
           await player.setAudioContext(audioContext);
           await player.setReleaseMode(ReleaseMode.stop);
           await player.setVolume(volume);
@@ -207,36 +222,36 @@ class GameAudio {
     }
     _busy.add(player);
 
-    // Reinicia do zero via `stop()` + `resume()`, NUNCA `seek(Duration.zero)`
-    // — achado em teste de campo (log real do dispositivo): no Android,
-    // `PlayerMode.lowLatency` é `SoundPool`, e o `seekTo(0)` do plugin nem
-    // sempre devolve resultado pro canal de plataforma; o `Future` do lado
-    // Dart fica pendurado até estourar o timeout interno de 30s do
-    // `audioplayers`. `stop()` é síncrono e sempre completa; `resume()`
-    // depois, com a voz já parada, cai no caminho do SoundPool que começa a
-    // reprodução do zero de novo (`soundPool.play`, não `soundPool.resume`).
-    // As duas chamadas são disparadas sem `await` entre elas — canal de
-    // plataforma entrega na ordem que foi chamado, então não precisa da
-    // barreira, e esperar dobra o tempo de vida de cada corrente pendurada.
-    //
     // Volume é fixado uma vez no preload (acima); só manda `setVolume` de
     // novo se ALGUÉM pediu um volume diferente pra este toque específico —
     // no caminho comum isso é uma chamada de canal de plataforma a menos.
-    //
-    // TODO(diagnóstico): `.catchError` nas chamadas abaixo foi o que expôs
-    // o bug do `seek` (ver log). Mantido por enquanto pra pegar qualquer
-    // outro caso escondido; reverter pra silencioso quando o áudio em
-    // combate ficar estável por um tempo.
     if (volume != null) {
       player.setVolume(volume).catchError(
         (e, st) => debugPrint('GameAudio.play(${sfx.name}) setVolume falhou: $e'),
       );
     }
-    player.stop().catchError(
-      (e, st) => debugPrint('GameAudio.play(${sfx.name}) stop falhou: $e'),
-    );
-    player.resume().catchError(
-      (e, st) => debugPrint('GameAudio.play(${sfx.name}) resume falhou: $e'),
-    ).whenComplete(() => _busy.remove(player));
+    _restart(sfx, player);
+  }
+
+  /// `seek(0)` DE VERDADE espera a posição mudar antes de tocar — no
+  /// `PlayerMode.mediaPlayer` isso é seguro (callback de conclusão real, ver
+  /// doc da classe), diferente do `lowLatency`/`SoundPool` onde o mesmo
+  /// `await` pendurava 30s. Por isso aqui vale esperar em sequência, não
+  /// disparar solto: uma voz só deve "resumir" depois que o `seek` de fato
+  /// aterrissou, senão o restart vira continuação do ponto onde tocava.
+  ///
+  /// TODO(diagnóstico): `catch` com log foi o que expôs o bug do `seek` no
+  /// modo antigo (ver histórico do arquivo). Mantido por enquanto pra pegar
+  /// qualquer outro caso escondido; reverter pra silencioso quando o áudio
+  /// em combate ficar estável por um tempo.
+  Future<void> _restart(Sfx sfx, AudioPlayer player) async {
+    try {
+      await player.seek(Duration.zero);
+      await player.resume();
+    } catch (e) {
+      debugPrint('GameAudio.play(${sfx.name}) falhou: $e');
+    } finally {
+      _busy.remove(player);
+    }
   }
 }
