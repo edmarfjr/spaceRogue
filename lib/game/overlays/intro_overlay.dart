@@ -9,6 +9,9 @@ import 'package:creatures_rogue/game/components/creatures/creature_progress.dart
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:creatures_rogue/game/overlays/creature_select_overlay.dart';
+import 'package:creatures_rogue/l10n/ability_passive_i18n.dart';
+import 'package:creatures_rogue/l10n/creature_i18n.dart';
+import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 
 /// Abertura do jogo, vista uma vez só: apresenta o mundo em páginas de
 /// diálogo e termina com a escolha da criatura inicial — a única liberada na
@@ -33,23 +36,6 @@ class IntroOverlay extends StatefulWidget {
 
 enum _Fase { dialogo, escolha }
 
-/// Uma página por toque. Escritas curtas de propósito: a caixa tem altura
-/// fixa (ver [_CaixaDialogo]) porque em landscape de celular a tela tem
-/// ~360dp de altura, e uma caixa que cresce com o texto reproduz o
-/// "BOTTOM OVERFLOWED" que já apareceu no seletor de criaturas.
-const List<String> _paginas = [
-  //'Existe um mundo onde a vida não nasce de carne e osso, mas de fogo, água, planta e relâmpago.',
-  //'Chamamos essas vidas de CRIATURAS. Cada uma carrega um elemento — e um jeito próprio de lutar.',
-  //'Sob a superfície se abrem as MASMORRAS: andares que se remontam sozinhos, nunca iguais duas vezes.',
-  //'Ninguém desce lá sozinho. Quem desce é TREINADOR: você não luta, você comanda quem luta por você.',
-  //'Criaturas selvagens podem ser capturadas e entrar no seu grupo. No último andar, algo bem maior espera.',
-  //'Mas todo treinador começa com uma só. Escolha bem — ela é a sua primeira parceira.',
-  'Sob a superfície se abrem misteriosas MASMORRAS, onde habitam CRIATURAS mais misteriosas ainda.',
-  'cada CRIATURA carrega um fragmento da criação, dividida nos 4 elementos: FOGO, ÁGUA, PLANTA e RELÂMPAGO',
-  'Cabe a você, O TREINADOR, explorar e capturar todas essas CRIATURAS',
-  'Mas é muito perigoso explorar as MASMORRAS sozinho! Escolha seu parceiro nessa jornada.',
-];
-
 /// Candidatas da primeira escolha: uma por tipo elemental, pra escolha ser
 /// escolha de verdade e não só "a única opção".
 const List<String> _idsIniciais = [
@@ -69,6 +55,17 @@ class _IntroOverlayState extends State<IntroOverlay> {
   late CreatureData _selecionada = _candidatas.first;
 
   bool _confirmando = false;
+
+  /// Uma página por toque. Escritas curtas de propósito: a caixa tem altura
+  /// fixa (ver [_CaixaDialogo]) porque em landscape de celular a tela tem
+  /// ~360dp de altura, e uma caixa que cresce com o texto reproduz o
+  /// "BOTTOM OVERFLOWED" que já apareceu no seletor de criaturas.
+  List<String> get _paginas => [
+        context.l10n.intro_pagina1,
+        context.l10n.intro_pagina2,
+        context.l10n.intro_pagina3,
+        context.l10n.intro_pagina4,
+      ];
 
   String get _textoAtual => _paginas[_pagina];
   bool get _paginaCompleta => _revelados >= _textoAtual.length;
@@ -164,9 +161,9 @@ class _IntroOverlayState extends State<IntroOverlay> {
           right: 12,
           child: TextButton(
             onPressed: withBtnSfx(_irParaEscolha),
-            child: const Text(
-              'PULAR',
-              style: TextStyle(color: Palette.preto, fontSize: 14, letterSpacing: 2),
+            child: Text(
+              context.l10n.intro_pular,
+              style: const TextStyle(color: Palette.preto, fontSize: 14, letterSpacing: 2),
             ),
           ),
         ),
@@ -177,11 +174,11 @@ class _IntroOverlayState extends State<IntroOverlay> {
   Widget _construirEscolha() {
     return Column(
       children: [
-        const Padding(
-          padding: EdgeInsets.only(top: 12, bottom: 10),
+        Padding(
+          padding: const EdgeInsets.only(top: 12, bottom: 10),
           child: Text(
-            'ESCOLHA SUA PRIMEIRA CRIATURA',
-            style: TextStyle(color: Palette.preto, fontSize: 20, fontWeight: FontWeight.bold),
+            context.l10n.intro_escolhaPrimeira,
+            style: const TextStyle(color: Palette.preto, fontSize: 20, fontWeight: FontWeight.bold),
           ),
         ),
         Row(
@@ -213,9 +210,9 @@ class _IntroOverlayState extends State<IntroOverlay> {
             // Toque no cartão seleciona, este botão confirma: escolha
             // permanente merece dois toques.
             onPressed: withBtnSfx(_confirmando ? null : _confirmar),
-            child: const Text(
-              ' ESCOLHER ',
-              style: TextStyle(fontSize: 18, color: Palette.preto, fontWeight: FontWeight.bold),
+            child: Text(
+              context.l10n.intro_escolher,
+              style: const TextStyle(fontSize: 18, color: Palette.preto, fontWeight: FontWeight.bold),
             ),
           ),
         ),
@@ -315,7 +312,7 @@ class _CartaoCandidata extends StatelessWidget {
               CreatureSprite(creature: criatura, size: 52),
               const SizedBox(height: 6),
               Text(
-                criatura.nome,
+                creatureName(context, criatura.id),
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: Palette.preto,
@@ -324,7 +321,7 @@ class _CartaoCandidata extends StatelessWidget {
                 ),
               ),
               Text(
-                CreatureSelectOverlay.typeLabel(criatura.tipo),
+                CreatureSelectOverlay.typeLabel(context, criatura.tipo),
                 style: const TextStyle(color: Palette.preto, fontSize: 12),
               ),
             ],
@@ -360,9 +357,9 @@ class _FaixaDetalhe extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _Rotulo('SAÚDE ${criatura.stats.maxHp}',fontSize: 16),
-                  _Rotulo('VELOCIDADE ${criatura.stats.speed.toInt()}',fontSize: 16),
-                  _Rotulo('ATAQUE ${criatura.stats.ataque.toInt()}',fontSize: 16),
+                  _Rotulo(context.l10n.intro_saude(criatura.stats.maxHp),fontSize: 16),
+                  _Rotulo(context.l10n.intro_velocidade(criatura.stats.speed.toInt()),fontSize: 16),
+                  _Rotulo(context.l10n.intro_ataque(criatura.stats.ataque.toInt()),fontSize: 16),
                 ],
               ),
             ),
@@ -371,9 +368,9 @@ class _FaixaDetalhe extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const _Rotulo('HABILIDADES'),
-                  _Rotulo(criatura.ability1.nome,textoD:criatura.ability1.descricao),
-                  _Rotulo(criatura.passive.nome,textoD:criatura.passive.descricao),
+                  _Rotulo(context.l10n.intro_habilidades),
+                  _Rotulo(abilityName(context, criatura.ability1),textoD: abilityDescription(context, criatura.ability1)),
+                  _Rotulo(passiveName(context, criatura.passive),textoD: passiveDescription(context, criatura.passive)),
                 ],
               ),
             ),

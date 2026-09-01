@@ -1,5 +1,4 @@
 import 'package:flame/components.dart';
-import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/components/map/obstacle.dart';
 import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
@@ -148,7 +147,7 @@ class CobraAguaBossEnemy extends Enemy with JumpMovement {
         ));
       }
 
-      CreatureProgress.instance.unlock('cobra_agua');
+      unlockCreature();
     }
     super.death();
   }

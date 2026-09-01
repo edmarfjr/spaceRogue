@@ -3,6 +3,7 @@ import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
+import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 
 /// Menu inicial: só as duas portas de entrada do jogo. O seletor de controle
 /// que morava aqui foi pra [SettingsOverlay], que também persiste a escolha.
@@ -18,9 +19,9 @@ class MainMenuOverlay extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'CREATURES ROGUE',
-              style: TextStyle(color: Palette.preto, fontSize: 48, fontWeight: FontWeight.bold),
+            Text(
+              context.l10n.menu_titulo,
+              style: const TextStyle(color: Palette.preto, fontSize: 48, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 50),
             ElevatedButton(
@@ -45,7 +46,7 @@ class MainMenuOverlay extends StatelessWidget {
                   CreatureProgress.instance.introConcluida ? 'CreatureSelect' : 'Intro',
                 );
               }),
-              child: const Text(' NOVO JOGO ', style: TextStyle(fontSize: 24, color: Palette.preto)),
+              child: Text(context.l10n.menu_novoJogo, style: const TextStyle(fontSize: 24, color: Palette.preto)),
             ),
             const SizedBox(height: 15),
             ElevatedButton(
@@ -60,9 +61,10 @@ class MainMenuOverlay extends StatelessWidget {
               ),
               onPressed: withBtnSfx(() {
                 game.overlays.remove('MainMenu');
+                game.settingsReturnOverlay = 'MainMenu';
                 game.overlays.add('Settings');
               }),
-              child: const Text(' CONFIGURAÇÕES ', style: TextStyle(fontSize: 20, color: Palette.preto)),
+              child: Text(context.l10n.menu_configuracoes, style: const TextStyle(fontSize: 20, color: Palette.preto)),
             ),
           ],
         ),

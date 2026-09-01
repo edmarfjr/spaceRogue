@@ -18,6 +18,8 @@ import 'package:creatures_rogue/game/components/map/door.dart';
 import 'package:creatures_rogue/game/components/map/obstacle.dart';
 import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
+import 'package:creatures_rogue/l10n/creature_i18n.dart';
+import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import '../player/player.dart';
 import '../utils/palette_swapper.dart';
 import '../utils/y_sort.dart';
@@ -475,6 +477,22 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     removeFromParent();
   }
 
+  /// Libera `creature` pra jogar e avisa na tela — cada boss chama isto no
+  /// próprio `death()`, antes do `super.death()`. Centralizado aqui (em vez
+  /// de repetir o texto em cada boss) porque todos já têm `creature`, `parent`
+  /// e `position` prontos pelo mesmo motivo do dano em `takeDamage`.
+  void unlockCreature() {
+    final data = creature;
+    if (data == null) return;
+
+    CreatureProgress.instance.unlock(data.id);
+    final context = game.buildContext!;
+    parent?.add(TextEffect(
+      text: context.l10n.effect_criaturaLiberada(creatureName(context, data.id)),
+      position: position.clone() + Vector2(0, -size.y / 2 - 4),
+      color: Palette.branco,
+    ));
+  }
 
   void applyKnockback(Vector2 sourcePosition, double force) {
     Vector2 direction = (absolutePosition - sourcePosition).normalized();

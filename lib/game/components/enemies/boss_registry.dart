@@ -1,9 +1,10 @@
 import 'dart:math';
 
 import 'package:flame/components.dart';
+import 'package:flutter/widgets.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
-import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/l10n/creature_i18n.dart';
 import 'creatures/ave_eletrica_boss_enemy.dart';
 import 'creatures/bomba_fogo_boss_enemy.dart';
 import 'creatures/caranguejo_ermitao_boss_enemy.dart';
@@ -38,7 +39,7 @@ class BossOption {
   /// Nome mostrado na barra de vida e no reveal. Derivado da criatura em vez de
   /// guardado aqui: os nomes das criaturas ainda estão sendo definidos, e
   /// duplicar faria a barra do boss divergir do resto do jogo.
-  String get nome => CreatureRegistry.byId(creatureId).nome.toUpperCase();
+  String nome(BuildContext context) => creatureName(context, creatureId).toUpperCase();
 }
 
 /// Quais bosses existem e qual deles cai na run atual.

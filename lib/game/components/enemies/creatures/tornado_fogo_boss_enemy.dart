@@ -1,5 +1,4 @@
 import 'package:flame/components.dart';
-import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/components/effects/ghost_effect.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
@@ -151,7 +150,7 @@ class TornadoFogoBossEnemy extends Enemy with ChaseMovement, ShooterAttack {
 
   @override
   void death() {
-    CreatureProgress.instance.unlock('tornado_fogo');
+    unlockCreature();
     super.death();
   }
 }

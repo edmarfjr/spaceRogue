@@ -9,23 +9,27 @@ import 'package:creatures_rogue/game/components/creatures/creature_progress.dart
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
+import 'package:creatures_rogue/l10n/ability_passive_i18n.dart';
+import 'package:creatures_rogue/l10n/creature_i18n.dart';
+import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 
 class CreatureSelectOverlay extends StatefulWidget {
   final CreaturesRogueGame game;
   const CreatureSelectOverlay({super.key, required this.game});
 
-  static String typeLabel(CreatureType tipo) {
+  static String typeLabel(BuildContext context, CreatureType tipo) {
+    final l = context.l10n;
     switch (tipo) {
       case CreatureType.fogo:
-        return 'Fogo';
+        return l.creatureType_fogo;
       case CreatureType.planta:
-        return 'Planta';
+        return l.creatureType_planta;
       case CreatureType.agua:
-        return 'Água';
+        return l.creatureType_agua;
       case CreatureType.eletrico:
-        return 'Elétrico';
+        return l.creatureType_eletrico;
       case CreatureType.neutro:
-        return 'Neutro';
+        return l.creatureType_neutro;
     }
   }
 
@@ -63,11 +67,11 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
       child: SafeArea(
         child: Column(
           children: [
-            const Padding(
-              padding: EdgeInsets.only(top: 16, bottom: 8),
+            Padding(
+              padding: const EdgeInsets.only(top: 16, bottom: 8),
               child: Text(
-                'ESCOLHA SUA CRIATURA',
-                style: TextStyle(
+                context.l10n.creatureSelect_titulo,
+                style: const TextStyle(
                   color: Palette.preto,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -173,7 +177,7 @@ class _CreatureListTile extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                locked ? '???' : creature.nome,
+                locked ? context.l10n.creatureSelect_bloqueada : creatureName(context, creature.id),
                 style: TextStyle(
                   color: locked ? Palette.indigo : Palette.preto,
                   fontSize: 14,
@@ -239,7 +243,10 @@ class _CreatureDetailPanel extends StatelessWidget {
                               ),
                             ),
                             child: Text(
-                              '${creature.nome} \n Tipo: ${CreatureSelectOverlay.typeLabel(creature.tipo)} ',
+                              context.l10n.creatureSelect_nomeTipo(
+                                creatureName(context, creature.id),
+                                CreatureSelectOverlay.typeLabel(context, creature.tipo),
+                              ),
                               style: const TextStyle(
                                 color: Palette.preto,
                                 fontSize: 22,
@@ -269,15 +276,15 @@ class _CreatureDetailPanel extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
                               _StatLine(
-                                'SAÚDE',
+                                context.l10n.creatureSelect_saude,
                                 creature.stats.maxHp.toString(),
                               ),
                               _StatLine(
-                                'VELOCIDADE',
+                                context.l10n.creatureSelect_velocidade,
                                 creature.stats.speed.toInt().toString(),
                               ),
                               _StatLine(
-                                'ATAQUE',
+                                context.l10n.creatureSelect_ataque,
                                 creature.stats.ataque.toInt().toString(),
                               ),
                               // _StatLine('DEFESA', creature.stats.defesa.toInt().toString()),
@@ -320,7 +327,7 @@ class _CreatureDetailPanel extends StatelessWidget {
                                     mainAxisAlignment: MainAxisAlignment.start,
                                     children: [
                                       Text(
-                                        'Habilidade:',
+                                        context.l10n.creatureSelect_habilidade,
                                         style: const TextStyle(
                                           color: Palette.preto,
                                           fontSize: 16,
@@ -329,7 +336,7 @@ class _CreatureDetailPanel extends StatelessWidget {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        creature.ability1.nome,
+                                        abilityName(context, creature.ability1),
                                         style: const TextStyle(
                                           color: Palette.preto,
                                           fontSize: 14,
@@ -342,7 +349,7 @@ class _CreatureDetailPanel extends StatelessWidget {
                                           .isNotEmpty) ...[
                                         const SizedBox(height: 2),
                                         Text(
-                                          creature.ability1.descricao,
+                                          abilityDescription(context, creature.ability1),
                                           style: const TextStyle(
                                             color: Palette.preto,
                                             fontSize: 12,
@@ -351,7 +358,7 @@ class _CreatureDetailPanel extends StatelessWidget {
                                       ],
                                       const SizedBox(height: 8),
                                       Text(
-                                        'Passiva:',
+                                        context.l10n.creatureSelect_passiva,
                                         style: const TextStyle(
                                           color: Palette.preto,
                                           fontSize: 16,
@@ -360,7 +367,7 @@ class _CreatureDetailPanel extends StatelessWidget {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        creature.passive.nome,
+                                        passiveName(context, creature.passive),
                                         style: const TextStyle(
                                           color: Palette.preto,
                                           fontSize: 14,
@@ -373,7 +380,7 @@ class _CreatureDetailPanel extends StatelessWidget {
                                           .isNotEmpty) ...[
                                         const SizedBox(height: 2),
                                         Text(
-                                          creature.passive.descricao,
+                                          passiveDescription(context, creature.passive),
                                           style: const TextStyle(
                                             color: Palette.preto,
                                             fontSize: 12,
@@ -409,9 +416,9 @@ class _CreatureDetailPanel extends StatelessWidget {
                 side: BorderSide(color: Palette.preto, width: 2),
               ),
             ),
-            child: const Text(
-              'JOGAR',
-              style: TextStyle(
+            child: Text(
+              context.l10n.creatureSelect_jogar,
+              style: const TextStyle(
                 color: Palette.preto,
                 fontSize: 16,
                 fontWeight: FontWeight.bold,

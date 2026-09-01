@@ -915,7 +915,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       if (event.logicalKey == LogicalKeyboardKey.digit1) useSlot(0);
       if (event.logicalKey == LogicalKeyboardKey.digit2) useSlot(1);
       // Ação pessoal do treinador — a resposta ao playtest da fase 3.
-      if (event.logicalKey == LogicalKeyboardKey.space) dodge();
+      if (event.logicalKey == LogicalKeyboardKey.keyZ || event.logicalKey == LogicalKeyboardKey.space) dodge();
       // Recolher/liberar o grupo, pra testar sem depender do botão — troca
       // de estado, então KeyDown (uma vez por aperto), não hold como C.
       if (event.logicalKey == LogicalKeyboardKey.keyX && jogoAtual is CreaturesRogueGame) {

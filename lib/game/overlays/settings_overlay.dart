@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:creatures_rogue/game/game_settings.dart';
+import 'package:creatures_rogue/l10n/gen/app_localizations.dart';
+import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 
 class SettingsOverlay extends StatefulWidget {
   final CreaturesRogueGame game;
@@ -33,6 +35,23 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
     if (mounted) setState(() {});
   }
 
+  // Sem `setState` aqui: `GameSettings.setLocale` já muda `localeNotifier`,
+  // que reconstrói o `MaterialApp` inteiro (ver `main.dart`) — esta tela é
+  // descendente dele, então reconstrói sozinha já com o idioma novo.
+  void _escolherIdioma(Locale? locale) {
+    GameSettings.instance.setLocale(locale);
+  }
+
+  Future<void> _alternarSom(bool valor) async {
+    await GameSettings.instance.setSoundEnabled(valor);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _alternarMusica(bool valor) async {
+    await GameSettings.instance.setMusicEnabled(valor);
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final atual = widget.game.controlScheme;
@@ -43,14 +62,14 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'CONFIGURAÇÕES',
-              style: TextStyle(color: Palette.preto, fontSize: 36, fontWeight: FontWeight.bold),
+            Text(
+              context.l10n.settings_titulo,
+              style: const TextStyle(color: Palette.preto, fontSize: 36, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 40),
-            const Text(
-              'CONTROLE',
-              style: TextStyle(color: Palette.preto, fontSize: 14, letterSpacing: 3),
+            Text(
+              context.l10n.settings_controle,
+              style: const TextStyle(color: Palette.preto, fontSize: 14, letterSpacing: 3),
             ),
             const SizedBox(height: 8),
             Row(
@@ -74,7 +93,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                       ),
                       onPressed: withBtnSfx(scheme == atual ? null : () => _escolher(scheme)),
                       child: Text(
-                        scheme.rotulo,
+                        scheme.rotulo(context),
                         style: TextStyle(
                           fontSize: 16,
                           color: scheme == atual ? Palette.branco : Palette.preto,
@@ -88,10 +107,73 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
             SizedBox(
               width: 420,
               child: Text(
-                atual.descricao,
+                atual.descricao(context),
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Palette.preto, fontSize: 13),
               ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              context.l10n.settings_idioma,
+              style: const TextStyle(color: Palette.preto, fontSize: 14, letterSpacing: 3),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final MapEntry(key: locale, value: rotulo) in {
+                  null: context.l10n.settings_idiomaSistema,
+                  for (final loc in AppLocalizations.supportedLocales) loc: loc.languageCode.toUpperCase(),
+                }.entries)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        backgroundColor: locale == GameSettings.instance.locale ? Palette.preto : Palette.branco,
+                        side: BorderSide(color: Palette.preto),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
+                          side: BorderSide(color: Palette.preto, width: 5),
+                        ),
+                      ),
+                      onPressed: withBtnSfx(
+                        locale == GameSettings.instance.locale ? null : () => _escolherIdioma(locale),
+                      ),
+                      child: Text(
+                        rotulo,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: locale == GameSettings.instance.locale ? Palette.branco : Palette.preto,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Text(
+              context.l10n.settings_audio,
+              style: const TextStyle(color: Palette.preto, fontSize: 14, letterSpacing: 3),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(context.l10n.settings_som, style: const TextStyle(color: Palette.preto, fontSize: 14)),
+                Switch(
+                  value: GameSettings.instance.soundEnabled,
+                  activeThumbColor: Palette.preto,
+                  onChanged: (valor) => _alternarSom(valor),
+                ),
+                const SizedBox(width: 20),
+                Text(context.l10n.settings_musica, style: const TextStyle(color: Palette.preto, fontSize: 14)),
+                Switch(
+                  value: GameSettings.instance.musicEnabled,
+                  activeThumbColor: Palette.preto,
+                  onChanged: (valor) => _alternarMusica(valor),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
             // Apaga a flag de intro e as criaturas liberadas. Sem isto a
@@ -109,7 +191,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
               ),
               onPressed: withBtnSfx(_resetado ? null : _resetar),
               child: Text(
-                _resetado ? ' PROGRESSO RESETADO ' : ' RESETAR PROGRESSO ',
+                _resetado ? context.l10n.settings_progressoResetado : context.l10n.settings_resetarProgresso,
                 style: const TextStyle(fontSize: 14, color: Palette.preto),
               ),
             ),
@@ -126,9 +208,9 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
               ),
               onPressed: withBtnSfx(() {
                 widget.game.overlays.remove('Settings');
-                widget.game.overlays.add('MainMenu');
+                widget.game.overlays.add(widget.game.settingsReturnOverlay);
               }),
-              child: const Text(' VOLTAR ', style: TextStyle(fontSize: 20, color: Palette.preto)),
+              child: Text(context.l10n.settings_voltar, style: const TextStyle(fontSize: 20, color: Palette.preto)),
             ),
           ],
         ),

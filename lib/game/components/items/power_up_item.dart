@@ -1,7 +1,9 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/effects/text_effect.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
+import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'collectible.dart';
 import '../player/player.dart';
 
@@ -34,6 +36,18 @@ extension PowerUpTypeData on PowerUpType {
         PowerUpType.fireRateUp => Palette.royal,
         PowerUpType.shieldUp => Palette.azulEsc,
       };
+
+  /// Texto mostrado acima do jogador ao pegar o upgrade.
+  String descricao(BuildContext context) {
+    final l = context.l10n;
+    return switch (this) {
+      PowerUpType.speedUp => l.effect_maisVelocidade,
+      PowerUpType.fireRateUp => l.effect_maisVelAtaque,
+      PowerUpType.damageUp => l.effect_maisDano,
+      PowerUpType.hpUp => l.effect_maisVidaMaxima,
+      PowerUpType.shieldUp => l.effect_maisEscudoMaximo,
+    };
+  }
 
   /// Multiplicadores, não soma direta nos stats: `BaseStats` é `const` e
   /// compartilhado por todas as instâncias da criatura (ver Player.velMult).
@@ -85,6 +99,11 @@ class PowerUpItem extends Collectible {
   @override
   bool onCollect(Player player) {
     type.aplicar(player);
+    player.parent?.add(TextEffect(
+      text: type.descricao(player.game.buildContext!),
+      position: player.position.clone() + Vector2(0, -player.size.y / 2 - 4),
+      color: Palette.branco,
+    ));
     return true; // upgrade sempre pode ser pego
   }
 }

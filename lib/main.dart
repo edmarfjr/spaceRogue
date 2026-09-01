@@ -19,6 +19,7 @@ import 'package:creatures_rogue/game/overlays/settings_overlay.dart';
 import 'package:creatures_rogue/game/game_settings.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:creatures_rogue/game/audio/game_audio.dart';
+import 'package:creatures_rogue/l10n/gen/app_localizations.dart';
 
 bool get isDesktopPlatform {
   switch (defaultTargetPlatform) {
@@ -50,33 +51,50 @@ void main() async {
   //  ]);
  // }
 
+  final creaturesGame = CreaturesRogueGame(
+    // Esquema escolhido na última sessão (ver GameSettings).
+    controlScheme: GameSettings.instance.controlScheme,
+  );
+
+  // Construído uma vez só, fora do `builder` abaixo, e reaproveitado em toda
+  // troca de idioma. `GameWidget(game: ...)` roda `_initializeGame` no
+  // próprio construtor (não no `initState`) — reconstruir este widget a cada
+  // rebuild do `ValueListenableBuilder` chamava `overlays.addAll(['MainMenu'])`
+  // de novo a cada troca, empilhando o menu principal por cima da run em
+  // andamento (era o bug: idioma trocava, mas o `MainMenu` aparecia encima da
+  // Hud/tela ativa).
+  final gameHome = Scaffold(
+    backgroundColor: Palette.cinza,
+    body: GameWidget<CreaturesRogueGame>(
+      game: creaturesGame,
+      overlayBuilderMap: {
+        'MainMenu': (context, game) => MainMenuOverlay(game: game),
+        'Settings': (context, game) => SettingsOverlay(game: game),
+        'Intro': (context, game) => IntroOverlay(game: game),
+        'CreatureSelect': (context, game) => CreatureSelectOverlay(game: game),
+        'BossReveal': (context, game) => BossRevealOverlay(game: game),
+        'PauseMenu': (context, game) => PauseMenuOverlay(game: game),
+        'CaptureSwap': (context, game) => CaptureSwapOverlay(game: game),
+        'Hud': (context, game) => HudOverlay(game: game),
+        'GameOver': (context, game) => GameOverMenu(game: game), // <--- REGISTRO NOVO
+      },
+      initialActiveOverlays: const ['MainMenu'], // Começa no Menu
+    ),
+  );
+
   runApp(
-    MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'pixelFont', // Define a fonte padrão para todo o app
-        //primarySwatch: Colors.blue,
-      ),
-      home: Scaffold(
-        backgroundColor: Palette.cinza,
-        body: GameWidget<CreaturesRogueGame>(
-          game: CreaturesRogueGame(
-            // Esquema escolhido na última sessão (ver GameSettings).
-            controlScheme: GameSettings.instance.controlScheme,
-          ),
-          overlayBuilderMap: {
-            'MainMenu': (context, game) => MainMenuOverlay(game: game),
-            'Settings': (context, game) => SettingsOverlay(game: game),
-            'Intro': (context, game) => IntroOverlay(game: game),
-            'CreatureSelect': (context, game) => CreatureSelectOverlay(game: game),
-            'BossReveal': (context, game) => BossRevealOverlay(game: game),
-            'PauseMenu': (context, game) => PauseMenuOverlay(game: game),
-            'CaptureSwap': (context, game) => CaptureSwapOverlay(game: game),
-            'Hud': (context, game) => HudOverlay(game: game),
-            'GameOver': (context, game) => GameOverMenu(game: game), // <--- REGISTRO NOVO
-          },
-          initialActiveOverlays: const ['MainMenu'], // Começa no Menu
+    ValueListenableBuilder<Locale?>(
+      valueListenable: GameSettings.instance.localeNotifier,
+      builder: (context, locale, _) => MaterialApp(
+        debugShowCheckedModeBanner: false,
+        locale: locale,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        theme: ThemeData(
+          fontFamily: 'pixelFont', // Define a fonte padrão para todo o app
+          //primarySwatch: Colors.blue,
         ),
+        home: gameHome,
       ),
     ),
   );

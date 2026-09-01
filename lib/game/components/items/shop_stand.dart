@@ -2,6 +2,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
+import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'collectible.dart';
 import '../player/player.dart';
 
@@ -18,15 +19,18 @@ class ShopStand extends Collectible {
   final bool Function(Player player) entregar;
 
   /// Aviso quando [entregar] recusa. Varia por balcão: "CHEIO" só faz sentido
-  /// pro inventário, e leria errado numa cura recusada por vida cheia.
-  final String msgFalha;
+  /// pro inventário, e leria errado numa cura recusada por vida cheia. `null`
+  /// usa o aviso padrão — resolvido só na hora do uso, via `game.buildContext`,
+  /// porque o default de um parâmetro precisa ser constante e `AppLocalizations`
+  /// exige `BuildContext`.
+  final String? msgFalha;
 
   ShopStand({
     required super.position,
     required this.preco,
     required this.entregar,
     required super.spritePath,
-    this.msgFalha = 'CHEIO',
+    this.msgFalha,
     super.cor1,
     super.cor2,
   });
@@ -38,20 +42,25 @@ class ShopStand extends Collectible {
       fontSize: 6,
       fontWeight: FontWeight.bold,
       shadows: [
-        Shadow(color: Colors.black, offset: Offset(1, 1), blurRadius: 2),
+        Shadow(color: Palette.preto, offset: Offset(1, 1)),
+        Shadow(color: Palette.preto, offset: Offset(-1, -1)),
+        Shadow(color: Palette.preto, offset: Offset(1, -1)),
+        Shadow(color: Palette.preto, offset: Offset(-1, 1)),
       ],
     ),
   );
 
   @override
   bool onCollect(Player player) {
+    final l = game.buildContext!.l10n;
+
     if (player.coins < preco) {
-      _avisar('SEM MOEDA');
+      _avisar(l.effect_semMoeda);
       return false; // continua no balcão: dá pra voltar com dinheiro
     }
 
     if (!entregar(player)) {
-      _avisar(msgFalha);
+      _avisar(msgFalha ?? l.effect_cheio);
       return false;
     }
 

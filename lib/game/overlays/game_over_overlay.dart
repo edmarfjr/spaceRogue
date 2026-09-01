@@ -2,6 +2,7 @@ import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
+import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 
 class GameOverMenu extends StatelessWidget {
   final CreaturesRogueGame game;
@@ -22,9 +23,9 @@ class GameOverMenu extends StatelessWidget {
           child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              "GAME OVER",
-              style: TextStyle(color: Palette.preto, fontSize: 50, fontWeight: FontWeight.bold),
+            Text(
+              context.l10n.gameOver_titulo,
+              style: const TextStyle(color: Palette.preto, fontSize: 50, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 30),
             ElevatedButton(
@@ -46,7 +47,7 @@ class GameOverMenu extends StatelessWidget {
                 game.overlays.add('Hud');
                 game.resumeEngine();
               }),
-              child: const Text(" RESTART ", style: TextStyle(fontSize: 20, color: Palette.preto)),
+              child: Text(context.l10n.gameOver_restart, style: const TextStyle(fontSize: 20, color: Palette.preto)),
             ),
             const SizedBox(height: 15),
             ElevatedButton(
@@ -71,7 +72,7 @@ class GameOverMenu extends StatelessWidget {
                 game.overlays.add('MainMenu'); // Volta pro Menu Principal
                 // O motor já foi pausado na morte, então continua pausado
               }),
-              child: const Text(" MENU PRINCIPAL ", style: TextStyle(fontSize: 16, color: Palette.preto)),
+              child: Text(context.l10n.gameOver_menuPrincipal, style: const TextStyle(fontSize: 16, color: Palette.preto)),
             ),
           ],
         ),

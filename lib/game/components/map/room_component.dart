@@ -19,6 +19,7 @@ import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
 import 'package:creatures_rogue/game/components/map/wall_tile.dart';
 import 'package:creatures_rogue/game/components/player/player.dart';
 import 'package:creatures_rogue/game/components/utils/y_sort.dart';
+import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'dungeon_generator.dart';
 import 'obstacle.dart';
 
@@ -161,7 +162,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
       // `heal` devolve false com a vida cheia — e é isso que evita cobrar por
       // uma cura que não curou.
       entregar: (p) => p.heal(4),
-      msgFalha: 'VIDA CHEIA',
+      msgFalha: game.buildContext!.l10n.effect_vidaCheia,
     ));
 
     parent?.add(ShopStand(

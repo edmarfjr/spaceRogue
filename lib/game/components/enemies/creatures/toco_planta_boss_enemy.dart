@@ -1,6 +1,5 @@
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flame/components.dart';
-import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/components/map/obstacle.dart';
 import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
@@ -76,7 +75,7 @@ class TocoPlantaBossEnemy extends Enemy with WanderMovement {
 
   @override
   void death() {
-    CreatureProgress.instance.unlock('toco_planta');
+    unlockCreature();
     for (final espinho in _espinhos) {
       espinho.removeFromParent();
     }

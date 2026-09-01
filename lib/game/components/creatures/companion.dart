@@ -154,8 +154,10 @@ class Companion extends PositionComponent
   void render(Canvas canvas) {
     super.render(canvas);
     _renderBarraStatus(canvas);
-    canvas.drawCircle(Offset(size.x/2,size.y), _physicsHitbox.size.x/2 + 2, Paint()..color=Palette.preto..style=PaintingStyle.stroke..strokeWidth=3..filterQuality = FilterQuality.none);
-    canvas.drawCircle(Offset(size.x/2,size.y), _physicsHitbox.size.x/2 + 2, Paint()..color=Palette.branco..style=PaintingStyle.stroke..strokeWidth=1..filterQuality = FilterQuality.none);
+    //canvas.drawCircle(Offset(size.x/2,size.y), _physicsHitbox.size.x/2 + 2, Paint()..color=Palette.preto..style=PaintingStyle.stroke..strokeWidth=3..filterQuality = FilterQuality.none);
+    //canvas.drawCircle(Offset(size.x/2,size.y), _physicsHitbox.size.x/2 + 2, Paint()..color=Palette.branco..style=PaintingStyle.stroke..strokeWidth=1..filterQuality = FilterQuality.none);
+    canvas.drawOval(Rect.fromCenter(center: Offset(size.x/2,size.y), width: creatureData.hitboxSize.x + 5, height: creatureData.hitboxSize.x/2 + 5), Paint()..color=Palette.preto..style=PaintingStyle.stroke..strokeWidth=3..filterQuality = FilterQuality.none);
+    canvas.drawOval(Rect.fromCenter(center: Offset(size.x/2,size.y), width: creatureData.hitboxSize.x + 5, height: creatureData.hitboxSize.x/2 + 5), Paint()..color=Palette.vermelho..style=PaintingStyle.stroke..strokeWidth=1..filterQuality = FilterQuality.none);
   }
 
   Vector2 offPos = Vector2.zero();

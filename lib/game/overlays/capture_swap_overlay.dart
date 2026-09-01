@@ -3,6 +3,9 @@ import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
+import 'package:creatures_rogue/l10n/ability_passive_i18n.dart';
+import 'package:creatures_rogue/l10n/creature_i18n.dart';
+import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'creature_select_overlay.dart' show CreatureSprite;
 
 /// Tela de troca quando uma captura fecha a volta com o grupo já cheio
@@ -35,14 +38,14 @@ class CaptureSwapOverlay extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'GRUPO CHEIO — QUEM FICA?',
-                style: TextStyle(color: Palette.preto, fontSize: 22, fontWeight: FontWeight.bold),
+              Text(
+                context.l10n.captureSwap_titulo,
+                style: const TextStyle(color: Palette.preto, fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 6),
-              const Text(
-                'Toque em SOLTAR no card que deve sair do grupo.',
-                style: TextStyle(color: Palette.cinzaEsc, fontSize: 12),
+              Text(
+                context.l10n.captureSwap_instrucao,
+                style: const TextStyle(color: Palette.cinzaEsc, fontSize: 12),
               ),
               const SizedBox(height: 20),
               SingleChildScrollView(
@@ -53,7 +56,7 @@ class CaptureSwapOverlay extends StatelessWidget {
                   children: [
                     _TrocaCard(
                       creature: nova,
-                      rotulo: 'NOVA CAPTURA',
+                      rotulo: context.l10n.captureSwap_novaCaptura,
                       destaque: true,
                       onSoltar: () => game.resolverTrocaCaptura(null),
                     ),
@@ -62,7 +65,7 @@ class CaptureSwapOverlay extends StatelessWidget {
                       if (game.companionCreatures[i] != null)
                         _TrocaCard(
                           creature: game.companionCreatures[i]!,
-                          rotulo: 'SLOT ${i + 1}',
+                          rotulo: context.l10n.captureSwap_slot(i + 1),
                           destaque: false,
                           onSoltar: () => game.resolverTrocaCaptura(i),
                         ),
@@ -112,7 +115,7 @@ class _TrocaCard extends StatelessWidget {
           CreatureSprite(creature: creature, size: 48),
           const SizedBox(height: 4),
           Text(
-            creature.nome,
+            creatureName(context, creature.id),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -120,14 +123,14 @@ class _TrocaCard extends StatelessWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            'Hab: ${creature.ability1.nome}',
+            context.l10n.captureSwap_habilidade(abilityName(context, creature.ability1)),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: Palette.preto, fontSize: 9),
           ),
           Text(
-            'Pass: ${creature.passive.nome}',
+            context.l10n.captureSwap_passiva(passiveName(context, creature.passive)),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -147,9 +150,9 @@ class _TrocaCard extends StatelessWidget {
                   side: BorderSide(color: Palette.preto, width: 2),
                 ),
               ),
-              child: const Text(
-                'SOLTAR',
-                style: TextStyle(color: Palette.preto, fontSize: 12, fontWeight: FontWeight.bold),
+              child: Text(
+                context.l10n.captureSwap_soltar,
+                style: const TextStyle(color: Palette.preto, fontSize: 12, fontWeight: FontWeight.bold),
               ),
             ),
           ),

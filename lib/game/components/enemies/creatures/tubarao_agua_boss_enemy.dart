@@ -1,5 +1,4 @@
 import 'package:flame/components.dart';
-import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/components/map/obstacle.dart';
 import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
@@ -87,7 +86,7 @@ class TubaraoAguaBossEnemy extends Enemy with JumpMovement {
 
   @override
   void death() {
-    CreatureProgress.instance.unlock('tubarao_agua');
+    unlockCreature();
     super.death();
   }
 

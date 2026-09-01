@@ -40,6 +40,7 @@ import 'package:creatures_rogue/game/components/map/dungeon_generator.dart';
 import 'package:creatures_rogue/game/components/map/room_component.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
+import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'components/player/player.dart';
 import 'components/player/trainer_stats.dart';
 
@@ -55,18 +56,16 @@ enum ControlScheme {
   gestos;
 
   /// Nome curto pro seletor.
-  String get rotulo => switch (this) {
-    ControlScheme.botoes => 'BOTÕES',
-    ControlScheme.gestos => 'GESTOS',
+  String rotulo(BuildContext context) => switch (this) {
+    ControlScheme.botoes => context.l10n.settings_controleBotoes,
+    ControlScheme.gestos => context.l10n.settings_controleGestos,
   };
 
   /// Uma linha explicando o esquema, porque nenhum dos dois é óbvio de
   /// adivinhar só pelo nome.
-  String get descricao => switch (this) {
-    ControlScheme.botoes =>
-      'Botões A e B no canto direito. Segurar mantém disparando.',
-    ControlScheme.gestos =>
-      'Metade direita da tela: toque parado = A, arrastar o dedo = B.',
+  String descricao(BuildContext context) => switch (this) {
+    ControlScheme.botoes => context.l10n.settings_controleBotoesDesc,
+    ControlScheme.gestos => context.l10n.settings_controleGestosDesc,
   };
 }
 
@@ -229,6 +228,12 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     // Antes do onLoad não há o que remontar: o próprio onLoad monta.
     if (isLoaded) _setupAbilityControls();
   }
+
+  /// Overlay pra reabrir quando o jogador sai de 'Settings' — a tela é
+  /// compartilhada entre o menu principal e o menu de pausa (ver
+  /// [PauseMenuOverlay] e [MainMenuOverlay]), então o "VOLTAR" precisa saber
+  /// pra qual dos dois voltar. Quem abre 'Settings' escreve aqui antes.
+  String settingsReturnOverlay = 'MainMenu';
 
   int currentLevel = 1;
   int numFloors = 5;
@@ -444,7 +449,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
 
     final boss = option.builder(position, player);
     // A barra se auto-remove quando o boss sai do mundo, então é só somar.
-    gameCamera.viewport.add(BossHealthBar(boss: boss, nome: option.nome));
+    gameCamera.viewport.add(BossHealthBar(boss: boss, nome: option.nome(buildContext!)));
     return boss;
   }
 
@@ -457,7 +462,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     final option = BossRegistry.all.first;
     final boss = option.builder(player.position + Vector2(0, -40), player);
     dungeonWorld.add(boss);
-    gameCamera.viewport.add(BossHealthBar(boss: boss, nome: option.nome));
+    gameCamera.viewport.add(BossHealthBar(boss: boss, nome: option.nome(buildContext!)));
   }
 
   @override

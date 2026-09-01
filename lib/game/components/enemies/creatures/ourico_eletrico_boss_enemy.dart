@@ -1,7 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
-import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
 import 'package:creatures_rogue/game/components/map/obstacle.dart';
@@ -133,7 +132,7 @@ class OuricoEletricoBossEnemy extends Enemy with WanderMovement {
 
   @override
   void death() {
-    CreatureProgress.instance.unlock('ourico_eletrico');
+    unlockCreature();
     super.death();
   }
 

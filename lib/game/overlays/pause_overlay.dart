@@ -3,6 +3,9 @@ import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
+import 'package:creatures_rogue/l10n/ability_passive_i18n.dart';
+import 'package:creatures_rogue/l10n/creature_i18n.dart';
+import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'creature_select_overlay.dart' show CreatureSprite;
 
 class PauseMenuOverlay extends StatelessWidget {
@@ -24,9 +27,9 @@ class PauseMenuOverlay extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'JOGO PAUSADO',
-                style: TextStyle(color: Palette.preto, fontSize: 32),
+              Text(
+                context.l10n.pause_jogoPausado,
+                style: const TextStyle(color: Palette.preto, fontSize: 32),
               ),
               const SizedBox(height: 20),
               _EquipeRow(game: game),
@@ -45,9 +48,33 @@ class PauseMenuOverlay extends StatelessWidget {
                   game.overlays.remove('PauseMenu');
                   game.resumeEngine();
                 }),
-                child: const Text(
-                  ' CONTINUAR ',
-                  style: TextStyle(fontSize: 20, color: Palette.preto),
+                child: Text(
+                  context.l10n.pause_continuar,
+                  style: const TextStyle(fontSize: 20, color: Palette.preto),
+                ),
+              ),
+              const SizedBox(height: 15),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Palette.branco,
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  elevation: 0,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.zero,
+                    side: BorderSide(color: Palette.preto, width: 2),
+                  ),
+                ),
+                // Motor continua pausado: só troca de overlay. `VOLTAR` em
+                // `SettingsOverlay` lê `settingsReturnOverlay` pra saber que
+                // precisa reabrir o PauseMenu, não o MainMenu.
+                onPressed: withBtnSfx(() {
+                  game.overlays.remove('PauseMenu');
+                  game.settingsReturnOverlay = 'PauseMenu';
+                  game.overlays.add('Settings');
+                }),
+                child: Text(
+                  context.l10n.pause_configuracoes,
+                  style: const TextStyle(fontSize: 20, color: Palette.preto),
                 ),
               ),
               const SizedBox(height: 15),
@@ -68,9 +95,9 @@ class PauseMenuOverlay extends StatelessWidget {
                   // Chama a sua função de limpar/reiniciar a fase!
                   //game.resetGame();
                 }),
-                child: const Text(
-                  ' SAIR PARA O MENU ',
-                  style: TextStyle(fontSize: 20, color: Palette.preto),
+                child: Text(
+                  context.l10n.pause_sairParaMenu,
+                  style: const TextStyle(fontSize: 20, color: Palette.preto),
                 ),
               ),
             ],
@@ -145,7 +172,7 @@ class _EquipeCard extends StatelessWidget {
           CreatureSprite(creature: creature, size: 40),
           const SizedBox(height: 4),
           Text(
-            creature.nome,
+            creatureName(context, creature.id),
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -156,23 +183,25 @@ class _EquipeCard extends StatelessWidget {
             ),
           ),
           if (pocketed)
-            const Text(
-              '(no bolso)',
-              style: TextStyle(color: Palette.cinzaEsc, fontSize: 9),
+            Text(
+              context.l10n.pause_noBolso,
+              style: const TextStyle(color: Palette.cinzaEsc, fontSize: 9),
             ),
           const SizedBox(height: 4),
           Text(
-            'Hab: ${creature.ability1.nome}\n${creature.ability1.descricao}',
+            context.l10n.pause_habilidade(
+              abilityName(context, creature.ability1),
+              abilityDescription(context, creature.ability1),
+            ),
             textAlign: TextAlign.center,
-            //maxLines: 1,
-            //overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: Palette.preto, fontSize: 9),
           ),
           Text(
-            'Pass: ${creature.passive.nome}:\n${creature.passive.descricao}',
+            context.l10n.pause_passiva(
+              passiveName(context, creature.passive),
+              passiveDescription(context, creature.passive),
+            ),
             textAlign: TextAlign.center,
-            //maxLines: 1,
-            //overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: Palette.preto, fontSize: 9),
           ),
         ],

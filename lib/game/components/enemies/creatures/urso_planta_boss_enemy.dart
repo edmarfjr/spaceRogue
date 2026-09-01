@@ -1,5 +1,4 @@
 import 'package:flame/components.dart';
-import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 import '../enemy.dart';
@@ -186,7 +185,7 @@ class UrsoPlantaBossEnemy extends Enemy with ChaseMovement {
 
   @override
   void death() {
-    CreatureProgress.instance.unlock('urso_planta');
+    unlockCreature();
     super.death();
   }
 }

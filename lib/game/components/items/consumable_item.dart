@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
+import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'collectible.dart';
 import '../player/player.dart';
 
@@ -36,6 +37,18 @@ extension ConsumableTypeData on ConsumableType {
         ConsumableType.mapa => Palette.marromEsc,
       };
 
+  /// Texto mostrado acima do jogador quando o item faz efeito de verdade
+  /// (ver `aplicar` — nunca aparece se o efeito não teve serventia).
+  String descricao(BuildContext context) {
+    final l = context.l10n;
+    return switch (this) {
+      ConsumableType.pocao => l.effect_maisVida(4),
+      ConsumableType.escudo => l.effect_escudoAtivo,
+      ConsumableType.congelar => l.effect_inimigosCongelados,
+      ConsumableType.mapa => l.effect_mapaRevelado,
+    };
+  }
+
   /// Efeito no instante em que o slot é clicado. Cada caso reaproveita um
   /// sistema que já existe no Player — nada de mecânica nova por item.
   ///
@@ -46,18 +59,31 @@ extension ConsumableTypeData on ConsumableType {
   /// bug e não como regra.
   bool aplicar(Player player) {
     GameAudio.instance.play(Sfx.use);
+
+    final bool sucesso;
     switch (this) {
       case ConsumableType.pocao:
-        return player.heal(4);
+        sucesso = player.heal(4);
       case ConsumableType.escudo:
         player.shieldHits = 3;
         player.shieldVisualActive = true;
-        return true;
+        sucesso = true;
       case ConsumableType.congelar:
-        return player.congelarInimigos(3.0);
+        sucesso = player.congelarInimigos(3.0);
       case ConsumableType.mapa:
-        return player.revelarMapa();
+        sucesso = player.revelarMapa();
     }
+
+    if (sucesso) {
+      final context = player.game.buildContext!;
+      player.parent?.add(TextEffect(
+        text: descricao(context),
+        position: player.position.clone() + Vector2(0, -player.size.y / 2 - 4),
+        color: Palette.branco,
+      ));
+    }
+
+    return sucesso;
   }
 }
 
@@ -83,7 +109,7 @@ class ConsumablePickup extends Collectible {
       // cheio (ver `Collectible.onCollect`). O aviso existe porque, sem ele,
       // passar por cima e nada acontecer parece bug.
       parent?.add(TextEffect(
-        text: 'CHEIO',
+        text: game.buildContext!.l10n.effect_cheio,
         position: position.clone() + Vector2(0, -10),
         color: Palette.branco,
       ));

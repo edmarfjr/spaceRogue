@@ -4,6 +4,7 @@ import 'package:creatures_rogue/game/overlays/creature_select_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
+import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 
 /// Mostrado uma vez, no começo da run, quando há um boss pendente pra essa
 /// run (ver `CreaturesRogueGame.runBoss`). Consentimento informado antes de
@@ -43,7 +44,7 @@ class BossRevealOverlay extends StatelessWidget {
             ),
             */
             Text(
-              'VS',
+              context.l10n.bossReveal_vs,
               style: const TextStyle(color: Palette.preto, fontSize: 40, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
@@ -60,7 +61,7 @@ class BossRevealOverlay extends StatelessWidget {
                 ),
               ),
               onPressed: withBtnSfx(game.dismissBossReveal),
-              child: const Text(' ENTRAR ', style: TextStyle(fontSize: 20, color: Palette.preto)),
+              child: Text(context.l10n.bossReveal_entrar, style: const TextStyle(fontSize: 20, color: Palette.preto)),
             ),
           ],
         ),

@@ -1,6 +1,5 @@
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
-import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 import '../enemy.dart';
@@ -143,7 +142,7 @@ class BombaFogoBossEnemy extends Enemy with ChaseMovement {
       }
 
       // Recompensa: derrotar o boss libera a criatura pra jogar.
-      CreatureProgress.instance.unlock('bomba_fogo');
+      unlockCreature();
     }
     super.death();
   }

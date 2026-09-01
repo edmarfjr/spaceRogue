@@ -1,0 +1,208 @@
+{
+  "@@locale": "pt",
+
+  "menu_titulo": "CREATURES ROGUE",
+  "menu_novoJogo": " NOVO JOGO ",
+  "menu_configuracoes": " CONFIGURAÇÕES ",
+
+  "settings_titulo": "CONFIGURAÇÕES",
+  "settings_controle": "CONTROLE",
+  "settings_controleBotoes": "BOTÕES",
+  "settings_controleGestos": "GESTOS",
+  "settings_controleBotoesDesc": "Botões A e B no canto direito. Segurar mantém disparando.",
+  "settings_controleGestosDesc": "Metade direita da tela: toque parado = A, arrastar o dedo = B.",
+  "settings_progressoResetado": " PROGRESSO RESETADO ",
+  "settings_resetarProgresso": " RESETAR PROGRESSO ",
+  "settings_voltar": " VOLTAR ",
+  "settings_idioma": "IDIOMA",
+  "settings_idiomaSistema": "SISTEMA",
+  "settings_audio": "ÁUDIO",
+  "settings_som": "SOM",
+  "settings_musica": "MÚSICA",
+
+  "pause_jogoPausado": "JOGO PAUSADO",
+  "pause_continuar": " CONTINUAR ",
+  "pause_sairParaMenu": " SAIR PARA O MENU ",
+  "pause_configuracoes": " CONFIGURAÇÕES ",
+  "pause_noBolso": "(no bolso)",
+  "pause_habilidade": "Hab: {nome}\n{descricao}",
+  "@pause_habilidade": {
+    "placeholders": { "nome": {}, "descricao": {} }
+  },
+  "pause_passiva": "Pass: {nome}:\n{descricao}",
+  "@pause_passiva": {
+    "placeholders": { "nome": {}, "descricao": {} }
+  },
+
+  "gameOver_titulo": "GAME OVER",
+  "gameOver_restart": " RESTART ",
+  "gameOver_menuPrincipal": " MENU PRINCIPAL ",
+
+  "creatureType_fogo": "Fogo",
+  "creatureType_planta": "Planta",
+  "creatureType_agua": "Água",
+  "creatureType_eletrico": "Elétrico",
+  "creatureType_neutro": "Neutro",
+
+  "creatureSelect_titulo": "ESCOLHA SUA CRIATURA",
+  "creatureSelect_bloqueada": "???",
+  "creatureSelect_nomeTipo": "{nome} \n Tipo: {tipo} ",
+  "@creatureSelect_nomeTipo": {
+    "placeholders": { "nome": {}, "tipo": {} }
+  },
+  "creatureSelect_saude": "SAÚDE",
+  "creatureSelect_velocidade": "VELOCIDADE",
+  "creatureSelect_ataque": "ATAQUE",
+  "creatureSelect_habilidade": "Habilidade:",
+  "creatureSelect_passiva": "Passiva:",
+  "creatureSelect_jogar": "JOGAR",
+
+  "captureSwap_titulo": "GRUPO CHEIO — QUEM FICA?",
+  "captureSwap_instrucao": "Toque em SOLTAR no card que deve sair do grupo.",
+  "captureSwap_novaCaptura": "NOVA CAPTURA",
+  "captureSwap_slot": "SLOT {numero}",
+  "@captureSwap_slot": {
+    "placeholders": { "numero": {} }
+  },
+  "captureSwap_habilidade": "Hab: {nome}",
+  "@captureSwap_habilidade": {
+    "placeholders": { "nome": {} }
+  },
+  "captureSwap_passiva": "Pass: {nome}",
+  "@captureSwap_passiva": {
+    "placeholders": { "nome": {} }
+  },
+  "captureSwap_soltar": "SOLTAR",
+
+  "bossReveal_vs": "VS",
+  "bossReveal_entrar": " ENTRAR ",
+
+  "intro_pagina1": "Sob a superfície se abrem misteriosas MASMORRAS, onde habitam CRIATURAS mais misteriosas ainda.",
+  "intro_pagina2": "cada CRIATURA carrega um fragmento da criação, dividida nos 4 elementos: FOGO, ÁGUA, PLANTA e RELÂMPAGO",
+  "intro_pagina3": "Cabe a você, O TREINADOR, explorar e capturar todas essas CRIATURAS",
+  "intro_pagina4": "Mas é muito perigoso explorar as MASMORRAS sozinho! Escolha seu parceiro nessa jornada.",
+  "intro_pular": "PULAR",
+  "intro_escolhaPrimeira": "ESCOLHA SUA PRIMEIRA CRIATURA",
+  "intro_escolher": " ESCOLHER ",
+  "intro_saude": "SAÚDE {valor}",
+  "@intro_saude": {
+    "placeholders": { "valor": {} }
+  },
+  "intro_velocidade": "VELOCIDADE {valor}",
+  "@intro_velocidade": {
+    "placeholders": { "valor": {} }
+  },
+  "intro_ataque": "ATAQUE {valor}",
+  "@intro_ataque": {
+    "placeholders": { "valor": {} }
+  },
+  "intro_habilidades": "HABILIDADES",
+
+  "effect_semMoeda": "SEM MOEDA",
+  "effect_cheio": "CHEIO",
+  "effect_vidaCheia": "VIDA CHEIA",
+  "effect_maisVida": "+{valor} VIDA",
+  "@effect_maisVida": {
+    "placeholders": { "valor": {} }
+  },
+  "effect_maisMoedas": "+{valor} MOEDA{plural}",
+  "@effect_maisMoedas": {
+    "placeholders": { "valor": {}, "plural": {} }
+  },
+  "effect_maisBomba": "+1 BOMBA",
+  "effect_escudoAtivo": "ESCUDO ATIVO",
+  "effect_inimigosCongelados": "INIMIGOS CONGELADOS",
+  "effect_mapaRevelado": "MAPA REVELADO",
+  "effect_maisVelocidade": "+VELOCIDADE",
+  "effect_maisVelAtaque": "+VEL. DE ATAQUE",
+  "effect_maisDano": "+DANO",
+  "effect_maisVidaMaxima": "+VIDA MAXIMA",
+  "effect_maisEscudoMaximo": "+ESCUDO MAXIMO",
+  "effect_criaturaLiberada": "{nome} LIBERADO!",
+  "@effect_criaturaLiberada": {
+    "placeholders": { "nome": {} }
+  },
+
+  "creatureName_roedor_fogo": "Torchmin",
+  "creatureName_tartaruga_planta": "Turtrent",
+  "creatureName_sapo_agua": "Frowago",
+  "creatureName_ave_eletrica": "Garibirb",
+  "creatureName_cobra_agua": "Cobra de Água",
+  "creatureName_urso_planta": "Urso de Planta",
+  "creatureName_grilo_eletrico": "Grilo Eletrico",
+  "creatureName_tornado_fogo": "Tornado de Fogo",
+  "creatureName_bomba_fogo": "Bomba de Fogo",
+  "creatureName_slime_planta": "Slime de Planta",
+  "creatureName_ourico_eletrico": "Ouriço Elétrico",
+  "creatureName_caranguejo_fogo": "Caranguejo Ermitão de Fogo",
+  "creatureName_pinguim_agua": "Pinguim de Agua",
+  "creatureName_toco_planta": "Toco de Madeira",
+  "creatureName_tubarao_agua": "Tubarão de Água",
+  "creatureName_leao_eletrico": "Leão Elétrico",
+
+  "abilityName_BicoEletrico": "Bico Elétrico",
+  "abilityDesc_BicoEletrico": "Cooldown baixíssimo, dano baixo — o DPS vem do volume de disparos.",
+  "abilityName_BaforadaDeCinzas": "Baforada de Cinzas",
+  "abilityDesc_BaforadaDeCinzas": "Baforada curta de cinzas quentes que grudam e continuam queimando.",
+  "abilityName_Ericar": "Eriçar",
+  "abilityDesc_Ericar": "Saraivada de espinhos em todas as direções, sem mira.",
+  "abilityName_CuspeVenenoso": "Cuspe Venenoso",
+  "abilityDesc_CuspeVenenoso": "Projétil lento que envenena ao acertar.",
+  "abilityName_CuspeDeSemente": "Cuspe de Semente",
+  "abilityDesc_CuspeDeSemente": "Projétil lento e pesado, empurra bastante.",
+  "abilityName_TiroDeGelo": "Tiro de Gelo",
+  "abilityDesc_TiroDeGelo": "Projétil que estilhaça ao acertar.",
+  "abilityName_ChoqueEletrico": "Choque Eletrico",
+  "abilityDesc_ChoqueEletrico": "Projétil que se divide em fragmentos.",
+  "abilityName_SocoFlamejante": "Soco Flamejante",
+  "abilityDesc_SocoFlamejante": "Cooldown baixo, dano alto, alcance curto.",
+  "abilityName_DeixarBomba": "Deixar Bomba",
+  "abilityDesc_DeixarBomba": "Deixa uma bomba no chão — consome o estoque do treinador.",
+  "abilityName_RajadaDeBrasa": "Rajada de Brasa",
+  "abilityDesc_RajadaDeBrasa": "Três projéteis em leque, dano alto e curto alcance.",
+  "abilityName_FolhasNavalha": "Folhas Navalha",
+  "abilityDesc_FolhasNavalha": "Espinhos giram ao redor do usuário, acertando quem encostar.",
+  "abilityName_MegaSoco": "Mega Soco",
+  "abilityDesc_MegaSoco": "Soco curto e pesado bem na frente, com empurrão.",
+  "abilityName_Mordida": "Mordida",
+  "abilityDesc_Mordida": "Mordida curta e pesada com empurrão forte.",
+  "abilityName_EstocadaRelampago": "Estocada Relâmpago",
+  "abilityDesc_EstocadaRelampago": "Lança fina e rápida que atravessa até 3 alvos numa linha.",
+  "abilityName_BolaDagua": "Bola d'Água",
+  "abilityDesc_BolaDagua": "Projétil reto e rápido, sem truque.",
+  "abilityName_JatoAquatico": "Jato d'Água",
+  "abilityDesc_JatoAquatico": "Rajada curta de tiros em sequência.",
+
+  "passiveName_BradoReflexo": "Brado Reflexo",
+  "passiveDesc_BradoReflexo": "Todo golpe que o treinador tenta tomar empurra tudo ao redor dele pra longe.",
+  "passiveName_InvestidaPredatoria": "Investida Predatória",
+  "passiveDesc_InvestidaPredatoria": "A esquiva do treinador puxa pro hostil mais próximo em vez de afastar dele.",
+  "passiveName_FumacaAoLacar": "Fumaça ao Laçar",
+  "passiveDesc_FumacaAoLacar": "Iniciar o laço de captura solta uma fumaça que cega e atrasa quem estiver perto.",
+  "passiveName_TornadoResidual": "Tornado Residual",
+  "passiveDesc_TornadoResidual": "Toda esquiva do treinador deixa um tornado parado no ponto de partida, perfurando quem passar por ele.",
+  "passiveName_GolpeDeLanca": "Golpe de Lança",
+  "passiveDesc_GolpeDeLanca": "A esquiva do treinador termina num golpe com empurrão no ponto de chegada.",
+  "passiveName_BombaNaEsquiva": "Bomba na Esquiva",
+  "passiveDesc_BombaNaEsquiva": "Toda esquiva do treinador larga uma bomba pra trás, se houver estoque.",
+  "passiveName_CorrenteReflexa": "Corrente Reflexa",
+  "passiveDesc_CorrenteReflexa": "Todo golpe que o treinador tenta tomar solta uma descarga ao redor dele, que atordoa.",
+  "passiveName_SaltoAquatico": "Salto Aquático",
+  "passiveDesc_SaltoAquatico": "A esquiva do treinador termina num respingo d'água no ponto de chegada.",
+  "passiveName_RastroCongelante": "Rastro Congelante",
+  "passiveDesc_RastroCongelante": "Toda esquiva do treinador congela o ponto de partida, deixando quem passar por ali mais lento.",
+  "passiveName_BolhaAutonoma": "Bolha Autônoma",
+  "passiveDesc_BolhaAutonoma": "Depois de um tempo sem apanhar, o treinador forma sozinho um escudo que absorve um golpe.",
+  "passiveName_CascoReflexivo": "Casco Reflexivo",
+  "passiveDesc_CascoReflexivo": "Durante os instantes de invulnerabilidade da esquiva, o treinador reflete projéteis.",
+  "passiveName_RaizesDoLaco": "Raízes do Laço",
+  "passiveDesc_RaizesDoLaco": "O treinador recebe metade do dano enquanto o laço de captura está ativo.",
+  "passiveName_RetaliacaoEletrica": "Retaliação Elétrica",
+  "passiveDesc_RetaliacaoEletrica": "Todo golpe que o treinador tenta tomar dispara uma explosão elétrica ao redor dele, que atordoa.",
+  "passiveName_PecoenhaReflexiva": "Peçonha Reflexiva",
+  "passiveDesc_PecoenhaReflexiva": "Todo golpe que o treinador tenta tomar solta uma nuvem venenosa ao redor dele.",
+  "passiveName_RastroFlamejante": "Rastro Flamejante",
+  "passiveDesc_RastroFlamejante": "Toda esquiva do treinador incendeia o de chegada.",
+  "passiveName_ReflexoEletrico": "Reflexo Elétrico",
+  "passiveDesc_ReflexoEletrico": "A esquiva do treinador recarrega bem mais rápido, mas percorre menos distância."
+}
