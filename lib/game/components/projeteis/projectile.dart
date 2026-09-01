@@ -203,6 +203,10 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     }
 
     if (isEnemy) {
+      if(other is Projectile && !other.isEnemy){
+        onDestroy();
+        return;
+      }
       if (other is DamageableByEnemy) {
         if(other.refleteProjetil){
           refleteProjetil();
@@ -223,6 +227,10 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         }
       }
     } else {
+      if(other is Projectile && other.isEnemy){
+        onDestroy();
+        return;
+      }
       if (other is Enemy) {
         if (hits.containsKey(other)) {
           return; // Bala fantasma, ignora a colisão e continua voando!

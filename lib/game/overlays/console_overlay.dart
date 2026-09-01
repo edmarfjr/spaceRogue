@@ -45,7 +45,7 @@ class _GameboyCapsuleButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: UiTheme.pauseCapsule,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Palette.preto, width: 2),
+            border: Border.all(color: Palette.preto, width: 4),
           ),
         ),
         const SizedBox(height: 3),

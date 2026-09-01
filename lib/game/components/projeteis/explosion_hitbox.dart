@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:creatures_rogue/game/audio/game_audio.dart';
 import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:creatures_rogue/game/components/effects/dot.dart';
+import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
@@ -107,6 +108,18 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
     
     if (_hitEntities.contains(other)) return; 
     _hitEntities.add(other);
+
+    if (isEnemy) {
+      if(other is Projectile && !other.isEnemy){
+        other.onDestroy();
+        return;
+      }
+    }else{
+      if(other is Projectile && other.isEnemy){
+        other.onDestroy();
+        return;
+      }
+    }
 
     if (other is Rock) {
       other.blowUp();
