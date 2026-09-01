@@ -22,7 +22,7 @@ import '../enemy_mixins.dart';
 /// Fase 2 (≤50%): o leque vai de 3 pra 5 gosmas — cobre um arco bem mais
 /// largo ao redor da queda, não só mais dano por gosma.
 class SapoAguaBossEnemy extends Enemy with JumpMovement {
-  static const double _vidaInicial = 160.0; // 4x a normal (40)
+  static const double _vidaInicial = 200.0; // 4x a normal (40)
   static const double _alcanceAtaque = 70.0;
 
   static const int _numGosmasFase1 = 3;

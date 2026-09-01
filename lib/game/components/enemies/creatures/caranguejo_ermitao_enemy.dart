@@ -30,7 +30,7 @@ class CaranguejoErmitaoEnemy extends Enemy with WanderMovement, ShooterAttack {
   }) : super(
          creature: CreatureRegistry.caranguejoErmitao,
          speed: 22.0, // stats.speed 34 → lento, mas menos que o ouriço
-         health: 26,  // stats.maxHp 18 → tanque, mais frágil que a Tartaruga
+         health: 30,  // stats.maxHp 18 → tanque, mais frágil que a Tartaruga
          dmg: 2,
          bltSpeed: 60,
          bltImg: 'projeteis/proj3.png',

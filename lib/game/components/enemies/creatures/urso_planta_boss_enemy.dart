@@ -15,7 +15,7 @@ import '../enemy_mixins.dart';
 /// Continua tendo a pancada de perto no meio tempo; o salto é um golpe extra
 /// na rotação, não substitui o resto.
 class UrsoPlantaBossEnemy extends Enemy with ChaseMovement {
-  static const double _vidaInicial = 400.0; // 4x a normal (100)
+  static const double _vidaInicial = 300.0; // 4x a normal (100)
   static const double _alcancePancada = 30.0;
   static const double _preparoPancada = 0.6;
   static const double _empurraoPancada = 60.0;

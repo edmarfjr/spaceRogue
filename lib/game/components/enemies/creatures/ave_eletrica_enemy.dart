@@ -19,7 +19,7 @@ class AveEletricaEnemy extends Enemy with ChaseMovement, ShooterAttack {
   }) : super(
          creature: CreatureRegistry.aveEletrica,
          speed: 32.0, // stats.speed 80 → a mais rápida, mas perseguidora constante
-         health: 10,   // frágil: o preço de ignorar o cenário
+         health: 20,   // frágil: o preço de ignorar o cenário
          dmg: 1,
          bltSpeed: 130, // bicada rápida
          bltImg: 'projeteis/proj2.png',

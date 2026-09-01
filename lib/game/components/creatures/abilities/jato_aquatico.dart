@@ -17,9 +17,9 @@ class JatoAquatico extends Ability {
   final double alcanceSegundos;
 
   const JatoAquatico({
-    this.tiros = 6,
+    this.tiros = 5,
     this.intervalo = 0.08,
-    this.coef = 0.5,
+    this.coef = 0.25,
     this.velocidade = 200,
     this.alcanceSegundos = 0.25,
   }) : super(nome: "Jato d'Água", descricao: "Rajada curta de tiros em sequência.", cooldown: 2.5);

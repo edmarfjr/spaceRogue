@@ -13,7 +13,7 @@ import '../enemy_mixins.dart';
 /// (área a evitar, não dano instantâneo). Fase 2 (≤50%) encurta o ciclo e a
 /// nuvem dura mais.
 class CaranguejoErmitaoBossEnemy extends Enemy with WanderMovement, ShooterAttack {
-  static const double _vidaInicial = 104.0; // 4x a normal (26)
+  static const double _vidaInicial = 250.0; // 4x a normal (26)
   static const double _fireRate = 2.2;
 
   static const double _tempoAteGuardarFase1 = 5.0;

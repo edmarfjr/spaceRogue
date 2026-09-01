@@ -15,7 +15,7 @@ import '../enemy_mixins.dart';
 /// Fase 2 (≤50%): nasce um terceiro anel, mais apertado e mais rápido que os
 /// dois primeiros — o espaço seguro perto do centro desaparece.
 class TocoPlantaBossEnemy extends Enemy with WanderMovement {
-  static const double _vidaInicial = 96.0; // 4x a normal (24)
+  static const double _vidaInicial = 200.0; // 4x a normal (24)
 
   static const int _numEspinhosAnel = 4;
   static const double _raioAnel1 = 22;

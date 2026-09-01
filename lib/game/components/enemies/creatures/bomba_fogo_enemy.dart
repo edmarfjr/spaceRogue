@@ -27,7 +27,7 @@ class BombaFogoEnemy extends Enemy with ChaseMovement {
   }) : super(
          creature: CreatureRegistry.bombaFogo,
          speed: 40.0,
-         health: 24, // stats.maxHp 10 / defesa 3 → aguenta o caminho até você
+         health: 30, // stats.maxHp 10 / defesa 3 → aguenta o caminho até você
          dmg: 4,
        );
 

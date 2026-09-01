@@ -24,7 +24,7 @@ class TocoPlantaEnemy extends Enemy with WanderMovement {
   }) : super(
          creature: CreatureRegistry.tocoPlanta,
          speed: 20.0, // mal se move: a ameaça é a órbita, não a perseguição
-         health: 24, // stats.maxHp 16 / defesa 2 → aguenta, mas não é o foco
+         health: 35, // stats.maxHp 16 / defesa 2 → aguenta, mas não é o foco
          dmg: 3,     // dano de cada espinho orbital, não de toque corporal
        );
 

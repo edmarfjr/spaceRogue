@@ -15,7 +15,7 @@ import '../enemy_mixins.dart';
 /// Fase 2 (≤50%): um segundo anel sai logo atrás do primeiro, girado meio
 /// passo — fecha os buracos entre os projéteis do primeiro anel.
 class AveEletricaBossEnemy extends Enemy with ChaseMovement, ShooterAttack {
-  static const double _vidaInicial = 40.0; // 4x a normal (10)
+  static const double _vidaInicial = 120;
   static const double _alcanceGatilho = 70.0; // maior que a normal (45): AoE ameaça de mais longe
   static const double _fireRate = 1.8;
   static const int _numProjeteis = 6;

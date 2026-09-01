@@ -14,7 +14,7 @@ import 'slime_planta_enemy.dart';
 /// Fase 2 (≤50%): racha em 2 SlimePlantaEnemy normais, reaproveitando a
 /// classe já pronta como "filhote" — dobra a fonte de poça na arena.
 class SlimePlantaBossEnemy extends Enemy with WanderMovement {
-  static const double _vidaInicial = 136.0; // 4x a normal (34)
+  static const double _vidaInicial = 250.0; // 4x a normal (34)
   static const double _intervaloPoca = 2.2;
   static const double _duracaoPoca = 5.0;
   static const double _danoPoca = 2.0;

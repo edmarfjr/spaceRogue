@@ -23,7 +23,7 @@ import '../enemy_mixins.dart';
 /// campo de lentidão ao longo de TODO o trajeto, não só nas duas pontas, e a
 /// sala vai fechando.
 class PinguimAguaBossEnemy extends Enemy with WanderMovement, ShooterAttack {
-  static const double _vidaInicial = 120.0; // 4x a normal (30)
+  static const double _vidaInicial = 250.0; // 4x a normal (30)
   static const double _fireRate = 2.8;
 
   static const double _velocidadeTiro = 70.0;

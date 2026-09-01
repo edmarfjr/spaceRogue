@@ -17,7 +17,7 @@ import '../enemy_mixins.dart';
 /// Fase 2 (≤50%): o leque abre mais e recarrega mais rápido — mais projéteis
 /// no ar ao mesmo tempo, não só mais dano por acerto.
 class RoedorFogoBossEnemy extends Enemy with WanderMovement, ShooterAttack {
-  static const double _vidaInicial = 120.0; // 4x a normal (30)
+  static const double _vidaInicial = 200.0; // 4x a normal (30)
   static const double _alcanceGatilho = 90.0;
 
   static const double _fireRateFase1 = 2.4;

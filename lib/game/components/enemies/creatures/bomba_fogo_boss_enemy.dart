@@ -17,7 +17,7 @@ import 'bomba_fogo_enemy.dart';
 /// ficar exposto durante a recuperação → perseguir de novo. A recuperação é a
 /// janela em que você bate nele de graça, mesma linguagem do Urso de Planta.
 class BombaFogoBossEnemy extends Enemy with ChaseMovement {
-  static const double _vidaInicial = 96.0; // 4x a Bomba normal (24)
+  static const double _vidaInicial = 200; // 4x a Bomba normal (24)
 
   /// Maior que o da versão normal (20): o corpo é o dobro, o perigo acompanha.
   static const double _alcanceGatilho = 30.0;

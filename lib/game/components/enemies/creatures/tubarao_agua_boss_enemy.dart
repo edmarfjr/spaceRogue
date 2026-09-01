@@ -13,7 +13,7 @@ import '../enemy_mixins.dart';
 /// Fase 2 (≤50%): a explosão de pouso quase dobra de tamanho e dano, e o
 /// intervalo entre mergulhos cai — persegue com mais fome.
 class TubaraoAguaBossEnemy extends Enemy with JumpMovement {
-  static const double _vidaInicial = 180.0; // 4x a normal (45)
+  static const double _vidaInicial = 250.0; // 4x a normal (45)
 
   static const double _danoPousoFase1 = 5.0;
   static const double _danoPousoFase2 = 8.0;

@@ -26,7 +26,7 @@ class CobraAguaEnemy extends Enemy with JumpMovement {
          creature: CreatureRegistry.cobraAgua,
          moveAnim: null, // o bote é a animação
          speed: 0.0,     // quem move é o JumpMovement
-         health: 40,      // stats: def 4 / atk 4 → dura mais que a média
+         health: 50,      // stats: def 4 / atk 4 → dura mais que a média
          dmg: 2,
          shadowOffset: Vector2(0, 3),
        );

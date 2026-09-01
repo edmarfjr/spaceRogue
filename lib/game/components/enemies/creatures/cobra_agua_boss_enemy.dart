@@ -15,7 +15,7 @@ import '../enemy_mixins.dart';
 /// direto num segundo salto (sem voltar a esperar), miradas de novo na
 /// posição atual do jogador. Fura quem confia em desviar de um bote só.
 class CobraAguaBossEnemy extends Enemy with JumpMovement {
-  static const double _vidaInicial = 160.0; // 4x a normal (40)
+  static const double _vidaInicial = 200.0; // 4x a normal (40)
   static const double _alcanceBote = 90.0;  // maior que a normal (70): o boss ameaça de mais longe
 
   static const int _danoImpactoFase1 = 3;

@@ -44,10 +44,10 @@ void main() async {
   await Flame.device.fullScreen();
 
   //if (!isDesktopPlatform) {
-    await SystemChrome.setPreferredOrientations([
-      DeviceOrientation.landscapeLeft,
-      DeviceOrientation.landscapeRight,
-    ]);
+  //  await SystemChrome.setPreferredOrientations([
+  //    DeviceOrientation.landscapeLeft,
+  //    DeviceOrientation.landscapeRight,
+  //  ]);
  // }
 
   runApp(

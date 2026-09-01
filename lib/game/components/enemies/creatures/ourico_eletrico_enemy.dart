@@ -27,7 +27,7 @@ class OuricoEletricoEnemy extends Enemy with WanderMovement {
   }) : super(
          creature: CreatureRegistry.ouricoEletrico,
          speed: 14.0, // o mais lento do elenco: não foge, não persegue
-         health: 20,  // stats.maxHp 14 / defesa 5 → aguenta apanhar de perto
+         health: 35,  // stats.maxHp 14 / defesa 5 → aguenta apanhar de perto
          dmg: 1,
        );
 

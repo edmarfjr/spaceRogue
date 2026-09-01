@@ -16,7 +16,7 @@ import '../enemy_mixins.dart';
 /// espaço que só dava pra kitar. Fica exposto um instante depois — mesma
 /// linguagem de janela-de-punição dos outros bosses.
 class TornadoFogoBossEnemy extends Enemy with ChaseMovement, ShooterAttack {
-  static const double _vidaInicial = 80.0; // 4x a normal (20)
+  static const double _vidaInicial = 200.0; // 4x a normal (20)
   static const double _alcanceSoco = 34.0;
   static const double _fireRate = 1.1;
   static const double _alcanceSegundos = 0.15;

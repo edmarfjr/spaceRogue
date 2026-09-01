@@ -15,7 +15,7 @@ import '../enemy_mixins.dart';
 /// ar — diferente da poça do Slime (5s, terreno acumulado), o nó dura só
 /// 1.2s: é esquiva em tempo real do trajeto do pulo, não negação de área.
 class GriloEletricoBossEnemy extends Enemy with JumpMovement, ShooterAttack {
-  static const double _vidaInicial = 64.0; // 4x a normal (16)
+  static const double _vidaInicial = 150.0; // 4x a normal (16)
   static const double _fireRate = 1.6;
   static const double _danoFaiscaFase2 = 4.0;
   static const double _danoNo = 3.0;
