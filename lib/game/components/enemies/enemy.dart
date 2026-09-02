@@ -249,12 +249,6 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
       _lowHpBlinkClock = 0.0;
       visual.paint.colorFilter = null;
     }
-
-    if (stunTimer > 0) {
-      stunTimer -= dt;
-      return;
-    }
-
     shieldVisual.setOpacity(shieldVisualActive ? 1.0 : 0.0);
 
     // Condições correm ANTES dos returns de knockback e stun. Se ficassem no
@@ -265,12 +259,12 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     // componente no fim do frame, então `isMounted` ainda estaria true aqui —
     // a vida é o teste confiável.
     if (health <= 0) return;
-
     conditionIcons.stunAtivo = stunTimer > 0;
     conditionIcons.venenoAtivo = dots.containsKey(DotKind.veneno);
     conditionIcons.queimaduraAtivo = dots.containsKey(DotKind.queimadura);
     conditionIcons.lentidaoAtivo = lentidaoTimer > 0;
     conditionIcons.cegoAtivo = cegoTimer > 0;
+
 
     if (!knockbackVelocity.isZero()) {
       position += knockbackVelocity * dt;
@@ -284,7 +278,10 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
       return; // Pula o método de movimento, o inimigo não "pensa" enquanto voa pra trás
     }
 
-    
+    if (stunTimer > 0) {
+      stunTimer -= dt;
+      return;
+    }
     movimento(dt);
   }
 

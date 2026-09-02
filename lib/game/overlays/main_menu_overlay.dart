@@ -19,6 +19,10 @@ class MainMenuOverlay extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            // `FilterQuality.none` mantém o pixel art nítido na ampliação —
+            // mesmo tratamento que todo sprite do jogo já recebe no Flame.
+            Image.asset('assets/images/logo.png', width: 96, height: 96, filterQuality: FilterQuality.none),
+            const SizedBox(height: 12),
             Text(
               context.l10n.menu_titulo,
               style: const TextStyle(color: Palette.preto, fontSize: 48, fontWeight: FontWeight.bold),
