@@ -71,6 +71,9 @@ class GameAudio {
     Sfx.veneno: 'sfx/veneno.wav',
     Sfx.pick: 'sfx/pick.wav',
     Sfx.use: 'sfx/pick.wav',
+    Sfx.defesa: 'sfx/defesa.wav',
+    Sfx.tiro: 'sfx/tiro.wav',
+    Sfx.estouro: 'sfx/shot.wav',
   };
 
   /// Quantas vozes cada som ganha — só os que realmente se sobrepõem em

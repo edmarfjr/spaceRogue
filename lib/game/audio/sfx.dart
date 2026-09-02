@@ -16,6 +16,9 @@ enum Sfx {
   agua,
   raio,
   veneno,
+  defesa,
+  tiro,
+  estouro,
   pick,
   use,
 }
