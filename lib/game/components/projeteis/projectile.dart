@@ -204,7 +204,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
 
     if (isEnemy) {
       if(other is Projectile && !other.isEnemy){
-        onDestroy();
+        _resolverColisaoEntreProjeteis(other);
         return;
       }
       if (other is DamageableByEnemy) {
@@ -228,7 +228,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
       }
     } else {
       if(other is Projectile && other.isEnemy){
-        onDestroy();
+        _resolverColisaoEntreProjeteis(other);
         return;
       }
       if (other is Enemy) {
@@ -259,6 +259,19 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         }
       }
     }
+  }
+
+  /// Colisão entre um projétil do jogador e um de inimigo. Cada lado roda
+  /// esta checagem contra o próprio `tipo` — sem estado compartilhado, o
+  /// resultado simétrico já sai certo dos dois: vantagem (1.5x, ver
+  /// `typeMultiplier`) atravessa sem se destruir, porque do outro lado a
+  /// mesma conta invertida dá desvantagem e ele se destrói sozinho. Sem
+  /// vantagem nem desvantagem (1.0x — inclui os dois `neutro`, o padrão da
+  /// maioria dos projéteis), os dois se anulam, igual sempre foi antes do
+  /// tipo entrar na conta.
+  void _resolverColisaoEntreProjeteis(Projectile other) {
+    if (typeMultiplier(tipo, other.tipo) > 1.0) return;
+    onDestroy();
   }
 
   void refleteProjetil() {

@@ -17,10 +17,8 @@ import 'package:creatures_rogue/game/components/UI/gameboy_bezel.dart';
 import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:creatures_rogue/game/components/UI/ability_button.dart';
 import 'package:creatures_rogue/game/components/UI/ability_icons.dart';
-import 'package:creatures_rogue/game/components/UI/capture_button.dart';
 import 'package:creatures_rogue/game/components/effects/companion_recall_effect.dart';
 import 'package:creatures_rogue/game/components/effects/companion_revive_effect.dart';
-import 'package:creatures_rogue/game/components/UI/recall_button.dart';
 import 'package:creatures_rogue/game/components/UI/consumable_slot_button.dart';
 import 'package:creatures_rogue/game/components/UI/gesture_action_area.dart';
 import 'package:creatures_rogue/game/components/UI/pointer_tracker.dart';
@@ -34,15 +32,14 @@ import 'package:creatures_rogue/game/components/UI/minimap_hud.dart';
 //import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
-import 'package:creatures_rogue/game/components/creatures/companion.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
+import 'package:creatures_rogue/game/components/creatures/wild_creature_npc.dart';
 import 'package:creatures_rogue/game/components/map/dungeon_generator.dart';
 import 'package:creatures_rogue/game/components/map/room_component.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'components/player/player.dart';
-import 'components/player/trainer_stats.dart';
 
 /// Como o jogador aciona as duas habilidades. Os dois caminhos convivem no
 /// código; quem escolhe é `CreaturesRogueGame.controlScheme`, ajustado pelo
@@ -87,126 +84,153 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
 
   late Player player;
 
-  /// Grupo de até três criaturas invocadas (PIVOT_TREINADOR.md, fase 5b).
-  /// Slot 0 é sempre a criatura escolhida na seleção; 1 e 2 ficam vazios
-  /// (`null`) até a fase 6 (captura) existir de verdade — nada nesta fase
-  /// preenche eles ainda.
+  /// Grupo de até três criaturas — a ativa (quem o `Player` está sendo agora)
+  /// mais o banco (ver PIVOT_CONTROLE_DIRETO.md §2.3). Slot 0 é sempre a
+  /// criatura escolhida na seleção; 1 e 2 ficam vazios (`null`) até a
+  /// criatura selvagem da sala da escada preencher (ver [_buildWildCreature]).
   static const int maxCompanions = 3;
-  final List<Companion?> companions = List<Companion?>.filled(maxCompanions, null);
 
-  /// Qual dos três recebe o override dos botões/gestos e aparece com o
-  /// destaque de "ativa" na Hud. Troca ao tocar no retrato de um slot
-  /// diferente (ver [onTapCompanionSlot]) — tocar no retrato do slot JÁ
-  /// ativo cicla a postura dele em vez de trocar, então a Hud não precisa de
-  /// um controle a mais só pra isso.
+  /// Qual slot é a criatura que o `Player` está sendo agora. Os outros dois
+  /// estão sempre no banco (`companionPocketed[i] == true`), vazios, ou
+  /// curando ainda abaixo do piso de disponibilidade.
   int companionAtivoIndex = 0;
 
-  /// Atalho pro companion do slot ativo — a maior parte do código (override
-  /// de botão/gesto/teclado, cooldown da Hud, upgrade de cadência) só fala
-  /// com "a" criatura, sem saber de slot. Nunca escreva aqui: escreva em
-  /// `companions[i]` (ver [onTapCompanionSlot], `startRun`, [liberarSlot]).
-  Companion? get companion =>
-      companionAtivoIndex >= 0 && companionAtivoIndex < companions.length
-          ? companions[companionAtivoIndex]
-          : null;
-
-  /// A criatura de cada slot, sobrevivendo ao `Companion` recolhido (que some
-  /// do mundo) — é o que a Hud usa pra desenhar o retrato enquanto no bolso,
-  /// e o que [liberarSlot] usa pra recriar o companion depois.
+  /// A criatura de cada slot — sobrevive à troca (o `Player` muta pra virar
+  /// outra, não recria componente nenhum). É o que a Hud usa pra desenhar o
+  /// retrato de cada slot, e o que [_trocarParaSlot]/[pocketarSlotAtivo] usam
+  /// pra saber quem está esperando no banco.
   final List<CreatureData?> companionCreatures = List<CreatureData?>.filled(maxCompanions, null);
 
-  /// Recolhido pro bolso do treinador — substitui o desmaio+timer fixo de
-  /// antes (ver checklist do PIVOT_TREINADOR.md). Um slot fica recolhido por
-  /// dois motivos: o jogador apertou recolher/liberar (ação em massa, ver
-  /// [alternarRecuoGrupo]), ou o `Companion` daquele slot bateu 0 de vida em
-  /// combate (ver `Companion.takeDamage`) — os dois usam o mesmo estado e a
-  /// mesma cura passiva, só a origem é diferente. Por isso é POR SLOT, não
-  /// um bool global: uma criatura morrendo em combate não pode arrastar as
-  /// outras duas pro bolso junto.
+  /// `true` pra todo slot que não é a ativa agora — banco, na prática só o
+  /// slot ativo (`companionAtivoIndex`) fica com `false`. Nome mantido do
+  /// sistema de bolso original: um slot fica no banco por dois motivos, o
+  /// jogador trocou de ativa (ver [_trocarParaSlot]) ou a ativa bateu 0 de
+  /// vida em combate (ver [pocketarSlotAtivo]) — os dois usam o mesmo estado
+  /// e a mesma cura passiva, só a origem é diferente.
   final List<bool> companionPocketed = List<bool>.filled(maxCompanions, false);
 
-  /// Vida salva de um slot recolhido — o `Companion` em si some do mundo
-  /// (`removeFromParent`), então não sobra objeto nenhum pra guardar esse
-  /// número enquanto cura no bolso. Restaurada em [liberarSlot].
+  /// Vida salva de cada slot do banco — o `Player` só existe como UMA
+  /// criatura por vez, então a vida de quem está no banco não vive em
+  /// componente nenhum, só aqui. Restaurada (via `trocarCriatura`) quando o
+  /// slot volta a ficar ativo.
   final List<double> companionSavedHealth = List<double>.filled(maxCompanions, 0.0);
 
-  /// Cura passiva no bolso, em fração do HP máximo por segundo. Primeiro
-  /// corte, não tunado — 10% ao segundo é ~10s pra curar do zero, mesma
-  /// ordem de grandeza do timer fixo que isto substituiu.
-  static const double curaBolsoFracaoPorSegundo = 0.10;
+  /// Sem cura passiva no banco (pedido do usuário) — a vida de um slot só
+  /// muda quando ele está ativo levando dano, ou quando `trocarCriatura`
+  /// restaura a vida salva ao entrar em campo. Um slot no banco fica
+  /// congelado na vida com que saiu até o jogador trocar pra ele de novo.
+  final Random _wildRandom = Random();
 
-  /// Recolhe ou libera o grupo inteiro num toque só (PIVOT_TREINADOR.md,
-  /// pedido do usuário): se alguém ainda tá fora lutando, recolhe todo mundo
-  /// que tá fora; se o grupo inteiro já tá no bolso, libera todo mundo.
-  /// Slots sem dono (`companionCreatures[i] == null`) não contam pra decidir
-  /// a direção nem são afetados.
-  void alternarRecuoGrupo() {
-    bool temAlguemFora = false;
-    for (int i = 0; i < maxCompanions; i++) {
-      if (companionCreatures[i] != null && !companionPocketed[i]) {
-        temAlguemFora = true;
-        break;
-      }
-    }
-
-    for (int i = 0; i < maxCompanions; i++) {
-      if (companionCreatures[i] == null) continue;
-      if (temAlguemFora && !companionPocketed[i]) {
-        pocketarSlot(i);
-      } else if (!temAlguemFora && companionPocketed[i]) {
-        liberarSlot(i);
-      }
-    }
+  /// Disponível = tem dono e ainda tem vida — sem cura passiva, "abaixo de um
+  /// piso" não existe mais: ou a criatura está viva (qualquer vida > 0) e
+  /// pode entrar, ou já bateu 0 e só volta se algo restaurar a vida dela
+  /// (nada faz isso hoje).
+  bool slotDisponivel(int slot) {
+    final creature = companionCreatures[slot];
+    if (creature == null || !companionPocketed[slot]) return false;
+    return companionSavedHealth[slot] > 0;
   }
 
-  /// Recolhe um slot — chamado tanto pela ação em massa quanto por
-  /// `Companion.takeDamage` quando a vida zera (substitui o desmaio antigo).
-  /// Salva a vida atual, toca o efeito de recall (círculo vermelho fecha +
-  /// arco até o treinador) e remove o `Companion` do mundo. Sem escudo pra
-  /// salvar: o `Companion` não tem escudo passivo ativo nesta build.
-  void pocketarSlot(int slot) {
-    final c = companions[slot];
-    if (c == null || companionPocketed[slot]) return;
+  /// Próximo slot vivo da lista, na ordem 0/1/2 (pulando a ativa) — troca
+  /// automática ao desmaiar (ver [pocketarSlotAtivo]) usa o primeiro que
+  /// achar, não o "mais saudável" ou qualquer outro critério.
+  int? _primeiroSlotDisponivel() {
+    for (int i = 0; i < maxCompanions; i++) {
+      if (i != companionAtivoIndex && slotDisponivel(i)) return i;
+    }
+    return null;
+  }
 
-    companionSavedHealth[slot] = c.currentHealth;
-    companionPocketed[slot] = true;
+  /// Toque num retrato do banco (ver [onTapCompanionSlot]): a ativa atual
+  /// entra no banco com a vida que tinha NA HORA, e [slot] assume — sem
+  /// recriar componente nenhum, `Player.trocarCriatura` muta a instância que
+  /// já existe.
+  void _trocarParaSlot(int slot) {
+    final creature = companionCreatures[slot];
+    if (creature == null) return;
+
+    final slotAntigo = companionAtivoIndex;
+    companionCreatures[slotAntigo] = player.creatureData;
+    companionSavedHealth[slotAntigo] = player.currentHealth;
+    companionPocketed[slotAntigo] = true;
+
+    final vidaSalva = companionSavedHealth[slot];
+    companionPocketed[slot] = false;
+    companionAtivoIndex = slot;
+
+    GameAudio.instance.play(Sfx.liberar);
+    player.trocarCriatura(creature, vidaSalva: vidaSalva);
+    dungeonWorld.add(CompanionReviveEffect(position: player.position.clone()));
+  }
+
+  /// Toque em qualquer retrato do grupo — ver `Hud`/`CompanionPortraitIndicator`.
+  /// Tocar o retrato já ativo não faz nada (sem postura pra ciclar). Tocar um
+  /// slot vazio, ou uma criatura já derrotada (vida 0, sem cura passiva pra
+  /// trazer de volta), também não.
+  void onTapCompanionSlot(int slot) {
+    if (slot == companionAtivoIndex) return;
+    if (slotDisponivel(slot)) _trocarParaSlot(slot);
+  }
+
+  /// A ativa bateu 0 de vida em combate (chamado por `Player.takeDamage`):
+  /// vai pro banco com vida 0 e o jogo troca sozinho pro primeiro slot
+  /// disponível. Sem ninguém disponível, é Game Over — mesmo grupo esgotado
+  /// que o modelo antigo tratava como "a criatura morreu".
+  void pocketarSlotAtivo() {
+    final slotAtual = companionAtivoIndex;
+    companionCreatures[slotAtual] = player.creatureData;
+    companionSavedHealth[slotAtual] = 0.0;
+    companionPocketed[slotAtual] = true;
     GameAudio.instance.play(Sfx.retorno);
-
     dungeonWorld.add(CompanionRecallEffect(
-      position: c.position.clone(),
+      position: player.position.clone(),
       trainerPosition: () => player.position,
     ));
 
-    companions[slot] = null;
-    c.removeFromParent();
-  }
-
-  /// Libera um slot recolhido: recria o `Companion` perto do treinador com a
-  /// vida salva (o jogador pode liberar antes de curar 100%, por conta e
-  /// risco dele) e toca o efeito de liberação (explosão branca).
-  void liberarSlot(int slot) {
-    final creature = companionCreatures[slot];
-    if (creature == null || !companionPocketed[slot]) return;
-    GameAudio.instance.play(Sfx.liberar);
-    final posicao = player.position + Vector2(16, 0);
-    final novo = Companion(position: posicao, trainer: player, creatureData: creature);
-    novo.currentHealth = companionSavedHealth[slot];
-    companions[slot] = novo;
-    companionPocketed[slot] = false;
-    dungeonWorld.add(novo);
-
-    dungeonWorld.add(CompanionReviveEffect(position: posicao.clone()));
-  }
-
-  /// Troca a criatura ativa pro slot tocado, ou cicla a postura dela se já
-  /// era a ativa — ver o comentário de [companionAtivoIndex]. Tocar um slot
-  /// vazio não faz nada: não há postura pra ciclar nem criatura pra ativar.
-  void onTapCompanionSlot(int slot) {
-    if (slot == companionAtivoIndex) {
-      companions[slot]?.ciclarPostura();
-    } else if (companions[slot] != null) {
-      companionAtivoIndex = slot;
+    final proximo = _primeiroSlotDisponivel();
+    if (proximo == null) {
+      _handleGameOver();
+      return;
     }
+
+    final creature = companionCreatures[proximo]!;
+    final vidaSalva = companionSavedHealth[proximo];
+    companionPocketed[proximo] = false;
+    companionAtivoIndex = proximo;
+    player.trocarCriatura(creature, vidaSalva: vidaSalva);
+    dungeonWorld.add(CompanionReviveEffect(position: player.position.clone()));
+  }
+
+  /// Criatura selvagem da sala da escada do quarto andar (ver
+  /// PIVOT_CONTROLE_DIRETO.md §5) — passado como `wildCreatureBuilder` pra
+  /// `RoomComponent`, mesmo padrão que `bossBuilder`/`isBossFloor` já usa.
+  /// `null` sem slot livre no grupo: a sala fica vazia, sem prompt nem fila
+  /// de espera.
+  WildCreatureNpc? _buildWildCreature(Vector2 position) {
+    final slotVazio = companionCreatures.indexWhere((c) => c == null);
+    if (slotVazio == -1) return null;
+
+    final possiveis = CreatureRegistry.all
+        .where((c) => !companionCreatures.any((owned) => owned?.id == c.id))
+        .toList();
+    if (possiveis.isEmpty) return null;
+
+    final sorteada = possiveis[_wildRandom.nextInt(possiveis.length)];
+    return WildCreatureNpc(position: position, creatureData: sorteada);
+  }
+
+  /// Chamado por `WildCreatureNpc` quando o jogador encosta nela. Entra no
+  /// banco com vida cheia — o jogador troca pra ela quando quiser, pelo
+  /// retrato. Devolve `false` só em caso de corrida rara (grupo já se
+  /// preencheu entre a sala nascer e o toque acontecer).
+  bool recrutarCriaturaSelvagem(CreatureData creature) {
+    final slotVazio = companionCreatures.indexWhere((c) => c == null);
+    if (slotVazio == -1) return false;
+
+    companionCreatures[slotVazio] = creature;
+    companionSavedHealth[slotVazio] = creature.stats.maxHp;
+    companionPocketed[slotVazio] = true;
+    return true;
   }
 
   bool _runStarted = false;
@@ -325,44 +349,29 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   void startRun(CreatureData creature) {
     // Varredura explícita por tipo além do loop genérico abaixo: encontramos
     // um caso (Game Over → "Menu Principal") em que dois `startRun` corriam
-    // em sequência com o motor pausado, e o `Player`/`Companion` da run
-    // anterior sobreviviam — o joystick é uma instância única compartilhada
-    // por todo `Player`, então dois montados ao mesmo tempo se moviam juntos
-    // (ver PIVOT_TREINADOR.md). `companion` some primeiro pra Hud/botões não
-    // lerem a referência antiga no frame entre a varredura e a criação nova.
+    // em sequência com o motor pausado, e o `Player` da run anterior
+    // sobrevivia — o joystick é uma instância única compartilhada por todo
+    // `Player`, então dois montados ao mesmo tempo se moviam juntos.
     for (int i = 0; i < maxCompanions; i++) {
-      companions[i] = null;
       companionCreatures[i] = null;
       companionPocketed[i] = false;
       companionSavedHealth[i] = 0.0;
     }
     companionAtivoIndex = 0;
-    // Sem isso, um laço fechado bem na hora do Game Over deixava a próxima
-    // run já nascendo com uma `CaptureSwapOverlay` pendente de uma criatura
-    // que não existe mais.
-    capturaPendente = null;
-    overlays.remove('CaptureSwap');
     dungeonWorld.children.whereType<Player>().toList().forEach((p) => p.removeFromParent());
-    dungeonWorld.children.whereType<Companion>().toList().forEach((c) => c.removeFromParent());
 
     for (final child in dungeonWorld.children.toList()) {
       child.removeFromParent();
     }
     loadedRooms.clear();
 
-    player = Player(moveJoystick: moveJoystick, creatureData: creature, stats: TrainerStats.padrao);
+    player = Player(moveJoystick: moveJoystick, creatureData: creature);
     _runStarted = true;
-    player.onDeath = _handleGameOver;
     player.position = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
     dungeonWorld.add(player);
 
     companionCreatures[0] = creature;
-    companions[0] = Companion(
-      position: player.position + Vector2(16, 0),
-      trainer: player,
-      creatureData: creature,
-    );
-    dungeonWorld.add(companions[0]!);
+    companionPocketed[0] = false;
 
     // Run nova: volta pro primeiro andar e sorteia o boss que espera no
     // andar final desta run.
@@ -382,6 +391,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
         currentLevel: currentLevel,
         floor: currentFloor,
         bossBuilder: isBossFloor ? _buildRunBoss : null,
+        wildCreatureBuilder: currentFloor == andaresPorBoss - 1 ? _buildWildCreature : null,
       );
       loadedRooms['${roomData.x},${roomData.y}'] = room;
       dungeonWorld.add(room);
@@ -400,10 +410,8 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
 
     final hud = Hud(
       player: player,
-      companionOf: () => companion,
       companionCreatureAt: (slot) => companionCreatures[slot],
       companionPocketFractionAt: (slot) => companionPocketFraction(slot),
-      companionPosturaAt: (slot) => companions[slot]?.postura,
       isCompanionAtivo: (slot) => slot == companionAtivoIndex,
       onTapCompanionSlot: onTapCompanionSlot,
     );
@@ -728,10 +736,12 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
         darkGrayReplacement: c.corEscura,
         whiteReplacement: Palette.branco,
       ));
-      // Companion (Companion.onLoad) — sem `whiteReplacement`, chave
-      // diferente da forma inimigo/escudo acima. Cobre tanto a criatura
-      // inicial (slot 0) quanto qualquer captura futura de uma espécie
-      // ainda não vista na run.
+      // Sprite do próprio `Player` (ver `Player._montarVisualEHitbox`) — sem
+      // `whiteReplacement`, chave diferente da forma inimigo/escudo acima.
+      // Cobre tanto a criatura inicial (slot 0) quanto qualquer troca em
+      // pleno jogo pra uma espécie ainda não vista na run (recrutada na sala
+      // da escada, ver PIVOT_CONTROLE_DIRETO.md §5) — sem isso, a PRIMEIRA
+      // troca pra uma criatura nova geraria a textura em pleno combate.
       warmUps.add(PaletteSwapper.createSwappedImage(
         imagePath: c.spritePath,
         lightGrayReplacement: c.corClara,
@@ -790,10 +800,6 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     }
     _abilityControls.clear();
 
-    // Se a troca aconteceu com o dedo na tela, o componente removido nunca vai
-    // mandar o "soltou" — sem isso a captura ficaria travada segurada.
-    if (_runStarted) player.cancelCapture();
-
     switch (_controlScheme) {
       case ControlScheme.botoes:
         _setupActionButtons();
@@ -804,26 +810,23 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     addAll(_abilityControls);
   }
 
-  /// Metade direita da tela como área de gesto, sem botão desenhado — três
-  /// ações no lugar dos três botões (ver `GestureActionArea` pra semântica
-  /// completa): toque parado e mantido = captura; arrastar pra cima =
-  /// esquiva; arrastar pra baixo = recolher/liberar o grupo.
+  /// Metade direita da tela como área de gesto, sem botão desenhado
+  /// (PIVOT_CONTROLE_DIRETO.md §2.7): toque parado e mantido = habilidade A
+  /// (segura enquanto o cooldown zera, mesmo padrão do esquema de botões);
+  /// arrastar pra cima = habilidade B (dispara uma vez por arraste — sem
+  /// hold contínuo aqui, limitação conhecida e aceitável do gesto, ver o
+  /// doc); arrastar pra baixo = esquiva.
   void _setupGestureControls() {
     _abilityControls.add(
       GestureActionArea(
-        onCaptureHoldChanged: (active) {
-          if (!_runStarted) return;
-          if (active) {
-            player.startCapture();
-          } else {
-            player.cancelCapture();
-          }
+        onAbility1HoldChanged: (active) {
+          if (_runStarted) player.touchHoldAbility1 = active;
+        },
+        onAbility2: () {
+          if (_runStarted) player.dispararAbility2();
         },
         onDodge: () {
           if (_runStarted) player.dodge();
-        },
-        onRecallToggle: () {
-          if (_runStarted) alternarRecuoGrupo();
         },
       ),
     );
@@ -857,12 +860,8 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   }
 
   void _setupActionButtons() {
-    // Três botões: recolher/liberar, esquiva, captura. Habilidade 1 e 2 não
-    // têm controle nenhum — a criatura só tem UMA habilidade ativa agora
-    // (PIVOT_TREINADOR.md, pedido do usuário), sempre `tipo: ataque`, sempre
-    // autônoma. `CreatureData.ability2` continua nos dados das 16 criaturas,
-    // só não é mais chamada por ninguém (ver `Companion`) — decisão
-    // explícita de guardar o dado pra decidir depois o que fazer com ele.
+    // Três botões: habilidade A, habilidade B, esquiva (PIVOT_CONTROLE_DIRETO.md
+    // §2.7) — controle direto de novo, sem override de companion nenhum.
     //
     // Raio 50 (100dp de diâmetro) no mobile é o piso de alvo de toque do
     // Material — com 18 (36dp) o botão ficava menor que o mínimo recomendado.
@@ -876,57 +875,55 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     final double marginRightA = edgeMarginX;
     final double marginRightB = edgeMarginX + buttonRadius * 2 + gap;
     final double marginBottomC = edgeMarginY + buttonRadius * 2 + gap;
-    //final double marginRightC = edgeMargin + (buttonRadius * 2 + gap) * 2;
 
-    // Recolher/liberar o grupo — ação em massa, ver
-    // `CreaturesRogueGame.alternarRecuoGrupo`.
+    // Habilidade A — segurar dispara enquanto o cooldown permitir, mesmo
+    // padrão do teclado (`Player.touchHoldAbility1`).
     _abilityControls.add(
-      RecallButton(
+      AbilityButton(
         radius: buttonRadius,
+        tipo: () => _runStarted ? player.creatureData.ability1.tipo : AbilityTipo.ataque,
+        baseColor: Palette.cinza.withAlpha(255),
+        pressedColor: Palette.cinza.withAlpha(140),
+        pointerTracker: pointerTracker,
         margin: EdgeInsets.only(right: marginRightA, bottom: edgeMarginY),
-        recolhido: () => companionCreatures.asMap().entries.every(
-            (e) => e.value == null || companionPocketed[e.key]),
-        onToggle: () {
-          if (_runStarted) alternarRecuoGrupo();
+        onPressedChanged: (pressed) {
+          if (_runStarted) player.touchHoldAbility1 = pressed;
         },
       ),
     );
 
-    // Ação pessoal do treinador (esquiva), não uma habilidade de criatura —
-    // ver `Player.dodge` e PIVOT_TREINADOR.md §2.1. Ícone `esquiva` por
-    // semelhança temática; sem cooldown desenhado aqui (a barra própria da
-    // esquiva vive embaixo do sprite do treinador, ver `Player.render`).
+    // Habilidade B — mesmo padrão da A.
     _abilityControls.add(
+      AbilityButton(
+        radius: buttonRadius,
+        tipo: () => _runStarted ? player.creatureData.ability2.tipo : AbilityTipo.ataque,
+        baseColor: Palette.cinza.withAlpha(255),
+        pressedColor: Palette.cinza.withAlpha(140),
+        pointerTracker: pointerTracker,
+        margin: EdgeInsets.only(right: marginRightB, bottom: marginBottomC),
+        onPressedChanged: (pressed) {
+          if (_runStarted) player.touchHoldAbility2 = pressed;
+        },
+      ),
+    );
+
+    // Esquiva pessoal, não uma habilidade de criatura — ver `Player.dodge`.
+    // Sem cooldown desenhado aqui (a barra própria da esquiva vive embaixo
+    // do sprite do jogador, ver `Player.render`).
+   /* _abilityControls.add(
       AbilityButton(
         radius: buttonRadius,
         tipo: () => AbilityTipo.esquiva,
         baseColor: Palette.cinza.withAlpha(255),
         pressedColor: Palette.cinza.withAlpha(140),
         pointerTracker: pointerTracker,
-        margin: EdgeInsets.only(right: marginRightB, bottom: edgeMarginY),
+        margin: EdgeInsets.only(right: marginRightA, bottom: marginBottomC),
         onPressedChanged: (pressed) {
           if (pressed) player.dodge();
         },
       ),
     );
-
-    // Captura (PIVOT_TREINADOR.md §2.1.1/§4.1) — segurar inicia o laço,
-    // soltar cancela. Terceiro botão da fileira.
-    _abilityControls.add(
-      CaptureButton(
-        radius: buttonRadius,
-        pointerTracker: pointerTracker,
-        margin: EdgeInsets.only(right: marginRightA, bottom: marginBottomC),
-        onPressedChanged: (pressed) {
-          if (!_runStarted) return;
-          if (pressed) {
-            player.startCapture();
-          } else {
-            player.cancelCapture();
-          }
-        },
-      ),
-    );
+    */
   }
 
   @override
@@ -937,26 +934,13 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     }
     super.update(dt);
     _checkCameraTransition();
-
-    if (_runStarted) {
-      for (int i = 0; i < maxCompanions; i++) {
-        if (!companionPocketed[i]) continue;
-        final creature = companionCreatures[i];
-        if (creature == null) continue;
-
-        final maxHp = creature.stats.maxHp;
-        if (companionSavedHealth[i] >= maxHp) continue;
-        companionSavedHealth[i] = (companionSavedHealth[i] + maxHp * curaBolsoFracaoPorSegundo * dt)
-            .clamp(0.0, maxHp);
-      }
-    }
   }
 
-  /// Fração de vida FALTANDO enquanto no bolso (0 = cheio/pronto pra sair, 1
-  /// = acabou de entrar zerado) — mesma convenção visual que
-  /// `AbilityCooldownIndicator` já usa (cinza cheio = "não pronto ainda",
-  /// esvazia conforme aproxima do que falta). Fora do bolso, 0 — nada pra
-  /// desenhar.
+  /// Fração de vida FALTANDO no banco (0 = vida cheia, 1 = zerada) — mesma
+  /// convenção visual que `AbilityCooldownIndicator` usa (cinza cheio =
+  /// "não pronto"). Sem cura passiva, esse valor é estático: só muda quando
+  /// a criatura entra/sai do banco, não com o tempo. Fora do banco, 0 — nada
+  /// pra desenhar.
   double companionPocketFraction(int slot) {
     if (!companionPocketed[slot]) return 0.0;
     final creature = companionCreatures[slot];
@@ -964,82 +948,16 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     return (1 - companionSavedHealth[slot] / creature.stats.maxHp).clamp(0.0, 1.0);
   }
 
-  /// Criatura recém-capturada esperando o jogador decidir quem sai, com o
-  /// grupo já cheio (ver [capturarCriatura] / [resolverTrocaCaptura]). `null`
-  /// sempre que a `CaptureSwapOverlay` não está na tela.
-  CreatureData? capturaPendente;
-
-  /// Chamado por `Player._completarCaptura` quando o laço fecha a volta
-  /// inteira. A manobra sempre "pega" a criatura — o inimigo sai da sala
-  /// aqui dentro, mesmo se o grupo estiver cheio; ela só não entra
-  /// automaticamente. Com slot livre, vira companion na hora, como sempre.
-  /// Com o grupo cheio, fica em [capturaPendente] e abre a `CaptureSwapOverlay`
-  /// (pedido do usuário: decisão na hora, mesmo em combate — o motor pausa
-  /// enquanto isso, então nenhum inimigo ainda de pé ataca de graça).
-  void capturarCriatura(Enemy alvo) {
-    final creature = alvo.creature;
-    if (creature == null) return; // inimigo sem CreatureData (não deveria existir)
-
-    final posicao = alvo.position.clone();
-    alvo.removeFromParent();
-
-    // `companionCreatures`, não `companions`: um slot recolhido (bolso ou
-    // combate) tem `companions[i] == null` mas ainda TEM DONO
-    // (`companionCreatures[i]` != null). Procurar em `companions` achava
-    // esse slot como "livre" e a captura nova sobrescrevia o dono errado.
-    final slotVazio = companionCreatures.indexWhere((c) => c == null);
-    if (slotVazio != -1) {
-      companionCreatures[slotVazio] = creature;
-      companions[slotVazio] = Companion(
-        position: posicao,
-        trainer: player,
-        creatureData: creature,
-      );
-      dungeonWorld.add(companions[slotVazio]!);
-      return;
-    }
-
-    capturaPendente = creature;
-    pauseEngine();
-    overlays.add('CaptureSwap');
-  }
-
-  /// Resolve a `CaptureSwapOverlay` — chamado por ela, nunca direto.
-  /// [slotParaLiberar] é o índice (0..2) do integrante atual a soltar; `null`
-  /// significa "soltar a recém-capturada, manter o grupo como estava". A
-  /// dispensada some de vez (pedido do usuário) — sem reserva, sem fila.
-  void resolverTrocaCaptura(int? slotParaLiberar) {
-    final nova = capturaPendente;
-    capturaPendente = null;
-
-    if (nova != null && slotParaLiberar != null) {
-      companionCreatures[slotParaLiberar] = nova;
-      companionPocketed[slotParaLiberar] = false;
-      companionSavedHealth[slotParaLiberar] = 0.0;
-      companions[slotParaLiberar]?.removeFromParent();
-      companions[slotParaLiberar] = Companion(
-        position: player.position + Vector2(16, 0),
-        trainer: player,
-        creatureData: nova,
-      );
-      dungeonWorld.add(companions[slotParaLiberar]!);
-    }
-
-    overlays.remove('CaptureSwap');
-    resumeEngine();
-  }
 // NOVO MÉTODO: Limpa e recria a fase!
   void nextLevel() {
     // 1. LIMPEZA TOTAL (O "faxineiro")
     // Remove salas velhas, tiros perdidos, itens no chão... tudo, MENOS o
-    // jogador e o grupo de companions (que precisam atravessar de andar,
-    // não são "lixo da fase velha" como o resto). Sem essa exceção, os
-    // `Companion` montados eram removidos daqui mas `companions[]` continuava
-    // apontando pra eles — a Hud/botões liam referência morta, e nada
-    // recriava, então o grupo simplesmente sumia ao trocar de andar.
+    // jogador (que precisa atravessar de andar) — o grupo inteiro é só dado
+    // (`companionCreatures`), não componente montado, então não há mais nada
+    // além do `Player` pra preservar aqui.
     GameAudio.instance.play(Sfx.stairs);
     for (var child in dungeonWorld.children) {
-      if (child != player && child is! Companion) {
+      if (child != player) {
         child.removeFromParent();
       }
     }
@@ -1068,6 +986,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
         currentLevel: currentLevel,
         floor:currentFloor,
         bossBuilder: isBossFloor ? _buildRunBoss : null,
+        wildCreatureBuilder: currentFloor == andaresPorBoss - 1 ? _buildWildCreature : null,
       );
       loadedRooms['${roomData.x},${roomData.y}'] = room;
       dungeonWorld.add(room);
@@ -1078,13 +997,6 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     player.position = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
     currentRoomIndex = Vector2.zero();
 
-    // Companions sobrevivem à limpeza (ver passo 1), mas ficariam largados
-    // na posição da sala velha — que nem existe mais — se não reposicionar
-    // junto do jogador aqui.
-    for (final c in companions) {
-      c?.position = player.position + Vector2(16, 0);
-    }
-    
     // Dá um "corte seco" na câmera de volta para o início
     gameCamera.viewfinder.position = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
 

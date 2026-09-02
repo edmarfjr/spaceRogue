@@ -14,6 +14,7 @@ import 'package:creatures_rogue/game/components/items/power_up_item.dart';
 import 'package:creatures_rogue/game/components/items/shop_stand.dart';
 import 'package:creatures_rogue/game/components/map/door.dart';
 import 'package:creatures_rogue/game/components/map/pedestal.dart';
+import 'package:creatures_rogue/game/components/creatures/wild_creature_npc.dart';
 import 'package:creatures_rogue/game/components/map/stairs.dart';
 import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
 import 'package:creatures_rogue/game/components/map/wall_tile.dart';
@@ -62,12 +63,19 @@ class RoomComponent extends PositionComponent with HasGameRef {
   /// a morte dele. Null = andar comum, sala de boss se comporta como antes.
   final Enemy? Function(Vector2 position)? bossBuilder;
 
+  /// Criatura selvagem da sala da escada do quarto andar (ver
+  /// PIVOT_CONTROLE_DIRETO.md §5) — mesmo padrão do `bossBuilder` acima: quem
+  /// decide QUANDO e SE nasce é o jogo (que sabe se há slot livre no grupo),
+  /// a sala só sabe onde colocar. `null` = andar comum, sem criatura nenhuma.
+  final WildCreatureNpc? Function(Vector2 position)? wildCreatureBuilder;
+
   RoomComponent(
     this.data, {
     required this.player,
     int currentLevel = 1,
     this.floor = 1,
     this.bossBuilder,
+    this.wildCreatureBuilder,
   }) : super(
           size: Vector2(roomWidth, roomHeight),
           position: Vector2((data.x - 50) * roomWidth, (data.y - 50) * roomHeight),
@@ -316,6 +324,14 @@ class RoomComponent extends PositionComponent with HasGameRef {
       parent?.add(Stairs(
         position: position + Vector2(width / 2, height / 2)
       ));
+
+      final construirCriatura = wildCreatureBuilder;
+      if (construirCriatura != null) {
+        // Posição própria (height/2 - 28), livre da escada (height/2) e da
+        // recompensa (height/2 + 28) — ver PIVOT_CONTROLE_DIRETO.md §5.2.
+        final npc = construirCriatura(position + Vector2(width / 2, height / 2 - 28));
+        if (npc != null) parent?.add(npc);
+      }
     }
 
     _spawnRecompensa();

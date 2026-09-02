@@ -46,6 +46,10 @@ class ShopStand extends Collectible {
         Shadow(color: Palette.preto, offset: Offset(-1, -1)),
         Shadow(color: Palette.preto, offset: Offset(1, -1)),
         Shadow(color: Palette.preto, offset: Offset(-1, 1)),
+        Shadow(color: Palette.preto, offset: Offset(0, 1)),
+        Shadow(color: Palette.preto, offset: Offset(0, -1)),
+        Shadow(color: Palette.preto, offset: Offset(1, 0)),
+        Shadow(color: Palette.preto, offset: Offset(-1, 0)),
       ],
     ),
   );

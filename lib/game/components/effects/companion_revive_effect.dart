@@ -2,9 +2,12 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 
-/// Pequena "explosão" quando um companion sai do bolso (PIVOT_TREINADOR.md,
-/// `CreaturesRogueGame.liberarSlot`) — um círculo branco se abre rápido e
-/// desaparece. Puramente Canvas, mesmo espírito de `CompanionRecallEffect`.
+/// Pequena "explosão" quando uma criatura entra em campo — troca voluntária
+/// pro banco (`_trocarParaSlot`), troca automática depois de um desmaio
+/// (`pocketarSlotAtivo`), ou recrutamento na sala da escada
+/// (`recrutarCriaturaSelvagem`, ver PIVOT_CONTROLE_DIRETO.md) — um círculo
+/// branco se abre rápido e desaparece. Puramente Canvas, mesmo espírito de
+/// `CompanionRecallEffect`.
 class CompanionReviveEffect extends PositionComponent {
   static const double _duracao = 0.25;
   static const double _raioMax = 14.0;

@@ -87,17 +87,6 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   /// Estática). Enquanto > 0, o inimigo não chama `movimento`.
   double stunTimer = 0.0;
 
-  /// Enraizado pelo laço de captura (PIVOT_TREINADOR.md §4.1, regra 2): a IA
-  /// própria para de rodar e o inimigo fica parado de vez (ver `update`) —
-  /// também vira invulnerável enquanto isso (ver `takeDamage`). O plano
-  /// original da regra 2 era puxar o alvo pro centro da sala em vez de só
-  /// parar (descolaria um alvo encurralado numa parede); trocado por parada
-  /// total a pedido, pra testar a volta sem o alvo virando alvo móvel — ver
-  /// PIVOT_TREINADOR.md pro motivo completo. Encurralado numa parede volta a
-  /// ser um problema sem solução por ora.
-  bool enraizadoPeloLaco = false;
-  void enraizarParaCaptura(bool ativo) => enraizadoPeloLaco = ativo;
-
   /// Gancho de guarda defensiva (ex.: casco fechado da tartaruga). Neutro por
   /// padrão: 0.0 não muda nada. Lido em `takeDamage`.
   double damageReduction = 0.0;
@@ -166,8 +155,7 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     this.shadowOffset = shadowOffset ?? Vector2.zero();
   }
 
-  /// O treinador — alvo fixo de todo `Enemy` (ver PIVOT_TREINADOR.md §3.4).
-  /// Companion tem sua própria lógica de alvo, conforme a natureza.
+  /// O jogador — alvo fixo de todo `Enemy` (ver PIVOT_TREINADOR.md §3.4).
   @override
   PositionComponent get currentTarget => playerTarget;
 
@@ -264,11 +252,6 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
 
     if (stunTimer > 0) {
       stunTimer -= dt;
-      return;
-    }
-
-    if (enraizadoPeloLaco) {
-      animateMovement(dt, isMoving: false);
       return;
     }
 
@@ -427,14 +410,6 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   /// [tipoAtacante] aplica a vantagem elemental (ver `typeMultiplier`).
   /// `neutro` — o padrão — vale 1.0, então quem não passa tipo não muda nada.
   void takeDamage(double amount,{Color corTxt = Palette.amarelo, CreatureType tipoAtacante = CreatureType.neutro}) {
-    // Enraizado pelo laço de captura = invulnerável. Pedido explícito pra
-    // testar a manobra sem o companion matando o alvo antes da volta
-    // completar — mas também faz sentido como regra permanente: sem isso, o
-    // próprio time do jogador pode sabotar uma captura em andamento sem
-    // querer, o que não é o tipo de risco que a manobra deveria ter (o risco
-    // é do TREINADOR andando exposto, não do alvo morrer de fogo amigo).
-    
-
     final mult = typeMultiplier(tipoAtacante, creature?.tipo ?? CreatureType.neutro);
 
     // Guarda defensiva ativa (casco fechado) reduz o dano recebido.
@@ -502,7 +477,6 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   @override
   void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) { 
     super.onCollisionStart(intersectionPoints.cast<Vector2>(), other);
-    if (enraizadoPeloLaco) return;
     if (other is Projectile) {
       if (other.isEnemy) return; 
 

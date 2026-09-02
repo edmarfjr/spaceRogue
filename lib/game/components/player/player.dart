@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
@@ -9,9 +8,9 @@ import 'package:creatures_rogue/game/audio/game_audio.dart';
 import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:creatures_rogue/game/components/UI/dynamic_joystick_component.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
-import 'package:creatures_rogue/game/components/creatures/capture_lasso_visual.dart';
 import 'package:creatures_rogue/game/components/creatures/damageable_by_enemy.dart';
 import 'package:creatures_rogue/game/components/creatures/passive.dart';
 import 'package:creatures_rogue/game/components/effects/ghost_effect.dart';
@@ -23,39 +22,44 @@ import 'package:creatures_rogue/game/components/map/dungeon_generator.dart';
 import 'package:creatures_rogue/game/components/map/room_component.dart';
 import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
 import 'package:creatures_rogue/game/components/projeteis/bomb.dart';
-import 'package:creatures_rogue/game/components/player/trainer_stats.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:creatures_rogue/game/components/utils/y_sort.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:flutter/services.dart';
 import '../map/obstacle.dart';
 
+/// O jogador é a criatura ativa do grupo (ver PIVOT_CONTROLE_DIRETO.md) —
+/// controle direto, sem ator "treinador" separado. `creatureData` não é
+/// `final`: trocar de criatura ativa (`trocarCriatura`) muta esta mesma
+/// instância em vez de recriar o componente — ver o comentário de
+/// `trocarCriatura` pro motivo (RoomComponent guarda `player:` como campo
+/// final).
 class Player extends PositionComponent with CollisionCallbacks, HasGameRef, KeyboardHandler, AbilityUser, DamageableByEnemy {
   final DynamicJoystickComponent moveJoystick;
-  final CreatureData creatureData;
-
-  /// Vida, velocidade e escudo do treinador (PIVOT_TREINADOR.md §3.7) — não
-  /// vêm mais de `creatureData.stats`, que é da criatura, não dele.
-  /// `creatureData` continua aqui só pelo visual (sprite/hitbox/animação):
-  /// o treinador ainda não tem sprite próprio, gap conhecido e fora desta
-  /// rodada, não coberto por §3.7.
-  final TrainerStats stats;
+  CreatureData creatureData;
 
   // Componente visual único, animado por transformação (escala/flip), não por troca de frame.
-  late final SpriteComponent visual;
-  late final Vector2 _visualBasePosition;
-  late final MovementAnimator _moveAnimator;
+  // Não são `final`: `trocarCriatura` remonta tudo a partir da criatura nova
+  // (ver `_montarVisualEHitbox`).
+  late SpriteComponent visual;
+  late Vector2 _visualBasePosition;
+  late MovementAnimator _moveAnimator;
 
   late final SpriteComponent circDir;
 
   // Bolha desenhada por cima do player enquanto uma habilidade defensiva
   // (Bolha Protetora, Casco Fechado) está com o efeito ativo.
   // `shieldVisualActive` vem de AbilityUser.
-  late final SpriteComponent shieldVisual;
+  late SpriteComponent shieldVisual;
 
-  // --- NOVAS VARIÁVEIS DE COLISÃO ---
+  // --- Colisão ---
   late RectangleHitbox playerHitbox;  // Colisor de Combate (Corpo)
   late RectangleHitbox physicsHitbox; // Colisor de Física (Pés/Sombra)
+  late CircleComponent shadow;
+
+  /// `_montarVisualEHitbox` só remove componentes antigos a partir da
+  /// segunda chamada (a primeira, em `onLoad`, não tem nada montado ainda).
+  bool _visualPronto = false;
 
   final Vector2 _keyboardMove = Vector2.zero();
 
@@ -98,17 +102,25 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   // logo abaixo: o valor base nunca muda, quem multiplica é o getter.
   double velMult = 1.0;
 
+  /// Multiplicador de cadência das duas habilidades — upgrade de run
+  /// (`fireRateUp`). Reseta pra 1.0 em `trocarCriatura`: é a criatura ativa
+  /// que atira, então o upgrade não atravessa a troca (mesma regra que
+  /// sempre valeu enquanto isto vivia no `Companion`).
+  double cdMult = 1.0;
+
   /// Dano do jogador. É `static` porque quem multiplica é o próprio projétil /
   /// explosão no momento do acerto (ver `Projectile.onCollision`), e eles não
   /// têm referência ao Player. Aplicar nas 34 habilidades seria 34 edições;
-  /// aqui são duas. Zera no construtor, ou seja, a cada run nova.
+  /// aqui são duas. Zera no construtor, ou seja, a cada run nova. `static` faz
+  /// sentido de novo com só um `Player` por vez (não há mais três instâncias
+  /// simultâneas disputando o multiplicador).
   static double danoMult = 1.0;
 
   Vector2 velocity = Vector2.zero();
   Vector2 knockbackVelocity = Vector2.zero();
   Vector2 plrDir = Vector2(0,1);
 
-  double get maxSpeed => stats.speed * lentidaoFator * velMult;
+  double get maxSpeed => creatureData.stats.speed * lentidaoFator * velMult;
 
   /// Lentidão e cegueira são as únicas condições que atingem o jogador — DoT
   /// fica só do lado dos inimigos, que têm os ícones de condição pra mostrar.
@@ -120,19 +132,38 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   final double acceleration = 100.0;
   final double friction = 500.0;
 
-  /// `lockedAb1Direction`/`lockedAb2Direction` (exigidos por `AbilityUser`)
-  /// não são mais computados aqui — o treinador não executa mais habilidade
-  /// de criatura nenhuma (ver PIVOT_TREINADOR.md §2.1: os botões viram
-  /// override do `Companion` ativo). Ficam parados no valor inicial, inertes.
+  /// Mira travada de cada habilidade — recalculada todo frame em
+  /// [_atualizarMira], a partir da própria posição (inimigo mais próximo ou
+  /// direção que o sprite está olhando, conforme `Ability.target`).
   Vector2 lockedAb1Direction = Vector2(0,1);
   Vector2 lockedAb2Direction = Vector2(0,1);
+
+  // --- Cooldown e input das duas habilidades ---
+  double _cooldown1 = 0.0;
+  double _cooldownMax1 = 1.0;
+  double _cooldown2 = 0.0;
+  double _cooldownMax2 = 1.0;
+
+  /// Fração restante de cooldown (0 = pronto) — lida pela Hud.
+  double get ability1CooldownFraction => (_cooldown1 / _cooldownMax1).clamp(0.0, 1.0);
+  double get ability2CooldownFraction => (_cooldown2 / _cooldownMax2).clamp(0.0, 1.0);
+
+  /// Estado "segurado" de cada habilidade — dois canais independentes porque
+  /// um vem do toque/gesto (`AbilityButton`/`GestureActionArea`, escreve
+  /// direto) e o outro do teclado (recomputado a cada evento a partir de
+  /// `keysPressed`, mesmo padrão de `_keyboardMove`). O disparo em si só
+  /// acontece quando pelo menos um dos dois está true E o cooldown zerou —
+  /// ver [_updateAbilities].
+  bool touchHoldAbility1 = false;
+  bool touchHoldAbility2 = false;
+  bool _keyboardHoldAbility1 = false;
+  bool _keyboardHoldAbility2 = false;
 
   bool naoMove = false;
 
   // Ganchos usados pelas habilidades das criaturas (shieldVisualActive,
   // speedLocked, shieldHits, damageReduction, refleteProjetil, retalia*)
-  // vêm de AbilityUser — não redeclarar aqui. Neutros pra sempre no
-  // treinador agora que só o Companion executa habilidade.
+  // vêm de AbilityUser.
 
   bool isAirborne = false;
 
@@ -222,11 +253,9 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     if (seconds > _invulnerabilityTimer) _invulnerabilityTimer = seconds;
   }
 
-  /// Ação pessoal do treinador — não passa por `Ability`/`Companion` nenhum.
-  /// Resposta direta ao playtest da fase 3: sem isso, os dois botões de
-  /// habilidade agiam sobre a criatura e o treinador não tinha propósito
-  /// nenhum em combate (ver PIVOT_TREINADOR.md §2.1). Mesma receita de
-  /// `EsquivaBomba`: i-frames mais dash com rastro fantasma.
+  /// Ação pessoal do jogador — não passa por `Ability` nenhuma. Mesma receita
+  /// de `EsquivaBomba`: i-frames curtos mais um dash curto com rastro
+  /// fantasma.
   double _dodgeCooldown = 0.0;
   static const double _dodgeCooldownMax = 1.1;
   static const double _dodgeDuration = 0.18;
@@ -237,12 +266,12 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   /// junto com a janela de invulnerabilidade, sem duplicar o número aqui.
   double get dodgeIframeDuration => _dodgeDuration;
 
-  /// Passivas das criaturas do grupo (ver `Passive`, PIVOT_TREINADOR.md) —
-  /// vale enquanto a criatura estiver no grupo do treinador, capturada ou
-  /// não, no bolso ou fora dele. Por isso lê `companionCreatures` (sobrevive
-  /// ao bolso), não `companions` (só as fora dele). Sempre recomputado no
-  /// uso, nunca cacheado — elimina qualquer ponto de recálculo que
-  /// precisaria ser lembrado em captura/dispensa/início de run.
+  /// Passivas das criaturas do grupo (ver `Passive`) — vale enquanto a
+  /// criatura estiver no grupo, ativa ou no banco. Por isso lê
+  /// `companionCreatures` (sobrevive ao banco), não só a ativa. Sempre
+  /// recomputado no uso, nunca cacheado — elimina qualquer ponto de
+  /// recálculo que precisaria ser lembrado em recrutamento/troca/início de
+  /// run.
   List<Passive> get passivasAtivas {
     final jogo = game;
     if (jogo is! CreaturesRogueGame) return const [];
@@ -303,183 +332,6 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   double get dodgeCooldownFraction =>
       (_dodgeCooldown / _dodgeCooldownMax).clamp(0.0, 1.0);
 
-  // --- Captura (PIVOT_TREINADOR.md §4, fase 6) ---
-  // Também ação pessoal do treinador, fora de `Ability`/`Companion` — a
-  // manobra é do jogador segurando o botão e andando, não de criatura
-  // nenhuma. "Alvo travado no aperto" (regra 1 do §4.1): resolvido uma vez
-  // em [startCapture], nunca reavaliado até soltar/quebrar.
-  Enemy? _capturaAlvo;
-  double _capturaAnguloAcumulado = 0.0;
-  double _capturaUltimoAngulo = 0.0;
-  CaptureLassoVisual? _capturaVisual;
-
-  /// Raio da volta em torno do alvo — geometria fixa do §4.1 (24px cabem na
-  /// sala com folga pequena, calculado contra `RoomComponent.roomWidth`).
-  /// Primeiro corte, não tunado por playtest.
-  static const double captureOrbitRadius = 48.0;
-
-  /// Fração de vida máxima abaixo da qual um inimigo pode ser capturado
-  /// (§4.2 — segundo portão, também é o que empurra a captura pro fim da
-  /// luta). Em 1.0 pra teste (qualquer HP captura, o portão fica desligado
-  /// na prática) — pedido explícito, não é o valor final. Voltar pra algo
-  /// tipo 0.3 quando validar a manobra em si, senão nunca aperta o
-  /// jogador pra deixar o inimigo fraco antes de laçar.
-  static const double captureHpFraction = 0.3;
-
-  bool get capturando => _capturaAlvo != null;
-
-  /// Botão de captura pressionado — ver `CaptureButton`/`_setupCaptureButton`.
-  void startCapture() {
-    if (_capturaAlvo != null) return;
-
-    final alvo = _encontrarAlvoCaptura();
-    if (alvo == null) return;
-
-    _capturaAlvo = alvo;
-    _capturaAnguloAcumulado = 0.0;
-    final delta = position - alvo.position;
-    _capturaUltimoAngulo = math.atan2(delta.y, delta.x);
-    alvo.enraizarParaCaptura(true);
-    for (final p in passivasAtivas) {
-      p.aoIniciarLaco(this);
-    }
-
-    final visual = CaptureLassoVisual(
-      trainer: this,
-      alvo: alvo,
-      raioAlvo: captureOrbitRadius,
-      fracao: () => (_capturaAnguloAcumulado.abs() / (2 * math.pi)).clamp(0.0, 1.0),
-    );
-    _capturaVisual = visual;
-    parent?.add(visual);
-  }
-
-  /// Botão solto — regra de quebra #1 do §4.1 ("soltar o botão"). As outras
-  /// três quebras (distância, parede, dano) chamam isto também, de dentro de
-  /// [_updateCapture] e de [takeDamage].
-  void cancelCapture() {
-    final alvo = _capturaAlvo;
-    if (alvo == null) return;
-    alvo.enraizarParaCaptura(false);
-    _capturaVisual?.removeFromParent();
-    _capturaVisual = null;
-    _capturaAlvo = null;
-    _capturaAnguloAcumulado = 0.0;
-  }
-
-  /// Inimigo mais próximo, capturável (abaixo do limiar de HP, dentro do
-  /// alcance, não é boss — §4.4), na sala atual. "Mais próximo" já filtrado
-  /// por elegibilidade: travar num alvo que não pode ser capturado não serve
-  /// pra nada.
-  Enemy? _encontrarAlvoCaptura() {
-    final room = currentRoom;
-    final inimigos = parent?.children.whereType<Enemy>() ?? const <Enemy>[];
-    final alcance = stats.captureRange;
-
-    Enemy? maisProximo;
-    double menorDistSq = double.infinity;
-
-    for (final inimigo in inimigos) {
-      if (room != null &&
-          !room.toAbsoluteRect().contains(
-              Offset(inimigo.absolutePosition.x, inimigo.absolutePosition.y))) {
-        continue;
-      }
-      if (inimigo.health > inimigo.maxHealth * captureHpFraction) continue;
-      if (inimigo.currentRoom?.data.type == RoomType.boss) continue;
-
-      final distSq = (inimigo.absolutePosition - absolutePosition).length2;
-      if (distSq > alcance * alcance) continue;
-      if (distSq < menorDistSq) {
-        menorDistSq = distSq;
-        maisProximo = inimigo;
-      }
-    }
-    return maisProximo;
-  }
-
-  /// Há parede entre o treinador e [alvo]? Amostra pontos ao longo do
-  /// segmento em vez de testar a caixa delimitadora inteira (que daria falso
-  /// positivo com qualquer parede fora da linha, só porque está dentro do
-  /// retângulo diagonal entre os dois pontos). Duplica um pedaço pequeno de
-  /// `MovementHost.direcaoLivre` em vez de herdar o mixin inteiro — Player
-  /// não compartilha o resto das dependências dele (mesmo padrão de
-  /// duplicação já aceito entre Player/Enemy/Companion, ver PIVOT_TREINADOR.md
-  /// seção 6, "Armadilhas").
-  bool _paredeEntreCaptura(Enemy alvo) {
-    final room = currentRoom;
-    if (room == null) return false;
-
-    final colliders = room.children
-        .whereType<PositionComponent>()
-        .where((c) => c is WallBarrier || c is Obstacle)
-        .toList();
-    if (colliders.isEmpty) return false;
-
-    const amostras = 8;
-    for (int i = 1; i < amostras; i++) {
-      final t = i / amostras;
-      final ponto = Offset(
-        absolutePosition.x + (alvo.absolutePosition.x - absolutePosition.x) * t,
-        absolutePosition.y + (alvo.absolutePosition.y - absolutePosition.y) * t,
-      );
-      for (final c in colliders) {
-        if (c.toAbsoluteRect().contains(ponto)) return true;
-      }
-    }
-    return false;
-  }
-
-  /// Acumulação de ângulo (regra 3 do §4.1): delta com sinal do rumo do
-  /// treinador em torno da posição ATUAL do alvo (que se move, puxado pro
-  /// centro da sala). Retrocesso subtrai em vez de zerar — o alvo se move
-  /// sozinho, então exigir uma volta monotônica puniria o jogador por
-  /// movimento que não é dele.
-  void _updateCapture(double dt) {
-    final alvo = _capturaAlvo;
-    if (alvo == null) return;
-
-    if (!alvo.isMounted || alvo.health <= 0) {
-      cancelCapture();
-      return;
-    }
-
-    final distancia = (alvo.absolutePosition - absolutePosition).length;
-    if (distancia > stats.captureRange) {
-      cancelCapture();
-      return;
-    }
-   // if (_paredeEntreCaptura(alvo)) {
-    //  cancelCapture();
-    //  return;
-   // }
-
-    final delta = position - alvo.position;
-    if (delta.length == 0) return;
-    final anguloAtual = math.atan2(delta.y, delta.x);
-
-    double diff = anguloAtual - _capturaUltimoAngulo;
-    if (diff > math.pi) diff -= 2 * math.pi;
-    if (diff < -math.pi) diff += 2 * math.pi;
-    _capturaAnguloAcumulado += diff;
-    _capturaUltimoAngulo = anguloAtual;
-
-    if (_capturaAnguloAcumulado.abs() >= 2 * math.pi) {
-      _completarCaptura(alvo);
-    }
-  }
-
-  void _completarCaptura(Enemy alvo) {
-    alvo.enraizarParaCaptura(false);
-    _capturaVisual?.removeFromParent();
-    _capturaVisual = null;
-    _capturaAlvo = null;
-    _capturaAnguloAcumulado = 0.0;
-
-    final jogo = game;
-    if (jogo is CreaturesRogueGame) jogo.capturarCriatura(alvo);
-  }
-
   // --- Indicador da esquiva, embaixo do sprite ---
   // Barra que ENCHE conforme a esquiva recarrega (vazia assim que usa, cheia
   // quando pronta) — oposto do indicador de habilidade da Hud, que ESVAZIA um
@@ -517,11 +369,10 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   Player({
     required this.moveJoystick,
     required this.creatureData,
-    this.stats = TrainerStats.padrao,
-  }) : maxHealth = stats.maxHealth,
-       currentHealth = stats.maxHealth,
-       shieldMax = stats.shieldMax,
-       shield = stats.shieldMax,
+  }) : maxHealth = creatureData.stats.maxHp,
+       currentHealth = creatureData.stats.maxHp,
+       shieldMax = creatureData.stats.shieldMax,
+       shield = creatureData.stats.shieldMax,
        super(size: Vector2(16, 16), anchor: Anchor.center) {
     // Um Player novo é exatamente uma run nova (ver `startRun`), então este é
     // o lugar certo pra zerar o multiplicador estático de dano — senão os
@@ -529,21 +380,47 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     danoMult = 1.0;
   }
 
-  VoidCallback? onDeath;
-
   @override
   Future<void> onLoad() async {
     super.onLoad();
-    //debugMode = true;
+    await _montarVisualEHitbox();
+
+    final ui.Image circDirImg = await Flame.images.load('actors/circDir.png');
+    circDir = SpriteComponent(
+      sprite: Sprite(circDirImg),
+      size: Vector2.all(24),
+      anchor: Anchor.center,
+      position: _visualBasePosition,
+      paint: Paint()..filterQuality = FilterQuality.none,
+      priority: -2,
+    );
+    add(circDir);
+  }
+
+  /// Monta sprite, escudo, hitboxes e sombra a partir de `creatureData`.
+  /// Chamado uma vez em `onLoad` e de novo em `trocarCriatura` — nesse
+  /// segundo caso remove os componentes antigos primeiro (`_visualPronto`
+  /// distingue os dois casos: no `onLoad` não há nada pra remover ainda).
+  /// Assíncrono porque o sprite passa por `PaletteSwapper`, mas já vem do
+  /// cache aquecido por `_preloadCombatSprites` — sem travadinha perceptível
+  /// mesmo trocando em pleno combate.
+  Future<void> _montarVisualEHitbox() async {
+    if (_visualPronto) {
+      visual.removeFromParent();
+      shieldVisual.removeFromParent();
+      playerHitbox.removeFromParent();
+      physicsHitbox.removeFromParent();
+      shadow.removeFromParent();
+    }
 
     final ui.Image spriteImage = await PaletteSwapper.createSwappedImage(
-      imagePath: 'actors/plr.png',
-      lightGrayReplacement: Palette.bege,
-      darkGrayReplacement: Palette.burgundy,
+      imagePath: creatureData.spritePath,
+      lightGrayReplacement: creatureData.corClara,
+      darkGrayReplacement: creatureData.corEscura,
     );
 
     _visualBasePosition = Vector2(size.x / 2, size.y);
-    _moveAnimator = MovementAnimator(MovementAnimation.caminhada);
+    _moveAnimator = MovementAnimator(creatureData.moveAnim);
 
     visual = SpriteComponent(
       sprite: Sprite(spriteImage),
@@ -556,11 +433,10 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     add(visual);
 
     Vector2 floatOffset = Vector2.zero();
-
-    if(creatureData.moveAnim == MovementAnimation.flutuar){
+    if (creatureData.moveAnim == MovementAnimation.flutuar) {
       isAirborne = true;
-      floatOffset = Vector2(0,-4);
-    }else{
+      floatOffset = Vector2(0, -4);
+    } else {
       isAirborne = false;
     }
 
@@ -581,7 +457,6 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     shieldVisual.setOpacity(0.0); // só aparece enquanto shieldVisualActive
     add(shieldVisual);
 
-    // --- 1. COLISOR DE COMBATE (Corpo Inteiro) — tamanho vem da criatura ---
     final hitboxSize = creatureData.hitboxSize;
     playerHitbox = RectangleHitbox(
       size: hitboxSize,
@@ -589,10 +464,8 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       position: _visualBasePosition + floatOffset,
       collisionType: CollisionType.active,
     );
-   
     add(playerHitbox);
 
-    // --- 2. COLISOR DE FÍSICA (Metade da altura, fica nos pés) ---
     physicsHitbox = RectangleHitbox(
       size: Vector2(hitboxSize.x, hitboxSize.x * 0.5),
       anchor: Anchor.center,
@@ -601,37 +474,56 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     );
     add(physicsHitbox);
 
-    // --- 3. SOMBRA VISUAL ---
-    final shadowPaint = Paint()..color = Palette.preto;
-
-    final shadow = CircleComponent(
+    shadow = CircleComponent(
       radius: hitboxSize.x / 2,
       anchor: Anchor.center,
-      position: _visualBasePosition,//size / 2 + Vector2(0, hitboxSize.y / 2),
-      paint: shadowPaint,
+      position: _visualBasePosition,
+      paint: Paint()..color = Palette.preto,
       priority: -1,
     )..scale = Vector2(1.2, 0.75);
-
     add(shadow);
 
-    final ui.Image circDirImg = await Flame.images.load('actors/circDir.png');
+    _visualPronto = true;
+  }
 
-    circDir = SpriteComponent(
-      sprite: Sprite(circDirImg),
-      size: Vector2.all(24),
-      anchor: Anchor.center,
-      position: _visualBasePosition,
-      paint: Paint()..filterQuality = FilterQuality.none,
-      priority: -2,
-    );
-    
-    add(circDir);
+  /// Troca a criatura ativa em pleno jogo (PIVOT_CONTROLE_DIRETO.md §2.3) —
+  /// chamado por `CreaturesRogueGame` quando o jogador toca um retrato do
+  /// banco disponível, ou quando a vida zera e o jogo troca sozinho.
+  ///
+  /// Muta esta instância em vez de recriar o componente: `RoomComponent`
+  /// guarda `player:` como campo `final` no construtor, e toda sala já
+  /// gerada na run aponta pra esta instância — recriar deixaria elas com uma
+  /// referência morta.
+  ///
+  /// Estado de combate não atravessa a troca (cooldowns, escudo de
+  /// habilidade, buffs, knockback) — só a vida salva do banco. A criatura que
+  /// entra recebe o escudo passivo cheio, não o que a anterior tinha quando
+  /// saiu (o banco só guarda HP, não escudo).
+  void trocarCriatura(CreatureData nova, {required double vidaSalva}) {
+    creatureData = nova;
+    maxHealth = nova.stats.maxHp;
+    currentHealth = vidaSalva.clamp(0.0, maxHealth);
+    shieldMax = nova.stats.shieldMax;
+    shield = shieldMax;
+    shieldHits = 0;
+    shieldVisualActive = false;
+    damageReduction = 0.0;
+    speedLocked = false;
+    refleteProjetil = false;
+    retaliaEspinhos = false;
+    retaliaDano = 0.0;
+    retaliaStunDuration = 0.0;
+    knockbackVelocity = Vector2.zero();
+    _cooldown1 = 0.0;
+    _cooldown2 = 0.0;
+    cdMult = 1.0;
+    _dodgeCooldown = 0.0;
+    velocity.setZero();
 
-    // playerHitbox.debugMode = true;
-    // physicsHitbox.debugMode = true;
-    // visual.debugMode = true;
-    // shieldVisual.debugMode = true;
-    // shadow.debugMode = true;
+    // Assíncrono, sem await: o cache de sprite já está aquecido (mesma
+    // chave que `_preloadCombatSprites` monta pra toda criatura do
+    // registro), então o resultado chega praticamente no frame seguinte.
+    _montarVisualEHitbox();
   }
 
   @override
@@ -680,7 +572,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       _updateJump(dt);
     } else {
       _updateMovement(dt, moveDelta);
-      
+
       _moveAnimator.update(
         visual: visual,
         basePosition: _visualBasePosition,
@@ -690,7 +582,89 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       );
     }
 
-    _updateCapture(dt);
+    _updateAbilities(dt);
+  }
+
+  /// Inimigo mais próximo na sala atual — usada pela mira travada
+  /// (`AbilityTarget.enemyDir`), mesma restrição por sala que os itens de
+  /// área (congelar, etc.) já usam.
+  Enemy? _nearestEnemy() {
+    final room = currentRoom;
+    final enemies = parent?.children.whereType<Enemy>() ?? const <Enemy>[];
+
+    Enemy? nearest;
+    double nearestDistSq = double.infinity;
+    for (final enemy in enemies) {
+      if (room != null &&
+          !room.toAbsoluteRect().contains(
+              Offset(enemy.absolutePosition.x, enemy.absolutePosition.y))) {
+        continue;
+      }
+      final distSq = (enemy.absolutePosition - absolutePosition).length2;
+      if (distSq < nearestDistSq) {
+        nearestDistSq = distSq;
+        nearest = enemy;
+      }
+    }
+    return nearest;
+  }
+
+  void _atualizarMira() {
+    final alvo = _nearestEnemy();
+    final dirCorpo = visual.isFlippedHorizontally ? Vector2(-1, 0) : Vector2(1, 0);
+
+    if (creatureData.ability1.target == AbilityTarget.enemyDir) {
+      if (alvo != null) {
+        final delta = alvo.absolutePosition - absolutePosition;
+        if (delta.length != 0) lockedAb1Direction = delta.normalized();
+      }
+    } else if (creatureData.ability1.target == AbilityTarget.plrDir) {
+      lockedAb1Direction = dirCorpo;
+    }
+
+    if (creatureData.ability2.target == AbilityTarget.enemyDir) {
+      if (alvo != null) {
+        final delta = alvo.absolutePosition - absolutePosition;
+        if (delta.length != 0) lockedAb2Direction = delta.normalized();
+      }
+    } else if (creatureData.ability2.target == AbilityTarget.plrDir) {
+      lockedAb2Direction = dirCorpo;
+    }
+  }
+
+  /// Dispara `ability1`/`ability2` se o cooldown já zerou — chamado a cada
+  /// frame enquanto o input está "segurado" (ver [_updateAbilities]), e
+  /// também exposto como disparo avulso pro esquema de gestos, onde a
+  /// habilidade B não tem canal de hold (ver `GestureActionArea.onAbility2`).
+  void dispararAbility1() {
+    if (_cooldown1 > 0) return;
+    if (!creatureData.ability1.canExecute(this)) return;
+    creatureData.ability1.execute(this, lockedAb1Direction);
+    _cooldownMax1 = creatureData.ability1.cooldown * cdMult;
+    _cooldown1 = _cooldownMax1;
+  }
+
+  void dispararAbility2() {
+    if (_cooldown2 > 0) return;
+    if (!creatureData.ability2.canExecute(this)) return;
+    creatureData.ability2.execute(this, lockedAb2Direction);
+    _cooldownMax2 = creatureData.ability2.cooldown * cdMult;
+    _cooldown2 = _cooldownMax2;
+  }
+
+  /// Duas habilidades diretas, uma por botão/tecla — cada uma dispara sozinha
+  /// enquanto o input estiver "segurado" (toque, gesto ou tecla) e o
+  /// cooldown já tiver zerado, mesmo padrão que a IA autônoma do companion já
+  /// usava (ver PIVOT_TREINADOR.md), só que decidido pelo jogador em vez de
+  /// pelo inimigo mais próximo sozinho.
+  void _updateAbilities(double dt) {
+    if (_cooldown1 > 0) _cooldown1 -= dt;
+    if (_cooldown2 > 0) _cooldown2 -= dt;
+
+    _atualizarMira();
+
+    if (touchHoldAbility1 || _keyboardHoldAbility1) dispararAbility1();
+    if (touchHoldAbility2 || _keyboardHoldAbility2) dispararAbility2();
   }
 
   /// Sala onde o player está agora (mesma lógica usada por `Enemy.currentRoom`).
@@ -814,15 +788,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     // Piso em 0, não em 1: com o piso antigo nenhum item ou habilidade de
     // redução percentual conseguia fazer diferença num golpe de 1 (o contato
     // de inimigo), porque 1 * (1 - qualquer coisa) voltava pra 1.
-    //
-    // `reducaoDuranteLaco` (passiva, ex.: Toco de Madeira) some junto com
-    // `damageReduction` — lida direto de `capturando`, sem hook de
-    // início/fim de laço nenhum.
-    final reducaoLaco = capturando
-        ? passivasAtivas.fold<double>(
-            0.0, (acc, p) => p.reducaoDuranteLaco > acc ? p.reducaoDuranteLaco : acc)
-        : 0.0;
-    double amountFinal = amount * (1 - damageReduction) * (1 - reducaoLaco);
+    double amountFinal = amount * (1 - damageReduction);
     if (amountFinal <= 0) return; // golpe totalmente mitigado: não gasta i-frame
     GameAudio.instance.play(Sfx.hit);
 
@@ -830,7 +796,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     _tempoSemApanhar = 0.0;
 
     // Passivas de retaliação (ex.: Retaliação Elétrica do Ouriço) — ANTES de
-    // qualquer escudo, de forma que disparem sempre que o treinador tenta
+    // qualquer escudo, de forma que disparem sempre que o jogador tenta
     // tomar dano, mesmo que o golpe seja inteiramente absorvido pelo escudo
     // logo abaixo. Se o grupo tiver mais de uma criatura com retaliação,
     // todas executam — decisão travada com o usuário, não é "a mais forte
@@ -838,12 +804,6 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     for (final p in passivasAtivas) {
       p.aoTentarTomarDano(this, amountFinal);
     }
-
-    // Regra de quebra #4 do §4.1: levar dano cancela o laço de captura — é o
-    // que dá peso real à manobra (a volta é uma janela de vulnerabilidade).
-    // Aqui, não antes: um golpe já mitigado por damageReduction/reducaoLaco
-    // não conta como "tomar dano" pra essa regra.
-    if (_capturaAlvo != null) cancelCapture();
 
     parent?.add(TextEffect.dano(
       amountFinal,
@@ -879,7 +839,8 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     currentHealth -= amountFinal;
 
     if (currentHealth <= 0) {
-      onDeath?.call();
+      final jogo = game;
+      if (jogo is CreaturesRogueGame) jogo.pocketarSlotAtivo();
     }
   }
 
@@ -898,15 +859,10 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     if (keysPressed.contains(LogicalKeyboardKey.arrowUp)) _keyboardMove.y -= 1;
     if (keysPressed.contains(LogicalKeyboardKey.arrowDown)) _keyboardMove.y += 1;
 
-    final jogoAtual = game;
-
-    // Tecla C = captura, pra testar sem depender do botão — segurar
-    // inicia/mantém, soltar cancela.
-    if (keysPressed.contains(LogicalKeyboardKey.keyC)) {
-      startCapture();
-    } else {
-      cancelCapture();
-    }
+    // Z/X = as duas habilidades, seguradas (mesmo padrão do toque/gesto) —
+    // Espaço = esquiva pessoal, um único aperto por vez.
+    _keyboardHoldAbility1 = keysPressed.contains(LogicalKeyboardKey.keyZ);
+    _keyboardHoldAbility2 = keysPressed.contains(LogicalKeyboardKey.keyX);
 
     // Teclas 1 e 2 = os dois slots do inventário, equivalente a clicar neles.
     // Só no KeyDownEvent: o teclado repete a tecla segurada, e com isso o
@@ -914,13 +870,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     if (event is KeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.digit1) useSlot(0);
       if (event.logicalKey == LogicalKeyboardKey.digit2) useSlot(1);
-      // Ação pessoal do treinador — a resposta ao playtest da fase 3.
-      if (event.logicalKey == LogicalKeyboardKey.keyZ || event.logicalKey == LogicalKeyboardKey.space) dodge();
-      // Recolher/liberar o grupo, pra testar sem depender do botão — troca
-      // de estado, então KeyDown (uma vez por aperto), não hold como C.
-      if (event.logicalKey == LogicalKeyboardKey.keyX && jogoAtual is CreaturesRogueGame) {
-        jogoAtual.alternarRecuoGrupo();
-      }
+      if (event.logicalKey == LogicalKeyboardKey.space) dodge();
     }
 
     return super.onKeyEvent(event, keysPressed);

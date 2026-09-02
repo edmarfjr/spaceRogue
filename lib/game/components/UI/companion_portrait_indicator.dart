@@ -3,40 +3,36 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
-import 'package:creatures_rogue/game/components/creatures/companion.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 
-/// Retrato de UM slot do grupo (0/1/2 — PIVOT_TREINADOR.md, fase 5b) na Hud —
-/// sprite da criatura daquele slot, com o mesmo indicador cinza de cooldown
-/// que `AbilityCooldownIndicator` usa, agora mostrando quanto falta curar no
-/// bolso do treinador (ver `CreaturesRogueGame.companionPocketFraction`).
-/// Existe mesmo com o companion recolhido — é o único lugar que mostra
-/// status dele nesse intervalo, já que o componente em si some do mundo
-/// enquanto cura.
+/// Retrato de UM slot do grupo (0/1/2) na Hud — sprite da criatura daquele
+/// slot, com o mesmo indicador cinza de cooldown que `AbilityCooldownIndicator`
+/// usa, agora mostrando quanto falta de vida no banco (ver
+/// `CreaturesRogueGame.companionPocketFraction`). Sem cura passiva, esse
+/// cinza é um retrato estático da vida com que a criatura saiu de campo, não
+/// uma barra enchendo com o tempo — só muda quando ela entra/sai do banco de
+/// novo. Existe mesmo com o slot no banco — é o único lugar que mostra
+/// status dele nesse intervalo.
 ///
 /// `creatureData` é uma função, não um valor fixo: os slots 1 e 2 nascem
-/// vazios (`null`) e só ganham criatura quando a fase 6 (captura) existir —
-/// o retrato precisa notar essa mudança em pleno jogo e carregar o sprite na
-/// hora, não só uma vez no `onLoad` (que já teria passado).
+/// vazios (`null`) e só ganham criatura quando a criatura selvagem da sala
+/// da escada preencher (PIVOT_CONTROLE_DIRETO.md §5) — o retrato precisa
+/// notar essa mudança em pleno jogo e carregar o sprite na hora, não só uma
+/// vez no `onLoad` (que já teria passado).
 ///
-/// Também é o controle de postura E de troca de ativa (PIVOT_TREINADOR.md
-/// §2.1.1): tocar no retrato JÁ ativo cicla a postura dele; tocar em outro
-/// troca qual é a ativa. A decisão de qual das duas ações o toque significa
-/// é de fora (`CreaturesRogueGame.onTapCompanionSlot`) — este componente só
-/// avisa "fui tocado".
+/// Também é o controle de troca de ativa
+/// (`CreaturesRogueGame.onTapCompanionSlot`): tocar num retrato com vida
+/// troca qual é a ativa; tocar o já ativo, um vazio, ou um já derrotado
+/// (vida 0), não faz nada — este componente só avisa "fui tocado".
 class CompanionPortraitIndicator extends PositionComponent with TapCallbacks {
   final CreatureData? Function() creatureData;
 
-  /// 0 = fora lutando (ou vida cheia no bolso), 1 = acabou de recolher com a
+  /// 0 = ativa (ou vida cheia no banco), 1 = acabou de entrar no banco com a
   /// vida zerada. Mesma convenção de `AbilityCooldownIndicator.cooldownFraction`.
   final double Function() pocketFraction;
 
-  /// Postura atual, lida a cada frame — `null` com o slot vazio ou o
-  /// companion recolhido (nada pra ciclar).
-  final CompanionPostura? Function() posturaAtual;
-
-  /// Se este é o slot que recebe o override dos botões agora — desenha um
+  /// Se este é o slot que o jogador está controlando agora — desenha um
   /// contorno mais claro pra diferenciar dos outros dois.
   final bool Function() isAtiva;
 
@@ -48,8 +44,6 @@ class CompanionPortraitIndicator extends PositionComponent with TapCallbacks {
 
   final Paint _spritePaint = Paint()..filterQuality = FilterQuality.none;
   final Paint _cooldownPaint = Paint()..color = Palette.vermelho.withAlpha(220);
-  final Paint _posturaAgressivo = Paint()..color = Palette.vermelho;
-  final Paint _posturaSegurar = Paint()..color = Palette.azul;
   final Paint _fundoVazio = Paint()..color = Palette.cinzaEsc.withAlpha(80);
   final Paint _fundo = Paint()..color = Palette.branco;
   final Paint _bordaAtiva = Paint()
@@ -64,7 +58,6 @@ class CompanionPortraitIndicator extends PositionComponent with TapCallbacks {
   CompanionPortraitIndicator({
     required this.creatureData,
     required this.pocketFraction,
-    required this.posturaAtual,
     required this.isAtiva,
     required this.onTap,
     required double lado,
@@ -102,15 +95,17 @@ class CompanionPortraitIndicator extends PositionComponent with TapCallbacks {
 
   @override
   void render(Canvas canvas) {
+    //if(!isAtiva())return;
     final quadro = Rect.fromLTWH(0, 0, size.x, size.y);
 
     canvas.drawRect(quadro, _fundo);
 
-    // Cresce de baixo pra cima conforme cura (pedido do usuário) — o
-    // inverso de `fraction` (que É quanto falta curar), então a barra usa
-    // `progresso` (quanto já curou) pra altura: começa em 0 no instante do
-    // recolhimento e enche até sumir de vez quando `fraction` chega em 0
-    // (curado, `if` abaixo não desenha mais nada).
+    // Cresce de baixo pra cima conforme a vida salva (pedido do usuário) — o
+    // inverso de `fraction` (que É quanto falta de vida), então a barra usa
+    // `progresso` (quanto de vida sobrou) pra altura. Sem cura passiva, isso
+    // fica parado enquanto a criatura está no banco: só muda de novo quando
+    // ela volta a campo (vida cheia) ou desmaia lá fora (vida 0 — o cinza
+    // cobre o retrato inteiro).
     final fraction = pocketFraction().clamp(0.0, 1.0);
     if (fraction > 0) {
       final progresso = 1 - fraction;
@@ -129,20 +124,5 @@ class CompanionPortraitIndicator extends PositionComponent with TapCallbacks {
     }
 
     canvas.drawRect(quadro, isAtiva() ? _bordaAtiva : _bordaInativa);
-
-
-    // Marcador de postura: um quadradinho no canto, só quando não é `seguir`
-    // (o default não precisa de indicador — vermelho = agressivo, azul =
-    // segurar, mesmas cores que a barra de vida/escudo já usa pra HP/escudo).
-    final lado = size.x * 0.3;
-    switch (posturaAtual()) {
-      case CompanionPostura.agressivo:
-        canvas.drawRect(Rect.fromLTWH(size.x - lado, 0, lado, lado), _posturaAgressivo);
-      case CompanionPostura.segurar:
-        canvas.drawRect(Rect.fromLTWH(size.x - lado, 0, lado, lado), _posturaSegurar);
-      case CompanionPostura.seguir:
-      case null:
-        break;
-    }
   }
 }

@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/overlays/boss_reveal_overlay.dart';
-import 'package:creatures_rogue/game/overlays/capture_swap_overlay.dart';
 import 'package:creatures_rogue/game/overlays/console_overlay.dart';
 import 'package:creatures_rogue/game/overlays/creature_select_overlay.dart';
 import 'package:creatures_rogue/game/overlays/game_over_overlay.dart';
@@ -74,7 +73,6 @@ void main() async {
         'CreatureSelect': (context, game) => CreatureSelectOverlay(game: game),
         'BossReveal': (context, game) => BossRevealOverlay(game: game),
         'PauseMenu': (context, game) => PauseMenuOverlay(game: game),
-        'CaptureSwap': (context, game) => CaptureSwapOverlay(game: game),
         'Hud': (context, game) => HudOverlay(game: game),
         'GameOver': (context, game) => GameOverMenu(game: game), // <--- REGISTRO NOVO
       },

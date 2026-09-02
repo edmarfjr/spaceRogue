@@ -1,9 +1,10 @@
 import '../passive.dart';
 
-/// Toco de Madeira — antes era `Enraizar` (botão B). Puramente numérico: o
-/// treinador recebe metade do dano enquanto o laço de captura está ativo —
-/// lido direto em `Player.takeDamage` a partir de `Player.capturando`, sem
-/// hook de início/fim de laço nenhum.
+/// Toco de Madeira — antes reduzia o dano recebido enquanto o laço de captura
+/// estava ativo (PIVOT_TREINADOR.md §4.1). O laço saiu do jogo
+/// (PIVOT_CONTROLE_DIRETO.md §2.4) e essa passiva ficou sem gancho —
+/// placeholder neutro até a criatura ganhar uma passiva nova.
 class RaizesDoLaco extends Passive {
-  const RaizesDoLaco() : super(nome: 'Raízes do Laço', descricao: 'O treinador recebe metade do dano enquanto o laço de captura está ativo.', reducaoDuranteLaco: 0.5);
+  const RaizesDoLaco()
+      : super(nome: 'Raízes do Laço', descricao: 'Sem efeito no momento.');
 }

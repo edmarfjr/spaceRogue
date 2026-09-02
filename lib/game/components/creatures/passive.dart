@@ -1,18 +1,16 @@
 import 'package:flame/components.dart';
 import '../player/player.dart';
 
-/// Habilidade passiva de uma criatura (substitui `CreatureData.ability2`, que
-/// virou dado morto quando o companion passou a executar só `ability1` de
-/// forma autônoma — ver PIVOT_TREINADOR.md). Diferente de `Ability`, uma
-/// `Passive` nunca é "executada" pelo jogador: ela vale **enquanto a
-/// criatura estiver no grupo do treinador**, capturada ou não, no bolso ou
-/// fora dele — decisão travada com o usuário, não é "só a ativa" nem "só as
-/// fora do bolso".
+/// Habilidade passiva de uma criatura, separada de `ability1`/`ability2`
+/// (ver PIVOT_TREINADOR.md). Diferente de `Ability`, uma `Passive` nunca é
+/// "executada" pelo jogador: ela vale **enquanto a criatura estiver no grupo
+/// do jogador**, ativa ou no banco — decisão travada com o usuário, não é
+/// "só a ativa" nem "só as fora do banco".
 ///
 /// Consequência direta dessa regra: uma `Passive` nunca pode depender de
-/// posição, alvo ou HP da própria criatura — no bolso ela não existe no
-/// mundo. Toda `Passive` é centrada no **treinador** (`Player`), pendurada
-/// em `Player.dodge`, `Player.takeDamage` ou no laço de captura.
+/// posição, alvo ou HP da própria criatura — no banco ela não existe no
+/// mundo. Toda `Passive` é centrada no `Player`, pendurada em `Player.dodge`
+/// ou `Player.takeDamage`.
 ///
 /// `const`/stateless por design, igual `Ability`: o conjunto de passivas
 /// ativas é lido a cada uso direto de `Player.game` (ver
@@ -38,18 +36,11 @@ abstract class Passive {
   final double dodgeCooldownMult;
   final double dodgeDistanceMult;
 
-  /// Redução de dano do treinador enquanto o laço de captura está ativo
-  /// (`Player.capturando`), 0 a 1. Lida direto no ponto de dano — sem hook
-  /// de início/fim, porque "laço ativo ou não" já é um estado consultável a
-  /// qualquer momento (`Player.capturando`), não precisa de bookkeeping.
-  final double reducaoDuranteLaco;
-
   const Passive({
     required this.nome,
     required this.descricao,
     this.dodgeCooldownMult = 1.0,
     this.dodgeDistanceMult = 1.0,
-    this.reducaoDuranteLaco = 0.0,
   });
 
   /// Chamado dentro de `Player.dodge()`, depois do dash já decidido e
@@ -72,12 +63,6 @@ abstract class Passive {
   /// grupo tiver mais de uma criatura com retaliação, todas executam, uma
   /// depois da outra.
   void aoTentarTomarDano(Player player, double amount) {}
-
-  /// Chamado uma vez quando o laço de captura começa (`Player.startCapture`,
-  /// depois do alvo já travado). Sem contraparte de "fim de laço" — quem
-  /// precisar de um efeito contínuo enquanto o laço dura deve usar
-  /// [reducaoDuranteLaco] ou consultar `Player.capturando` em [aoAtualizar].
-  void aoIniciarLaco(Player player) {}
 
   /// Chamado todo frame a partir de `Player.update`. Neutro por padrão —
   /// só sobrescrever quando o efeito precisar observar o tempo passando

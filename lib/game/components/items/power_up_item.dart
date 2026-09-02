@@ -2,7 +2,6 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
-import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'collectible.dart';
 import '../player/player.dart';
@@ -56,18 +55,12 @@ extension PowerUpTypeData on PowerUpType {
       case PowerUpType.speedUp:
         player.velMult += 0.10;
       case PowerUpType.fireRateUp:
-        // cdMult é de criatura, não de treinador (PIVOT_TREINADOR.md §3.7:
-        // cooldown é de habilidade, habilidade é da criatura) — escreve no
-        // companion ativo, não no Player. Multiplica em vez de subtrair: dois
-        // upgrades nunca podem levar o cooldown a zero (ou negativo, que
-        // travaria o indicador da Hud). Sem companion vivo no momento da
-        // coleta, o upgrade não se perde — só não se aplica: o companion
-        // seguinte (revive) nasce com `cdMult` de novo em 1.0, gap conhecido
-        // que só a fase 5b (grupo persistente) resolve de verdade.
-        final jogo = player.game;
-        if (jogo is CreaturesRogueGame) {
-          jogo.companion?.cdMult *= 0.88;
-        }
+        // Multiplica em vez de subtrair: dois upgrades nunca podem levar o
+        // cooldown a zero (ou negativo, que travaria o indicador da Hud).
+        // `cdMult` reseta pra 1.0 em `Player.trocarCriatura` (PIVOT_CONTROLE_DIRETO.md
+        // §2.3) — o upgrade não atravessa a troca de criatura ativa, mesma
+        // regra que já valia quando isto vivia no companion.
+        player.cdMult *= 0.88;
       case PowerUpType.damageUp:
         Player.danoMult += 0.15;
       case PowerUpType.hpUp:

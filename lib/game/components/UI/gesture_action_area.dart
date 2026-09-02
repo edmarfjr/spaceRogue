@@ -4,15 +4,18 @@ import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:creatures_rogue/game/components/UI/consumable_slot_button.dart';
 
 /// Esquema de controle alternativo aos três botões — uma área invisível (na
-/// prática, a metade direita da tela) onde o TIPO do gesto escolhe a ação:
+/// prática, a metade direita da tela) onde o TIPO do gesto escolhe a ação
+/// (PIVOT_CONTROLE_DIRETO.md §2.7):
 ///
-/// - Toque parado (e mantido) dispara [onCaptureHoldChanged] — o laço de
-///   captura (PIVOT_TREINADOR.md §4.1), que precisa de um hold contínuo
-///   enquanto o jogador anda a volta com o outro polegar no joystick.
-/// - Arrastar o dedo pra CIMA dispara [onDodge] — uma vez só, a esquiva
-///   pessoal do treinador.
-/// - Arrastar o dedo pra BAIXO dispara [onRecallToggle] — uma vez só,
-///   recolher/liberar o grupo.
+/// - Toque parado (e mantido) dispara [onAbility1HoldChanged] — a habilidade
+///   A do jogador, com o mesmo hold contínuo que o esquema de botões usa
+///   (dispara de novo sozinha assim que o cooldown zerar, enquanto o dedo
+///   continuar parado).
+/// - Arrastar o dedo pra CIMA dispara [onAbility2] — uma vez só por arraste,
+///   a habilidade B. Sem hold contínuo aqui (limitação conhecida do gesto:
+///   ver o doc) — pra manter disparando, o jogador solta e arrasta de novo.
+/// - Arrastar o dedo pra BAIXO dispara [onDodge] — uma vez só, a esquiva
+///   pessoal do jogador.
 /// - Arrastar na diagonal ou de lado não faz nada: sem eixo dominante claro,
 ///   melhor não adivinhar do que disparar a ação errada.
 ///
@@ -35,9 +38,9 @@ import 'package:creatures_rogue/game/components/UI/consumable_slot_button.dart';
 /// independentes.
 class GestureActionArea extends PositionComponent
     with TapCallbacks, DragCallbacks {
-  final void Function(bool active) onCaptureHoldChanged;
+  final void Function(bool active) onAbility1HoldChanged;
+  final VoidCallback onAbility2;
   final VoidCallback onDodge;
-  final VoidCallback onRecallToggle;
 
   static const double _limiarDirecao = 20.0;
 
@@ -48,9 +51,9 @@ class GestureActionArea extends PositionComponent
   final Set<int> _classificados = {};
 
   GestureActionArea({
-    required this.onCaptureHoldChanged,
+    required this.onAbility1HoldChanged,
+    required this.onAbility2,
     required this.onDodge,
-    required this.onRecallToggle,
     super.priority,
   });
 
@@ -104,9 +107,9 @@ class GestureActionArea extends PositionComponent
     if (acumulado.y.abs() <= acumulado.x.abs()) return; // lateral/diagonal: sem ação
 
     if (acumulado.y < 0) {
-      onDodge();
+      onAbility2();
     } else {
-      onRecallToggle();
+      onDodge();
     }
   }
 
@@ -131,6 +134,6 @@ class GestureActionArea extends PositionComponent
     final ativo = _holdPointers.isNotEmpty;
     if (ativo == _holdActive) return;
     _holdActive = ativo;
-    onCaptureHoldChanged(ativo);
+    onAbility1HoldChanged(ativo);
   }
 }

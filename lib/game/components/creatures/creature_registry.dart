@@ -84,7 +84,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(8, 10), 
     enemyBuilder: (pos, plr) => RoedorFogoEnemy(position: pos, playerTarget: plr),
     passive: RastroFlamejante(),
-    companionBehavior: CompanionBehavior.cacador,
   );
 
   static final CreatureData tartarugaPlanta = CreatureData(
@@ -101,7 +100,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(14, 14), 
     enemyBuilder: (pos, plr) => TartarugaPlantaEnemy(position: pos, playerTarget: plr),
     passive: CascoReflexivo(),
-    companionBehavior: CompanionBehavior.guarda,
   );
 
   static final CreatureData sapoAgua = CreatureData(
@@ -118,7 +116,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(12, 10), 
     enemyBuilder: (pos, plr) => SapoAguaEnemy(position: pos, playerTarget: plr),
     passive: BolhaAutonoma(),
-    companionBehavior: CompanionBehavior.guarda,
   );
 
   static final CreatureData aveEletrica = CreatureData(
@@ -135,7 +132,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(9, 11),
     enemyBuilder: (pos, plr) => AveEletricaEnemy(position: pos, playerTarget: plr),
     passive: CorrenteReflexa(),
-    companionBehavior: CompanionBehavior.cacador,
   );
 
   static final CreatureData cobraAgua = CreatureData(
@@ -152,7 +148,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(9, 14),
     enemyBuilder: (pos, plr) => CobraAguaEnemy(position: pos, playerTarget: plr),
     passive: SaltoAquatico(),
-    companionBehavior: CompanionBehavior.cacador,
   );
 
   static final CreatureData ursoPlanta = CreatureData(
@@ -169,7 +164,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(15, 16),
     enemyBuilder: (pos, plr) => UrsoPlantaEnemy(position: pos, playerTarget: plr),
     passive: BradoReflexo(),
-    companionBehavior: CompanionBehavior.guarda,
   );
 
   static final CreatureData griloEletrico = CreatureData(
@@ -186,7 +180,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => GriloEletricoEnemy(position: pos, playerTarget: plr),
     passive: ReflexoEletrico(),
-    companionBehavior: CompanionBehavior.cacador,
   );
 
   static final CreatureData tornadoFogo = CreatureData(
@@ -203,7 +196,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => TornadoFogoEnemy(position: pos, playerTarget: plr),
     passive: TornadoResidual(),
-    companionBehavior: CompanionBehavior.cacador,
   );
 
   static final CreatureData bombaFogo = CreatureData(
@@ -220,7 +212,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => BombaFogoEnemy(position: pos, playerTarget: plr),
     passive: BombaNaEsquiva(),
-    companionBehavior: CompanionBehavior.guarda,
   );
 
   static final CreatureData slimePlanta = CreatureData(
@@ -237,7 +228,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => SlimePlantaEnemy(position: pos, playerTarget: plr),
     passive: PecoenhaReflexiva(),
-    companionBehavior: CompanionBehavior.guarda,
   );
 
   static final CreatureData ouricoEletrico = CreatureData(
@@ -254,7 +244,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(12, 12), 
     enemyBuilder: (pos, plr) => OuricoEletricoEnemy(position: pos, playerTarget: plr),
     passive: RetaliacaoEletrica(),
-    companionBehavior: CompanionBehavior.guarda,
   );
 
   static final CreatureData caranguejoErmitao = CreatureData(
@@ -271,7 +260,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(14, 12),
     enemyBuilder: (pos, plr) => CaranguejoErmitaoEnemy(position: pos, playerTarget: plr),
     passive: FumacaAoLacar(),
-    companionBehavior: CompanionBehavior.guarda,
   );
 
   static final CreatureData pinguimAgua = CreatureData(
@@ -288,7 +276,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(8, 14),
     enemyBuilder: (pos, plr) => PinguimAguaEnemy(position: pos, playerTarget: plr),
     passive: RastroCongelante(),
-    companionBehavior: CompanionBehavior.guarda,
   );
 
   static final CreatureData tocoPlanta = CreatureData(
@@ -305,7 +292,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(10, 10), 
     enemyBuilder: (pos, plr) => TocoPlantaEnemy(position: pos, playerTarget: plr),
     passive: RaizesDoLaco(),
-    companionBehavior: CompanionBehavior.orbital,
   );
 
   static final CreatureData tubaraoAgua = CreatureData(
@@ -322,7 +308,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(13, 15),
     enemyBuilder: (pos, plr) => TubaraoAguaEnemy(position: pos, playerTarget: plr),
     passive: InvestidaPredatoria(),
-    companionBehavior: CompanionBehavior.cacador,
   );
 
   static final CreatureData leaoEletrico = CreatureData(
@@ -339,7 +324,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(10, 15),
     enemyBuilder: (pos, plr) => LeaoEletricoEnemy(position: pos, playerTarget: plr),
     passive: GolpeDeLanca(),
-    companionBehavior: CompanionBehavior.cacador,
   );
 
   static final List<CreatureData> all = [

@@ -6,35 +6,24 @@ import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/UI/ability_cooldown_indicator.dart';
 import 'package:creatures_rogue/game/components/UI/companion_portrait_indicator.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
-import 'package:creatures_rogue/game/components/creatures/ability.dart';
-import 'package:creatures_rogue/game/components/creatures/companion.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import '../player/player.dart';
 
 class Hud extends PositionComponent with HasGameRef {
   final Player player;
 
-  /// O companion ativo vive em `CreaturesRogueGame.companion` e pode virar
-  /// null (desmaio) durante a run — por isso um getter, não uma referência
-  /// fixa capturada na construção da Hud.
-  final Companion? Function() companionOf;
-
-  /// Grupo de até três (PIVOT_TREINADOR.md, fase 5b) — cada função recebe o
-  /// índice do slot (0/1/2). `companionCreatureAt` fica fixa mesmo quando o
-  /// companion daquele slot está desmaiado (removido do mundo) ou o slot
-  /// ainda não tem criatura nenhuma (`null` — normal pros slots 1/2 até a
-  /// fase 6, captura, existir de verdade). Ver `CompanionPortraitIndicator`.
+  /// Grupo de até três — cada função recebe o índice do slot (0/1/2).
+  /// `companionCreatureAt` fica fixa mesmo quando o slot está no banco
+  /// (`null` até a criatura selvagem da sala da escada preencher, ver
+  /// PIVOT_CONTROLE_DIRETO.md §5). Ver `CompanionPortraitIndicator`.
   final CreatureData? Function(int slot) companionCreatureAt;
 
-  /// 0 = fora lutando (ou vida cheia no bolso), 1 = acabou de recolher com a
+  /// 0 = ativa (ou vida cheia no banco), 1 = acabou de entrar no banco com a
   /// vida zerada — ver `CreaturesRogueGame.companionPocketFraction`.
   final double Function(int slot) companionPocketFractionAt;
 
-  /// Postura de cada slot — ver PIVOT_TREINADOR.md §2.1.1.
-  final CompanionPostura? Function(int slot) companionPosturaAt;
-
   /// Qual slot é a criatura ativa agora — o retrato dela ganha o destaque
-  /// visual e o toque nela cicla postura em vez de trocar de ativa.
+  /// visual.
   final bool Function(int slot) isCompanionAtivo;
 
   /// Toque em qualquer um dos três retratos — a decisão de "trocar de ativa"
@@ -87,10 +76,8 @@ class Hud extends PositionComponent with HasGameRef {
 
   Hud({
     required this.player,
-    required this.companionOf,
     required this.companionCreatureAt,
     required this.companionPocketFractionAt,
-    required this.companionPosturaAt,
     required this.isCompanionAtivo,
     required this.onTapCompanionSlot,
   }) : super(position: Vector2(2, 2));
@@ -139,35 +126,33 @@ class Hud extends PositionComponent with HasGameRef {
     // como filhos e não dentro do render() da Hud pra cada um cuidar do seu
     // próprio sprite e do seu carregamento assíncrono.
     await addAll([
-      // Lê o Companion ativo, não o treinador — os botões são override dele
-      // (ver PIVOT_TREINADOR.md §2.1). Sem companion (recolhido, ou ainda
-      // não invocado), mostra cooldown zerado parado — sem indicador nenhum
-      // pra desenhar seria pior: o círculo sumiria e voltaria toda hora.
-      // Só ability1: a criatura tem uma habilidade ativa só agora (pedido
-      // do usuário) — o indicador de ability2 saiu.
-      /*AbilityCooldownIndicator(
-        tipo: () => companionOf()?.creatureData.ability1.tipo ?? AbilityTipo.ataque,
-        cooldownFraction: () => companionOf()?.ability1CooldownFraction ?? 0.0,
+      // Duas habilidades diretas do jogador — voltou ao controle direto
+      // (PIVOT_CONTROLE_DIRETO.md), então os dois indicadores lêem o
+      // `Player` de novo, não mais uma criatura autônoma.
+      AbilityCooldownIndicator(
+        tipo: () => player.creatureData.ability1.tipo,
+        cooldownFraction: () => player.ability1CooldownFraction,
         lado: _iconeCooldownLado,
         position: Vector2(0, 6),
       ),
-      */
-      // Três retratos, um por slot do grupo (PIVOT_TREINADOR.md, fase 5b) —
-      // mesmo cinza que o indicador de cooldown usa, agora mostrando quanto
-      // falta curar no bolso, mais o destaque de quem é a ativa (ver
-      // `CompanionPortraitIndicator`). Tamanho igual pros três: a distinção
-      // "ativa em destaque" já vem do indicador de cooldown acima (só a
-      // ativa tem o dele detalhado), redesenhar tamanho por cima seria
-      // layout dinâmico sem ganho real de leitura.
+      AbilityCooldownIndicator(
+        tipo: () => player.creatureData.ability2.tipo,
+        cooldownFraction: () => player.ability2CooldownFraction,
+        lado: _iconeCooldownLado,
+        position: Vector2(_iconeCooldownLado + 2, 6),
+      ),
+      // Três retratos, um por slot do grupo — mesmo cinza que o indicador de
+      // cooldown usa, agora mostrando quanto falta curar no banco, mais o
+      // destaque de quem é a ativa (ver `CompanionPortraitIndicator`). Abaixo
+      // do ícone+contagem de moedas (`render`, y 22-38) pra não sobrepor.
       for (int slot = 0; slot < 3; slot++)
         CompanionPortraitIndicator(
           creatureData: () => companionCreatureAt(slot),
           pocketFraction: () => companionPocketFractionAt(slot),
-          posturaAtual: () => companionPosturaAt(slot),
           isAtiva: () => isCompanionAtivo(slot),
           onTap: () => onTapCompanionSlot(slot),
           lado: _iconeCooldownLado,
-          position: Vector2((_iconeCooldownLado + 2) * (slot), 6),
+          position: Vector2((_iconeCooldownLado + 2) * slot, 40),
         ),
     ]);
 
@@ -194,6 +179,10 @@ class Hud extends PositionComponent with HasGameRef {
           Shadow(color: Palette.preto, offset: Offset(-1, -1)),
           Shadow(color: Palette.preto, offset: Offset(1, -1)),
           Shadow(color: Palette.preto, offset: Offset(-1, 1)),
+          Shadow(color: Palette.preto, offset: Offset(0, 1)),
+          Shadow(color: Palette.preto, offset: Offset(0, -1)),
+          Shadow(color: Palette.preto, offset: Offset(1, 0)),
+          Shadow(color: Palette.preto, offset: Offset(-1, 0)),
         ],
       ),
     );

@@ -3,14 +3,13 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 
-/// Efeito de "recall" quando o companion desmaia (PIVOT_TREINADOR.md §2.3):
-/// um círculo vermelho fecha em cima da posição onde ele estava, e a
-/// bolinha resultante faz um arco até o treinador. Puramente desenhado no
-/// Canvas — sem sprite novo, mesmo espírito do `CaptureLassoVisual`.
-///
-/// Roda sozinho depois de nascido: não segue o companion (que já foi
-/// removido do mundo no momento em que isto é criado — ver
-/// `Companion._faint()`), só a posição congelada de onde ele desmaiou.
+/// Efeito de "recall" quando a criatura ativa vai pro banco — por vida
+/// zerada em combate (`CreaturesRogueGame.pocketarSlotAtivo`) ou por troca
+/// voluntária (`_trocarParaSlot`): um círculo vermelho fecha em cima da
+/// posição do jogador, e a bolinha resultante faz um arco até ele mesmo
+/// (PIVOT_CONTROLE_DIRETO.md §2.3 — o `Player` não some do mundo, só a
+/// criatura que ele estava sendo muda, então a origem e o destino do arco
+/// coincidem hoje). Puramente desenhado no Canvas, sem sprite novo.
 class CompanionRecallEffect extends PositionComponent {
   /// Lida a cada frame, não capturada uma vez: o treinador anda durante o
   /// arco, e o alvo precisa seguir a posição atual dele, não onde estava no
