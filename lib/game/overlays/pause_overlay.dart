@@ -31,9 +31,9 @@ class PauseMenuOverlay extends StatelessWidget {
                 context.l10n.pause_jogoPausado,
                 style: const TextStyle(color: Palette.preto, fontSize: 32),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               _EquipeRow(game: game),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Palette.branco,
@@ -53,7 +53,7 @@ class PauseMenuOverlay extends StatelessWidget {
                   style: const TextStyle(fontSize: 20, color: Palette.preto),
                 ),
               ),
-              const SizedBox(height: 15),
+              const SizedBox(height: 10),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Palette.branco,
@@ -77,7 +77,7 @@ class PauseMenuOverlay extends StatelessWidget {
                   style: const TextStyle(fontSize: 20, color: Palette.preto),
                 ),
               ),
-              const SizedBox(height: 15),
+              const SizedBox(height: 10),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Palette.branco,

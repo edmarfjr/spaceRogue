@@ -66,12 +66,12 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
               context.l10n.settings_titulo,
               style: const TextStyle(color: Palette.preto, fontSize: 36, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 20),
             Text(
               context.l10n.settings_controle,
               style: const TextStyle(color: Palette.preto, fontSize: 14, letterSpacing: 3),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -103,7 +103,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                   ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 5),
             SizedBox(
               width: 420,
               child: Text(
@@ -112,12 +112,12 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                 style: const TextStyle(color: Palette.preto, fontSize: 13),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             Text(
               context.l10n.settings_idioma,
               style: const TextStyle(color: Palette.preto, fontSize: 14, letterSpacing: 3),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -151,7 +151,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                   ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             Text(
               context.l10n.settings_audio,
               style: const TextStyle(color: Palette.preto, fontSize: 14, letterSpacing: 3),
@@ -166,7 +166,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                   activeThumbColor: Palette.preto,
                   onChanged: (valor) => _alternarSom(valor),
                 ),
-                const SizedBox(width: 20),
+                const SizedBox(width: 10),
                 Text(context.l10n.settings_musica, style: const TextStyle(color: Palette.preto, fontSize: 14)),
                 Switch(
                   value: GameSettings.instance.musicEnabled,
@@ -175,7 +175,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             // Apaga a flag de intro e as criaturas liberadas. Sem isto a
             // intro aparece uma vez na vida do aparelho, e não dá pra
             // revê-la sem reinstalar o app.
@@ -195,7 +195,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                 style: const TextStyle(fontSize: 14, color: Palette.preto),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Palette.branco,

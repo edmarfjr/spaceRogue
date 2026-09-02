@@ -48,7 +48,7 @@ class MainMenuOverlay extends StatelessWidget {
               }),
               child: Text(context.l10n.menu_novoJogo, style: const TextStyle(fontSize: 24, color: Palette.preto)),
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: 10),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Palette.branco,
