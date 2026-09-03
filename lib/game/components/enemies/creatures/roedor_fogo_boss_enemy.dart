@@ -78,6 +78,7 @@ class RoedorFogoBossEnemy extends Enemy with WanderMovement, ShooterAttack {
     // leque de 3 da normal.
     for (final offset in [-2 * passoRad, -passoRad, 0.0, passoRad, 2 * passoRad]) {
       parent?.add(Projectile(
+        owner: this,
         position: position.clone(),
         direction: base.clone()..rotate(offset),
         isEnemy: true, // sem isso a brasa machuca inimigos em vez do jogador

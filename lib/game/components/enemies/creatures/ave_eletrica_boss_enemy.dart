@@ -93,6 +93,7 @@ class AveEletricaBossEnemy extends Enemy with ChaseMovement, ShooterAttack {
       final angulo = anguloBase + (2 * pi * i / _numProjeteis);
       final direcao = Vector2(cos(angulo), sin(angulo));
       parent?.add(Projectile(
+        owner: this,
         position: position.clone(),
         direction: direcao,
         isEnemy: true, // sem isso o anel machuca inimigos em vez do jogador

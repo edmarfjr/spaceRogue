@@ -75,6 +75,7 @@ class PinguimAguaEnemy extends Enemy with WanderMovement, ShooterAttack {
         ((ate.length + _sobraAlemDoJogador) / _velocidadeTiro).clamp(_vooMinimo, _vooMaximo);
 
     parent?.add(Projectile(
+      owner: this,
       position: position.clone() + direcao * size.x / 2,
       direction: direcao,
       isEnemy: true,

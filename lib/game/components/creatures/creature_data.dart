@@ -30,7 +30,7 @@ class CreatureData {
   /// Habilidade passiva desta criatura (substitui `ability2` como algo que
   /// de fato acontece) — vale enquanto ela estiver no grupo do treinador,
   /// capturada ou não, no bolso ou fora dele. Ver `Passive`.
-  final Passive passive;
+  //final Passive passive;
 
   /// Estilo de animação do sprite enquanto anda (ver MovementAnimator).
   final MovementAnimation moveAnim;
@@ -54,7 +54,7 @@ class CreatureData {
     required this.stats,
     required this.ability1,
     required this.ability2,
-    required this.passive,
+    //required this.passive,
     required this.moveAnim,
     required this.hitboxSize,
     this.enemyBuilder,

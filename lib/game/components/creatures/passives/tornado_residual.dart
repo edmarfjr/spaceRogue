@@ -16,6 +16,7 @@ class TornadoResidual extends Passive {
   @override
   void aoEsquivar(Player player, Vector2 direcao) {
     player.parent?.add(Projectile(
+      owner: player,
       position: player.position.clone(),
       direction: Vector2.zero(),
       speed: 0,

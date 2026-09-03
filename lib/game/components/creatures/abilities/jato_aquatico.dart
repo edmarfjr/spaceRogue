@@ -33,6 +33,7 @@ class JatoAquatico extends Ability {
       Future.delayed(Duration(milliseconds: (i * intervalo * 1000).round()), () {
         if (!user.isMounted) return;
         user.parent?.add(Projectile(
+          owner: user,
           position: user.position.clone(),
           direction: direction,
           speed: velocidade,

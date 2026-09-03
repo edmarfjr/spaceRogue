@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/responsive.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
@@ -51,7 +52,9 @@ class _IntroOverlayState extends State<IntroOverlay> {
   int _revelados = 0;
   Timer? _maquina;
 
-  late final List<CreatureData> _candidatas = _idsIniciais.map(CreatureRegistry.byId).toList();
+  late final List<CreatureData> _candidatas = _idsIniciais
+      .map(CreatureRegistry.byId)
+      .toList();
   late CreatureData _selecionada = _candidatas.first;
 
   bool _confirmando = false;
@@ -61,11 +64,11 @@ class _IntroOverlayState extends State<IntroOverlay> {
   /// ~360dp de altura, e uma caixa que cresce com o texto reproduz o
   /// "BOTTOM OVERFLOWED" que já apareceu no seletor de criaturas.
   List<String> get _paginas => [
-        context.l10n.intro_pagina1,
-        context.l10n.intro_pagina2,
-        context.l10n.intro_pagina3,
-        context.l10n.intro_pagina4,
-      ];
+    context.l10n.intro_pagina1,
+    context.l10n.intro_pagina2,
+    context.l10n.intro_pagina3,
+    context.l10n.intro_pagina4,
+  ];
 
   String get _textoAtual => _paginas[_pagina];
   bool get _paginaCompleta => _revelados >= _textoAtual.length;
@@ -134,7 +137,9 @@ class _IntroOverlayState extends State<IntroOverlay> {
     return Material(
       color: Palette.branco,
       child: SafeArea(
-        child: _fase == _Fase.dialogo ? _construirDialogo() : _construirEscolha(),
+        child: _fase == _Fase.dialogo
+            ? _construirDialogo()
+            : _construirEscolha(),
       ),
     );
   }
@@ -163,7 +168,11 @@ class _IntroOverlayState extends State<IntroOverlay> {
             onPressed: withBtnSfx(_irParaEscolha),
             child: Text(
               context.l10n.intro_pular,
-              style: const TextStyle(color: Palette.preto, fontSize: 14, letterSpacing: 2),
+              style: const TextStyle(
+                color: Palette.preto,
+                fontSize: 14,
+                letterSpacing: 2,
+              ),
             ),
           ),
         ),
@@ -178,11 +187,18 @@ class _IntroOverlayState extends State<IntroOverlay> {
           padding: const EdgeInsets.only(top: 12, bottom: 10),
           child: Text(
             context.l10n.intro_escolhaPrimeira,
-            style: const TextStyle(color: Palette.preto, fontSize: 20, fontWeight: FontWeight.bold),
+            style: const TextStyle(
+              color: Palette.preto,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        // `Wrap`, não `Row`: 4 cards de 116px lado a lado (~530px) não cabem
+        // numa tela de celular em retrato — `Wrap` quebra em duas linhas em
+        // vez de estourar a largura.
+        Wrap(
+          alignment: WrapAlignment.center,
           children: [
             for (final criatura in _candidatas)
               _CartaoCandidata(
@@ -212,7 +228,11 @@ class _IntroOverlayState extends State<IntroOverlay> {
             onPressed: withBtnSfx(_confirmando ? null : _confirmar),
             child: Text(
               context.l10n.intro_escolher,
-              style: const TextStyle(fontSize: 18, color: Palette.preto, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 18,
+                color: Palette.preto,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
@@ -243,13 +263,18 @@ class _CaixaDialogo extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 520,
+          // 520 é a largura "de design"; `Responsive.largura` encolhe só
+          // numa tela menor que isso, nunca cresce além. Altura continua
+          // fixa de propósito (ver doc da classe).
+          width: Responsive.largura(context, 520),
           height: 116,
           padding: const EdgeInsets.all(12),
           decoration: const BoxDecoration(
             color: Palette.branco,
             borderRadius: BorderRadius.zero,
-            border: Border.fromBorderSide(BorderSide(color: Palette.preto, width: 2)),
+            border: Border.fromBorderSide(
+              BorderSide(color: Palette.preto, width: 2),
+            ),
           ),
           child: Stack(
             children: [
@@ -259,13 +284,20 @@ class _CaixaDialogo extends StatelessWidget {
                   texto,
                   maxLines: 4,
                   overflow: TextOverflow.fade,
-                  style: const TextStyle(color: Palette.preto, fontSize: 13, height: 1.4),
+                  style: const TextStyle(
+                    color: Palette.preto,
+                    fontSize: 13,
+                    height: 1.4,
+                  ),
                 ),
               ),
               if (mostrarSeta)
                 const Align(
                   alignment: Alignment.bottomRight,
-                  child: Text('▼', style: TextStyle(color: Palette.preto, fontSize: 14)),
+                  child: Text(
+                    '▼',
+                    style: TextStyle(color: Palette.preto, fontSize: 14),
+                  ),
                 ),
             ],
           ),
@@ -304,7 +336,10 @@ class _CartaoCandidata extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.zero,
-            border: Border.all(color: Palette.preto, width: selecionada ? 4 : 2),
+            border: Border.all(
+              color: Palette.preto,
+              width: selecionada ? 4 : 2,
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -343,11 +378,15 @@ class _FaixaDetalhe extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Container(
-        width: 720,
+        // 720 é a largura "de design"; `Responsive.largura` encolhe só numa
+        // tela menor que isso, nunca cresce além.
+        width: Responsive.largura(context, 720),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: const BoxDecoration(
           borderRadius: BorderRadius.zero,
-          border: Border.fromBorderSide(BorderSide(color: Palette.preto, width: 2)),
+          border: Border.fromBorderSide(
+            BorderSide(color: Palette.preto, width: 2),
+          ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,9 +396,18 @@ class _FaixaDetalhe extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _Rotulo(context.l10n.intro_saude(criatura.stats.maxHp),fontSize: 16),
-                  _Rotulo(context.l10n.intro_velocidade(criatura.stats.speed.toInt()),fontSize: 16),
-                  _Rotulo(context.l10n.intro_ataque(criatura.stats.ataque.toInt()),fontSize: 16),
+                  _Rotulo(
+                    context.l10n.intro_saude(criatura.stats.maxHp),
+                    fontSize: 16,
+                  ),
+                  _Rotulo(
+                    context.l10n.intro_velocidade(criatura.stats.speed.toInt()),
+                    fontSize: 16,
+                  ),
+                  _Rotulo(
+                    context.l10n.intro_ataque(criatura.stats.ataque.toInt()),
+                    fontSize: 16,
+                  ),
                 ],
               ),
             ),
@@ -369,8 +417,14 @@ class _FaixaDetalhe extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _Rotulo(context.l10n.intro_habilidades),
-                  _Rotulo(abilityName(context, criatura.ability1),textoD: abilityDescription(context, criatura.ability1)),
-                  _Rotulo(passiveName(context, criatura.passive),textoD: passiveDescription(context, criatura.passive)),
+                  _Rotulo(
+                    abilityName(context, criatura.ability1),
+                    textoD: abilityDescription(context, criatura.ability1),
+                  ),
+                  _Rotulo(
+                    abilityName(context, criatura.ability2),
+                    textoD: abilityDescription(context, criatura.ability2),
+                  ),
                 ],
               ),
             ),
@@ -385,32 +439,38 @@ class _Rotulo extends StatelessWidget {
   final String texto;
   final String textoD;
   final double fontSize;
-  const _Rotulo(this.texto,{this.textoD = '',this.fontSize=12});
+  const _Rotulo(this.texto, {this.textoD = '', this.fontSize = 12});
 
   @override
   Widget build(BuildContext context) {
-    return 
-    Column(
+    return Column(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 1),
           child: Text(
             texto,
             overflow: TextOverflow.ellipsis,
-            style:  TextStyle(color: Palette.preto, fontSize: fontSize, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: Palette.preto,
+              fontSize: fontSize,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         if (textoD != '')
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 1),
-          child: Text(
-            textoD,
-            //overflow: TextOverflow.ellipsis,
-            style:  TextStyle(color: Palette.preto, fontSize: fontSize, fontWeight: FontWeight.bold),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 1),
+            child: Text(
+              textoD,
+              //overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Palette.preto,
+                fontSize: fontSize,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
-        )
       ],
     );
-    
   }
 }

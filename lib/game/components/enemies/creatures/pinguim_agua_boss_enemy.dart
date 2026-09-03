@@ -176,6 +176,7 @@ class PinguimAguaBossEnemy extends Enemy with WanderMovement, ShooterAttack {
     for (final offset in [-anguloRad, 0.0, anguloRad]) {
       final rotacionada = direcao.clone()..rotate(offset);
       parent?.add(Projectile(
+        owner: this,
         position: position.clone() + rotacionada * size.x / 2,
         direction: rotacionada,
         isEnemy: true,
@@ -209,6 +210,7 @@ class PinguimAguaBossEnemy extends Enemy with WanderMovement, ShooterAttack {
   /// nega terreno, não machuca; quem machuca são as pontas e a salva.
   void _congelarChao() {
     parent?.add(Projectile(
+      owner: this,
       position: position.clone(),
       direction: Vector2.zero(),
       isEnemy: true,

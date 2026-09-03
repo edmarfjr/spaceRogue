@@ -5,6 +5,6 @@ import 'package:flame/components.dart';
 class WallBarrier extends PositionComponent with CollisionCallbacks {
   WallBarrier({required Vector2 position, required Vector2 size})
       : super(position: position, size: size) {
-    add(RectangleHitbox(collisionType: CollisionType.passive));
+    add(RectangleHitbox(collisionType: CollisionType.active));
   }
 }

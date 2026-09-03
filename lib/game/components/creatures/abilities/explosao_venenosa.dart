@@ -28,6 +28,7 @@ class ExplosaoVenenosa extends Ability {
     ));
 
     user.parent?.add(Projectile(
+      owner: user,
       position: user.position.clone(),
       direction: dir,
       speed: 0,

@@ -10,6 +10,12 @@ class Stairs extends PositionComponent with CollisionCallbacks, HasGameRef<Creat
   late final Sprite sprite;
   final Paint _paint = Paint()..filterQuality = FilterQuality.none;
 
+  /// `Player.playerHitbox` e `Player.physicsHitbox` são dois hitboxes ativos
+  /// distintos — os dois podem disparar `onCollisionStart` aqui no mesmo
+  /// frame. Sem essa trava, `nextLevel()` rodava duas vezes seguidas e
+  /// avançava dois andares de uma vez em vez de um.
+  bool _avancado = false;
+
   Stairs({required Vector2 position}) 
       : super(position: position, size: Vector2(16, 16), anchor: Anchor.center);
 
@@ -29,9 +35,11 @@ class Stairs extends PositionComponent with CollisionCallbacks, HasGameRef<Creat
   @override
   void onCollisionStart(Set intersectionPoints, PositionComponent other) {
     super.onCollisionStart(intersectionPoints.cast(), other);
-    
+
+    if (_avancado) return;
     if (other is Player) {
       // Quando o jogador pisa no alçapão, chama a função de avançar nível
+      _avancado = true;
       gameRef.nextLevel();
     }
   }

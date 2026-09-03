@@ -6,7 +6,7 @@ import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'collectible.dart';
 import '../player/player.dart';
 
-enum PowerUpType { speedUp, fireRateUp, damageUp, hpUp, shieldUp }
+enum PowerUpType { speedUp, fireRateUp, damageUp, hpUp, shieldUp, critChanceUp, critDamageUp }
 
 /// Sprite, cor e efeito de cada upgrade. Fica numa extension, e não dentro do
 /// [PowerUpItem], porque a loja também vende upgrades e precisa exatamente
@@ -18,6 +18,8 @@ extension PowerUpTypeData on PowerUpType {
         PowerUpType.damageUp => 'items/garrafa.png',
         PowerUpType.fireRateUp => 'items/garrafa.png',
         PowerUpType.shieldUp => 'items/garrafa.png',
+        PowerUpType.critChanceUp => 'items/capsula.png',
+        PowerUpType.critDamageUp => 'items/capsula.png',
       };
 
   Color get cor1 => switch (this) {
@@ -26,6 +28,8 @@ extension PowerUpTypeData on PowerUpType {
         PowerUpType.damageUp => Palette.laranja,
         PowerUpType.fireRateUp => Palette.azul,
         PowerUpType.shieldUp => Palette.indigo,
+        PowerUpType.critChanceUp => Palette.laranja,
+        PowerUpType.critDamageUp => Palette.vermelho,
       };
 
   Color get cor2 => switch (this) {
@@ -34,6 +38,8 @@ extension PowerUpTypeData on PowerUpType {
         PowerUpType.damageUp => Palette.marromEsc,
         PowerUpType.fireRateUp => Palette.royal,
         PowerUpType.shieldUp => Palette.azulEsc,
+        PowerUpType.critChanceUp => Palette.laranja,
+        PowerUpType.critDamageUp => Palette.vermelho,
       };
 
   /// Texto mostrado acima do jogador ao pegar o upgrade.
@@ -45,6 +51,8 @@ extension PowerUpTypeData on PowerUpType {
       PowerUpType.damageUp => l.effect_maisDano,
       PowerUpType.hpUp => l.effect_maisVidaMaxima,
       PowerUpType.shieldUp => l.effect_maisEscudoMaximo,
+      PowerUpType.critChanceUp => l.effect_maisChanceCrit,
+      PowerUpType.critDamageUp => l.effect_maisDanoCrit,
     };
   }
 
@@ -69,6 +77,10 @@ extension PowerUpTypeData on PowerUpType {
       case PowerUpType.shieldUp:
         player.shieldMax += 1;
         player.shield += 1;
+      case PowerUpType.critChanceUp:
+        player.critChance += 2.5;
+      case PowerUpType.critDamageUp:
+        player.critMult += 0.50;
     }
   }
 }

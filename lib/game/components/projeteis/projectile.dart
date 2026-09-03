@@ -30,6 +30,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   double explosionSize;
   double radius;
   int atravessa;
+  bool noChao;
 
   /// Tipo elemental do dano, pro multiplicador de vantagem no alvo.
   /// `neutro` (padrão) vale 1.0 contra tudo.
@@ -62,9 +63,12 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   /// o jogador só ouve como um som.
   final bool playSfx;
 
+  final PositionComponent owner;
+
   Projectile({
     required Vector2 position,
     required this.direction,
+    required this.owner,
     this.isEnemy = false,
     this.speed = 200,
     this.kbForce = 20,
@@ -86,6 +90,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     this.atravessaObstaculos = false,
     this.estilhaca = false,
     this.playSfx = true,
+    this.noChao = false,
     Vector2? size,
     int priority = 0,
     }): super(
@@ -124,6 +129,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         double angle = Random().nextDouble() * 2 * pi;
         Vector2 dir = Vector2(cos(angle), sin(angle));
         parent?.add(Projectile(
+          owner: owner, 
           position: position.clone(),
           direction: dir,
           speed: speed,
@@ -155,6 +161,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
       for (final offset in [-anguloRad, 0.0, anguloRad]) {
         final rotated = direction.clone()..rotate(offset);
           parent?.add(Projectile(
+          owner: owner,
           position: position.clone(),
           direction: rotated*-1,
           speed: speed,
@@ -202,6 +209,10 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
       return; 
     }
 
+    if(noChao && (other is Projectile)){
+      return;
+    }
+
     if (isEnemy) {
       if(other is Projectile && !other.isEnemy){
         _resolverColisaoEntreProjeteis(other);
@@ -209,7 +220,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
       }
       if (other is DamageableByEnemy) {
         if(other.refleteProjetil){
-          refleteProjetil();
+          refleteProjetil(other);
           onDestroy();
         }
         // Jogador não sofre DoT (ver decisão de condições assimétricas), mas
@@ -274,8 +285,9 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     onDestroy();
   }
 
-  void refleteProjetil() {
+  void refleteProjetil(PositionComponent owner) {
     parent?.add(Projectile(
+          owner: owner,
           position: position.clone(),
           direction: direction.clone()*-1,
           speed: speed,

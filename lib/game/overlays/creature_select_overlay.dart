@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/responsive.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
@@ -81,25 +82,43 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(
-                      width: 160,
-                      child: _CreatureList(
-                        selected: _selected,
-                        onSelect: (creature) =>
-                            setState(() => _selected = creature),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _CreatureDetailPanel(
-                        creature: _selected,
-                        onPlay: () => widget.game.startRun(_selected),
-                      ),
-                    ),
-                  ],
+                // Lado a lado (lista de 160px + painel) só cabe numa tela
+                // larga o bastante. Numa estreita (celular em retrato), os
+                // 160px da lista sozinhos já comeriam quase metade da
+                // largura — empilha lista (altura fixa, rolável) em cima do
+                // painel de detalhe em vez de espremer os dois na horizontal.
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final list = _CreatureList(
+                      selected: _selected,
+                      onSelect: (creature) =>
+                          setState(() => _selected = creature),
+                    );
+                    final detail = _CreatureDetailPanel(
+                      creature: _selected,
+                      onPlay: () => widget.game.startRun(_selected),
+                    );
+
+                    if (constraints.maxWidth < Responsive.larguraEstreita) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          SizedBox(height: 160, child: list),
+                          const SizedBox(height: 12),
+                          Expanded(child: detail),
+                        ],
+                      );
+                    }
+
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(width: 160, child: list),
+                        const SizedBox(width: 12),
+                        Expanded(child: detail),
+                      ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -161,7 +180,7 @@ class _CreatureListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = CreatureSelectOverlay.typeColor(creature.tipo);
+    // final accent = CreatureSelectOverlay.typeColor(creature.tipo);
 
     return InkWell(
       onTap: withBtnSfx(onTap),
@@ -177,7 +196,9 @@ class _CreatureListTile extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                locked ? context.l10n.creatureSelect_bloqueada : creatureName(context, creature.id),
+                locked
+                    ? context.l10n.creatureSelect_bloqueada
+                    : creatureName(context, creature.id),
                 style: TextStyle(
                   color: locked ? Palette.indigo : Palette.preto,
                   fontSize: 14,
@@ -245,8 +266,13 @@ class _CreatureDetailPanel extends StatelessWidget {
                             child: Text(
                               context.l10n.creatureSelect_nomeTipo(
                                 creatureName(context, creature.id),
-                                CreatureSelectOverlay.typeLabel(context, creature.tipo),
+                                CreatureSelectOverlay.typeLabel(
+                                  context,
+                                  creature.tipo,
+                                ),
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 color: Palette.preto,
                                 fontSize: 22,
@@ -349,7 +375,10 @@ class _CreatureDetailPanel extends StatelessWidget {
                                           .isNotEmpty) ...[
                                         const SizedBox(height: 2),
                                         Text(
-                                          abilityDescription(context, creature.ability1),
+                                          abilityDescription(
+                                            context,
+                                            creature.ability1,
+                                          ),
                                           style: const TextStyle(
                                             color: Palette.preto,
                                             fontSize: 12,
@@ -358,7 +387,7 @@ class _CreatureDetailPanel extends StatelessWidget {
                                       ],
                                       const SizedBox(height: 8),
                                       Text(
-                                        context.l10n.creatureSelect_passiva,
+                                        context.l10n.creatureSelect_habilidade,
                                         style: const TextStyle(
                                           color: Palette.preto,
                                           fontSize: 16,
@@ -367,7 +396,7 @@ class _CreatureDetailPanel extends StatelessWidget {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        passiveName(context, creature.passive),
+                                        abilityName(context, creature.ability2),
                                         style: const TextStyle(
                                           color: Palette.preto,
                                           fontSize: 14,
@@ -375,12 +404,15 @@ class _CreatureDetailPanel extends StatelessWidget {
                                         ),
                                       ),
                                       if (creature
-                                          .passive
+                                          .ability2
                                           .descricao
                                           .isNotEmpty) ...[
                                         const SizedBox(height: 2),
                                         Text(
-                                          passiveDescription(context, creature.passive),
+                                          abilityDescription(
+                                            context,
+                                            creature.ability2,
+                                          ),
                                           style: const TextStyle(
                                             color: Palette.preto,
                                             fontSize: 12,

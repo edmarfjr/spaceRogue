@@ -31,10 +31,10 @@ class Hud extends PositionComponent with HasGameRef {
   /// não da Hud nem do retrato.
   final void Function(int slot) onTapCompanionSlot;
   // Sprites
-  //late final Sprite heartSprite;
-  //late final Sprite heartHalfSprite;
-  //late final Sprite heartEmptySprite;
-  //late final Sprite bombSprite;
+  late final Sprite heartSprite;
+  late final Sprite heartHalfSprite;
+  late final Sprite heartEmptySprite;
+  late final Sprite shieldSprite;
   late final Sprite moedaSprite;
   
   final Paint emptyHeartPaint = Paint()
@@ -47,31 +47,31 @@ class Hud extends PositionComponent with HasGameRef {
 
   final Vector2 heartSize = Vector2(16, 16);
   final Vector2 bombIconSize = Vector2(16, 16);
-  final double spacing = -13.0;
+  final double spacing = -11.0;
 
   /// Lado dos indicadores de cooldown. 16 é o tamanho nativo dos sprites
   /// (`ui/ataque.png` e `ui/defesa.png`), então a escala fica 1:1 e o pixel art
   /// não ganha artefato de reamostragem.
   static const double _iconeCooldownLado = 16;
 
-  static final Vector2 _shieldBarSize = Vector2(3, 3);
+  //static final Vector2 _shieldBarSize = Vector2(3, 3);
 
   /// Largura máxima das barras de vida/escudo, em px da resolução fixa (192).
   /// Sem teto, cada `hpUp` somava 3px e a barra saía da tela depois de poucos
   /// upgrades. Passando desse ponto a barra para de crescer e cada ponto de
-  /// vida passa a valer menos pixel.
-  static const double _barraLarguraMax = 60.0;
+  // vida passa a valer menos pixel.
+  // const double _barraLarguraMax = 60.0;
 
   /// Quantos px vale um ponto, dado o total [maxValor] da barra.
-  double _pxPorPonto(double maxValor) => maxValor <= 0
-      ? 0
-      : math.min(_shieldBarSize.x, _barraLarguraMax / maxValor);
+ // double _pxPorPonto(double maxValor) => maxValor <= 0
+ //     ? 0
+  //    : math.min(_shieldBarSize.x, _barraLarguraMax / maxValor);
 
   late final TextPaint coinTextPaint;
-  final Paint _shieldMoldura = Paint()..color = Palette.preto;
-  final Paint _shieldFundo = Paint()..color = Palette.preto;
-  final Paint _shieldPreenchimento = Paint()..color = Palette.azul;
-  final Paint _hpPreenchimento = Paint()..color = Palette.vermelho;
+ // final Paint _shieldMoldura = Paint()..color = Palette.preto;
+ // final Paint _shieldFundo = Paint()..color = Palette.preto;
+ // final Paint _shieldPreenchimento = Paint()..color = Palette.azul;
+ // final Paint _hpPreenchimento = Paint()..color = Palette.vermelho;
   
 
   Hud({
@@ -80,7 +80,7 @@ class Hud extends PositionComponent with HasGameRef {
     required this.companionPocketFractionAt,
     required this.isCompanionAtivo,
     required this.onTapCompanionSlot,
-  }) : super(position: Vector2(2, 2));
+  }) : super(position: Vector2(0, 0));
 
   @override
   Future<void> onLoad() async {
@@ -91,7 +91,7 @@ class Hud extends PositionComponent with HasGameRef {
       darkGrayReplacement: Palette.laranja,
     );
     moedaSprite = Sprite(moedaImg);
-/*
+
     final ui.Image heartImg = await PaletteSwapper.createSwappedImage(
       imagePath: 'ui/heart.png',
       lightGrayReplacement: Palette.vermelho,
@@ -110,16 +110,17 @@ class Hud extends PositionComponent with HasGameRef {
       darkGrayReplacement: Palette.roxoEsc,
     );
     
-    final ui.Image bombImg = await PaletteSwapper.createSwappedImage(
-      imagePath: 'ui/bomb.png',
-      lightGrayReplacement: Palette.picotronBege,
+    final ui.Image shieldImg = await PaletteSwapper.createSwappedImage(
+      imagePath: 'ui/heart.png',
+      lightGrayReplacement: Palette.azul,
       darkGrayReplacement: Palette.azulEsc,
     );
     
     heartSprite = Sprite(heartImg);
     heartHalfSprite = Sprite(heartHalfImg);
     heartEmptySprite = Sprite(heartEmptyImg);
-*/
+    shieldSprite = Sprite(shieldImg);
+
     //bombSprite = Sprite(bombImg);
 
     // Indicadores de cooldown, logo abaixo das barras de vida/escudo. Ficam
@@ -129,18 +130,19 @@ class Hud extends PositionComponent with HasGameRef {
       // Duas habilidades diretas do jogador — voltou ao controle direto
       // (PIVOT_CONTROLE_DIRETO.md), então os dois indicadores lêem o
       // `Player` de novo, não mais uma criatura autônoma.
-      AbilityCooldownIndicator(
+    /*  AbilityCooldownIndicator(
         tipo: () => player.creatureData.ability1.tipo,
         cooldownFraction: () => player.ability1CooldownFraction,
         lado: _iconeCooldownLado,
-        position: Vector2(0, 6),
+        position: Vector2(0, 14),
       ),
       AbilityCooldownIndicator(
         tipo: () => player.creatureData.ability2.tipo,
         cooldownFraction: () => player.ability2CooldownFraction,
         lado: _iconeCooldownLado,
-        position: Vector2(_iconeCooldownLado + 2, 6),
+        position: Vector2(_iconeCooldownLado + 2, 14),
       ),
+      */
       // Três retratos, um por slot do grupo — mesmo cinza que o indicador de
       // cooldown usa, agora mostrando quanto falta curar no banco, mais o
       // destaque de quem é a ativa (ver `CompanionPortraitIndicator`). Abaixo
@@ -152,7 +154,7 @@ class Hud extends PositionComponent with HasGameRef {
           isAtiva: () => isCompanionAtivo(slot),
           onTap: () => onTapCompanionSlot(slot),
           lado: _iconeCooldownLado,
-          position: Vector2((_iconeCooldownLado + 2) * slot, 40),
+          position: Vector2(2,30+(_iconeCooldownLado + 2) * slot),
         ),
     ]);
 
@@ -191,7 +193,7 @@ class Hud extends PositionComponent with HasGameRef {
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-
+/*
     final pxHp = _pxPorPonto(player.maxHealth);
     canvas.drawRect(Rect.fromLTWH(-1, 1 - 1, pxHp * player.maxHealth + 2, _shieldBarSize.y + 2), _shieldMoldura);
     canvas.drawRect(Rect.fromLTWH(0, 1, pxHp * player.maxHealth, _shieldBarSize.y), _shieldFundo);
@@ -202,10 +204,10 @@ class Hud extends PositionComponent with HasGameRef {
     canvas.drawRect(Rect.fromLTWH(pxHp * player.maxHealth + 0, 0, pxEscudo * player.shieldMax + 2, _shieldBarSize.y + 2), _shieldMoldura);
     canvas.drawRect(Rect.fromLTWH(pxHp * player.maxHealth + 1, 1, pxEscudo * player.shieldMax, _shieldBarSize.y), _shieldFundo);
     canvas.drawRect(Rect.fromLTWH(pxHp * player.maxHealth + 1, 1, pxEscudo * player.shield, _shieldBarSize.y), _shieldPreenchimento);
+*/
+    moedaSprite.render(canvas, position: Vector2(0, 14), size: bombIconSize, overridePaint: paint);
+    coinTextPaint.render(canvas, ':${player.coins}', Vector2(16, 15));
 
-    moedaSprite.render(canvas, position: Vector2(0, 22), size: bombIconSize, overridePaint: paint);
-    coinTextPaint.render(canvas, ':${player.coins}', Vector2(16, 23));
-/*
     // --- LÓGICA DO MEIO-CORAÇÃO ---
     // Quantos corações INICIAIS (capacidade total) o jogador tem na tela?
     // Como a escala do player é dobrada (maxHealth = 6), dividimos por 2 (3 corações na tela).
@@ -218,10 +220,9 @@ class Hud extends PositionComponent with HasGameRef {
     bool hasHalfHeart = (player.currentHealth % 2) != 0;
 
     for (int i = 0; i < totalHeartsOnScreen; i++) {
-      final xPosition = i * (heartSize.x + spacing);
+      final xPosition =  (i * (heartSize.x + spacing) - ((heartSize.x + spacing) + 2)) + 3;
       
       Sprite spriteToDraw;
-
       if (i < fullHearts) {
         // Desenha um coração completo
         spriteToDraw = heartSprite;
@@ -242,15 +243,22 @@ class Hud extends PositionComponent with HasGameRef {
     }
 
     // --- BARRA DE ESCUDO PASSIVO (defesa) ---
-    if (player.shieldMax > 0) {
-      final shieldY = heartSize.y + 1;
-      final fracao = (player.shield / player.shieldMax).clamp(0.0, 1.0);
+    for (int i = 0; i < player.shield; i++) {
+      double shieldX = 3 + player.maxHealth / 2 * (heartSize.x + spacing) + (i * (heartSize.x + spacing))- ((heartSize.x + spacing) + 2); // Posição X após os corações
+      final double shieldY = 0;//heartSize.y + 1;
+      //final fracao = (player.shield / player.shieldMax).clamp(0.0, 1.0);
 
-      canvas.drawRect(Rect.fromLTWH(-1, shieldY - 1, _shieldBarSize.x + 2, _shieldBarSize.y + 2), _shieldMoldura);
-      canvas.drawRect(Rect.fromLTWH(0, shieldY, _shieldBarSize.x, _shieldBarSize.y), _shieldFundo);
-      canvas.drawRect(Rect.fromLTWH(0, shieldY, _shieldBarSize.x * fracao, _shieldBarSize.y), _shieldPreenchimento);
+      shieldSprite.render(
+        canvas, 
+        position: Vector2(shieldX, shieldY), 
+        size: heartSize, 
+        overridePaint: paint
+      );
+      //canvas.drawRect(Rect.fromLTWH(shieldX-1, shieldY - 1, _shieldBarSize.x + 2, _shieldBarSize.y + 2), _shieldMoldura);
+      //canvas.drawRect(Rect.fromLTWH(shieldX, shieldY, _shieldBarSize.x, _shieldBarSize.y), _shieldFundo);
+      //canvas.drawRect(Rect.fromLTWH(shieldX, shieldY, _shieldBarSize.x * fracao, _shieldBarSize.y), _shieldPreenchimento);
     }
-*/
+
 
     //double bombY = heartSize.y + 2;
     //bombSprite.render(canvas, position: Vector2(0, bombY), size: bombIconSize, overridePaint: paint);

@@ -32,6 +32,7 @@ class RecolherNoCasco extends Ability {
     user.shieldVisualActive = true;
 
     user.parent?.add(Projectile(
+      owner: user,
       position: user.position.clone(),
       direction: Vector2.zero(),
       speed: 0,

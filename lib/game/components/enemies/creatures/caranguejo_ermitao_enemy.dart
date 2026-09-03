@@ -92,6 +92,7 @@ class CaranguejoErmitaoEnemy extends Enemy with WanderMovement, ShooterAttack {
   /// de cegueira entra em jogo.
   void _soltarFumaca() {
     parent?.add(Projectile(
+      owner: this,
       position: position.clone(),
       direction: Vector2.zero(),
       isEnemy: true,

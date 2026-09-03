@@ -10,16 +10,21 @@ class HudOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.topRight,
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: GestureDetector(
-          onTap: withBtnSfx(() {
-            game.pauseEngine(); // Congela o jogo inteiro!
-            game.overlays.add('PauseMenu');
-          }),
-          child: const _GameboyCapsuleButton(label: 'PAUSE'),
+    // `SafeArea` aqui, não um `Padding` fixo por fora: numa tela com entalhe
+    // ou cantos arredondados (celular), o botão flutuante no canto superior
+    // direito não pode nascer embaixo do recorte do sistema.
+    return SafeArea(
+      child: Align(
+        alignment: Alignment.topRight,
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: GestureDetector(
+            onTap: withBtnSfx(() {
+              game.pauseEngine(); // Congela o jogo inteiro!
+              game.overlays.add('PauseMenu');
+            }),
+            child: const _GameboyCapsuleButton(label: 'PAUSE'),
+          ),
         ),
       ),
     );
@@ -53,7 +58,7 @@ class _GameboyCapsuleButton extends StatelessWidget {
           label,
           style: const TextStyle(
             fontFamily: 'pixelFont',
-            fontSize: 20, 
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Palette.cinzaEsc,
             //shadows: [Shadow(color: Palette.preto, offset: Offset(1, 1))],

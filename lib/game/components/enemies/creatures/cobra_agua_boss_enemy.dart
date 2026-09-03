@@ -130,6 +130,7 @@ class CobraAguaBossEnemy extends Enemy with JumpMovement {
       // Última cartada: poças d'água residuais, mesmo truque do Slime.
       for (int i = 0; i < _pocasNaMorte; i++) {
         parent?.add(Projectile(
+          owner: this,
           position: position.clone() + Vector2((i - 0.5) * 20.0, 0),
           direction: Vector2.zero(),
           isEnemy: true,

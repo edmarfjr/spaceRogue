@@ -11,8 +11,7 @@ class TextEffect extends PositionComponent {
   final double speed;
   final double duration;
   final Color color;
-  final double fontSize;
-
+  double fontSize;
   double _elapsed = 0.0;
 
   TextEffect({
@@ -30,12 +29,13 @@ class TextEffect extends PositionComponent {
   factory TextEffect.dano(
     num valor, {
     required Vector2 position,
-    Color color = Palette.branco,
+    Color color = Palette.branco,  double fontSize = 6.0,
   }) {
     return TextEffect(
       text: valor is int ? '$valor' : valor.toStringAsFixed(0),
       position: position,
       color: color,
+      fontSize: fontSize,
     );
   }
 

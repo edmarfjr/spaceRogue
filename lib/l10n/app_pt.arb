@@ -122,6 +122,8 @@
   "@effect_criaturaLiberada": {
     "placeholders": { "nome": {} }
   },
+  "effect_maisChanceCrit": "+ CHANCE CRIT.",
+  "effect_maisDanoCrit": "+ DANO CRIT.",
 
   "creatureName_roedor_fogo": "Torchmin",
   "creatureName_tartaruga_planta": "Turtrent",

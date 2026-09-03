@@ -258,6 +258,9 @@ class RoomComponent extends PositionComponent with HasGameRef {
         } else if (roll >= 5 && roll < 8) {
           add(Hole(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,));
           _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
+        } else if (roll >= 8 && roll < 15) {
+          add(GramaAlta(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,cor3: Palette.branco));
+          _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
         }
       }
     }

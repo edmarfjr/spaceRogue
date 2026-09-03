@@ -86,6 +86,8 @@
   "effect_maisVidaMaxima": "+MAX HEALTH",
   "effect_maisEscudoMaximo": "+MAX SHIELD",
   "effect_criaturaLiberada": "{nome} UNLOCKED!",
+  "effect_maisChanceCrit": "+ CRIT. CHANCE",
+  "effect_maisDanoCrit": "+ CRIT. DAMAGE",
 
   "creatureName_roedor_fogo": "Torchmin",
   "creatureName_tartaruga_planta": "Turtrent",

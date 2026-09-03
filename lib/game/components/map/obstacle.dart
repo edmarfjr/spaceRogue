@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:ui' as ui;
+import 'package:creatures_rogue/game/components/items/coin_pickup.dart';
 import 'package:creatures_rogue/game/components/utils/y_sort.dart';
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
@@ -114,17 +115,20 @@ class Rock extends Obstacle {
   }) : super(
          spritePath: sprPath, 
          size: size ?? Vector2(16, 16),
-         collisionType: CollisionType.passive, 
+         collisionType: CollisionType.active, 
        );
 
   void blowUp() {
     final random = Random();
     
-    if (random.nextDouble() < 0.20) {
-      if (random.nextBool()) {
+    if (random.nextDouble() < 0.05) {
+      double itemChance = random.nextDouble();
+      if (itemChance <= 0.05) {
         parent?.add(HeartPickup(position: position.clone()));
-      } else {  
+      } else if (itemChance > 0.05 && itemChance <= 0.15) {  
         parent?.add(HeartHalfPickup(position: position.clone()));
+      }else{
+        parent?.add(CoinPickup(position: position.clone()));
       }
     }
 
@@ -159,5 +163,18 @@ class Grama extends Obstacle {
          size: size ?? Vector2(16, 16),
          collisionType: CollisionType.inactive,
        );
-  
+}
+
+class GramaAlta extends Obstacle {
+  GramaAlta({
+    required super.position,
+    Vector2? size,
+    super.cor1,
+    super.cor2,
+    super.cor3,
+  }) : super(
+         spritePath: 'tileset/gramaAlta.png',
+         size: size ?? Vector2(16, 16),
+         collisionType: CollisionType.active,
+       );
 }

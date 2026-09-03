@@ -25,6 +25,7 @@ class EsquivaTornado extends Ability {
     user.grantInvulnerability(duracao);
 
     user.parent?.add(Projectile(
+          owner: user,
           position: user.position.clone(),
           direction: Vector2.zero(),
           speed:0,

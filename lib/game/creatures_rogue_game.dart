@@ -422,9 +422,9 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     minimapHud = MinimapHud(
       mapData: mapData,
       getCurrentLogicalRoom: () {
-        return Vector2(currentRoomIndex.x + 50, currentRoomIndex.y + 50);
+        return Vector2(currentRoomIndex.x + 30, currentRoomIndex.y + 30);
       },
-      position: Vector2(RoomComponent.roomWidth - 5, 5),
+      position: Vector2(RoomComponent.roomWidth - 1, 1),
     );
     gameCamera.viewport.add(minimapHud);
 

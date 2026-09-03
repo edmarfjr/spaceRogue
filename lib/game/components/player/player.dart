@@ -87,6 +87,9 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
   int bombsAmount = 3;
 
+  double critChance = 5;
+  double critMult = 1.5;
+
   /// Moedas da run, gastas nos balcões da loja (ver ShopStand). Zeram junto
   /// com o Player, ou seja, a cada run nova.
   int coins = 0;
@@ -120,7 +123,8 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   Vector2 knockbackVelocity = Vector2.zero();
   Vector2 plrDir = Vector2(0,1);
 
-  double get maxSpeed => creatureData.stats.speed * lentidaoFator * velMult;
+  double get maxSpeed =>
+      creatureData.stats.speed * lentidaoFator * velMult * (_dentroGramaAlta ? gramaAltaFator : 1.0);
 
   /// Lentidão e cegueira são as únicas condições que atingem o jogador — DoT
   /// fica só do lado dos inimigos, que têm os ícones de condição pra mostrar.
@@ -131,6 +135,20 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   double cegoDuracaoInicial = 0.0;
   final double acceleration = 100.0;
   final double friction = 500.0;
+
+  /// Metade da velocidade dentro de `GramaAlta` — terreno, não condição
+  /// temporária, sem timer. `Player` tem dois hitboxes ativos
+  /// (`playerHitbox`/`physicsHitbox`), então um único tile de grama pode
+  /// disparar `onCollisionStart`/`onCollisionEnd` mais de uma vez, em pares
+  /// fora de ordem entre os dois hitboxes. Guardar um `Set` das grama
+  /// atualmente sobrepostas (em vez de um bool ligado/desligado) resolve
+  /// isso sozinho: `add`/`remove` são idempotentes, e cada entrada/saída só
+  /// é aceita quando `isPhysicsCollision` confirma o estado real dos PÉS
+  /// naquele instante — não importa qual dos dois hitboxes disparou o
+  /// evento. Ver `onCollisionStart`/`onCollisionEnd`.
+  static const double gramaAltaFator = 0.5;
+  final Set<GramaAlta> _gramaAltaSobrepostas = {};
+  bool get _dentroGramaAlta => _gramaAltaSobrepostas.isNotEmpty;
 
   /// Mira travada de cada habilidade — recalculada todo frame em
   /// [_atualizarMira], a partir da própria posição (inimigo mais próximo ou
@@ -272,6 +290,8 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   /// recomputado no uso, nunca cacheado — elimina qualquer ponto de
   /// recálculo que precisaria ser lembrado em recrutamento/troca/início de
   /// run.
+  /// 
+  /*
   List<Passive> get passivasAtivas {
     final jogo = game;
     if (jogo is! CreaturesRogueGame) return const [];
@@ -280,7 +300,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
         .map((c) => c.passive)
         .toList(growable: false);
   }
-
+  */
   /// Piso do produto de `dodgeCooldownMult` de todas as passivas ativas —
   /// pedido do usuário: passiva repetida (duas ou três criaturas da mesma
   /// espécie) DEVE empilhar, é build válido. Mas sem piso, três cópias de
@@ -297,34 +317,36 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   void dodge() {
     if (_dodgeCooldown > 0) return;
     GameAudio.instance.play(Sfx.dash);
-    final passivas = passivasAtivas;
+    //final passivas = passivasAtivas;
 
     double cooldownMult = 1.0;
     double distanciaMult = 1.0;
-    for (final p in passivas) {
+   /* for (final p in passivas) {
       cooldownMult *= p.dodgeCooldownMult;
       distanciaMult *= p.dodgeDistanceMult;
     }
+    */
     cooldownMult = cooldownMult < _dodgeCooldownMultFloor ? _dodgeCooldownMultFloor : cooldownMult;
     _dodgeCooldown = _dodgeCooldownMax * cooldownMult;
     grantInvulnerability(_dodgeDuration);
 
     var dir = velocity.isZero() ? plrDir : velocity.normalized();
-    for (final p in passivas) {
+    /*for (final p in passivas) {
       final override = p.direcaoEsquivaOverride(this, dir);
       if (override != null) dir = override;
     }
-
+    */
     GhostEffect.spawnTrail(
       visual: visual,
       add: (g) => parent?.add(g),
       overDuration: _dodgeDuration,
     );
     add(MoveByEffect(dir * _dodgeDistance * distanciaMult, EffectController(duration: _dodgeDuration)));
-
+    /*
     for (final p in passivas) {
       p.aoEsquivar(this, dir);
     }
+    */
   }
 
   /// Fração restante do cooldown da esquiva (0 = pronta) — pra HUD desenhar
@@ -341,7 +363,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   static final Paint _dodgeBarraPreenchimento = Paint()..color = Palette.verde;
   static const double _dodgeBarraLargura = 14.0;
   static const double _dodgeBarraAltura = 2.0;
-
+/*
   void _renderBarraEsquiva(Canvas canvas) {
     final pronto = 1 - dodgeCooldownFraction;
     final left = (size.x - _dodgeBarraLargura) / 2;
@@ -359,11 +381,16 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       );
     }
   }
-
+*/
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    _renderBarraEsquiva(canvas);
+    if (_dentroGramaAlta){
+      canvas.drawRect(
+        Rect.fromLTWH(0, size.y + 4, size.x, 1),
+        Paint()..color = Palette.vermelho,
+      );
+    }
   }
 
   Player({
@@ -535,9 +562,9 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
     if (_dodgeCooldown > 0) _dodgeCooldown -= dt;
     _tempoSemApanhar += dt;
-    for (final p in passivasAtivas) {
-      p.aoAtualizar(this, dt);
-    }
+   // for (final p in passivasAtivas) {
+   //   p.aoAtualizar(this, dt);
+   // }
 
     if (lentidaoTimer > 0) {
       lentidaoTimer -= dt;
@@ -749,6 +776,33 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   }
 
   @override
+  void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
+    super.onCollisionStart(intersectionPoints, other);
+
+    // Só entra no set quando os PÉS confirmam sobreposição neste instante —
+    // com `playerHitbox` (corpo) maior que `physicsHitbox` (pés) e centrado
+    // no mesmo ponto, o corpo costuma encostar na grama um pouco antes dos
+    // pés. Ignorar esse `Start` prematuro (disparado pelo par
+    // `playerHitbox`) e deixar o `Start` do par `physicsHitbox` (que já vem
+    // com os pés confirmados) fazer o `add` de verdade.
+    if (other is GramaAlta && isPhysicsCollision(other)) {
+      _gramaAltaSobrepostas.add(other);
+    }
+  }
+
+  @override
+  void onCollisionEnd(PositionComponent other) {
+    super.onCollisionEnd(other);
+
+    // Espelha o `Start`: só tira do set quando os pés já NÃO sobrepõem mais
+    // — assim o fim do par `playerHitbox` (corpo saindo, pés ainda dentro)
+    // não desliga o efeito cedo demais.
+    if (other is GramaAlta && !isPhysicsCollision(other)) {
+      _gramaAltaSobrepostas.remove(other);
+    }
+  }
+
+  @override
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
 
@@ -758,6 +812,12 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
         takeDamage(1);
       }
     }
+
+    // Grama alta: terreno andável, não parede. `return` antes do bloco de
+    // empurrão abaixo, senão `GramaAlta` (que é um `Obstacle` como
+    // qualquer outro) seria tratada como sólida — o efeito de velocidade em
+    // si é todo tratado em `onCollisionStart`/`onCollisionEnd`, não aqui.
+    if (other is GramaAlta) return;
 
     if (other is WallBarrier || other is Obstacle) {
 
@@ -801,14 +861,15 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     // logo abaixo. Se o grupo tiver mais de uma criatura com retaliação,
     // todas executam — decisão travada com o usuário, não é "a mais forte
     // vence" (ver PIVOT_TREINADOR.md).
-    for (final p in passivasAtivas) {
-      p.aoTentarTomarDano(this, amountFinal);
-    }
+    //for (final p in passivasAtivas) {
+    //  p.aoTentarTomarDano(this, amountFinal);
+    //}
 
     parent?.add(TextEffect.dano(
       amountFinal,
       position: position.clone() + Vector2(0, -size.y / 2 - 4),
       color: Palette.vermelho,
+
     ));
 
     if (shieldHits > 0) {
@@ -824,16 +885,17 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     // o resto fora, então 1 ponto de escudo anulava um golpe de 10 do boss —
     // qualquer item de escudo ficava absurdo.
     if (shield > 0) {
-      final absorvido = amountFinal > shield ? shield : amountFinal;
-      shield -= absorvido;
-      amountFinal -= absorvido;
+      //final absorvido = amountFinal > shield ? shield : amountFinal;
+      shield -= 1;
+      //amountFinal -= absorvido;
       if (shield < 0) shield = 0;
+      return; // o golpe foi absorvido pelo escudo, não chega no HP
       // Sem arredondar o resto pra cima: com 0.5 de escudo sobrando, um
       // arredondamento faria o golpe de 1 (contato de inimigo) chegar inteiro
       // no HP, ou seja, o último ponto fracionado de escudo sairia de graça pro
       // atacante. A barra da Hud escala contínuo, então HP fracionado desenha
       // bem.
-      if (amountFinal <= 0) return;
+      //if (amountFinal <= 0) return;
     }
 
     currentHealth -= amountFinal;
@@ -870,7 +932,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     if (event is KeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.digit1) useSlot(0);
       if (event.logicalKey == LogicalKeyboardKey.digit2) useSlot(1);
-      if (event.logicalKey == LogicalKeyboardKey.space) dodge();
+     // if (event.logicalKey == LogicalKeyboardKey.space) dodge();
     }
 
     return super.onKeyEvent(event, keysPressed);

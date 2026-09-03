@@ -18,6 +18,14 @@ abstract class Collectible extends PositionComponent with CollisionCallbacks, Ha
   late final Sprite _sprite;
   final Paint _paint = Paint()..filterQuality = FilterQuality.none;
 
+  /// `removeFromParent()` só tira o componente no FIM do frame — até lá,
+  /// `Player.playerHitbox` e `Player.physicsHitbox` (dois hitboxes ativos
+  /// distintos) podem cada um disparar `onCollisionStart` contra este hitbox
+  /// passivo no mesmo instante. Sem essa trava, os dois eventos chamavam
+  /// `onCollect` antes da remoção surtir efeito — um item de inventário (ex.:
+  /// escudo) entrava duas vezes, preenchendo os dois slots de uma vez.
+  bool _coletado = false;
+
   Collectible({
     required Vector2 position,
     required this.spritePath,
@@ -53,12 +61,14 @@ abstract class Collectible extends PositionComponent with CollisionCallbacks, Ha
   @override
   void onCollisionStart(Set intersectionPoints, PositionComponent other) {
     super.onCollisionStart(intersectionPoints.cast(), other);
-    
+
+    if (_coletado) return;
     if (other is Player) {
       // Chama o método abstrato que os filhos vão implementar
-      bool wasCollected = onCollect(other); 
-      
+      bool wasCollected = onCollect(other);
+
       if (wasCollected) {
+        _coletado = true;
         GameAudio.instance.play(Sfx.pick);
         removeFromParent();
       }

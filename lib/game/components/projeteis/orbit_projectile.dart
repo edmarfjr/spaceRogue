@@ -27,6 +27,7 @@ class OrbitProjectile extends Projectile {
     super.isEnemy,
     super.lifeTime,
   }) : super(
+          owner: owner,
           position: owner.absolutePosition,
           direction: Vector2(1, 0),
           speed: 0,

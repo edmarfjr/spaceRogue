@@ -26,6 +26,7 @@ class RastroCongelante extends Passive {
     ));
 
     player.parent?.add(Projectile(
+      owner: player,
       position: player.position.clone(),
       direction: Vector2.zero(),
       speed: 0,

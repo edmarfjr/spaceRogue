@@ -1,5 +1,6 @@
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/responsive.dart';
 import 'package:creatures_rogue/game/overlays/creature_select_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
@@ -21,50 +22,48 @@ class BossRevealOverlay extends StatelessWidget {
     // Sem boss pendente não deveria nem chegar aqui (ver startRun), mas se
     // chegar, não trava a run — só libera igual a um "sem aviso".
     if (boss == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => game.dismissBossReveal());
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => game.dismissBossReveal(),
+      );
       return const SizedBox.shrink();
     }
 
     final recompensa = CreatureRegistry.byId(boss.creatureId);
+    final estreita = Responsive.ehEstreita(context);
 
-    return Material(
-      color: Palette.branco,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-          /*  Text(
-              'ANDAR ${CreaturesRogueGame.andaresPorBoss}: BOSS',
-              style: const TextStyle(color: Palette.preto, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 2),
+    return ResponsiveOverlayScaffold(
+      background: Palette.branco,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            context.l10n.bossReveal_vs,
+            style: TextStyle(
+              color: Palette.preto,
+              fontSize: estreita ? 28 : 40,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 8),
-            Text(
-              boss.nome,
-              style: const TextStyle(color: Palette.preto, fontSize: 40, fontWeight: FontWeight.bold),
-            ),
-            */
-            Text(
-              context.l10n.bossReveal_vs,
-              style: const TextStyle(color: Palette.preto, fontSize: 40, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            CreatureSprite(creature: recompensa, size: 80, tudoPreto: true,),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Palette.branco,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                elevation: 0,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                  side: BorderSide(color: Palette.preto, width: 2),
-                ),
+          ),
+          const SizedBox(height: 12),
+          CreatureSprite(creature: recompensa, size: 80, tudoPreto: true),
+          const SizedBox(height: 12),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Palette.branco,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              elevation: 0,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+                side: BorderSide(color: Palette.preto, width: 2),
               ),
-              onPressed: withBtnSfx(game.dismissBossReveal),
-              child: Text(context.l10n.bossReveal_entrar, style: const TextStyle(fontSize: 20, color: Palette.preto)),
             ),
-          ],
-        ),
+            onPressed: withBtnSfx(game.dismissBossReveal),
+            child: Text(
+              context.l10n.bossReveal_entrar,
+              style: const TextStyle(fontSize: 20, color: Palette.preto),
+            ),
+          ),
+        ],
       ),
     );
   }

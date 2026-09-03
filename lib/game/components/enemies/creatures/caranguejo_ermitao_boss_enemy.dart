@@ -123,6 +123,7 @@ class CaranguejoErmitaoBossEnemy extends Enemy with WanderMovement, ShooterAttac
   /// escalada que separa os dois, não um padrão de tiro diferente.
   void _abrirComCinza() {
     parent?.add(Projectile(
+      owner: this,
       position: position.clone(),
       direction: Vector2.zero(),
       isEnemy: true,
@@ -140,6 +141,7 @@ class CaranguejoErmitaoBossEnemy extends Enemy with WanderMovement, ShooterAttac
     ));
 
     parent?.add(Projectile(
+      owner: this,
       position: position.clone(),
       direction: Vector2.zero(),
       isEnemy: true,

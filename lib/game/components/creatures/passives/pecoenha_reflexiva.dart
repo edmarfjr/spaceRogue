@@ -19,6 +19,7 @@ class PecoenhaReflexiva extends Passive {
   @override
   void aoTentarTomarDano(Player player, double amount) {
     player.parent?.add(Projectile(
+        owner: player,
       position: player.position.clone(),
       direction: Vector2.zero(),
       speed: 0,

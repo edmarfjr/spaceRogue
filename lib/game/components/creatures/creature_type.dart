@@ -16,7 +16,7 @@ const Map<CreatureType, CreatureType> _desvantagens = {
 
 /// Multiplicador de dano de [atacante] contra [defensor].
 double typeMultiplier(CreatureType atacante, CreatureType defensor) {
-  if (_vantagens[atacante] == defensor) return 1.5;
-  if (_desvantagens[atacante] == defensor) return 0.75;
+  if (_vantagens[atacante] == defensor) return 2;
+  if (_desvantagens[atacante] == defensor) return 0.5;
   return 1.0;
 }

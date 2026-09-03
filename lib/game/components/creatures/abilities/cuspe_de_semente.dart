@@ -18,6 +18,7 @@ class CuspeDeSemente extends Ability {
   void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
     user.parent?.add(Projectile(
+      owner: user,
       position: user.position.clone(),
       direction: dir,
       speed: velocidade,

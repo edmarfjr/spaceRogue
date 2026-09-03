@@ -22,6 +22,7 @@ class RajadaDeBrasa extends Ability {
     for (final offset in [-anguloRad, 0.0, anguloRad]) {
       final rotated = dir.clone()..rotate(offset);
       user.parent?.add(Projectile(
+        owner: user,
         position: user.position.clone(),
         direction: rotated,
         dmg: dano,

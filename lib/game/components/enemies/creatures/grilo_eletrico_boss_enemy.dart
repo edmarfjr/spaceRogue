@@ -101,6 +101,7 @@ class GriloEletricoBossEnemy extends Enemy with JumpMovement, ShooterAttack {
 
   void _soltarNo() {
     parent?.add(Projectile(
+      owner: this,
       position: position.clone(),
       direction: Vector2.zero(),
       isEnemy: true, // sem isso o nó machuca inimigos em vez do jogador

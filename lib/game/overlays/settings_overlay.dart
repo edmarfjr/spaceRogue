@@ -1,5 +1,6 @@
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/responsive.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
@@ -56,164 +57,218 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
   Widget build(BuildContext context) {
     final atual = widget.game.controlScheme;
 
-    return Material(
-      color: Palette.branco,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              context.l10n.settings_titulo,
-              style: const TextStyle(color: Palette.preto, fontSize: 36, fontWeight: FontWeight.bold),
+    return ResponsiveOverlayScaffold(
+      background: Palette.branco,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            context.l10n.settings_titulo,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Palette.preto,
+              fontSize: 36,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 10),
-            Text(
-              context.l10n.settings_controle,
-              style: const TextStyle(color: Palette.preto, fontSize: 14, letterSpacing: 3),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            context.l10n.settings_controle,
+            style: const TextStyle(
+              color: Palette.preto,
+              fontSize: 14,
+              letterSpacing: 3,
             ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final scheme in ControlScheme.values)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                        //elevation: 0,
-                        backgroundColor: scheme == atual ? Palette.preto : Palette.branco,
-                        side: BorderSide(
-                          color: Palette.preto
-                        ),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
-                          side: BorderSide(color: Palette.preto, width: 5),
-                        ),
+          ),
+          const SizedBox(height: 4),
+          // `Wrap`, não `Row`: numa janela estreita, dois botões de
+          // controle (cada um com padding horizontal de 24px + o rótulo)
+          // não cabem lado a lado — `Wrap` quebra pra segunda linha em vez
+          // de estourar a largura.
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final scheme in ControlScheme.values)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 10,
                       ),
-                      onPressed: withBtnSfx(scheme == atual ? null : () => _escolher(scheme)),
-                      child: Text(
-                        scheme.rotulo(context),
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: scheme == atual ? Palette.branco : Palette.preto,
-                        ),
+                      //elevation: 0,
+                      backgroundColor: scheme == atual
+                          ? Palette.preto
+                          : Palette.branco,
+                      side: BorderSide(color: Palette.preto),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero,
+                        side: BorderSide(color: Palette.preto, width: 5),
+                      ),
+                    ),
+                    onPressed: withBtnSfx(
+                      scheme == atual ? null : () => _escolher(scheme),
+                    ),
+                    child: Text(
+                      scheme.rotulo(context),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: scheme == atual ? Palette.branco : Palette.preto,
                       ),
                     ),
                   ),
-              ],
+                ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          SizedBox(
+            // 420 é a largura "de design"; `Responsive.largura` encolhe
+            // só quando a tela real é menor que isso, nunca cresce além.
+            width: Responsive.largura(context, 420),
+            child: Text(
+              atual.descricao(context),
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Palette.preto, fontSize: 13),
             ),
-            const SizedBox(height: 5),
-            SizedBox(
-              width: 420,
-              child: Text(
-                atual.descricao(context),
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Palette.preto, fontSize: 13),
-              ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            context.l10n.settings_idioma,
+            style: const TextStyle(
+              color: Palette.preto,
+              fontSize: 14,
+              letterSpacing: 3,
             ),
-            const SizedBox(height: 6),
-            Text(
-              context.l10n.settings_idioma,
-              style: const TextStyle(color: Palette.preto, fontSize: 14, letterSpacing: 3),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final MapEntry(key: locale, value: rotulo) in {
-                  null: context.l10n.settings_idiomaSistema,
-                  for (final loc in AppLocalizations.supportedLocales) loc: loc.languageCode.toUpperCase(),
-                }.entries)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                        backgroundColor: locale == GameSettings.instance.locale ? Palette.preto : Palette.branco,
-                        side: BorderSide(color: Palette.preto),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero,
-                          side: BorderSide(color: Palette.preto, width: 5),
-                        ),
+          ),
+          const SizedBox(height: 4),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final MapEntry(key: locale, value: rotulo) in {
+                null: context.l10n.settings_idiomaSistema,
+                for (final loc in AppLocalizations.supportedLocales)
+                  loc: loc.languageCode.toUpperCase(),
+              }.entries)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
                       ),
-                      onPressed: withBtnSfx(
-                        locale == GameSettings.instance.locale ? null : () => _escolherIdioma(locale),
+                      backgroundColor: locale == GameSettings.instance.locale
+                          ? Palette.preto
+                          : Palette.branco,
+                      side: BorderSide(color: Palette.preto),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero,
+                        side: BorderSide(color: Palette.preto, width: 5),
                       ),
-                      child: Text(
-                        rotulo,
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: locale == GameSettings.instance.locale ? Palette.branco : Palette.preto,
-                        ),
+                    ),
+                    onPressed: withBtnSfx(
+                      locale == GameSettings.instance.locale
+                          ? null
+                          : () => _escolherIdioma(locale),
+                    ),
+                    child: Text(
+                      rotulo,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: locale == GameSettings.instance.locale
+                            ? Palette.branco
+                            : Palette.preto,
                       ),
                     ),
                   ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              context.l10n.settings_audio,
-              style: const TextStyle(color: Palette.preto, fontSize: 14, letterSpacing: 3),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(context.l10n.settings_som, style: const TextStyle(color: Palette.preto, fontSize: 14)),
-                Switch(
-                  value: GameSettings.instance.soundEnabled,
-                  activeThumbColor: Palette.preto,
-                  onChanged: (valor) => _alternarSom(valor),
                 ),
-                const SizedBox(width: 10),
-                Text(context.l10n.settings_musica, style: const TextStyle(color: Palette.preto, fontSize: 14)),
-                Switch(
-                  value: GameSettings.instance.musicEnabled,
-                  activeThumbColor: Palette.preto,
-                  onChanged: (valor) => _alternarMusica(valor),
-                ),
-              ],
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            context.l10n.settings_audio,
+            style: const TextStyle(
+              color: Palette.preto,
+              fontSize: 14,
+              letterSpacing: 3,
             ),
-            const SizedBox(height: 6),
-            // Apaga a flag de intro e as criaturas liberadas. Sem isto a
-            // intro aparece uma vez na vida do aparelho, e não dá pra
-            // revê-la sem reinstalar o app.
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Palette.branco,
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                elevation: 0,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                  side: BorderSide(color: Palette.preto, width: 2),
-                ),
+          ),
+          const SizedBox(height: 2),
+          Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 4,
+            runSpacing: 4,
+            children: [
+              Text(
+                context.l10n.settings_som,
+                style: const TextStyle(color: Palette.preto, fontSize: 14),
               ),
-              onPressed: withBtnSfx(_resetado ? null : _resetar),
-              child: Text(
-                _resetado ? context.l10n.settings_progressoResetado : context.l10n.settings_resetarProgresso,
-                style: const TextStyle(fontSize: 14, color: Palette.preto),
+              Switch(
+                value: GameSettings.instance.soundEnabled,
+                activeThumbColor: Palette.preto,
+                onChanged: (valor) => _alternarSom(valor),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                context.l10n.settings_musica,
+                style: const TextStyle(color: Palette.preto, fontSize: 14),
+              ),
+              Switch(
+                value: GameSettings.instance.musicEnabled,
+                activeThumbColor: Palette.preto,
+                onChanged: (valor) => _alternarMusica(valor),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          // Apaga a flag de intro e as criaturas liberadas. Sem isto a
+          // intro aparece uma vez na vida do aparelho, e não dá pra
+          // revê-la sem reinstalar o app.
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Palette.branco,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              elevation: 0,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+                side: BorderSide(color: Palette.preto, width: 2),
               ),
             ),
-            const SizedBox(height: 6),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Palette.branco,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                elevation: 0,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                  side: BorderSide(color: Palette.preto, width: 2),
-                ),
-              ),
-              onPressed: withBtnSfx(() {
-                widget.game.overlays.remove('Settings');
-                widget.game.overlays.add(widget.game.settingsReturnOverlay);
-              }),
-              child: Text(context.l10n.settings_voltar, style: const TextStyle(fontSize: 20, color: Palette.preto)),
+            onPressed: withBtnSfx(_resetado ? null : _resetar),
+            child: Text(
+              _resetado
+                  ? context.l10n.settings_progressoResetado
+                  : context.l10n.settings_resetarProgresso,
+              style: const TextStyle(fontSize: 14, color: Palette.preto),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 6),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Palette.branco,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              elevation: 0,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+                side: BorderSide(color: Palette.preto, width: 2),
+              ),
+            ),
+            onPressed: withBtnSfx(() {
+              widget.game.overlays.remove('Settings');
+              widget.game.overlays.add(widget.game.settingsReturnOverlay);
+            }),
+            child: Text(
+              context.l10n.settings_voltar,
+              style: const TextStyle(fontSize: 20, color: Palette.preto),
+            ),
+          ),
+        ],
       ),
     );
   }

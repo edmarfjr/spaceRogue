@@ -24,14 +24,14 @@ extension ConsumableTypeData on ConsumableType {
       };
 
   Color get cor1 => switch (this) {
-        ConsumableType.pocao => Palette.vermelho,
+        ConsumableType.pocao => Palette.indigo,
         ConsumableType.escudo => Palette.indigo,
         ConsumableType.congelar => Palette.azul,
         ConsumableType.mapa => Palette.bege,
       };
 
   Color get cor2 => switch (this) {
-        ConsumableType.pocao => Palette.roxoEsc,
+        ConsumableType.pocao => Palette.cinzaEsc,
         ConsumableType.escudo => Palette.royal,
         ConsumableType.congelar => Palette.royal,
         ConsumableType.mapa => Palette.marromEsc,

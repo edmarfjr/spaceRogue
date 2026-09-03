@@ -63,6 +63,7 @@ class SlimePlantaBossEnemy extends Enemy with WanderMovement {
 
   void _largarPoca() {
     parent?.add(Projectile(
+      owner: this,
       position: position.clone(),
       direction: Vector2.zero(),
       isEnemy: true,

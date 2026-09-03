@@ -23,6 +23,7 @@ class Ericar extends Ability {
       final angulo = (2 * pi / quantidade) * i;
       final direcao = Vector2(cos(angulo), sin(angulo));
       user.parent?.add(Projectile(
+        owner: user,
         position: user.position.clone(),
         direction: direcao,
         speed: velocidade,

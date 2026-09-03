@@ -35,22 +35,23 @@ import 'abilities/recolher_no_casco.dart';
 import 'base_stats.dart';
 import 'creature_data.dart';
 import 'creature_type.dart';
-import 'passives/rastro_flamejante.dart';
-import 'passives/casco_reflexivo.dart';
-import 'passives/bolha_autonoma.dart';
-import 'passives/corrente_reflexa.dart';
-import 'passives/tornado_residual.dart';
-import 'passives/salto_aquatico.dart';
-import 'passives/brado_reflexo.dart';
-import 'passives/reflexo_eletrico.dart';
-import 'passives/bomba_na_esquiva.dart';
-import 'passives/pecoenha_reflexiva.dart';
-import 'passives/rastro_congelante.dart';
-import 'passives/retaliacao_eletrica.dart';
-import 'passives/fumaca_ao_lacar.dart';
-import 'passives/raizes_do_laco.dart';
-import 'passives/investida_predatoria.dart';
-import 'passives/golpe_de_lanca.dart';
+/*import '//passives/rastro_flamejante.dart';
+import '//passives/casco_reflexivo.dart';
+import '//passives/bolha_autonoma.dart';
+import '//passives/corrente_reflexa.dart';
+import '//passives/tornado_residual.dart';
+import '//passives/salto_aquatico.dart';
+import '//passives/brado_reflexo.dart';
+import '//passives/reflexo_eletrico.dart';
+import '//passives/bomba_na_esquiva.dart';
+import '//passives/pecoenha_reflexiva.dart';
+import '//passives/rastro_congelante.dart';
+import '//passives/retaliacao_eletrica.dart';
+import '//passives/fumaca_ao_lacar.dart';
+import '//passives/raizes_do_laco.dart';
+import '//passives/investida_predatoria.dart';
+import '//passives/golpe_de_lanca.dart';
+*/
 import '../effects/movement_animator.dart';
 import '../enemies/creatures/ave_eletrica_enemy.dart';
 import '../enemies/creatures/bomba_fogo_enemy.dart';
@@ -75,15 +76,15 @@ class CreatureRegistry {
     nome: 'Torchmin',
     spritePath: 'actors/ratFogo.png',
     tipo: CreatureType.fogo,
-    corClara: Palette.laranja,
+    corClara: Palette.pumpkin,
     corEscura: Palette.vermelho,
-    stats: BaseStats(maxHp: 8, speed: 70, defesa: 1, ataque: 3),
+    stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 3),
     ability1: RajadaDeBrasa(),
     ability2: DisparadaFlamejante(),
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(8, 10), 
     enemyBuilder: (pos, plr) => RoedorFogoEnemy(position: pos, playerTarget: plr),
-    passive: RastroFlamejante(),
+    //passive: RastroFlamejante(),
   );
 
   static final CreatureData tartarugaPlanta = CreatureData(
@@ -93,13 +94,13 @@ class CreatureRegistry {
     tipo: CreatureType.planta,
     corClara: Palette.verde,
     corEscura: Palette.marromEsc,
-    stats: BaseStats(maxHp: 20, speed: 35, defesa: 4, ataque: 3),
+    stats: BaseStats(maxHp: 4, speed: 35, defesa: 1, ataque: 3),
     ability1: CuspeDeSemente(),
     ability2: CascoFechado(),
     moveAnim: MovementAnimation.arrastar,
     hitboxSize: Vector2(14, 14), 
     enemyBuilder: (pos, plr) => TartarugaPlantaEnemy(position: pos, playerTarget: plr),
-    passive: CascoReflexivo(),
+    //passive: CascoReflexivo(),
   );
 
   static final CreatureData sapoAgua = CreatureData(
@@ -109,13 +110,13 @@ class CreatureRegistry {
     tipo: CreatureType.agua,
     corClara: Palette.azul,
     corEscura: Palette.indigo,
-    stats: BaseStats(maxHp: 12, speed: 50, defesa: 2, ataque: 2),
+    stats: BaseStats(maxHp: 4, speed: 50, defesa: 1, ataque: 2),
     ability1: BolaDagua(),
     ability2: BolhaProtetora(),
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(12, 10), 
     enemyBuilder: (pos, plr) => SapoAguaEnemy(position: pos, playerTarget: plr),
-    passive: BolhaAutonoma(),
+    //passive: BolhaAutonoma(),
   );
 
   static final CreatureData aveEletrica = CreatureData(
@@ -124,14 +125,14 @@ class CreatureRegistry {
     spritePath: 'actors/aveEletric.png',
     tipo: CreatureType.eletrico,
     corClara: Palette.amarelo,
-    corEscura: Palette.laranja,
-    stats: BaseStats(maxHp: 10, speed: 80, defesa: 3, ataque: 1),
+    corEscura: Palette.pumpkin,
+    stats: BaseStats(maxHp: 4, speed: 80, defesa: 1, ataque: 1),
     ability1: BicoEletrico(),
     ability2: CorrenteEstatica(),
     moveAnim: MovementAnimation.flutuar,
     hitboxSize: Vector2(9, 11),
     enemyBuilder: (pos, plr) => AveEletricaEnemy(position: pos, playerTarget: plr),
-    passive: CorrenteReflexa(),
+    //passive: CorrenteReflexa(),
   );
 
   static final CreatureData cobraAgua = CreatureData(
@@ -140,14 +141,14 @@ class CreatureRegistry {
     spritePath: 'actors/cobraAgua.png',
     tipo: CreatureType.agua,
     corClara: Palette.azul,
-    corEscura: Palette.laranja,
-    stats: BaseStats(maxHp: 18, speed: 48, defesa: 4, ataque: 4),
+    corEscura: Palette.pumpkin,
+    stats: BaseStats(maxHp: 4, speed: 48, defesa: 1, ataque: 4),
     ability1: JatoAquatico(),
     ability2: JogadaDeCorpo(),
     moveAnim: MovementAnimation.arrastar,
     hitboxSize: Vector2(9, 14),
     enemyBuilder: (pos, plr) => CobraAguaEnemy(position: pos, playerTarget: plr),
-    passive: SaltoAquatico(),
+    //passive: SaltoAquatico(),
   );
 
   static final CreatureData ursoPlanta = CreatureData(
@@ -157,13 +158,13 @@ class CreatureRegistry {
     tipo: CreatureType.planta,
     corClara: Palette.bege,
     corEscura: Palette.forest,
-    stats: BaseStats(maxHp: 22, speed: 22, defesa: 5, ataque: 4),
+    stats: BaseStats(maxHp: 4, speed: 22, defesa: 1, ataque: 4),
     ability1: MegaSoco(),
     ability2: Brado(),
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(15, 16),
     enemyBuilder: (pos, plr) => UrsoPlantaEnemy(position: pos, playerTarget: plr),
-    passive: BradoReflexo(),
+    //passive: BradoReflexo(),
   );
 
   static final CreatureData griloEletrico = CreatureData(
@@ -173,13 +174,13 @@ class CreatureRegistry {
     tipo: CreatureType.eletrico,
     corClara: Palette.laranja,
     corEscura: Palette.marromEsc,
-    stats: BaseStats(maxHp: 6, speed: 80, defesa: 1, ataque: 4),
+    stats: BaseStats(maxHp: 4, speed: 80, defesa: 1, ataque: 4),
     ability1: ChoqueEletrico(),
     ability2: DisparadaVeloz(),
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => GriloEletricoEnemy(position: pos, playerTarget: plr),
-    passive: ReflexoEletrico(),
+    //passive: ReflexoEletrico(),
   );
 
   static final CreatureData tornadoFogo = CreatureData(
@@ -189,13 +190,13 @@ class CreatureRegistry {
     tipo: CreatureType.fogo,
     corClara: Palette.vermelho,
     corEscura: Palette.roxoEsc,
-    stats: BaseStats(maxHp: 10, speed: 70, defesa: 1, ataque: 4),
+    stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 4),
     ability1: SocoFlamejante(),
     ability2: EsquivaTornado(),
     moveAnim: MovementAnimation.flutuar,
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => TornadoFogoEnemy(position: pos, playerTarget: plr),
-    passive: TornadoResidual(),
+    //passive: TornadoResidual(),
   );
 
   static final CreatureData bombaFogo = CreatureData(
@@ -205,13 +206,13 @@ class CreatureRegistry {
     tipo: CreatureType.fogo,
     corClara: Palette.burgundy,
     corEscura: Palette.roxoEsc,
-    stats: BaseStats(maxHp: 10, speed: 70, defesa: 3, ataque: 4),
+    stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 4),
     ability1: DeixarBomba(),
     ability2: EsquivaBomba(),
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => BombaFogoEnemy(position: pos, playerTarget: plr),
-    passive: BombaNaEsquiva(),
+    //passive: BombaNaEsquiva(),
   );
 
   static final CreatureData slimePlanta = CreatureData(
@@ -221,13 +222,13 @@ class CreatureRegistry {
     tipo: CreatureType.planta,
     corClara: Palette.verde,
     corEscura: Palette.verdeEsc,
-    stats: BaseStats(maxHp: 10, speed: 70, defesa: 3, ataque: 4),
+    stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 4),
     ability1: CuspeVenenoso(),
     ability2: ExplosaoVenenosa(),
     moveAnim: MovementAnimation.arrastar,
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) => SlimePlantaEnemy(position: pos, playerTarget: plr),
-    passive: PecoenhaReflexiva(),
+    //passive: PecoenhaReflexiva(),
   );
 
   static final CreatureData ouricoEletrico = CreatureData(
@@ -237,13 +238,13 @@ class CreatureRegistry {
     tipo: CreatureType.eletrico,
     corClara: Palette.amarelo,
     corEscura: Palette.cinzaEsc,
-    stats: BaseStats(maxHp: 14, speed: 28, defesa: 5, ataque: 3),
+    stats: BaseStats(maxHp: 4, speed: 28, defesa: 1, ataque: 3),
     ability1: Ericar(),
     ability2: EscudoDeEspinhos(),
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(12, 12), 
     enemyBuilder: (pos, plr) => OuricoEletricoEnemy(position: pos, playerTarget: plr),
-    passive: RetaliacaoEletrica(),
+    //passive: RetaliacaoEletrica(),
   );
 
   static final CreatureData caranguejoErmitao = CreatureData(
@@ -253,13 +254,13 @@ class CreatureRegistry {
     tipo: CreatureType.fogo,
     corClara: Palette.vermelho,
     corEscura: Palette.cinzaEsc,
-    stats: BaseStats(maxHp: 18, speed: 34, defesa: 4, ataque: 3),
+    stats: BaseStats(maxHp: 4, speed: 34, defesa: 1, ataque: 3),
     ability1: BaforadaDeCinzas(),
     ability2: RecolherNoCasco(),
     moveAnim: MovementAnimation.arrastar,
     hitboxSize: Vector2(14, 12),
     enemyBuilder: (pos, plr) => CaranguejoErmitaoEnemy(position: pos, playerTarget: plr),
-    passive: FumacaAoLacar(),
+    //passive: FumacaAoLacar(),
   );
 
   static final CreatureData pinguimAgua = CreatureData(
@@ -269,13 +270,13 @@ class CreatureRegistry {
     tipo: CreatureType.agua,
     corClara: Palette.azul,
     corEscura: Palette.azulEsc,
-    stats: BaseStats(maxHp: 18, speed: 40, defesa: 4, ataque: 4),
+    stats: BaseStats(maxHp: 4, speed: 40, defesa: 1, ataque: 4),
     ability1: TiroDeGelo(),
     ability2: DisparadaCongelante(),
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(8, 14),
     enemyBuilder: (pos, plr) => PinguimAguaEnemy(position: pos, playerTarget: plr),
-    passive: RastroCongelante(),
+    //passive: RastroCongelante(),
   );
 
   static final CreatureData tocoPlanta = CreatureData(
@@ -285,13 +286,13 @@ class CreatureRegistry {
     tipo: CreatureType.planta,
     corClara: Palette.verdeEsc,
     corEscura: Palette.chocolate,
-    stats: BaseStats(maxHp: 16, speed: 45, defesa: 2, ataque: 3),
+    stats: BaseStats(maxHp: 4, speed: 45, defesa: 1, ataque: 3),
     ability1: FolhasNavalha(),
     ability2: Enraizar(),
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(10, 10), 
     enemyBuilder: (pos, plr) => TocoPlantaEnemy(position: pos, playerTarget: plr),
-    passive: RaizesDoLaco(),
+    //passive: RaizesDoLaco(),
   );
 
   static final CreatureData tubaraoAgua = CreatureData(
@@ -301,13 +302,13 @@ class CreatureRegistry {
     tipo: CreatureType.agua,
     corClara: Palette.azul,
     corEscura: Palette.royal,
-    stats: BaseStats(maxHp: 20, speed: 40, defesa: 3, ataque: 5),
+    stats: BaseStats(maxHp: 4, speed: 40, defesa: 1, ataque: 5),
     ability1: Mordida(),
     ability2: MergulhoEEstouro(),
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(13, 15),
     enemyBuilder: (pos, plr) => TubaraoAguaEnemy(position: pos, playerTarget: plr),
-    passive: InvestidaPredatoria(),
+    //passive: InvestidaPredatoria(),
   );
 
   static final CreatureData leaoEletrico = CreatureData(
@@ -317,13 +318,13 @@ class CreatureRegistry {
     tipo: CreatureType.eletrico,
     corClara: Palette.laranja,
     corEscura: Palette.chocolate,
-    stats: BaseStats(maxHp: 20, speed: 55, defesa: 4, ataque: 4),
+    stats: BaseStats(maxHp: 4, speed: 55, defesa: 1, ataque: 4),
     ability1: EstocadaRelampago(),
     ability2: InvestidaDaLanca(),
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(10, 15),
     enemyBuilder: (pos, plr) => LeaoEletricoEnemy(position: pos, playerTarget: plr),
-    passive: GolpeDeLanca(),
+    //passive: GolpeDeLanca(),
   );
 
   static final List<CreatureData> all = [

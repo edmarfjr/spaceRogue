@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
@@ -389,6 +390,7 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
 
   void shoot(Vector2 direction, {double? lifeTime}) {
     parent?.add(Projectile(
+      owner: this,
       position: position.clone() + direction*size.x/2,
       direction: direction,
       isEnemy: true,
@@ -408,16 +410,29 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   /// `neutro` — o padrão — vale 1.0, então quem não passa tipo não muda nada.
   void takeDamage(double amount,{Color corTxt = Palette.amarelo, CreatureType tipoAtacante = CreatureType.neutro}) {
     final mult = typeMultiplier(tipoAtacante, creature?.tipo ?? CreatureType.neutro);
+    double fontSize = 6;
 
+    if (mult > 1.0) {
+      fontSize = 10;
+    } else if(mult < 1.0) {
+      fontSize = 4;
+      corTxt = Palette.cinza;
+    }
     // Guarda defensiva ativa (casco fechado) reduz o dano recebido.
     double amountFinal = amount * mult * (1 - damageReduction);
     if (amountFinal < 0) amountFinal = 0;
     if (amountFinal > 0) GameAudio.instance.play(Sfx.hit);
 
+    if(playerTarget.critChance <=  Random().nextDouble() * 100 ) {
+      amountFinal *= playerTarget.critMult;
+      corTxt = Palette.vermelho;
+    }
+    
     parent?.add(TextEffect.dano(
       amountFinal,
       position: position.clone() + Vector2(0, -size.y / 2 - 4),
       color: corTxt,
+      fontSize: fontSize,
     ));
 
     health -= amountFinal;
@@ -472,18 +487,21 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   }
 
   @override
-  void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) { 
+  void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollisionStart(intersectionPoints.cast<Vector2>(), other);
     if (other is Projectile) {
-      if (other.isEnemy) return; 
+      if (other.isEnemy) return;
 
-      takeDamage(other.dmg); 
-      
+      // Só o flash visual aqui. O dano já é aplicado do lado do projétil
+      // (`Projectile.onCollisionStart`, ramo `other is Enemy`), que sabe o
+      // tipo elemental, `Player.danoMult`, knockback e perfuração — chamar
+      // `takeDamage` de novo aqui duplicava o golpe: uma vez com tipo (o do
+      // projétil) e outra sem (esta, com `other.dmg` cru).
       visual.paint.colorFilter = const ColorFilter.mode(Colors.white, BlendMode.srcATop);
-      
+
       Future.delayed(const Duration(milliseconds: 100), () {
         if (!isRemoved) {
-          visual.paint.colorFilter = null; 
+          visual.paint.colorFilter = null;
         }
       });
     }
