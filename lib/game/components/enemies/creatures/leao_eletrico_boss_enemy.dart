@@ -28,7 +28,7 @@ class LeaoEletricoBossEnemy extends Enemy with ChaseMovement, ShooterAttack, Jum
          creature: CreatureRegistry.leaoEletrico,
          speed: 44.0,
          health: _vidaInicial,
-         dmg: 4,
+         dmg: 2,
          bltSpeed: 150,
          bltImg: 'projeteis/raio.png',
          bltCor1: CreatureRegistry.leaoEletrico.corClara,

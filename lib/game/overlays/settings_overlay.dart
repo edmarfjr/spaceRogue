@@ -71,7 +71,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             context.l10n.settings_controle,
             style: const TextStyle(
@@ -134,7 +134,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
               style: const TextStyle(color: Palette.preto, fontSize: 13),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             context.l10n.settings_idioma,
             style: const TextStyle(
@@ -189,7 +189,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                 ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
             context.l10n.settings_audio,
             style: const TextStyle(
@@ -248,7 +248,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
               style: const TextStyle(fontSize: 14, color: Palette.preto),
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Palette.branco,

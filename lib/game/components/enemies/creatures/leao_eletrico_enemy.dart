@@ -14,8 +14,8 @@ class LeaoEletricoEnemy extends Enemy with ChaseMovement, ShooterAttack {
   }) : super(
          creature: CreatureRegistry.leaoEletrico,
          speed: 40.0, // stats.speed 55 → o mais veloz perseguidor do elenco
-         health: 40,  // stats.maxHp 20 / defesa 4 → aguenta a corrida
-         dmg: 3,
+         health: 20,  // stats.maxHp 20 / defesa 4 → aguenta a corrida
+         dmg: 1,
          bltSpeed: 140,
          bltImg: 'projeteis/proj2.png',
          bltCor1: CreatureRegistry.leaoEletrico.corClara,

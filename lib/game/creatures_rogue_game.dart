@@ -885,7 +885,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
         baseColor: Palette.cinza.withAlpha(255),
         pressedColor: Palette.cinza.withAlpha(140),
         pointerTracker: pointerTracker,
-        margin: EdgeInsets.only(right: marginRightA, bottom: edgeMarginY),
+        margin: EdgeInsets.only(right: marginRightB, bottom: edgeMarginY),
         onPressedChanged: (pressed) {
           if (_runStarted) player.touchHoldAbility1 = pressed;
         },
@@ -900,7 +900,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
         baseColor: Palette.cinza.withAlpha(255),
         pressedColor: Palette.cinza.withAlpha(140),
         pointerTracker: pointerTracker,
-        margin: EdgeInsets.only(right: marginRightB, bottom: marginBottomC),
+        margin: EdgeInsets.only(right: marginRightA, bottom: marginBottomC),
         onPressedChanged: (pressed) {
           if (_runStarted) player.touchHoldAbility2 = pressed;
         },

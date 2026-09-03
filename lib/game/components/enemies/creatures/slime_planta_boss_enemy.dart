@@ -78,6 +78,7 @@ class SlimePlantaBossEnemy extends Enemy with WanderMovement {
       atravessaObstaculos: true,
       size: Vector2.all(_tamanhoPoca),
       radius: _tamanhoPoca / 2,
+      noChao: true,
     ));
   }
 

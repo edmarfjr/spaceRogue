@@ -16,7 +16,7 @@ class UrsoPlantaEnemy extends Enemy with ChaseMovement {
   static const double _alcancePancada = 22.0;
   static const double _preparoPancada = 0.6;
   static const double _recuperacao = 1.2;
-  static const int _danoPancada = 3;
+  static const int _danoPancada = 2;
   static const double _empurraoPancada = 50.0;
 
   double _preparoTimer = 0.0;
@@ -29,8 +29,8 @@ class UrsoPlantaEnemy extends Enemy with ChaseMovement {
   }) : super(
          creature: CreatureRegistry.ursoPlanta,
          speed: 14.0,  // stats.speed 22 → o mais lento de todos
-         health: 100,    // stats.maxHp 22 → o mais duro do elenco
-         dmg: 3,
+         health: 50,    // stats.maxHp 22 → o mais duro do elenco
+         dmg: 1,
          isPushable: false, // pesado demais pra ser empurrado por outro inimigo
        );
 

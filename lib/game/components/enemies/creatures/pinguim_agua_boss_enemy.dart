@@ -71,7 +71,7 @@ class PinguimAguaBossEnemy extends Enemy with WanderMovement, ShooterAttack {
          creature: CreatureRegistry.pinguimAgua,
          speed: 20.0,
          health: _vidaInicial,
-         dmg: 3,
+         dmg: 2,
          bltSpeed: _velocidadeTiro,
          bltImg: 'projeteis/proj1.png',
          bltCor1: CreatureRegistry.pinguimAgua.corClara,

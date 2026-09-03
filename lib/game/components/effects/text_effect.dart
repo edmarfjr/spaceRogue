@@ -61,18 +61,21 @@ class TextEffect extends PositionComponent {
         fontSize: fontSize,
         fontFamily: 'pixelFont',
         fontWeight: FontWeight.bold,
-        shadows: [
-          Shadow(color: Palette.preto, offset: Offset(1, 1)),
-          Shadow(color: Palette.preto, offset: Offset(-1, -1)),
-          Shadow(color: Palette.preto, offset: Offset(1, -1)),
-          Shadow(color: Palette.preto, offset: Offset(-1, 1)),
-          Shadow(color: Palette.preto, offset: Offset(0, 1)),
-          Shadow(color: Palette.preto, offset: Offset(0, -1)),
-          Shadow(color: Palette.preto, offset: Offset(1, 0)),
-          Shadow(color: Palette.preto, offset: Offset(-1, 0)),
-        ],
+      ),
+    );
+    final paintBorda = TextPaint(
+      style: TextStyle(
+        color: Palette.preto.withAlpha(alpha),
+        fontSize: fontSize,
+        fontFamily: 'pixelFont',
+        fontWeight: FontWeight.bold,
       ),
     );
     paint.render(canvas, text, Vector2.zero(), anchor: Anchor.center);
+    final dirs = [Vector2(1, 1), Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1)];
+    for (final dir in dirs) {
+      paintBorda.render(canvas, text, dir, anchor: Anchor.center);
+    }
+    paintBorda.render(canvas, text, Vector2.zero(), anchor: Anchor.center);
   }
 }

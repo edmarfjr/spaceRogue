@@ -31,7 +31,7 @@ class TubaraoAguaBossEnemy extends Enemy with JumpMovement {
          moveAnim: null,
          speed: 0.0,
          health: _vidaInicial,
-         dmg: 5,
+         dmg: 2,
          shadowOffset: Vector2(0, 8),
          size: Vector2(32, 32),        // dobro do padrão (16x16)
          hitboxSize: Vector2(26, 30),  // dobro do hitbox normal (13, 15)

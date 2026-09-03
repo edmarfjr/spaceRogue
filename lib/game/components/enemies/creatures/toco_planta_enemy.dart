@@ -12,9 +12,9 @@ import '../enemy_mixins.dart';
 /// permanente em vez de sob cooldown. O perigo não é perseguição, é chegar
 /// perto demais.
 class TocoPlantaEnemy extends Enemy with WanderMovement {
-  static const int _numEspinhos = 3;
+  static const int _numEspinhos = 5;
   static const double _raio = 20;
-  static const double _velocidadeAngular = 2.4;
+  static const double _velocidadeAngular = 3;
 
   final List<OrbitProjectile> _espinhos = [];
 
@@ -24,8 +24,8 @@ class TocoPlantaEnemy extends Enemy with WanderMovement {
   }) : super(
          creature: CreatureRegistry.tocoPlanta,
          speed: 20.0, // mal se move: a ameaça é a órbita, não a perseguição
-         health: 35, // stats.maxHp 16 / defesa 2 → aguenta, mas não é o foco
-         dmg: 3,     // dano de cada espinho orbital, não de toque corporal
+         health: 20, // stats.maxHp 16 / defesa 2 → aguenta, mas não é o foco
+         dmg: 1,     // dano de cada espinho orbital, não de toque corporal
        );
 
   @override

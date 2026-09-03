@@ -19,8 +19,8 @@ class RoedorFogoEnemy extends Enemy with WanderMovement, ShooterAttack {
   }) : super(
          creature: CreatureRegistry.roedorFogo,
          speed: 45.0,   // stats.speed 70 → rápido, mas jogável de encarar
-         health: 30,
-         dmg: 2,
+         health: 15,
+         dmg: 1,
          bltSpeed: 90,
          bltImg: 'projeteis/fogo2.png',
          bltCor1: CreatureRegistry.roedorFogo.corClara,

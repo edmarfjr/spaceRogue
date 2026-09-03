@@ -54,7 +54,7 @@ class UrsoPlantaBossEnemy extends Enemy with ChaseMovement {
          creature: CreatureRegistry.ursoPlanta,
          speed: 14.0, // continua o mais lento — a solução é o salto, não a perna
          health: _vidaInicial,
-         dmg: 6,
+         dmg: 2,
          size: Vector2(32, 32),        // dobro do padrão (16x16)
          hitboxSize: Vector2(30, 32),  // dobro do hitbox normal (15, 16)
          isPushable: false,

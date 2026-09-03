@@ -45,7 +45,7 @@ class CaranguejoErmitaoBossEnemy extends Enemy with WanderMovement, ShooterAttac
          creature: CreatureRegistry.caranguejoErmitao,
          speed: 22.0,
          health: _vidaInicial,
-         dmg: 3,
+         dmg: 2,
          bltSpeed: 60,
          bltImg: 'projeteis/proj3.png',
          bltCor1: CreatureRegistry.caranguejoErmitao.corClara,

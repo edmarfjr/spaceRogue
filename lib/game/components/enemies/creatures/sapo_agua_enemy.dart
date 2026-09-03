@@ -22,7 +22,7 @@ class SapoAguaEnemy extends Enemy with JumpMovement, ShooterAttack {
          creature: CreatureRegistry.sapoAgua,
          moveAnim: null, // o pulo é a animação
          speed: 0.0,     // quem move é o JumpMovement, não a speed
-         health: 40,
+         health: 20,
          dmg: 1,
          bltSpeed: 80,
          bltImg: 'projeteis/proj1.png',

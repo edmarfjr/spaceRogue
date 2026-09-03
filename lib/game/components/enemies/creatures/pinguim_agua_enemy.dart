@@ -38,8 +38,8 @@ class PinguimAguaEnemy extends Enemy with WanderMovement, ShooterAttack {
   }) : super(
          creature: CreatureRegistry.pinguimAgua,
          speed: 20.0, // stats.speed 34 → anda pouco, o perigo é o tiro
-         health: 30,  // stats.maxHp 18 / defesa 4 → aguenta troca
-         dmg: 2,
+         health: 15,  // stats.maxHp 18 / defesa 4 → aguenta troca
+         dmg: 1,
          bltSpeed: _velocidadeTiro,
          bltImg: 'projeteis/proj1.png',
          bltCor1: CreatureRegistry.pinguimAgua.corClara,

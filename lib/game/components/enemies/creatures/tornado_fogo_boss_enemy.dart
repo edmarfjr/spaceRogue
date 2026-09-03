@@ -46,7 +46,7 @@ class TornadoFogoBossEnemy extends Enemy with ChaseMovement, ShooterAttack {
          creature: CreatureRegistry.tornadoFogo,
          speed: 50.0,
          health: _vidaInicial,
-         dmg: 6,
+         dmg: 2,
          bltSpeed: 260,
          bltImg: 'projeteis/soco.png',
          bltCor1: CreatureRegistry.tornadoFogo.corClara,

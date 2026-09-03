@@ -58,7 +58,7 @@ class BombaFogoBossEnemy extends Enemy with ChaseMovement {
          corEscura: Palette.roxoEsc,
          speed: 34.0, // mais lento que a normal (40): o tamanho já pressiona
          health: _vidaInicial,
-         dmg: 6,
+         dmg: 2,
          size: Vector2(32, 32),        // dobro do padrão (16x16)
          hitboxSize: Vector2(16, 20),  // dobro do hitbox da Bomba (8, 10)
          isPushable: false,

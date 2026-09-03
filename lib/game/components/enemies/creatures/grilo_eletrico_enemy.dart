@@ -22,8 +22,8 @@ class GriloEletricoEnemy extends Enemy with JumpMovement, ShooterAttack {
          creature: CreatureRegistry.griloEletrico,
          moveAnim: null, // o pulo é a animação
          speed: 0.0,     // quem move é o JumpMovement
-         health: 25,     // stats.maxHp 6 / defesa 1 → o mais frágil do elenco
-         dmg: 2,
+         health: 10,     // stats.maxHp 6 / defesa 1 → o mais frágil do elenco
+         dmg: 1,
          bltSpeed: 130,
          bltImg: 'projeteis/raio.png',
          bltCor1: CreatureRegistry.griloEletrico.corClara,

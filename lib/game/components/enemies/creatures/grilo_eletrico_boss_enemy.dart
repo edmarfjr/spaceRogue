@@ -35,7 +35,7 @@ class GriloEletricoBossEnemy extends Enemy with JumpMovement, ShooterAttack {
          moveAnim: null, // o pulo é a animação
          speed: 0.0,     // quem move é o JumpMovement
          health: _vidaInicial,
-         dmg: 3, // dano da faísca na fase 1 — fase 2 escala pra _danoFaiscaFase2
+         dmg: 2, // dano da faísca na fase 1 — fase 2 escala pra _danoFaiscaFase2
          bltSpeed: 130,
          bltImg: 'projeteis/raio.png',
          bltCor1: CreatureRegistry.griloEletrico.corClara,

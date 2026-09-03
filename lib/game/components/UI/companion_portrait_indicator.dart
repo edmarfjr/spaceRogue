@@ -95,7 +95,8 @@ class CompanionPortraitIndicator extends PositionComponent with TapCallbacks {
 
   @override
   void render(Canvas canvas) {
-    //if(!isAtiva())return;
+    if(_sprite == null)return;
+    
     final quadro = Rect.fromLTWH(0, 0, size.x, size.y);
 
     canvas.drawRect(quadro, _fundo);

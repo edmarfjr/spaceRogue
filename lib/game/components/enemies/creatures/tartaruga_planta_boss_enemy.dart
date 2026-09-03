@@ -46,7 +46,7 @@ class TartarugaPlantaBossEnemy extends Enemy with WanderMovement, ShooterAttack 
          creature: CreatureRegistry.tartarugaPlanta,
          speed: 18.0,
          health: _vidaInicial,
-         dmg: 3,
+         dmg: 2,
          bltSpeed: 55,
          bltImg: 'projeteis/proj1.png',
          bltCor1: CreatureRegistry.tartarugaPlanta.corClara,

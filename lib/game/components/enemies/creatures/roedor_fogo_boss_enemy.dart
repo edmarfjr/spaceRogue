@@ -37,7 +37,7 @@ class RoedorFogoBossEnemy extends Enemy with WanderMovement, ShooterAttack {
          creature: CreatureRegistry.roedorFogo,
          speed: 38.0,
          health: _vidaInicial,
-         dmg: 4,
+         dmg: 2,
          size: Vector2(32, 32),        // dobro do padrão (16x16)
          hitboxSize: Vector2(16, 20),  // dobro do hitbox normal (8, 10)
          isPushable: false,

@@ -785,7 +785,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     // pés. Ignorar esse `Start` prematuro (disparado pelo par
     // `playerHitbox`) e deixar o `Start` do par `physicsHitbox` (que já vem
     // com os pés confirmados) fazer o `add` de verdade.
-    if (other is GramaAlta && isPhysicsCollision(other)) {
+    if (other is GramaAlta && isPhysicsCollision(other) && !isAirborne) {
       _gramaAltaSobrepostas.add(other);
     }
   }

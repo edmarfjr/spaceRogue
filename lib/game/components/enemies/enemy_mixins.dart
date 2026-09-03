@@ -372,16 +372,24 @@ mixin JumpMovement on MovementHost {
           jumpTimer = 0.0;
 
           Vector2 finalTarget;
-          
+
           if (mode == JumpMode.targetPlayer) {
             finalTarget = playerPos.clone();
-            
+
             if (jumpDistance != null) {
               Vector2 distVec = finalTarget - absolutePosition;
               if (distVec.length > jumpDistance) {
                 finalTarget = absolutePosition + distVec.normalized() * jumpDistance;
               }
             }
+
+            // Mirar direto no jogador não garante pouso dentro da sala — com
+            // o alvo perto de uma porta ou quina, o pulo saía pra fora sem
+            // checagem nenhuma (só `JumpMode.random` validava, via
+            // `_calculateSmartRandomTarget`). Puxa de volta na MESMA direção
+            // (nunca muda de lado, só encurta o pulo) até achar um pouso
+            // válido; sem nenhum no caminho, fica parado.
+            finalTarget = _pousoValidoNaDirecao(finalTarget);
           } else {
             // MÁGICA: Pulo aleatório agora usa Inteligência Artificial
             double dist = jumpDistance ?? 60.0;
@@ -431,6 +439,33 @@ mixin JumpMovement on MovementHost {
     }
   }
 
+  /// Pouso [alvo] cabe dentro de [roomRect] sem cair em cima de parede,
+  /// pedra ou buraco? Usa o tamanho do `physicsHitbox` centrado em [alvo] —
+  /// a mesma sombra que o inimigo teria de verdade ao pousar ali — não o
+  /// ponto sozinho, que passaria reto por cima de qualquer obstáculo do
+  /// tamanho de um pixel.
+  bool _pousoValido(Vector2 alvo, Rect roomRect) {
+    final delta = alvo - absolutePosition;
+    final futureCenter = physicsHitbox.absoluteCenter + delta;
+    final futureRect = Rect.fromCenter(
+      center: Offset(futureCenter.x, futureCenter.y),
+      width: physicsHitbox.size.x,
+      height: physicsHitbox.size.y,
+    );
+
+    if (futureRect.left < roomRect.left ||
+        futureRect.top < roomRect.top ||
+        futureRect.right > roomRect.right ||
+        futureRect.bottom > roomRect.bottom) {
+      return false;
+    }
+
+    for (final child in roomColliders) {
+      if (child.toAbsoluteRect().overlaps(futureRect)) return false;
+    }
+    return true;
+  }
+
   // --- I.A. PREDITIVA PARA O PONTO DE POUSO ---
   Vector2 _calculateSmartRandomTarget(double dist) {
     final room = currentRoom;
@@ -438,53 +473,39 @@ mixin JumpMovement on MovementHost {
     // ser exclusivo), não pula às cegas — fica parado até a próxima chamada.
     if (room == null) return absolutePosition;
 
-    int attempts = 0;
-    Vector2 testTarget = absolutePosition;
-
-    // Limites reais da sala atual, em coordenadas absolutas do mundo
     final Rect roomRect = room.toAbsoluteRect();
 
-    while (attempts < 10) {
-      double angle = _jumpRandom.nextDouble() * 2 * pi;
-      testTarget = absolutePosition + Vector2(cos(angle), sin(angle)) * dist;
-      
-      Vector2 delta = testTarget - absolutePosition;
-      Vector2 futureCenter = physicsHitbox.absoluteCenter + delta;
-      
-      Rect futureRect = Rect.fromCenter(
-        center: Offset(futureCenter.x, futureCenter.y),
-        width: physicsHitbox.size.x,
-        height: physicsHitbox.size.y,
-      );
+    for (int attempts = 0; attempts < 10; attempts++) {
+      final angle = _jumpRandom.nextDouble() * 2 * pi;
+      final testTarget = absolutePosition + Vector2(cos(angle), sin(angle)) * dist;
 
-      bool isValid = true;
-
-      // 1. CHECAGEM DE BORDAS DA SALA (Limites Absolutos)
-      // A sombra imaginária vazou da sala (esquerda, cima, direita ou baixo)?
-      if (futureRect.left < roomRect.left || futureRect.top < roomRect.top ||
-          futureRect.right > roomRect.right || futureRect.bottom > roomRect.bottom) {
-        isValid = false;
-      }
-
-      // 2. CHECAGEM DE COLISÕES INTERNAS (Pedras, Paredes e Buracos)
-      if (isValid) {
-        for (final child in roomColliders) {
-          if (child.toAbsoluteRect().overlaps(futureRect)) {
-            isValid = false;
-            break;
-          }
-        }
-      }
-
-      // Se passou pelas Bordas E pelas Paredes, é um local de pouso perfeito!
-      if (isValid) {
-        return testTarget; 
-      }
-      
-      attempts++;
+      // Se passou pelas bordas da sala e pelos colisores, é um pouso válido!
+      if (_pousoValido(testTarget, roomRect)) return testTarget;
     }
-    
-    return absolutePosition; 
+
+    return absolutePosition;
+  }
+
+  /// Mesma validação de `_calculateSmartRandomTarget`, mas pra um alvo já
+  /// escolhido (mirado no jogador, `JumpMode.targetPlayer`) em vez de um
+  /// ângulo sorteado — não dá pra trocar de direção, só encurtar o pulo até
+  /// caber. Puxa [alvoDesejado] de volta pra `absolutePosition` em passos de
+  /// 10% e devolve o primeiro pouso válido; sem nenhum no caminho (sala não
+  /// identificada, ou o próprio ponto de partida já inválido — não deveria
+  /// acontecer), fica parado.
+  Vector2 _pousoValidoNaDirecao(Vector2 alvoDesejado) {
+    final room = currentRoom;
+    if (room == null) return absolutePosition;
+
+    final roomRect = room.toAbsoluteRect();
+    if (_pousoValido(alvoDesejado, roomRect)) return alvoDesejado;
+
+    for (int passo = 9; passo >= 1; passo--) {
+      final candidato = absolutePosition + (alvoDesejado - absolutePosition) * (passo / 10);
+      if (_pousoValido(candidato, roomRect)) return candidato;
+    }
+
+    return absolutePosition;
   }
 
   void cancelJump() {

@@ -32,7 +32,7 @@ class TocoPlantaBossEnemy extends Enemy with WanderMovement {
          creature: CreatureRegistry.tocoPlanta,
          speed: 6.0,
          health: _vidaInicial,
-         dmg: 4,
+         dmg: 2,
          size: Vector2(32, 32),        // dobro do padrão (16x16)
          hitboxSize: Vector2(26, 26),  // dobro do hitbox normal (13, 13)
          isPushable: false,

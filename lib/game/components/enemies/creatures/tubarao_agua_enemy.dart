@@ -14,7 +14,7 @@ import '../enemy_mixins.dart';
 /// `moveAnim` fica null pelo mesmo motivo do Sapo de Água: o pulo já É a
 /// animação.
 class TubaraoAguaEnemy extends Enemy with JumpMovement {
-  static const double _danoPouso = 4.0;
+  static const double _danoPouso = 1.0;
   static const double _empurraoPouso = 60.0;
 
   bool _emVoo = false;
@@ -26,8 +26,8 @@ class TubaraoAguaEnemy extends Enemy with JumpMovement {
          creature: CreatureRegistry.tubaraoAgua,
          moveAnim: null,
          speed: 0.0, // quem move é o JumpMovement
-         health: 45, // stats.maxHp 20 / defesa 3, atk 5 → bombado de verdade
-         dmg: 3,
+         health: 20, // stats.maxHp 20 / defesa 3, atk 5 → bombado de verdade
+         dmg: 1,
          shadowOffset: Vector2(0, 4),
        );
 

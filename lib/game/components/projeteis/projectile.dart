@@ -209,7 +209,9 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
       return; 
     }
 
-    if(noChao && (other is Projectile)){
+    if((noChao && (other is Projectile && !other.noChao))
+    ||(!noChao && (other is Projectile && other.noChao))
+    ){
       return;
     }
 
@@ -218,7 +220,11 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         _resolverColisaoEntreProjeteis(other);
         return;
       }
+      
       if (other is DamageableByEnemy) {
+        if(noChao && other is Player && other.isAirborne){
+          return;
+        }
         if(other.refleteProjetil){
           refleteProjetil(other);
           onDestroy();

@@ -25,8 +25,8 @@ class SlimePlantaEnemy extends Enemy with WanderMovement {
   }) : super(
          creature: CreatureRegistry.slimePlanta,
          speed: 26.0, // devagar: a ameaça é o rastro, não ele
-         health: 50,  // stats.defesa 3 → dá tempo de sujar bastante chão
-         dmg: 2,
+         health: 30,  // stats.defesa 3 → dá tempo de sujar bastante chão
+         dmg: 1,
        );
 
   @override
@@ -64,6 +64,7 @@ class SlimePlantaEnemy extends Enemy with WanderMovement {
       size: Vector2.all(_tamanhoPoca),
       radius: _tamanhoPoca / 2,
       priority: _prioridadePoca,
+      noChao: true,
     ));
   }
 }

@@ -44,9 +44,9 @@ class BossRevealOverlay extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 12),
-          CreatureSprite(creature: recompensa, size: 80, tudoPreto: true),
-          const SizedBox(height: 12),
+          const SizedBox(height: 6),
+          CreatureSprite(creature: recompensa, size: 120, tudoPreto: true),
+          const SizedBox(height: 6),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Palette.branco,

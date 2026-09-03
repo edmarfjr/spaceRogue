@@ -35,7 +35,7 @@ class AveEletricaBossEnemy extends Enemy with ChaseMovement, ShooterAttack {
          creature: CreatureRegistry.aveEletrica,
          speed: 34.0,
          health: _vidaInicial,
-         dmg: 3,
+         dmg: 2,
          isAirborne: true, // passa por cima de pedra e buraco, igual à normal
          shadowOffset: Vector2(0, 10),
          size: Vector2(32, 32),        // dobro do padrão (16x16)
