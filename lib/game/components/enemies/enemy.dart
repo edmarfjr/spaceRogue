@@ -413,19 +413,22 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     double fontSize = 6;
 
     if (mult > 1.0) {
-      fontSize = 10;
+      fontSize = 12;
     } else if(mult < 1.0) {
-      fontSize = 4;
+      //fontSize = 4;
       corTxt = Palette.cinza;
     }
     // Guarda defensiva ativa (casco fechado) reduz o dano recebido.
     double amountFinal = amount * mult * (1 - damageReduction);
     if (amountFinal < 0) amountFinal = 0;
-    if (amountFinal > 0) GameAudio.instance.play(Sfx.hit);
+   // if (amountFinal > 0)
+    GameAudio.instance.play(Sfx.hit);
 
-    if(playerTarget.critChance <=  Random().nextDouble() * 100 ) {
+    var critChance = Random().nextDouble() * 100;
+    if(playerTarget.critChance >=  critChance ) {
       amountFinal *= playerTarget.critMult;
       corTxt = Palette.vermelho;
+      print('crit $critChance');
     }
     
     parent?.add(TextEffect.dano(

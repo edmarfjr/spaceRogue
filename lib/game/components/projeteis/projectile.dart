@@ -31,16 +31,9 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   double radius;
   int atravessa;
   bool noChao;
-
-  /// Tipo elemental do dano, pro multiplicador de vantagem no alvo.
-  /// `neutro` (padrão) vale 1.0 contra tudo.
   final CreatureType tipo;
-
-  /// Dano ao longo do tempo aplicado no acerto. Null = nenhum.
   final DotKind? dotKind;
   final int dotTicks;
-
-  /// Duração das condições de controle aplicadas no acerto. 0 = não aplica.
   final double lentidaoDuracao;
   final double lentidaoFator;
   final double cegoDuracao;
@@ -49,18 +42,11 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
 
   Map<PositionComponent,double> hits = {};
   final double hitCooldown = 0.3;
-
-  /// Tempo de vida opcional, em segundos. Null = vive até colidir ou sair da tela.
   final double? lifeTime;
   double lifeTimeIni = 10;
   double _age = 0;
 
   final bool estilhaca;
-
-  /// Falso pros cacos de `fragmentos`/`estilhaca`: são vários componentes
-  /// nascendo no mesmo frame pro mesmo estilhaçar, e cada um chamando
-  /// `GameAudio.play` de novo satura o pool de vozes por um único evento que
-  /// o jogador só ouve como um som.
   final bool playSfx;
 
   final PositionComponent owner;
@@ -170,9 +156,6 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
           sprPath: sprPath,
           cor1: cor1,
           cor2: cor2,
-          // Sem repassar isEnemy, os cacos de um tiro inimigo nasciam como
-          // tiro do jogador e feriam os próprios inimigos — o que zerava a
-          // habilidade no Pinguim inimigo.
           isEnemy: isEnemy,
           tipo: tipo,
           playSfx: false,
@@ -229,14 +212,9 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
           refleteProjetil(other);
           onDestroy();
         }
-        // Jogador não sofre DoT (ver decisão de condições assimétricas), mas
-        // sofre controle: é o que dá peso à fumaça do caranguejo.
         if (lentidaoDuracao > 0) other.aplicarLentidao(lentidaoDuracao, fator: lentidaoFator);
         if (cegoDuracao > 0) other.aplicarCegueira(cegoDuracao);
 
-        // Nuvem de controle puro (dmg 0) não passa por takeDamage: sem o
-        // guarda ela cuspiria um "0" flutuante sobre o jogador a cada acerto.
-        // Também não gasta perfuração — quem a encerra é o lifeTime.
         if (dmg > 0) {
           other.takeDamage(dmg);
           atravessa--;
@@ -250,10 +228,10 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
       }
       if (other is Enemy) {
         if (hits.containsKey(other)) {
-          return; // Bala fantasma, ignora a colisão e continua voando!
+          return; 
         }
         if (!other.enemyHitbox.toAbsoluteRect().overlaps(toAbsoluteRect())) {
-          return; // Bala passa reto!
+          return; 
         }
         hits[other] = hitCooldown;
         final kind = dotKind;
@@ -261,31 +239,15 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         if (lentidaoDuracao > 0) other.applyLentidao(lentidaoDuracao, fator: lentidaoFator);
         if (cegoDuracao > 0) other.applyCego(cegoDuracao);
 
-        // Mesma regra do lado do jogador: a nuvem de controle não dá dano, e
-        // sem esse guarda ela ainda cuspiria um "0" flutuante sobre cada
-        // inimigo dentro dela.
-        if (dmg > 0) {
-          // `Player.danoMult` (upgrades de dano da run) entra aqui, e não nas
-          // 34 habilidades: este é o único ponto por onde o tiro do jogador
-          // machuca inimigo. O ramo do `isEnemy` acima não usa o multiplicador
-          // — ele é do jogador, não de quem atira nele.
-          other.takeDamage(dmg * Player.danoMult, tipoAtacante: tipo);
-          other.applyKnockback(absolutePosition, kbForce);
-          atravessa--;
-          if (atravessa <= 0) onDestroy();
-        }
+        other.takeDamage(dmg * Player.danoMult, tipoAtacante: tipo);
+        other.applyKnockback(absolutePosition, kbForce);
+        atravessa--;
+        if (atravessa <= 0) onDestroy();
+        
       }
     }
   }
 
-  /// Colisão entre um projétil do jogador e um de inimigo. Cada lado roda
-  /// esta checagem contra o próprio `tipo` — sem estado compartilhado, o
-  /// resultado simétrico já sai certo dos dois: vantagem (1.5x, ver
-  /// `typeMultiplier`) atravessa sem se destruir, porque do outro lado a
-  /// mesma conta invertida dá desvantagem e ele se destrói sozinho. Sem
-  /// vantagem nem desvantagem (1.0x — inclui os dois `neutro`, o padrão da
-  /// maioria dos projéteis), os dois se anulam, igual sempre foi antes do
-  /// tipo entrar na conta.
   void _resolverColisaoEntreProjeteis(Projectile other) {
     if (typeMultiplier(tipo, other.tipo) > 1.0) return;
     onDestroy();
@@ -303,7 +265,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
           sprPath: sprPath,
           cor1: cor1,
           cor2: cor2,
-          tipo: tipo, // devolvido como tiro do jogador: agora o tipo conta
+          tipo: tipo, 
         ));
   }
 }

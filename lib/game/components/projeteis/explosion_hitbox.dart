@@ -48,7 +48,7 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
     this.isStun = false,
     this.isEnemy = false,
     this.stunDuration = 1.5,
-    this.knockback = 0.0,
+    this.knockback = 50.0,
     this.tipo = CreatureType.neutro,
     this.lentidaoDuracao = 0,
     this.lentidaoFator = 0.5,

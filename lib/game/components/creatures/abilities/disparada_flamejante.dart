@@ -18,7 +18,7 @@ class DisparadaFlamejante extends Ability {
     this.distancia = 32,
     this.duracao = 0.15,
     this.coefRastro = 0.67,
-  }) : super(nome: 'Disparada Flamejante', cooldown: 4.0, target: AbilityTarget.plrDir,tipo: AbilityTipo.esquiva);
+  }) : super(nome: 'Disparada Flamejante', cooldown: 1.5, target: AbilityTarget.plrDir,tipo: AbilityTipo.esquiva);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

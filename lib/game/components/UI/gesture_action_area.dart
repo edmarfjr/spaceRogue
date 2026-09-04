@@ -104,6 +104,9 @@ class GestureActionArea extends PositionComponent
     if (acumulado.length < _limiarDirecao) return;
 
     _classificados.add(id);
+
+    onAbility2();
+    /* use abaixo casi for usar 2 comandos de arraste
     if (acumulado.y.abs() <= acumulado.x.abs()) return; // lateral/diagonal: sem ação
 
     if (acumulado.y < 0) {
@@ -111,6 +114,7 @@ class GestureActionArea extends PositionComponent
     } else {
       onDodge();
     }
+    */
   }
 
   @override
