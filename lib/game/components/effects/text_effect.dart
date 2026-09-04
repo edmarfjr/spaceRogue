@@ -71,11 +71,12 @@ class TextEffect extends PositionComponent {
         fontWeight: FontWeight.bold,
       ),
     );
-    paint.render(canvas, text, Vector2.zero(), anchor: Anchor.center);
+   
     final dirs = [Vector2(1, 1), Vector2(-1, -1), Vector2(1, -1), Vector2(-1, 1)];
     for (final dir in dirs) {
-      paintBorda.render(canvas, text, dir, anchor: Anchor.center);
+      var off = dir * fontSize/16;
+      paintBorda.render(canvas, text, off, anchor: Anchor.center);
     }
-    paintBorda.render(canvas, text, Vector2.zero(), anchor: Anchor.center);
+    paint.render(canvas, text, Vector2.zero(), anchor: Anchor.center);
   }
 }
