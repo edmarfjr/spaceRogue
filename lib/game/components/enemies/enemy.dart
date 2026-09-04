@@ -428,7 +428,7 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     if(playerTarget.critChance >=  critChance ) {
       amountFinal *= playerTarget.critMult;
       corTxt = Palette.vermelho;
-      print('crit $critChance');
+      //print('crit $critChance');
     }
     
     parent?.add(TextEffect.dano(

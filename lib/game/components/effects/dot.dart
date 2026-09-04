@@ -2,19 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
 
-/// Dano ao longo do tempo. As duas variantes existem pra ter formatos
-/// opostos, não só cores diferentes:
-///
-/// - [DotKind.veneno] é **desgaste**: tick fraco, intervalo longo, e reaplicar
-///   ACUMULA ticks (até um teto). Rende contra alvo gordo que você vai
-///   martelando; contra inimigo comum ele morre antes do veneno terminar.
-/// - [DotKind.queimadura] é **estouro**: tick forte, intervalo curto, e
-///   reaplicar RENOVA em vez de somar. Entrega quase tudo de imediato, mas não
-///   empilha — insistir no mesmo alvo não rende mais que acertar uma vez.
-///
-/// O tipo elemental é fixo por variante (veneno é planta, queimadura é fogo),
-/// então o multiplicador de vantagem já diferencia as duas mesmo com números
-/// parecidos — ver `typeMultiplier`.
 enum DotKind { veneno, queimadura }
 
 class Dot {
@@ -54,7 +41,7 @@ class Dot {
         return Dot._(
           kind: kind,
           tipo: CreatureType.planta,
-          dano: 2.0,
+          dano: 1.0,
           intervalo: 1.0,
           cor: Palette.verde,
           tetoTicks: 6,
@@ -65,7 +52,7 @@ class Dot {
         return Dot._(
           kind: kind,
           tipo: CreatureType.fogo,
-          dano: 3.5,
+          dano: 2.0,
           intervalo: 0.35,
           cor: Palette.laranja,
           tetoTicks: 3,

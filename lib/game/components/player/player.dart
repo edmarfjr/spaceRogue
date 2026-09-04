@@ -1,4 +1,5 @@
 import 'dart:ui' as ui;
+import 'package:creatures_rogue/game/components/effects/condition_icons.dart';
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/flame.dart';
@@ -364,6 +365,8 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   static final Paint _dodgeBarraPreenchimento = Paint()..color = Palette.verde;
   static const double _dodgeBarraLargura = 14.0;
   static const double _dodgeBarraAltura = 2.0;
+
+  late final ConditionIcons conditionIcons;
 /*
   void _renderBarraEsquiva(Canvas canvas) {
     final pronto = 1 - dodgeCooldownFraction;
@@ -382,7 +385,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       );
     }
   }
-*/
+
   @override
   void render(Canvas canvas) {
     super.render(canvas);
@@ -393,7 +396,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       );
     }
   }
-
+*/
   Player({
     required this.moveJoystick,
     required this.creatureData,
@@ -461,6 +464,10 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     add(visual);
 
     Vector2 floatOffset = Vector2.zero();
+
+    conditionIcons = ConditionIcons()..position = Vector2(size.x / 2, -6);
+    add(conditionIcons);
+
     if (creatureData.moveAnim == MovementAnimation.flutuar) {
       isAirborne = true;
       floatOffset = Vector2(0, -4);
@@ -575,6 +582,8 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
     // Anchor.center: o "chão" (pés) fica meio size.y abaixo do centro.
     priority = ySortPriority(position.y + size.y / 2);
+
+    conditionIcons.lentidaoAtivo = _gramaAltaSobrepostas.isNotEmpty;
 
     if (_dodgeCooldown > 0) _dodgeCooldown -= dt;
     _tempoSemApanhar += dt;

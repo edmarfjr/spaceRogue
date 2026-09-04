@@ -111,13 +111,15 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
 
     if (isEnemy) {
       if(other is Projectile && !other.isEnemy){
-        other.onDestroy();
-        return;
+        if (typeMultiplier(tipo, other.tipo) > 1.0) return;
+          other.onDestroy();
+          return;
       }
     }else{
       if(other is Projectile && other.isEnemy){
-        other.onDestroy();
-        return;
+       if (typeMultiplier(tipo, other.tipo) > 1.0) return;
+          other.onDestroy();
+          return;
       }
     }
 
