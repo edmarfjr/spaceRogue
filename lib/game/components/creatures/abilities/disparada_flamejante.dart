@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/effects/dot.dart';
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
@@ -24,8 +25,14 @@ class DisparadaFlamejante extends Ability {
     final danoRastro = user.creatureData.stats.ataque * coefRastro;
     user.grantInvulnerability(duracao);
 
- //   final origem = user.position.clone();
-   // user.parent?.add(ExplosionHitbox(position: origem, dmg: danoRastro, tipo: user.creatureData.tipo));
+    final origem = user.position.clone();
+    user.parent?.add(ExplosionHitbox(position: origem, 
+                                    dmg: danoRastro, 
+                                    cor2: Palette.laranja,
+                                    tipo: user.creatureData.tipo,
+                                    dotKind: DotKind.queimadura,
+                                    dotTicks: 5,
+                                  ));
 
     GhostEffect.spawnTrail(
       visual: user.visual,
@@ -42,6 +49,8 @@ class DisparadaFlamejante extends Ability {
           dmg: danoRastro,
           cor2: Palette.laranja,
           tipo: user.creatureData.tipo,
+          dotKind: DotKind.queimadura,
+          dotTicks: 5,
         ));
       },
     ));

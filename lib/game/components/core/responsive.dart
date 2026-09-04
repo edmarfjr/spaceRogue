@@ -40,12 +40,14 @@ class Responsive {
 ///
 /// Resolve os dois problemas sem mudar o conteúdo de cada tela:
 /// - `SafeArea` — não desenha embaixo de entalhe/barra de sistema.
-/// - `SingleChildScrollView` — conteúdo mais alto que a tela rola em vez de
-///   estourar. Sem efeito nenhum quando já cabe (o padrão, na maioria das
-///   janelas).
-/// - `ConstrainedBox(maxWidth)` — o cartão para de crescer numa janela
-///   larga (evita uma faixa de texto esticada de ponta a ponta), mas nunca
-///   passa da largura real numa tela estreita.
+/// - `FittedBox(fit: scaleDown)` — em vez de rolar, ENCOLHE o cartão
+///   inteiro (texto, botões, espaçamento, tudo junto e proporcional) até
+///   caber na tela. Testado no Moto G84: a versão anterior (scroll) deixava
+///   sobra de tela em branco e um dedo extra pra rolar; encolher elimina o
+///   scroll de vez, sem cortar nada. Nunca amplia além do tamanho original
+///   quando já cabe — só age quando estoura.
+/// - `ConstrainedBox(maxWidth)` — largura de referência do cartão; numa tela
+///   larga ele para de crescer, numa estreita o `FittedBox` encolhe o resto.
 class ResponsiveOverlayScaffold extends StatelessWidget {
   final Color background;
   final Widget child;
@@ -65,12 +67,15 @@ class ResponsiveOverlayScaffold extends StatelessWidget {
     return Material(
       color: background,
       child: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: padding,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth),
-              child: child,
+        child: Padding(
+          padding: padding,
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: child,
+              ),
             ),
           ),
         ),

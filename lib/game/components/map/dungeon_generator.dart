@@ -2,6 +2,12 @@ import 'dart:math';
 
 enum RoomType { start, normal, boss, item, shop }
 
+/// Origem do grid lógico de salas: a sala inicial nasce em (origem, origem),
+/// e todo lugar que converte entre índice relativo do jogador
+/// (`currentRoomIndex`, que começa em 0,0) e chave absoluta do grid soma
+/// esta constante — pra nunca mais dessincronizar como já aconteceu.
+const int dungeonGridOrigin = 20;
+
 class RoomData {
   final int x;
   final int y;
@@ -37,10 +43,10 @@ class DungeonGenerator {
     Map<String, RoomData> grid = {};
     List<RoomData> roomQueue = [];
 
-    var startRoom = RoomData(50, 50, type: RoomType.start);
+    var startRoom = RoomData(dungeonGridOrigin, dungeonGridOrigin, type: RoomType.start);
     startRoom.isCleared = true;
     startRoom.isVisited = true;
-    grid['50,50'] = startRoom;
+    grid['$dungeonGridOrigin,$dungeonGridOrigin'] = startRoom;
     roomQueue.add(startRoom);
 
     int roomCount = 1;

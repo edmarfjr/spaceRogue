@@ -328,100 +328,129 @@ class _CreatureDetailPanel extends StatelessWidget {
                             // podem passar da altura disponível em
                             // landscape de celular — mesma faixa estreita
                             // que já causou "BOTTOM OVERFLOWED" com só 4
-                            // linhas de stat (ver _StatLine). `Expanded` +
-                            // `SingleChildScrollView` rola em vez de
-                            // estourar; sem efeito quando o texto cabe.
+                            // linhas de stat (ver _StatLine). `FittedBox`
+                            // encolhe o bloco inteiro em vez de rolar; sem
+                            // efeito quando o texto já cabe.
                             Expanded(
-                              child: SingleChildScrollView(
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(0),
-                                    border: Border(
-                                      right: BorderSide(
-                                        color: Palette.preto,
-                                        width: 2,
-                                      ),
-                                      bottom: BorderSide(
-                                        color: Palette.preto,
-                                        width: 2,
+                              // `LayoutBuilder` + `SizedBox(width:)` dá ao
+                              // `Container` a largura EXATA disponível antes
+                              // do `FittedBox` medir — sem isso o
+                              // `FittedBox` mediria a largura intrínseca do
+                              // texto (mais estreita) e o painel encolheria
+                              // na horizontal mesmo quando a altura já
+                              // coubesse sozinha.
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  return FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    alignment: Alignment.topLeft,
+                                    child: SizedBox(
+                                      width: constraints.maxWidth,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            0,
+                                          ),
+                                          border: Border(
+                                            right: BorderSide(
+                                              color: Palette.preto,
+                                              width: 2,
+                                            ),
+                                            bottom: BorderSide(
+                                              color: Palette.preto,
+                                              width: 2,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              context
+                                                  .l10n
+                                                  .creatureSelect_habilidade,
+                                              style: const TextStyle(
+                                                color: Palette.preto,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              abilityName(
+                                                context,
+                                                creature.ability1,
+                                              ),
+                                              style: const TextStyle(
+                                                color: Palette.preto,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            if (creature
+                                                .ability1
+                                                .descricao
+                                                .isNotEmpty) ...[
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                abilityDescription(
+                                                  context,
+                                                  creature.ability1,
+                                                ),
+                                                style: const TextStyle(
+                                                  color: Palette.preto,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              context
+                                                  .l10n
+                                                  .creatureSelect_habilidade,
+                                              style: const TextStyle(
+                                                color: Palette.preto,
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              abilityName(
+                                                context,
+                                                creature.ability2,
+                                              ),
+                                              style: const TextStyle(
+                                                color: Palette.preto,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                            if (creature
+                                                .ability2
+                                                .descricao
+                                                .isNotEmpty) ...[
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                abilityDescription(
+                                                  context,
+                                                  creature.ability2,
+                                                ),
+                                                style: const TextStyle(
+                                                  color: Palette.preto,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        context.l10n.creatureSelect_habilidade,
-                                        style: const TextStyle(
-                                          color: Palette.preto,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        abilityName(context, creature.ability1),
-                                        style: const TextStyle(
-                                          color: Palette.preto,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      if (creature
-                                          .ability1
-                                          .descricao
-                                          .isNotEmpty) ...[
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          abilityDescription(
-                                            context,
-                                            creature.ability1,
-                                          ),
-                                          style: const TextStyle(
-                                            color: Palette.preto,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        context.l10n.creatureSelect_habilidade,
-                                        style: const TextStyle(
-                                          color: Palette.preto,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        abilityName(context, creature.ability2),
-                                        style: const TextStyle(
-                                          color: Palette.preto,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      if (creature
-                                          .ability2
-                                          .descricao
-                                          .isNotEmpty) ...[
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          abilityDescription(
-                                            context,
-                                            creature.ability2,
-                                          ),
-                                          style: const TextStyle(
-                                            color: Palette.preto,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ),
+                                  );
+                                },
                               ),
                             ),
                           ],

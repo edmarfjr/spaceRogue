@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
@@ -32,6 +33,23 @@ class DisparadaCongelante extends Ability {
       lentidaoDuracao: 3.0,
     ));
 
+    user.parent?.add(Projectile(
+      owner: user,
+      position: origem,
+      direction: Vector2.zero(),
+      speed: 0,
+      dmg: 0,
+      kbForce: 0,
+      sprPath: 'projeteis/bolaGrande.png',
+      cor1: Palette.royal,
+      cor2: Palette.azul,
+      lentidaoDuracao: 3.0,
+      atravessa: 10,
+      size: Vector2(24, 24),
+      lifeTime: 1.5,
+      radius: 12,
+    ));
+
     GhostEffect.spawnTrail(
       visual: user.visual,
       add: (g) => user.parent?.add(g),
@@ -42,7 +60,7 @@ class DisparadaCongelante extends Ability {
       dir.normalized() * distancia,
       EffectController(duration: duracao),
       onComplete: () {
-      /*  user.parent?.add(ExplosionHitbox(
+        user.parent?.add(ExplosionHitbox(
           position: user.position.clone(),
           dmg: danoRastro,
           cor1: Palette.royal,
@@ -50,7 +68,7 @@ class DisparadaCongelante extends Ability {
           tipo: user.creatureData.tipo,
           lentidaoDuracao: 3.0,
         ));
-      */},
+      },
     ));
   }
 }

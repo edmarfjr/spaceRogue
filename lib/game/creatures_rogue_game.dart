@@ -422,7 +422,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     minimapHud = MinimapHud(
       mapData: mapData,
       getCurrentLogicalRoom: () {
-        return Vector2(currentRoomIndex.x + 30, currentRoomIndex.y + 30);
+        return Vector2(currentRoomIndex.x + dungeonGridOrigin, currentRoomIndex.y + dungeonGridOrigin);
       },
       position: Vector2(RoomComponent.roomWidth - 1, 1),
     );
@@ -1089,7 +1089,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     // cuspido pro lado de fora em vez de voltar pra dentro. Com a sala
     // trancada a regra é dura, então prendemos os pés no interior dela.
     final salaAtual = loadedRooms[
-        '${currentRoomIndex.x.toInt() + 50},${currentRoomIndex.y.toInt() + 50}'];
+        '${currentRoomIndex.x.toInt() + dungeonGridOrigin},${currentRoomIndex.y.toInt() + dungeonGridOrigin}'];
     if (salaAtual != null && salaAtual.isLocked) {
       _prendeJogadorNaSala(roomLeft, roomTop, roomRight, roomBottom);
       return;
@@ -1146,8 +1146,8 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
 
       currentRoomIndex = Vector2(newRoomX.toDouble(), newRoomY.toDouble());
 
-      int logicalX = newRoomX + 50;
-      int logicalY = newRoomY + 50;
+      int logicalX = newRoomX + dungeonGridOrigin;
+      int logicalY = newRoomY + dungeonGridOrigin;
       loadedRooms['$logicalX,$logicalY']?.onPlayerEnter();
 
       Vector2 newCameraPosition = Vector2(

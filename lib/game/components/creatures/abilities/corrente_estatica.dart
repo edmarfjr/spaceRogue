@@ -11,7 +11,7 @@ class CorrenteEstatica extends Ability {
   final double coef;
   final double duracaoStun;
 
-  const CorrenteEstatica({this.coef = 1.0, this.duracaoStun = 1.5})
+  const CorrenteEstatica({this.coef = 3.0, this.duracaoStun = 1.5})
       : super(nome: 'Corrente Estática', cooldown: 5.0,tipo: AbilityTipo.defesa);
 
   @override
@@ -25,6 +25,7 @@ class CorrenteEstatica extends Ability {
       cor1: Palette.amarelo,
       cor2: Palette.laranja,
       tipo: user.creatureData.tipo,
+      size: Vector2(32, 32),
     ));
   }
 }

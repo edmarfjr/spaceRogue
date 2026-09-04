@@ -79,7 +79,10 @@ class RoomComponent extends PositionComponent with HasGameRef {
     this.wildCreatureBuilder,
   }) : super(
           size: Vector2(roomWidth, roomHeight),
-          position: Vector2((data.x - 50) * roomWidth, (data.y - 50) * roomHeight),
+          position: Vector2(
+            (data.x - dungeonGridOrigin) * roomWidth,
+            (data.y - dungeonGridOrigin) * roomHeight,
+          ),
           priority: _prioridadePiso,
         ) {
     theme = DungeonTheme.getThemeForLevel(currentLevel);
@@ -262,7 +265,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
         } else if (roll >= 8 && roll < 15) {
           add(GramaAlta(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,cor3: Palette.branco));
           _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
-        } else if (roll >= 15 && roll < 20) {
+        } else if (roll >= 15 && roll < 18) {
           add(SpikeTrap(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura));
           _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
         }
