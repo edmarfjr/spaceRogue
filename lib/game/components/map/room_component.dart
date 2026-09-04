@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:math' as math;
+import 'package:creatures_rogue/game/components/map/spike_trap.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/dungeon_theme.dart';
@@ -260,6 +261,9 @@ class RoomComponent extends PositionComponent with HasGameRef {
           _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
         } else if (roll >= 8 && roll < 15) {
           add(GramaAlta(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,cor3: Palette.branco));
+          _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
+        } else if (roll >= 15 && roll < 20) {
+          add(SpikeTrap(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura));
           _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
         }
       }

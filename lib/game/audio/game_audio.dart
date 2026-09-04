@@ -80,10 +80,10 @@ class GameAudio {
   /// combate (dano e ataques elementais) precisam de mais de duas. O padrão
   /// pra quem não está aqui é [_defaultVoiceCount].
   static const Map<Sfx, int> _voiceCounts = {
-    Sfx.hit: 6,
+    Sfx.hit: 10,
     Sfx.fogo: 5,
     Sfx.agua: 5,
-    Sfx.raio: 5,
+    Sfx.raio: 8,
     Sfx.veneno: 5,
     Sfx.stairs: 1,
     Sfx.pick: 1,

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flame/collisions.dart';
 import 'package:creatures_rogue/game/audio/game_audio.dart';
 import 'package:creatures_rogue/game/audio/sfx.dart';
+import 'package:creatures_rogue/game/components/UI/cooldown_ring_indicator.dart';
 import 'package:creatures_rogue/game/components/UI/dynamic_joystick_component.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
@@ -466,6 +467,21 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     } else {
       isAirborne = false;
     }
+
+    
+    add(CooldownRingIndicator(
+      tipo: () => creatureData.ability1.tipo,
+      cooldownFraction: () => ability1CooldownFraction,
+      raio: 4,
+      position: Vector2(4, -4+floatOffset.y),
+    )..priority = 2);
+
+    add(CooldownRingIndicator(
+      tipo: () => creatureData.ability2.tipo,
+      cooldownFraction: () => ability2CooldownFraction,
+      raio: 4,
+      position: Vector2(12, -4+floatOffset.y),
+    )..priority = 2);
 
     final ui.Image shieldImage = await PaletteSwapper.createSwappedImage(
       imagePath: 'projeteis/bolha.png',
