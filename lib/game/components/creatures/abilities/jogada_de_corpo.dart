@@ -23,7 +23,14 @@ class JogadaDeCorpo extends Ability {
     this.altura = 16,
     this.coef = 0.75,
     this.empurrao = 50,
-  }) : super(nome: 'Jogada de Corpo', cooldown: 4.5, target: AbilityTarget.joyDir, tipo: AbilityTipo.esquiva);
+  }) : super(
+         nome: 'Jogada de Corpo',
+         descricao:
+             'Pulo invulnerável na direção do toque; a aterrissagem empurra tudo ao redor.',
+         cooldown: 4.5,
+         target: AbilityTarget.joyDir,
+         tipo: AbilityTipo.esquiva,
+       );
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
@@ -42,13 +49,15 @@ class JogadaDeCorpo extends Ability {
       duration: duracao,
       height: altura,
       onLand: () {
-        user.parent?.add(ExplosionHitbox(
-          position: user.position.clone(),
-          dmg: dano,
-          knockback: empurrao,
-          size: Vector2(40, 40),
-          tipo: user.creatureData.tipo,
-        ));
+        user.parent?.add(
+          ExplosionHitbox(
+            position: user.position.clone(),
+            dmg: dano,
+            knockback: empurrao,
+            size: Vector2(40, 40),
+            tipo: user.creatureData.tipo,
+          ),
+        );
       },
     );
   }

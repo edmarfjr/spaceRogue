@@ -11,17 +11,24 @@ class Brado extends Ability {
   final double empurrao;
 
   const Brado({this.coef = 0.25, this.empurrao = 100})
-      : super(nome: 'Brado', cooldown: 6.0, tipo: AbilityTipo.defesa);
+    : super(
+        nome: 'Brado',
+        descricao: 'Rugido que empurra tudo ao redor; pouco dano, muito peso.',
+        cooldown: 6.0,
+        tipo: AbilityTipo.defesa,
+      );
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
-    user.parent?.add(ExplosionHitbox(
-      position: user.position.clone(),
-      dmg: dano,
-      knockback: empurrao,
-      size: Vector2(48, 48),
-      tipo: user.creatureData.tipo,
-    ));
+    user.parent?.add(
+      ExplosionHitbox(
+        position: user.position.clone(),
+        dmg: dano,
+        knockback: empurrao,
+        size: Vector2(48, 48),
+        tipo: user.creatureData.tipo,
+      ),
+    );
   }
 }

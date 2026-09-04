@@ -10,10 +10,14 @@ class DisparadaVeloz extends Ability {
   final double distancia;
   final double duracao;
 
-  const DisparadaVeloz({
-    this.distancia = 24,
-    this.duracao = 0.15,
-  }) : super(nome: 'Disparada Veloz', cooldown: 1.0, target: AbilityTarget.plrDir,tipo: AbilityTipo.esquiva);
+  const DisparadaVeloz({this.distancia = 24, this.duracao = 0.15})
+    : super(
+        nome: 'Disparada Veloz',
+        descricao: 'Dash rápido com i-frames.',
+        cooldown: 1.0,
+        target: AbilityTarget.plrDir,
+        tipo: AbilityTipo.esquiva,
+      );
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
@@ -25,11 +29,12 @@ class DisparadaVeloz extends Ability {
       overDuration: duracao,
     );
 
-    user.add(MoveByEffect(
-      dir.normalized() * distancia,
-      EffectController(duration: duracao),
-      onComplete: () {
-      },
-    ));
+    user.add(
+      MoveByEffect(
+        dir.normalized() * distancia,
+        EffectController(duration: duracao),
+        onComplete: () {},
+      ),
+    );
   }
 }

@@ -12,12 +12,20 @@ import 'package:creatures_rogue/game/components/creatures/abilities/explosao_ven
 import 'package:creatures_rogue/game/components/creatures/abilities/soco_flamejante.dart';
 import 'abilities/baforada_de_cinzas.dart';
 import 'abilities/bico_eletrico.dart';
+import 'abilities/bico_eletrico_evo.dart';
+import 'abilities/bola_dagua_evo.dart';
 import 'abilities/bolha_protetora.dart';
+import 'abilities/bolha_protetora_evo.dart';
 import 'abilities/brado.dart';
 import 'abilities/casco_fechado.dart';
+import 'abilities/casco_fechado_evo.dart';
 import 'abilities/corrente_estatica.dart';
+import 'abilities/corrente_estatica_evo.dart';
+import 'abilities/cuspe_de_semente_evo.dart';
+import 'abilities/disparada_flamejante_evo.dart';
 import 'abilities/cuspe_de_semente.dart';
 import 'abilities/disparada_flamejante.dart';
+import 'abilities/rajada_de_brasa_evo.dart';
 import 'abilities/enraizar.dart';
 import 'abilities/ericar.dart';
 import 'abilities/escudo_de_espinhos.dart';
@@ -82,9 +90,32 @@ class CreatureRegistry {
     ability1: RajadaDeBrasa(),
     ability2: DisparadaFlamejante(),
     moveAnim: MovementAnimation.caminhada,
-    hitboxSize: Vector2(8, 10), 
-    enemyBuilder: (pos, plr) => RoedorFogoEnemy(position: pos, playerTarget: plr),
+    hitboxSize: Vector2(8, 10),
+    enemyBuilder: (pos, plr) =>
+        RoedorFogoEnemy(position: pos, playerTarget: plr),
     //passive: RastroFlamejante(),
+    evoluir: () => roedorFogoEvo,
+  );
+
+  /// Forma evoluída de [roedorFogo] (ver `PIVOT_EVOLUCAO`) — mesmo `id`, mesmo
+  /// `ability1`: só sprite e `ability2` mudam, então o retrato do banco e o
+  /// filtro de "criatura já no grupo" da recruta selvagem continuam
+  /// funcionando sem saber que evolução existe.
+  static final CreatureData roedorFogoEvo = CreatureData(
+    id: 'roedor_fogo',
+    nome: 'Torchmin',
+    spritePath: 'actors/ratFogoEvo.png',
+    tipo: CreatureType.fogo,
+    corClara: Palette.pumpkin,
+    corEscura: Palette.vermelho,
+    stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 3),
+    ability1: RajadaDeBrasaEvo(),
+    ability2: DisparadaFlamejanteEvo(),
+    moveAnim: MovementAnimation.caminhada,
+    hitboxSize: Vector2(8, 10),
+    enemyBuilder: (pos, plr) =>
+        RoedorFogoEnemy(position: pos, playerTarget: plr),
+    spriteSize: Vector2(24, 24),
   );
 
   static final CreatureData tartarugaPlanta = CreatureData(
@@ -98,9 +129,28 @@ class CreatureRegistry {
     ability1: CuspeDeSemente(),
     ability2: CascoFechado(),
     moveAnim: MovementAnimation.arrastar,
-    hitboxSize: Vector2(14, 14), 
-    enemyBuilder: (pos, plr) => TartarugaPlantaEnemy(position: pos, playerTarget: plr),
+    hitboxSize: Vector2(14, 14),
+    enemyBuilder: (pos, plr) =>
+        TartarugaPlantaEnemy(position: pos, playerTarget: plr),
     //passive: CascoReflexivo(),
+    evoluir: () => tartarugaPlantaEvo,
+  );
+
+  static final CreatureData tartarugaPlantaEvo = CreatureData(
+    id: 'tartaruga_planta',
+    nome: 'Turtrent',
+    spritePath: 'actors/tartPlantaEvo.png',
+    tipo: CreatureType.planta,
+    corClara: Palette.verde,
+    corEscura: Palette.marromEsc,
+    stats: BaseStats(maxHp: 4, speed: 35, defesa: 1, ataque: 3),
+    ability1: CuspeDeSementeEvo(),
+    ability2: CascoFechadoEvo(),
+    moveAnim: MovementAnimation.arrastar,
+    hitboxSize: Vector2(14, 14),
+    enemyBuilder: (pos, plr) =>
+        TartarugaPlantaEnemy(position: pos, playerTarget: plr),
+    spriteSize: Vector2(24, 24),
   );
 
   static final CreatureData sapoAgua = CreatureData(
@@ -114,9 +164,26 @@ class CreatureRegistry {
     ability1: BolaDagua(),
     ability2: BolhaProtetora(),
     moveAnim: MovementAnimation.saltitar,
-    hitboxSize: Vector2(12, 10), 
+    hitboxSize: Vector2(12, 10),
     enemyBuilder: (pos, plr) => SapoAguaEnemy(position: pos, playerTarget: plr),
     //passive: BolhaAutonoma(),
+    evoluir: () => sapoAguaEvo,
+  );
+
+  static final CreatureData sapoAguaEvo = CreatureData(
+    id: 'sapo_agua',
+    nome: 'Frowago',
+    spritePath: 'actors/sapoAguaEvo.png',
+    tipo: CreatureType.agua,
+    corClara: Palette.azul,
+    corEscura: Palette.indigo,
+    stats: BaseStats(maxHp: 4, speed: 50, defesa: 1, ataque: 2),
+    ability1: BolaDaguaEvo(),
+    ability2: BolhaProtetoraEvo(),
+    moveAnim: MovementAnimation.saltitar,
+    hitboxSize: Vector2(12, 10),
+    enemyBuilder: (pos, plr) => SapoAguaEnemy(position: pos, playerTarget: plr),
+    spriteSize: Vector2(24, 24),
   );
 
   static final CreatureData aveEletrica = CreatureData(
@@ -131,8 +198,27 @@ class CreatureRegistry {
     ability2: CorrenteEstatica(),
     moveAnim: MovementAnimation.flutuar,
     hitboxSize: Vector2(9, 11),
-    enemyBuilder: (pos, plr) => AveEletricaEnemy(position: pos, playerTarget: plr),
+    enemyBuilder: (pos, plr) =>
+        AveEletricaEnemy(position: pos, playerTarget: plr),
     //passive: CorrenteReflexa(),
+    evoluir: () => aveEletricaEvo,
+  );
+
+  static final CreatureData aveEletricaEvo = CreatureData(
+    id: 'ave_eletrica',
+    nome: 'Garibirb',
+    spritePath: 'actors/aveEletricEvo.png',
+    tipo: CreatureType.eletrico,
+    corClara: Palette.amarelo,
+    corEscura: Palette.pumpkin,
+    stats: BaseStats(maxHp: 4, speed: 80, defesa: 1, ataque: 1),
+    ability1: BicoEletricoEvo(),
+    ability2: CorrenteEstaticaEvo(),
+    moveAnim: MovementAnimation.flutuar,
+    hitboxSize: Vector2(9, 11),
+    enemyBuilder: (pos, plr) =>
+        AveEletricaEnemy(position: pos, playerTarget: plr),
+    spriteSize: Vector2(24, 24),
   );
 
   static final CreatureData cobraAgua = CreatureData(
@@ -147,7 +233,8 @@ class CreatureRegistry {
     ability2: JogadaDeCorpo(),
     moveAnim: MovementAnimation.arrastar,
     hitboxSize: Vector2(9, 14),
-    enemyBuilder: (pos, plr) => CobraAguaEnemy(position: pos, playerTarget: plr),
+    enemyBuilder: (pos, plr) =>
+        CobraAguaEnemy(position: pos, playerTarget: plr),
     //passive: SaltoAquatico(),
   );
 
@@ -163,7 +250,8 @@ class CreatureRegistry {
     ability2: Brado(),
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(15, 16),
-    enemyBuilder: (pos, plr) => UrsoPlantaEnemy(position: pos, playerTarget: plr),
+    enemyBuilder: (pos, plr) =>
+        UrsoPlantaEnemy(position: pos, playerTarget: plr),
     //passive: BradoReflexo(),
   );
 
@@ -179,7 +267,8 @@ class CreatureRegistry {
     ability2: DisparadaVeloz(),
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(8, 10),
-    enemyBuilder: (pos, plr) => GriloEletricoEnemy(position: pos, playerTarget: plr),
+    enemyBuilder: (pos, plr) =>
+        GriloEletricoEnemy(position: pos, playerTarget: plr),
     //passive: ReflexoEletrico(),
   );
 
@@ -195,7 +284,8 @@ class CreatureRegistry {
     ability2: EsquivaTornado(),
     moveAnim: MovementAnimation.flutuar,
     hitboxSize: Vector2(8, 10),
-    enemyBuilder: (pos, plr) => TornadoFogoEnemy(position: pos, playerTarget: plr),
+    enemyBuilder: (pos, plr) =>
+        TornadoFogoEnemy(position: pos, playerTarget: plr),
     //passive: TornadoResidual(),
   );
 
@@ -211,7 +301,8 @@ class CreatureRegistry {
     ability2: EsquivaBomba(),
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(8, 10),
-    enemyBuilder: (pos, plr) => BombaFogoEnemy(position: pos, playerTarget: plr),
+    enemyBuilder: (pos, plr) =>
+        BombaFogoEnemy(position: pos, playerTarget: plr),
     //passive: BombaNaEsquiva(),
   );
 
@@ -227,7 +318,8 @@ class CreatureRegistry {
     ability2: ExplosaoVenenosa(),
     moveAnim: MovementAnimation.arrastar,
     hitboxSize: Vector2(8, 10),
-    enemyBuilder: (pos, plr) => SlimePlantaEnemy(position: pos, playerTarget: plr),
+    enemyBuilder: (pos, plr) =>
+        SlimePlantaEnemy(position: pos, playerTarget: plr),
     //passive: PecoenhaReflexiva(),
   );
 
@@ -242,8 +334,9 @@ class CreatureRegistry {
     ability1: Ericar(),
     ability2: EscudoDeEspinhos(),
     moveAnim: MovementAnimation.caminhada,
-    hitboxSize: Vector2(12, 12), 
-    enemyBuilder: (pos, plr) => OuricoEletricoEnemy(position: pos, playerTarget: plr),
+    hitboxSize: Vector2(12, 12),
+    enemyBuilder: (pos, plr) =>
+        OuricoEletricoEnemy(position: pos, playerTarget: plr),
     //passive: RetaliacaoEletrica(),
   );
 
@@ -259,7 +352,8 @@ class CreatureRegistry {
     ability2: RecolherNoCasco(),
     moveAnim: MovementAnimation.arrastar,
     hitboxSize: Vector2(14, 12),
-    enemyBuilder: (pos, plr) => CaranguejoErmitaoEnemy(position: pos, playerTarget: plr),
+    enemyBuilder: (pos, plr) =>
+        CaranguejoErmitaoEnemy(position: pos, playerTarget: plr),
     //passive: FumacaAoLacar(),
   );
 
@@ -275,7 +369,8 @@ class CreatureRegistry {
     ability2: DisparadaCongelante(),
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(8, 14),
-    enemyBuilder: (pos, plr) => PinguimAguaEnemy(position: pos, playerTarget: plr),
+    enemyBuilder: (pos, plr) =>
+        PinguimAguaEnemy(position: pos, playerTarget: plr),
     //passive: RastroCongelante(),
   );
 
@@ -290,8 +385,9 @@ class CreatureRegistry {
     ability1: FolhasNavalha(),
     ability2: Enraizar(),
     moveAnim: MovementAnimation.saltitar,
-    hitboxSize: Vector2(10, 10), 
-    enemyBuilder: (pos, plr) => TocoPlantaEnemy(position: pos, playerTarget: plr),
+    hitboxSize: Vector2(10, 10),
+    enemyBuilder: (pos, plr) =>
+        TocoPlantaEnemy(position: pos, playerTarget: plr),
     //passive: RaizesDoLaco(),
   );
 
@@ -307,7 +403,8 @@ class CreatureRegistry {
     ability2: MergulhoEEstouro(),
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(13, 15),
-    enemyBuilder: (pos, plr) => TubaraoAguaEnemy(position: pos, playerTarget: plr),
+    enemyBuilder: (pos, plr) =>
+        TubaraoAguaEnemy(position: pos, playerTarget: plr),
     //passive: InvestidaPredatoria(),
   );
 
@@ -323,7 +420,8 @@ class CreatureRegistry {
     ability2: InvestidaDaLanca(),
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(10, 15),
-    enemyBuilder: (pos, plr) => LeaoEletricoEnemy(position: pos, playerTarget: plr),
+    enemyBuilder: (pos, plr) =>
+        LeaoEletricoEnemy(position: pos, playerTarget: plr),
     //passive: GolpeDeLanca(),
   );
 

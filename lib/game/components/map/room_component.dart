@@ -57,6 +57,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
 
   late final DungeonTheme theme;
   final int floor;
+  final int dungeon;
 
   /// Quando não-nulo, esta sala de boss recebe O BOSS em vez de inimigos
   /// comuns. Quem constrói é o jogo (que também pendura a barra de vida na
@@ -75,6 +76,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
     required this.player,
     int currentLevel = 1,
     this.floor = 1,
+    this.dungeon = 1,
     this.bossBuilder,
     this.wildCreatureBuilder,
   }) : super(
@@ -391,7 +393,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
 
       Vector2 spawnPos = position + Vector2(px, py) + Vector2(8, 8);
 
-      Enemy enemy = EnemySpawner.getRandomEnemy(spawnPos, player);
+      Enemy enemy = EnemySpawner.getRandomEnemy(spawnPos, player,dungeon);
       
       activeEnemies.add(enemy);
       parent?.add(enemy); 

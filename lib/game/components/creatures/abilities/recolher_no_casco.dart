@@ -23,7 +23,13 @@ class RecolherNoCasco extends Ability {
     this.duracao = 2.5,
     this.duracaoCegueira = 2.5,
     this.duracaoLentidao = 3.0,
-  }) : super(nome: 'Recolher no Casco', cooldown: 6.5, tipo: AbilityTipo.defesa);
+  }) : super(
+         nome: 'Recolher no Casco',
+         descricao:
+             'Reduz o dano recebido e solta uma fumaça que cega e atrasa quem entra nela.',
+         cooldown: 6.5,
+         tipo: AbilityTipo.defesa,
+       );
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
@@ -31,23 +37,25 @@ class RecolherNoCasco extends Ability {
     user.speedLocked = true;
     user.shieldVisualActive = true;
 
-    user.parent?.add(Projectile(
-      owner: user,
-      position: user.position.clone(),
-      direction: Vector2.zero(),
-      speed: 0,
-      dmg: 0,
-      kbForce: 0,
-      sprPath: 'projeteis/nuvem.png',
-      cor1: user.creatureData.corClara,
-      cor2: user.creatureData.corEscura,
-      cegoDuracao: duracaoCegueira,
-      lentidaoDuracao: duracaoLentidao,
-      atravessa: 10,
-      size: Vector2(24, 24),
-      lifeTime: duracao,
-      radius: 12,
-    ));
+    user.parent?.add(
+      Projectile(
+        owner: user,
+        position: user.position.clone(),
+        direction: Vector2.zero(),
+        speed: 0,
+        dmg: 0,
+        kbForce: 0,
+        sprPath: 'projeteis/nuvem.png',
+        cor1: user.creatureData.corClara,
+        cor2: user.creatureData.corEscura,
+        cegoDuracao: duracaoCegueira,
+        lentidaoDuracao: duracaoLentidao,
+        atravessa: 10,
+        size: Vector2(24, 24),
+        lifeTime: duracao,
+        radius: 12,
+      ),
+    );
 
     Future.delayed(Duration(milliseconds: (duracao * 1000).round()), () {
       if (user.isMounted) {

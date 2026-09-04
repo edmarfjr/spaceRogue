@@ -36,6 +36,12 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   late final double maxHealth;
 
   int dmg;
+
+  /// Setado de fora (ver `CreaturesRogueGame._buildRunBoss`) só pra este
+  /// inimigo dar mais XP de evolução na morte — não muda nenhum outro
+  /// comportamento (vida/dano de boss já vêm tunados por classe).
+  bool ehBoss = false;
+
   double bltSpeed;
   String bltImg;
   Color bltCor1;
@@ -446,8 +452,14 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
 
   // `direcaoLivre` e `spawnAlerta` vêm de MovementHost.
 
+  /// XP de evolução (ver `PIVOT_EVOLUCAO`) que este inimigo rende à criatura
+  /// ativa quando morre — boss vale mais que um comum.
+  static const double _xpComum = 1.0;
+  static const double _xpBoss = 8.0;
+
   void death() {
     GameAudio.instance.play(Sfx.enemy_die);
+    playerTarget.ganharXp(ehBoss ? _xpBoss : _xpComum);
     // Sem await de propósito: death() não é async (chamado de dentro de
     // takeDamage, síncrono), e a contagem não precisa bloquear a morte —
     // só precisa acabar gravada eventualmente.

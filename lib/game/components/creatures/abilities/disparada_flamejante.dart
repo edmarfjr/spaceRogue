@@ -18,7 +18,13 @@ class DisparadaFlamejante extends Ability {
     this.distancia = 32,
     this.duracao = 0.15,
     this.coefRastro = 0.67,
-  }) : super(nome: 'Disparada Flamejante', cooldown: 1.5, target: AbilityTarget.plrDir,tipo: AbilityTipo.esquiva);
+  }) : super(
+         nome: 'Disparada Flamejante',
+         descricao: 'Dash com i-frames que deixa um rastro em chamas.',
+         cooldown: 1.5,
+         target: AbilityTarget.plrDir,
+         tipo: AbilityTipo.esquiva,
+       );
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
@@ -26,13 +32,16 @@ class DisparadaFlamejante extends Ability {
     user.grantInvulnerability(duracao);
 
     final origem = user.position.clone();
-    user.parent?.add(ExplosionHitbox(position: origem, 
-                                    dmg: danoRastro, 
-                                    cor2: Palette.laranja,
-                                    tipo: user.creatureData.tipo,
-                                    dotKind: DotKind.queimadura,
-                                    dotTicks: 5,
-                                  ));
+    user.parent?.add(
+      ExplosionHitbox(
+        position: origem,
+        dmg: danoRastro,
+        cor2: Palette.laranja,
+        tipo: user.creatureData.tipo,
+        dotKind: DotKind.queimadura,
+        dotTicks: 5,
+      ),
+    );
 
     GhostEffect.spawnTrail(
       visual: user.visual,
@@ -40,19 +49,23 @@ class DisparadaFlamejante extends Ability {
       overDuration: duracao,
     );
 
-    user.add(MoveByEffect(
-      dir.normalized() * distancia,
-      EffectController(duration: duracao),
-      onComplete: () {
-        user.parent?.add(ExplosionHitbox(
-          position: user.position.clone(),
-          dmg: danoRastro,
-          cor2: Palette.laranja,
-          tipo: user.creatureData.tipo,
-          dotKind: DotKind.queimadura,
-          dotTicks: 5,
-        ));
-      },
-    ));
+    user.add(
+      MoveByEffect(
+        dir.normalized() * distancia,
+        EffectController(duration: duracao),
+        onComplete: () {
+          user.parent?.add(
+            ExplosionHitbox(
+              position: user.position.clone(),
+              dmg: danoRastro,
+              cor2: Palette.laranja,
+              tipo: user.creatureData.tipo,
+              dotKind: DotKind.queimadura,
+              dotTicks: 5,
+            ),
+          );
+        },
+      ),
+    );
   }
 }

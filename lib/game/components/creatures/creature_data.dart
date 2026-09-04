@@ -40,9 +40,23 @@ class CreatureData {
   /// que o roedor, por exemplo.
   final Vector2 hitboxSize;
 
+  /// Resolução nativa do sprite (`Player.visual`), `null` = padrão 16x16.
+  /// Existe pras formas evoluídas (ver `PIVOT_EVOLUCAO`), desenhadas em
+  /// 24x24 — só o VISUAL cresce, `hitboxSize` (e portanto colisão/sombra)
+  /// continuam do jeito que já eram, sem relação uma com a outra.
+  final Vector2? spriteSize;
+
   /// Comportamento desta criatura quando aparece como inimigo.
   /// Ainda não existe para as 4 criaturas iniciais — ver PIVOT_CRIATURAS.md, fase 4.
   final EnemyBuilder? enemyBuilder;
+
+  /// Devolve a forma evoluída desta criatura (novo sprite + `ability2`
+  /// trocada), ou `null` se ela ainda não tem evolução desenhada. É uma
+  /// função, não um `CreatureData` direto, porque a evoluída referencia a
+  /// base antes dela existir na declaração estática de `CreatureRegistry` —
+  /// lida preguiçosamente (só chamada quando o XP realmente enche), então a
+  /// ordem de declaração não importa.
+  final CreatureData Function()? evoluir;
 
   const CreatureData({
     required this.id,
@@ -58,5 +72,7 @@ class CreatureData {
     required this.moveAnim,
     required this.hitboxSize,
     this.enemyBuilder,
+    this.evoluir,
+    this.spriteSize,
   });
 }

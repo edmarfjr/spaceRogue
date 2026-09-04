@@ -25,6 +25,7 @@ mixin AbilityUser on PositionComponent {
   /// quando quem executa é um Companion, `bombsAmount` e `placeBomb` sempre
   /// resolvem para o contador do treinador.
   int get bombsAmount;
+
   void placeBomb(Vector2 dir);
 
   void grantInvulnerability(double seconds);

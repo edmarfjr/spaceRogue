@@ -36,7 +36,13 @@ import '../map/obstacle.dart';
 /// instância em vez de recriar o componente — ver o comentário de
 /// `trocarCriatura` pro motivo (RoomComponent guarda `player:` como campo
 /// final).
-class Player extends PositionComponent with CollisionCallbacks, HasGameRef, KeyboardHandler, AbilityUser, DamageableByEnemy {
+class Player extends PositionComponent
+    with
+        CollisionCallbacks,
+        HasGameRef,
+        KeyboardHandler,
+        AbilityUser,
+        DamageableByEnemy {
   final DynamicJoystickComponent moveJoystick;
   CreatureData creatureData;
 
@@ -55,7 +61,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   late SpriteComponent shieldVisual;
 
   // --- Colisão ---
-  late RectangleHitbox playerHitbox;  // Colisor de Combate (Corpo)
+  late RectangleHitbox playerHitbox; // Colisor de Combate (Corpo)
   late RectangleHitbox physicsHitbox; // Colisor de Física (Pés/Sombra)
   late CircleComponent shadow;
 
@@ -123,10 +129,13 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
   Vector2 velocity = Vector2.zero();
   Vector2 knockbackVelocity = Vector2.zero();
-  Vector2 plrDir = Vector2(0,1);
+  Vector2 plrDir = Vector2(0, 1);
 
   double get maxSpeed =>
-      creatureData.stats.speed * lentidaoFator * velMult * (_dentroGramaAlta ? gramaAltaFator : 1.0);
+      creatureData.stats.speed *
+      lentidaoFator *
+      velMult *
+      (_dentroGramaAlta ? gramaAltaFator : 1.0);
 
   /// Lentidão e cegueira são as únicas condições que atingem o jogador — DoT
   /// fica só do lado dos inimigos, que têm os ícones de condição pra mostrar.
@@ -155,8 +164,8 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   /// Mira travada de cada habilidade — recalculada todo frame em
   /// [_atualizarMira], a partir da própria posição (inimigo mais próximo ou
   /// direção que o sprite está olhando, conforme `Ability.target`).
-  Vector2 lockedAb1Direction = Vector2(0,1);
-  Vector2 lockedAb2Direction = Vector2(0,1);
+  Vector2 lockedAb1Direction = Vector2(0, 1);
+  Vector2 lockedAb2Direction = Vector2(0, 1);
 
   // --- Cooldown e input das duas habilidades ---
   double _cooldown1 = 0.0;
@@ -165,8 +174,66 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   double _cooldownMax2 = 1.0;
 
   /// Fração restante de cooldown (0 = pronto) — lida pela Hud.
-  double get ability1CooldownFraction => (_cooldown1 / _cooldownMax1).clamp(0.0, 1.0);
-  double get ability2CooldownFraction => (_cooldown2 / _cooldownMax2).clamp(0.0, 1.0);
+  double get ability1CooldownFraction =>
+      (_cooldown1 / _cooldownMax1).clamp(0.0, 1.0);
+  double get ability2CooldownFraction =>
+      (_cooldown2 / _cooldownMax2).clamp(0.0, 1.0);
+
+  // --- Evolução (ver PIVOT_EVOLUCAO) ---
+  /// XP da criatura ATIVA nesta run — só ela ganha XP de inimigo derrotado
+  /// (ver `ganharXp`). Cada slot do grupo guarda o seu próprio quando não é
+  /// a ativa (ver `CreaturesRogueGame.companionXp`), restaurado aqui na troca
+  /// (`trocarCriatura`). Não sobrevive entre runs.
+  double xp = 0.0;
+  bool evoluida = false;
+
+  /// Quanto de XP falta pra evoluir. Só uma constante por enquanto — todas
+  /// as criaturas evoluem no mesmo ritmo.
+  static const double xpParaEvoluir = 20.0;
+
+  double get xpFracao => evoluida ? 1.0 : (xp / xpParaEvoluir).clamp(0.0, 1.0);
+
+  /// Chamado por `Enemy.death()` quando a criatura ativa dá o golpe fatal.
+  /// Sem efeito se esta criatura não tem forma evoluída desenhada
+  /// (`creatureData.evoluir == null`) ou já evoluiu nesta run.
+  ///
+  /// `ganharXp` é chamado de dentro de `Enemy.death()`, que por sua vez roda
+  /// de dentro do `onCollisionStart` de um projétil — ou seja, em PLENO
+  /// meio da varredura de colisão do frame. Evoluir na hora remontaria
+  /// `playerHitbox`/`physicsHitbox` (remove+add) com a varredura ainda
+  /// iterando sobre eles, travando o jogo. Por isso só marca a intenção
+  /// aqui; `update()` (que roda ANTES da varredura de colisão de cada
+  /// frame — mesma ordem que o fix da grama alta já explorou) dispara
+  /// `_evoluir()` de verdade um frame depois, fora da varredura.
+  bool _evoluirPendente = false;
+
+  void ganharXp(double quantidade) {
+    if (evoluida || creatureData.evoluir == null) return;
+    xp += quantidade;
+    if (xp >= xpParaEvoluir) _evoluirPendente = true;
+  }
+
+  /// Troca o sprite e a `ability2` pra forma evoluída — DIFERENTE de
+  /// `trocarCriatura`: aqui é a MESMA criatura ficando mais forte, então vida,
+  /// escudo, cooldowns e multiplicadores de upgrade da run continuam
+  /// exatamente como estavam (só `trocarCriatura`, que troca pra uma criatura
+  /// DIFERENTE do banco, reseta esse estado de combate).
+  void _evoluir() {
+    final proxima = creatureData.evoluir!();
+    creatureData = proxima;
+    evoluida = true;
+    xp = xpParaEvoluir;
+
+    final jogo = game;
+    if (jogo is CreaturesRogueGame) {
+      jogo.companionCreatures[jogo.companionAtivoIndex] = proxima;
+    }
+
+     GameAudio.instance.play(Sfx.liberar);
+    // Assíncrono, sem await — mesmo motivo de `trocarCriatura`: o cache de
+    // sprite já foi aquecido em `_preloadCombatSprites`.
+    _montarVisualEHitbox();
+  }
 
   /// Estado "segurado" de cada habilidade — dois canais independentes porque
   /// um vem do toque/gesto (`AbilityButton`/`GestureActionArea`, escreve
@@ -292,7 +359,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   /// recomputado no uso, nunca cacheado — elimina qualquer ponto de
   /// recálculo que precisaria ser lembrado em recrutamento/troca/início de
   /// run.
-  /// 
+  ///
   /*
   List<Passive> get passivasAtivas {
     final jogo = game;
@@ -323,12 +390,14 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
     double cooldownMult = 1.0;
     double distanciaMult = 1.0;
-   /* for (final p in passivas) {
+    /* for (final p in passivas) {
       cooldownMult *= p.dodgeCooldownMult;
       distanciaMult *= p.dodgeDistanceMult;
     }
     */
-    cooldownMult = cooldownMult < _dodgeCooldownMultFloor ? _dodgeCooldownMultFloor : cooldownMult;
+    cooldownMult = cooldownMult < _dodgeCooldownMultFloor
+        ? _dodgeCooldownMultFloor
+        : cooldownMult;
     _dodgeCooldown = _dodgeCooldownMax * cooldownMult;
     grantInvulnerability(_dodgeDuration);
 
@@ -343,7 +412,12 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       add: (g) => parent?.add(g),
       overDuration: _dodgeDuration,
     );
-    add(MoveByEffect(dir * _dodgeDistance * distanciaMult, EffectController(duration: _dodgeDuration)));
+    add(
+      MoveByEffect(
+        dir * _dodgeDistance * distanciaMult,
+        EffectController(duration: _dodgeDuration),
+      ),
+    );
     /*
     for (final p in passivas) {
       p.aoEsquivar(this, dir);
@@ -366,8 +440,19 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   static const double _dodgeBarraLargura = 14.0;
   static const double _dodgeBarraAltura = 2.0;
 
-  late final ConditionIcons conditionIcons;
-/*
+  /// Não é `final`: `_montarVisualEHitboxInterno` reatribui a cada remontagem
+  /// (troca de criatura, evolução). Com `late final` a segunda remontagem já
+  /// jogava `LateInitializationError` (campo `final` só aceita UMA
+  /// atribuição na vida do objeto) — o erro ficava escondido porque a
+  /// função é assíncrona e sem `await` no chamador (ver `_montarVisualEHitbox`).
+  late ConditionIcons conditionIcons;
+
+  /// Anéis de cooldown das duas habilidades, guardados aqui só pra poder
+  /// remover o antigo antes de recriar a cada remontagem — sem isso, cada
+  /// troca de criatura ou evolução deixava um par órfão pra trás.
+  CooldownRingIndicator? _ringAbility1;
+  CooldownRingIndicator? _ringAbility2;
+  /*
   void _renderBarraEsquiva(Canvas canvas) {
     final pronto = 1 - dodgeCooldownFraction;
     final left = (size.x - _dodgeBarraLargura) / 2;
@@ -397,14 +482,12 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     }
   }
 */
-  Player({
-    required this.moveJoystick,
-    required this.creatureData,
-  }) : maxHealth = creatureData.stats.maxHp,
-       currentHealth = creatureData.stats.maxHp,
-       shieldMax = creatureData.stats.shieldMax,
-       shield = creatureData.stats.shieldMax,
-       super(size: Vector2(16, 16), anchor: Anchor.center) {
+  Player({required this.moveJoystick, required this.creatureData})
+    : maxHealth = creatureData.stats.maxHp,
+      currentHealth = creatureData.stats.maxHp,
+      shieldMax = creatureData.stats.shieldMax,
+      shield = creatureData.stats.shieldMax,
+      super(size: Vector2(16, 16), anchor: Anchor.center) {
     // Um Player novo é exatamente uma run nova (ver `startRun`), então este é
     // o lugar certo pra zerar o multiplicador estático de dano — senão os
     // upgrades da run anterior valeriam na próxima.
@@ -435,15 +518,35 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   /// Assíncrono porque o sprite passa por `PaletteSwapper`, mas já vem do
   /// cache aquecido por `_preloadCombatSprites` — sem travadinha perceptível
   /// mesmo trocando em pleno combate.
-  Future<void> _montarVisualEHitbox() async {
-    if (_visualPronto) {
-      visual.removeFromParent();
-      shieldVisual.removeFromParent();
-      playerHitbox.removeFromParent();
-      physicsHitbox.removeFromParent();
-      shadow.removeFromParent();
-    }
+  /// Guarda contra uma segunda chamada pousar enquanto a primeira ainda
+  /// espera o `PaletteSwapper` — sem isso, a que chega por último acha
+  /// `_visualPronto` ainda falso (só vira `true` no fim desta função) e
+  /// pula a remoção dos componentes antigos, e as duas completam
+  /// adicionando visual/hitbox duplicados.
+  bool _montando = false;
 
+  Future<void> _montarVisualEHitbox() async {
+    if (_montando) return;
+    _montando = true;
+    try {
+      if (_visualPronto) {
+        visual.removeFromParent();
+        shieldVisual.removeFromParent();
+        playerHitbox.removeFromParent();
+        physicsHitbox.removeFromParent();
+        shadow.removeFromParent();
+        conditionIcons.removeFromParent();
+        _ringAbility1?.removeFromParent();
+        _ringAbility2?.removeFromParent();
+      }
+
+      await _montarVisualEHitboxInterno();
+    } finally {
+      _montando = false;
+    }
+  }
+
+  Future<void> _montarVisualEHitboxInterno() async {
     final ui.Image spriteImage = await PaletteSwapper.createSwappedImage(
       imagePath: creatureData.spritePath,
       lightGrayReplacement: creatureData.corClara,
@@ -455,7 +558,10 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
     visual = SpriteComponent(
       sprite: Sprite(spriteImage),
-      size: size,
+      // `spriteSize` (ver CreatureData) deixa a arte evoluída em 24x24 sem
+      // mexer no hitbox — `size` (o `Vector2(16,16)` fixo do Player) continua
+      // sendo a referência de tudo mais (hitbox, sombra, posição da UI).
+      size: creatureData.spriteSize ?? size,
       anchor: Anchor.bottomCenter,
       position: _visualBasePosition.clone(),
       paint: Paint()..filterQuality = FilterQuality.none,
@@ -475,20 +581,21 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       isAirborne = false;
     }
 
-    
-    add(CooldownRingIndicator(
+    _ringAbility1 = CooldownRingIndicator(
       tipo: () => creatureData.ability1.tipo,
       cooldownFraction: () => ability1CooldownFraction,
       raio: 4,
-      position: Vector2(4, -4+floatOffset.y),
-    )..priority = 2);
+      position: Vector2(4, -4 + floatOffset.y),
+    )..priority = 2;
+    add(_ringAbility1!);
 
-    add(CooldownRingIndicator(
+    _ringAbility2 = CooldownRingIndicator(
       tipo: () => creatureData.ability2.tipo,
       cooldownFraction: () => ability2CooldownFraction,
       raio: 4,
-      position: Vector2(12, -4+floatOffset.y),
-    )..priority = 2);
+      position: Vector2(12, -4 + floatOffset.y),
+    )..priority = 2;
+    add(_ringAbility2!);
 
     final ui.Image shieldImage = await PaletteSwapper.createSwappedImage(
       imagePath: 'projeteis/bolha.png',
@@ -548,11 +655,20 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   /// Estado de combate não atravessa a troca (cooldowns, escudo de
   /// habilidade, buffs, knockback) — só a vida salva do banco. A criatura que
   /// entra recebe o escudo passivo cheio, não o que a anterior tinha quando
-  /// saiu (o banco só guarda HP, não escudo).
-  void trocarCriatura(CreatureData nova, {required double vidaSalva}) {
+  /// saiu (o banco só guarda HP, não escudo). XP e evolução (ver
+  /// `PIVOT_EVOLUCAO`) são a exceção: cada slot guarda o próprio progresso, e
+  /// [xpSalvo]/[evoluidaSalva] restauram o do slot que está entrando.
+  void trocarCriatura(
+    CreatureData nova, {
+    required double vidaSalva,
+    double xpSalvo = 0.0,
+    bool evoluidaSalva = false,
+  }) {
     creatureData = nova;
     maxHealth = nova.stats.maxHp;
     currentHealth = vidaSalva.clamp(0.0, maxHealth);
+    xp = xpSalvo;
+    evoluida = evoluidaSalva;
     shieldMax = nova.stats.shieldMax;
     shield = shieldMax;
     shieldHits = 0;
@@ -580,6 +696,13 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   void update(double dt) {
     super.update(dt);
 
+    // Fora da varredura de colisão de propósito — ver comentário de
+    // `ganharXp`/`_evoluirPendente`.
+    if (_evoluirPendente) {
+      _evoluirPendente = false;
+      _evoluir();
+    }
+
     // Anchor.center: o "chão" (pés) fica meio size.y abaixo do centro.
     priority = ySortPriority(position.y + size.y / 2);
 
@@ -587,9 +710,9 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
     if (_dodgeCooldown > 0) _dodgeCooldown -= dt;
     _tempoSemApanhar += dt;
-   // for (final p in passivasAtivas) {
-   //   p.aoAtualizar(this, dt);
-   // }
+    // for (final p in passivasAtivas) {
+    //   p.aoAtualizar(this, dt);
+    // }
 
     if (lentidaoTimer > 0) {
       lentidaoTimer -= dt;
@@ -649,7 +772,8 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     for (final enemy in enemies) {
       if (room != null &&
           !room.toAbsoluteRect().contains(
-              Offset(enemy.absolutePosition.x, enemy.absolutePosition.y))) {
+            Offset(enemy.absolutePosition.x, enemy.absolutePosition.y),
+          )) {
         continue;
       }
       final distSq = (enemy.absolutePosition - absolutePosition).length2;
@@ -663,7 +787,9 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
   void _atualizarMira() {
     final alvo = _nearestEnemy();
-    final dirCorpo = visual.isFlippedHorizontally ? Vector2(-1, 0) : Vector2(1, 0);
+    final dirCorpo = visual.isFlippedHorizontally
+        ? Vector2(-1, 0)
+        : Vector2(1, 0);
 
     if (creatureData.ability1.target == AbilityTarget.enemyDir) {
       if (alvo != null) {
@@ -754,7 +880,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
       return;
     }
 
-    if(naoMove || speedLocked){
+    if (naoMove || speedLocked) {
       velocity.setZero();
       return;
     }
@@ -801,7 +927,10 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   }
 
   @override
-  void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
+  void onCollisionStart(
+    Set<Vector2> intersectionPoints,
+    PositionComponent other,
+  ) {
     super.onCollisionStart(intersectionPoints, other);
 
     // Só entra no set quando os PÉS confirmam sobreposição neste instante —
@@ -833,7 +962,9 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
 
     if (other is Enemy) {
       // O Inimigo só nos causa dano se o corpo dele bater no nosso corpo!
-      if (other.enemyHitbox.toAbsoluteRect().overlaps(playerHitbox.toAbsoluteRect())) {
+      if (other.enemyHitbox.toAbsoluteRect().overlaps(
+        playerHitbox.toAbsoluteRect(),
+      )) {
         takeDamage(1);
       }
     }
@@ -845,7 +976,6 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     if (other is GramaAlta) return;
 
     if (other is WallBarrier || other is Obstacle) {
-
       // MÁGICA AQUI: Só para de andar se bater os pés (sombra)!
       if (!isPhysicsCollision(other) || (isAirborne && other is Hole)) return;
 
@@ -874,7 +1004,8 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     // redução percentual conseguia fazer diferença num golpe de 1 (o contato
     // de inimigo), porque 1 * (1 - qualquer coisa) voltava pra 1.
     double amountFinal = amount * (1 - damageReduction);
-    if (amountFinal <= 0) return; // golpe totalmente mitigado: não gasta i-frame
+    if (amountFinal <= 0)
+      return; // golpe totalmente mitigado: não gasta i-frame
     GameAudio.instance.play(Sfx.hit);
 
     _invulnerabilityTimer = _invulnerabilityDuration;
@@ -890,12 +1021,13 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     //  p.aoTentarTomarDano(this, amountFinal);
     //}
 
-    parent?.add(TextEffect.dano(
-      amountFinal,
-      position: position.clone() + Vector2(0, -size.y / 2 - 4),
-      color: Palette.vermelho,
-
-    ));
+    parent?.add(
+      TextEffect.dano(
+        amountFinal,
+        position: position.clone() + Vector2(0, -size.y / 2 - 4),
+        color: Palette.vermelho,
+      ),
+    );
 
     if (shieldHits > 0) {
       shieldHits--;
@@ -935,16 +1067,19 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
   void placeBomb(Vector2 dir) {
     if (bombsAmount <= 0) return;
     bombsAmount--;
-    parent?.add(Bomb(position: position.clone()+(dir*17)));
+    parent?.add(Bomb(position: position.clone() + (dir * 17)));
   }
 
   @override
   bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
     _keyboardMove.setZero();
-    if (keysPressed.contains(LogicalKeyboardKey.arrowLeft)) _keyboardMove.x -= 1;
-    if (keysPressed.contains(LogicalKeyboardKey.arrowRight)) _keyboardMove.x += 1;
+    if (keysPressed.contains(LogicalKeyboardKey.arrowLeft))
+      _keyboardMove.x -= 1;
+    if (keysPressed.contains(LogicalKeyboardKey.arrowRight))
+      _keyboardMove.x += 1;
     if (keysPressed.contains(LogicalKeyboardKey.arrowUp)) _keyboardMove.y -= 1;
-    if (keysPressed.contains(LogicalKeyboardKey.arrowDown)) _keyboardMove.y += 1;
+    if (keysPressed.contains(LogicalKeyboardKey.arrowDown))
+      _keyboardMove.y += 1;
 
     // Z/X = as duas habilidades, seguradas (mesmo padrão do toque/gesto) —
     // Espaço = esquiva pessoal, um único aperto por vez.
@@ -957,7 +1092,7 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     if (event is KeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.digit1) useSlot(0);
       if (event.logicalKey == LogicalKeyboardKey.digit2) useSlot(1);
-     // if (event.logicalKey == LogicalKeyboardKey.space) dodge();
+      // if (event.logicalKey == LogicalKeyboardKey.space) dodge();
     }
 
     return super.onKeyEvent(event, keysPressed);
@@ -1050,7 +1185,8 @@ class Player extends PositionComponent with CollisionCallbacks, HasGameRef, Keyb
     for (final enemy in enemies) {
       if (room != null &&
           !room.toAbsoluteRect().contains(
-              Offset(enemy.absolutePosition.x, enemy.absolutePosition.y))) {
+            Offset(enemy.absolutePosition.x, enemy.absolutePosition.y),
+          )) {
         continue;
       }
       enemy.applyStun(duracao);

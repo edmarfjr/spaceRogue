@@ -18,7 +18,13 @@ class EscudoDeEspinhos extends Ability {
     this.duracao = 3.5,
     this.coefDano = 0.5,
     this.duracaoStun = 1.0,
-  }) : super(nome: 'Escudo de Espinhos', cooldown: 7.0, tipo: AbilityTipo.defesa);
+  }) : super(
+         nome: 'Escudo de Espinhos',
+         descricao:
+             'Absorve os próximos golpes e revida cada um com uma explosão elétrica atordoante.',
+         cooldown: 7.0,
+         tipo: AbilityTipo.defesa,
+       );
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

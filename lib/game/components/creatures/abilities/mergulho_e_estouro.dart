@@ -21,7 +21,13 @@ class MergulhoEEstouro extends Ability {
     this.altura = 20,
     this.coef = 1.0,
     this.empurrao = 70,
-  }) : super(nome: 'Mergulho e Estouro', cooldown: 5.0, tipo: AbilityTipo.esquiva);
+  }) : super(
+         nome: 'Mergulho e Estouro',
+         descricao:
+             'Mergulha invulnerável em cima do inimigo mais próximo; explode ao emergir.',
+         cooldown: 5.0,
+         tipo: AbilityTipo.esquiva,
+       );
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
@@ -37,16 +43,18 @@ class MergulhoEEstouro extends Ability {
     user.startJump(
       direction: dir,
       distance: distancia,
-      duration: duracao-0.2,
+      duration: duracao - 0.2,
       height: altura,
       onLand: () {
-        user.parent?.add(ExplosionHitbox(
-          position: user.position.clone(),
-          dmg: dano,
-          knockback: empurrao,
-          size: Vector2(36, 36),
-          tipo: user.creatureData.tipo,
-        ));
+        user.parent?.add(
+          ExplosionHitbox(
+            position: user.position.clone(),
+            dmg: dano,
+            knockback: empurrao,
+            size: Vector2(36, 36),
+            tipo: user.creatureData.tipo,
+          ),
+        );
       },
     );
   }

@@ -9,10 +9,14 @@ class EsquivaBomba extends Ability {
   final double distancia;
   final double duracao;
 
-  const EsquivaBomba({
-    this.distancia = 32,
-    this.duracao = 0.15,
-  }) : super(nome: 'Esquiva Bomba', cooldown: 4.0, target: AbilityTarget.plrDir,tipo: AbilityTipo.esquiva);
+  const EsquivaBomba({this.distancia = 32, this.duracao = 0.15})
+    : super(
+        nome: 'Esquiva Bomba',
+        descricao: 'Evasiva com i-frames que também planta uma bomba.',
+        cooldown: 4.0,
+        target: AbilityTarget.plrDir,
+        tipo: AbilityTipo.esquiva,
+      );
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
@@ -29,12 +33,12 @@ class EsquivaBomba extends Ability {
       overDuration: duracao,
     );
 
-    user.add(MoveByEffect(
-      -dir.normalized() * distancia,
-      EffectController(duration: duracao),
-      onComplete: () {
-        
-      },
-    ));
+    user.add(
+      MoveByEffect(
+        -dir.normalized() * distancia,
+        EffectController(duration: duracao),
+        onComplete: () {},
+      ),
+    );
   }
 }

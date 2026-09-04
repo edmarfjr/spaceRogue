@@ -20,7 +20,14 @@ class InvestidaDaLanca extends Ability {
     this.duracao = 0.2,
     this.coef = 2.5,
     this.empurrao = 80,
-  }) : super(nome: 'Investida da Lança', cooldown: 4.0, target: AbilityTarget.plrDir, tipo: AbilityTipo.esquiva);
+  }) : super(
+         nome: 'Investida da Lança',
+         descricao:
+             'Dash com i-frames; o golpe só acontece no final do trajeto.',
+         cooldown: 4.0,
+         target: AbilityTarget.plrDir,
+         tipo: AbilityTipo.esquiva,
+       );
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
@@ -33,18 +40,22 @@ class InvestidaDaLanca extends Ability {
       overDuration: duracao,
     );
 
-    user.add(MoveByEffect(
-      dir.normalized() * distancia,
-      EffectController(duration: duracao),
-      onComplete: () {
-        user.parent?.add(ExplosionHitbox(
-          position: user.position.clone(),
-          dmg: dano,
-          knockback: empurrao,
-          size: Vector2(24, 24),
-          tipo: user.creatureData.tipo,
-        ));
-      },
-    ));
+    user.add(
+      MoveByEffect(
+        dir.normalized() * distancia,
+        EffectController(duration: duracao),
+        onComplete: () {
+          user.parent?.add(
+            ExplosionHitbox(
+              position: user.position.clone(),
+              dmg: dano,
+              knockback: empurrao,
+              size: Vector2(24, 24),
+              tipo: user.creatureData.tipo,
+            ),
+          );
+        },
+      ),
+    );
   }
 }

@@ -12,20 +12,28 @@ class CorrenteEstatica extends Ability {
   final double duracaoStun;
 
   const CorrenteEstatica({this.coef = 3.0, this.duracaoStun = 1.5})
-      : super(nome: 'Corrente Estática', cooldown: 5.0,tipo: AbilityTipo.defesa);
+    : super(
+        nome: 'Corrente Estática',
+        descricao:
+            'Descarga ao redor do corpo: dano baixo e atordoa quem está colado.',
+        cooldown: 5.0,
+        tipo: AbilityTipo.defesa,
+      );
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
-    user.parent?.add(ExplosionHitbox(
-      position: user.position.clone(),
-      dmg: dano,
-      isStun: true,
-      stunDuration: duracaoStun,
-      cor1: Palette.amarelo,
-      cor2: Palette.laranja,
-      tipo: user.creatureData.tipo,
-      size: Vector2(32, 32),
-    ));
+    user.parent?.add(
+      ExplosionHitbox(
+        position: user.position.clone(),
+        dmg: dano,
+        isStun: true,
+        stunDuration: duracaoStun,
+        cor1: Palette.amarelo,
+        cor2: Palette.laranja,
+        tipo: user.creatureData.tipo,
+        size: Vector2(32, 32),
+      ),
+    );
   }
 }

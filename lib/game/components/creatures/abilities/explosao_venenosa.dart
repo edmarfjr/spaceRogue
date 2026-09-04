@@ -12,38 +12,47 @@ class ExplosaoVenenosa extends Ability {
   final double empurrao;
 
   const ExplosaoVenenosa({this.coef = 0.25, this.empurrao = 50})
-      : super(nome: 'Explosao Venenosa', cooldown: 6.0,tipo: AbilityTipo.defesa);
+    : super(
+        nome: 'Explosao Venenosa',
+        descricao: 'Explosão que envenena a área ao redor.',
+        cooldown: 6.0,
+        tipo: AbilityTipo.defesa,
+      );
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
-    user.parent?.add(ExplosionHitbox(
-      position: user.position.clone(),
-      dmg: dano,
-      knockback: empurrao,
-      size: Vector2(24, 24),
-      cor1: Palette.verde,
-      cor2: Palette.verdeEsc,
-      tipo: user.creatureData.tipo,
-    ));
+    user.parent?.add(
+      ExplosionHitbox(
+        position: user.position.clone(),
+        dmg: dano,
+        knockback: empurrao,
+        size: Vector2(24, 24),
+        cor1: Palette.verde,
+        cor2: Palette.verdeEsc,
+        tipo: user.creatureData.tipo,
+      ),
+    );
 
-    user.parent?.add(Projectile(
-      owner: user,
-      position: user.position.clone(),
-      direction: dir,
-      speed: 0,
-      dmg: 0,
-      kbForce: 0,
-      sprPath: 'projeteis/bolaGrande.png',
-      cor1: Palette.verde,
-      cor2: Palette.verdeEsc,
-      tipo: user.creatureData.tipo,
-      dotKind: DotKind.veneno,
-      dotTicks: 1, // igual ao poisonCount padrao de antes: nao virou buff
-      atravessa: 10,
-      size: Vector2(24, 24),
-      lifeTime: 3,
-      radius: 12
-    ));
+    user.parent?.add(
+      Projectile(
+        owner: user,
+        position: user.position.clone(),
+        direction: dir,
+        speed: 0,
+        dmg: 0,
+        kbForce: 0,
+        sprPath: 'projeteis/bolaGrande.png',
+        cor1: Palette.verde,
+        cor2: Palette.verdeEsc,
+        tipo: user.creatureData.tipo,
+        dotKind: DotKind.veneno,
+        dotTicks: 1, // igual ao poisonCount padrao de antes: nao virou buff
+        atravessa: 10,
+        size: Vector2(24, 24),
+        lifeTime: 3,
+        radius: 12,
+      ),
+    );
   }
 }

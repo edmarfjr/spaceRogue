@@ -19,7 +19,9 @@ class RajadaDeBrasa extends Ability {
   void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
     final anguloRad = anguloLequeGraus * pi / 180;
-    for (final offset in [-anguloRad, 0.0, anguloRad]) {
+    List<double> offsets = [-anguloRad, 0.0, anguloRad];
+    //if(user.parent?.) offsets = [-anguloRad*2,-anguloRad, 0.0, anguloRad,anguloRad*2];
+    for (final offset in offsets) {
       final rotated = dir.clone()..rotate(offset);
       user.parent?.add(Projectile(
         owner: user,

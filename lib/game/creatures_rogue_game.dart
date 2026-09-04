@@ -6,7 +6,8 @@ import 'package:flame/effects.dart';
 import 'package:flame/game.dart';
 import 'package:flame/palette.dart';
 //import 'package:flutter/animation.dart';
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 //import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart' show LogicalKeyboardKey, KeyDownEvent;
@@ -66,10 +67,11 @@ enum ControlScheme {
   };
 }
 
-class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboardHandlerComponents {
+class CreaturesRogueGame extends FlameGame
+    with HasCollisionDetection, HasKeyboardHandlerComponents {
   // O Mundo onde o mapa, inimigos e jogador existirão
   late final World dungeonWorld;
-  
+
   // A câmera que vai renderizar o mundo na resolução do Game Boy
   late final CameraComponent gameCamera;
 
@@ -99,7 +101,10 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   /// outra, não recria componente nenhum). É o que a Hud usa pra desenhar o
   /// retrato de cada slot, e o que [_trocarParaSlot]/[pocketarSlotAtivo] usam
   /// pra saber quem está esperando no banco.
-  final List<CreatureData?> companionCreatures = List<CreatureData?>.filled(maxCompanions, null);
+  final List<CreatureData?> companionCreatures = List<CreatureData?>.filled(
+    maxCompanions,
+    null,
+  );
 
   /// `true` pra todo slot que não é a ativa agora — banco, na prática só o
   /// slot ativo (`companionAtivoIndex`) fica com `false`. Nome mantido do
@@ -113,7 +118,17 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   /// criatura por vez, então a vida de quem está no banco não vive em
   /// componente nenhum, só aqui. Restaurada (via `trocarCriatura`) quando o
   /// slot volta a ficar ativo.
-  final List<double> companionSavedHealth = List<double>.filled(maxCompanions, 0.0);
+  final List<double> companionSavedHealth = List<double>.filled(
+    maxCompanions,
+    0.0,
+  );
+
+  /// XP e evolução de cada slot (ver PIVOT_EVOLUCAO) — mesmo padrão de
+  /// `companionSavedHealth`: o `Player` só existe como UMA criatura por vez,
+  /// então o progresso de quem está no banco só vive aqui, restaurado (via
+  /// `trocarCriatura`) quando o slot volta a ficar ativo.
+  final List<double> companionXp = List<double>.filled(maxCompanions, 0.0);
+  final List<bool> companionEvoluida = List<bool>.filled(maxCompanions, false);
 
   /// Sem cura passiva no banco (pedido do usuário) — a vida de um slot só
   /// muda quando ele está ativo levando dano, ou quando `trocarCriatura`
@@ -153,13 +168,20 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     companionCreatures[slotAntigo] = player.creatureData;
     companionSavedHealth[slotAntigo] = player.currentHealth;
     companionPocketed[slotAntigo] = true;
+    companionXp[slotAntigo] = player.xp;
+    companionEvoluida[slotAntigo] = player.evoluida;
 
     final vidaSalva = companionSavedHealth[slot];
     companionPocketed[slot] = false;
     companionAtivoIndex = slot;
 
     GameAudio.instance.play(Sfx.liberar);
-    player.trocarCriatura(creature, vidaSalva: vidaSalva);
+    player.trocarCriatura(
+      creature,
+      vidaSalva: vidaSalva,
+      xpSalvo: companionXp[slot],
+      evoluidaSalva: companionEvoluida[slot],
+    );
     dungeonWorld.add(CompanionReviveEffect(position: player.position.clone()));
   }
 
@@ -181,11 +203,15 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     companionCreatures[slotAtual] = player.creatureData;
     companionSavedHealth[slotAtual] = 0.0;
     companionPocketed[slotAtual] = true;
+    companionXp[slotAtual] = player.xp;
+    companionEvoluida[slotAtual] = player.evoluida;
     GameAudio.instance.play(Sfx.retorno);
-    dungeonWorld.add(CompanionRecallEffect(
-      position: player.position.clone(),
-      trainerPosition: () => player.position,
-    ));
+    dungeonWorld.add(
+      CompanionRecallEffect(
+        position: player.position.clone(),
+        trainerPosition: () => player.position,
+      ),
+    );
 
     final proximo = _primeiroSlotDisponivel();
     if (proximo == null) {
@@ -197,7 +223,12 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     final vidaSalva = companionSavedHealth[proximo];
     companionPocketed[proximo] = false;
     companionAtivoIndex = proximo;
-    player.trocarCriatura(creature, vidaSalva: vidaSalva);
+    player.trocarCriatura(
+      creature,
+      vidaSalva: vidaSalva,
+      xpSalvo: companionXp[proximo],
+      evoluidaSalva: companionEvoluida[proximo],
+    );
     dungeonWorld.add(CompanionReviveEffect(position: player.position.clone()));
   }
 
@@ -230,6 +261,8 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     companionCreatures[slotVazio] = creature;
     companionSavedHealth[slotVazio] = creature.stats.maxHp;
     companionPocketed[slotVazio] = true;
+    companionXp[slotVazio] = 0.0;
+    companionEvoluida[slotVazio] = false;
     return true;
   }
 
@@ -336,7 +369,10 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
       height: RoomComponent.roomHeight,
       world: dungeonWorld,
     );
-    gameCamera.viewfinder.position = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
+    gameCamera.viewfinder.position = Vector2(
+      RoomComponent.roomWidth / 2,
+      RoomComponent.roomHeight / 2,
+    );
     add(gameCamera);
     add(GameboyBezel(camera: gameCamera));
 
@@ -356,9 +392,13 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
       companionCreatures[i] = null;
       companionPocketed[i] = false;
       companionSavedHealth[i] = 0.0;
+      companionXp[i] = 0.0;
+      companionEvoluida[i] = false;
     }
     companionAtivoIndex = 0;
-    dungeonWorld.children.whereType<Player>().toList().forEach((p) => p.removeFromParent());
+    dungeonWorld.children.whereType<Player>().toList().forEach(
+      (p) => p.removeFromParent(),
+    );
 
     for (final child in dungeonWorld.children.toList()) {
       child.removeFromParent();
@@ -367,7 +407,10 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
 
     player = Player(moveJoystick: moveJoystick, creatureData: creature);
     _runStarted = true;
-    player.position = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
+    player.position = Vector2(
+      RoomComponent.roomWidth / 2,
+      RoomComponent.roomHeight / 2,
+    );
     dungeonWorld.add(player);
 
     companionCreatures[0] = creature;
@@ -379,7 +422,9 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     currentFloor = 1;
     runBoss = BossRegistry.sortearPendente(_bossRandom);
 
-    final generator = DungeonGenerator(maxRooms: 12); // Gera uma dungeon com 12 salas
+    final generator = DungeonGenerator(
+      maxRooms: 12,
+    ); // Gera uma dungeon com 12 salas
     mapData = generator.generate();
 
     // Percorre todos os dados de salas criados pelo algoritmo
@@ -391,22 +436,35 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
         currentLevel: currentLevel,
         floor: currentFloor,
         bossBuilder: isBossFloor ? _buildRunBoss : null,
-        wildCreatureBuilder: currentFloor == andaresPorBoss - 1 ? _buildWildCreature : null,
+        wildCreatureBuilder: currentFloor == andaresPorBoss - 1
+            ? _buildWildCreature
+            : null,
       );
       loadedRooms['${roomData.x},${roomData.y}'] = room;
       dungeonWorld.add(room);
     }
 
     currentRoomIndex = Vector2.zero();
-    gameCamera.viewfinder.position = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
+    gameCamera.viewfinder.position = Vector2(
+      RoomComponent.roomWidth / 2,
+      RoomComponent.roomHeight / 2,
+    );
 
     // Remove HUD/minimapa de uma run anterior, se houver, antes de recriar.
-    gameCamera.viewport.children.whereType<Hud>().toList().forEach((h) => h.removeFromParent());
-    gameCamera.viewport.children.whereType<MinimapHud>().toList().forEach((m) => m.removeFromParent());
+    gameCamera.viewport.children.whereType<Hud>().toList().forEach(
+      (h) => h.removeFromParent(),
+    );
+    gameCamera.viewport.children.whereType<MinimapHud>().toList().forEach(
+      (m) => m.removeFromParent(),
+    );
     // Barra de boss de uma run anterior: o boss dela já foi removido junto com
     // o mundo, mas a barra vive na viewport e sobraria órfã.
-    gameCamera.viewport.children.whereType<BossHealthBar>().toList().forEach((b) => b.removeFromParent());
-    gameCamera.viewport.children.whereType<BlindOverlay>().toList().forEach((c) => c.removeFromParent());
+    gameCamera.viewport.children.whereType<BossHealthBar>().toList().forEach(
+      (b) => b.removeFromParent(),
+    );
+    gameCamera.viewport.children.whereType<BlindOverlay>().toList().forEach(
+      (c) => c.removeFromParent(),
+    );
 
     final hud = Hud(
       player: player,
@@ -422,7 +480,10 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     minimapHud = MinimapHud(
       mapData: mapData,
       getCurrentLogicalRoom: () {
-        return Vector2(currentRoomIndex.x + dungeonGridOrigin, currentRoomIndex.y + dungeonGridOrigin);
+        return Vector2(
+          currentRoomIndex.x + dungeonGridOrigin,
+          currentRoomIndex.y + dungeonGridOrigin,
+        );
       },
       position: Vector2(RoomComponent.roomWidth - 1, 1),
     );
@@ -456,8 +517,11 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     if (option == null) return null;
 
     final boss = option.builder(position, player);
+    boss.ehBoss = true;
     // A barra se auto-remove quando o boss sai do mundo, então é só somar.
-    gameCamera.viewport.add(BossHealthBar(boss: boss, nome: option.nome(buildContext!)));
+    gameCamera.viewport.add(
+      BossHealthBar(boss: boss, nome: option.nome(buildContext!)),
+    );
     return boss;
   }
 
@@ -469,18 +533,26 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
 
     final option = BossRegistry.all.first;
     final boss = option.builder(player.position + Vector2(0, -40), player);
+    boss.ehBoss = true;
     dungeonWorld.add(boss);
-    gameCamera.viewport.add(BossHealthBar(boss: boss, nome: option.nome(buildContext!)));
+    gameCamera.viewport.add(
+      BossHealthBar(boss: boss, nome: option.nome(buildContext!)),
+    );
   }
 
   @override
-  KeyEventResult onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) { // <-- MUDOU AQUI
+  KeyEventResult onKeyEvent(
+    KeyEvent event,
+    Set<LogicalKeyboardKey> keysPressed,
+  ) {
+    // <-- MUDOU AQUI
     if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.f1) {
       _spawnTestBoss();
       return KeyEventResult.handled;
     }
-    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.escape) {
-      if (!overlays.isActive('MainMenu')) { 
+    if (event is KeyDownEvent &&
+        event.logicalKey == LogicalKeyboardKey.escape) {
+      if (!overlays.isActive('MainMenu')) {
         if (overlays.isActive('PauseMenu')) {
           overlays.remove('PauseMenu');
           resumeEngine();
@@ -499,10 +571,10 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     super.onGameResize(canvasSize);
     // Garante que o minimapa e o joystick fiquem nos lugares certos se a tela girar ou mudar
     // Você pode acessar os filhos do jogo filtrando pelo tipo deles:
-   // children.whereType<MinimapHud>().forEach((minimap) {
-   //   minimap.position = Vector2(canvasSize.x - 40, 40);
-   // });
-    
+    // children.whereType<MinimapHud>().forEach((minimap) {
+    //   minimap.position = Vector2(canvasSize.x - 40, 40);
+    // });
+
     // Exemplo para o joystick caso ele esteja se perdendo:
     // moveJoystick.position = Vector2(80, canvasSize.y - 80);
   }
@@ -724,29 +796,54 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
       // Inimigo comum/boss (Enemy.onLoad) e escudo passivo do treinador
       // (Player.onLoad) — as duas usam `whiteReplacement: Palette.branco`,
       // então compartilham exatamente esta chave de cache.
-      warmUps.add(PaletteSwapper.createSwappedImage(
-        imagePath: c.spritePath,
-        lightGrayReplacement: c.corClara,
-        darkGrayReplacement: c.corEscura,
-        whiteReplacement: Palette.branco,
-      ));
-      warmUps.add(PaletteSwapper.createSwappedImage(
-        imagePath: 'projeteis/bolha.png',
-        lightGrayReplacement: c.corClara,
-        darkGrayReplacement: c.corEscura,
-        whiteReplacement: Palette.branco,
-      ));
+      warmUps.add(
+        PaletteSwapper.createSwappedImage(
+          imagePath: c.spritePath,
+          lightGrayReplacement: c.corClara,
+          darkGrayReplacement: c.corEscura,
+          whiteReplacement: Palette.branco,
+        ),
+      );
+      warmUps.add(
+        PaletteSwapper.createSwappedImage(
+          imagePath: 'projeteis/bolha.png',
+          lightGrayReplacement: c.corClara,
+          darkGrayReplacement: c.corEscura,
+          whiteReplacement: Palette.branco,
+        ),
+      );
       // Sprite do próprio `Player` (ver `Player._montarVisualEHitbox`) — sem
       // `whiteReplacement`, chave diferente da forma inimigo/escudo acima.
       // Cobre tanto a criatura inicial (slot 0) quanto qualquer troca em
       // pleno jogo pra uma espécie ainda não vista na run (recrutada na sala
       // da escada, ver PIVOT_CONTROLE_DIRETO.md §5) — sem isso, a PRIMEIRA
       // troca pra uma criatura nova geraria a textura em pleno combate.
-      warmUps.add(PaletteSwapper.createSwappedImage(
-        imagePath: c.spritePath,
-        lightGrayReplacement: c.corClara,
-        darkGrayReplacement: c.corEscura,
-      ));
+      warmUps.add(
+        PaletteSwapper.createSwappedImage(
+          imagePath: c.spritePath,
+          lightGrayReplacement: c.corClara,
+          darkGrayReplacement: c.corEscura,
+        ),
+      );
+    }
+
+    // Formas evoluídas (ver PIVOT_EVOLUCAO): só a forma `Player` — uma
+    // evolução nunca aparece como inimigo/boss nem escudo passivo de outra
+    // criatura, só substitui o sprite da ativa em pleno jogo. Sem isso, a
+    // PRIMEIRA evolução da run geraria a textura em pleno combate.
+    for (final evoluida in [
+      CreatureRegistry.roedorFogoEvo,
+      CreatureRegistry.tartarugaPlantaEvo,
+      CreatureRegistry.sapoAguaEvo,
+      CreatureRegistry.aveEletricaEvo,
+    ]) {
+      warmUps.add(
+        PaletteSwapper.createSwappedImage(
+          imagePath: evoluida.spritePath,
+          lightGrayReplacement: evoluida.corClara,
+          darkGrayReplacement: evoluida.corEscura,
+        ),
+      );
     }
 
     await PaletteSwapper.warmUp(warmUps);
@@ -844,18 +941,20 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     const double gap = 10.0;
 
     for (int i = 0; i < 2; i++) {
-      add(ConsumableSlotButton(
-        radius: raio,
-        // Índice capturado por valor no loop: cada slot lê o seu.
-        conteudo: () => _runStarted ? player.slots[i] : null,
-        onUsar: () {
-          if (_runStarted) player.useSlot(i);
-        },
-        margin: EdgeInsets.only(
-          top: 10,
-          left: margemEsquerda + i * (raio * 2 + gap),
+      add(
+        ConsumableSlotButton(
+          radius: raio,
+          // Índice capturado por valor no loop: cada slot lê o seu.
+          conteudo: () => _runStarted ? player.slots[i] : null,
+          onUsar: () {
+            if (_runStarted) player.useSlot(i);
+          },
+          margin: EdgeInsets.only(
+            top: 10,
+            left: margemEsquerda + i * (raio * 2 + gap),
+          ),
         ),
-      ));
+      );
     }
   }
 
@@ -881,7 +980,9 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     _abilityControls.add(
       AbilityButton(
         radius: buttonRadius,
-        tipo: () => _runStarted ? player.creatureData.ability1.tipo : AbilityTipo.ataque,
+        tipo: () => _runStarted
+            ? player.creatureData.ability1.tipo
+            : AbilityTipo.ataque,
         baseColor: Palette.cinza.withAlpha(255),
         pressedColor: Palette.cinza.withAlpha(140),
         pointerTracker: pointerTracker,
@@ -896,7 +997,9 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     _abilityControls.add(
       AbilityButton(
         radius: buttonRadius,
-        tipo: () => _runStarted ? player.creatureData.ability2.tipo : AbilityTipo.ataque,
+        tipo: () => _runStarted
+            ? player.creatureData.ability2.tipo
+            : AbilityTipo.ataque,
         baseColor: Palette.cinza.withAlpha(255),
         pressedColor: Palette.cinza.withAlpha(140),
         pointerTracker: pointerTracker,
@@ -910,7 +1013,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     // Esquiva pessoal, não uma habilidade de criatura — ver `Player.dodge`.
     // Sem cooldown desenhado aqui (a barra própria da esquiva vive embaixo
     // do sprite do jogador, ver `Player.render`).
-   /* _abilityControls.add(
+    /* _abilityControls.add(
       AbilityButton(
         radius: buttonRadius,
         tipo: () => AbilityTipo.esquiva,
@@ -945,10 +1048,13 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     if (!companionPocketed[slot]) return 0.0;
     final creature = companionCreatures[slot];
     if (creature == null || creature.stats.maxHp <= 0) return 0.0;
-    return (1 - companionSavedHealth[slot] / creature.stats.maxHp).clamp(0.0, 1.0);
+    return (1 - companionSavedHealth[slot] / creature.stats.maxHp).clamp(
+      0.0,
+      1.0,
+    );
   }
 
-// NOVO MÉTODO: Limpa e recria a fase!
+  // NOVO MÉTODO: Limpa e recria a fase!
   void nextLevel() {
     // 1. LIMPEZA TOTAL (O "faxineiro")
     // Remove salas velhas, tiros perdidos, itens no chão... tudo, MENOS o
@@ -966,12 +1072,12 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     // 2. AVANÇA O ANDAR
     // Sem isso o contador ficava travado em 1 pra sempre — e como o tema da
     // sala vem de `getThemeForLevel`, os outros 4 temas nunca apareciam.
-    
+
     currentFloor++;
 
-    if(currentFloor > numFloors){
+    if (currentFloor > numFloors) {
       currentLevel++;
-      currentFloor=1;
+      currentFloor = 1;
     }
 
     // 3. GERAÇÃO DE NOVO MAPA
@@ -984,9 +1090,11 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
         roomData,
         player: player,
         currentLevel: currentLevel,
-        floor:currentFloor,
+        floor: currentFloor,
         bossBuilder: isBossFloor ? _buildRunBoss : null,
-        wildCreatureBuilder: currentFloor == andaresPorBoss - 1 ? _buildWildCreature : null,
+        wildCreatureBuilder: currentFloor == andaresPorBoss - 1
+            ? _buildWildCreature
+            : null,
       );
       loadedRooms['${roomData.x},${roomData.y}'] = room;
       dungeonWorld.add(room);
@@ -994,11 +1102,17 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
 
     // 3. REPOSICIONAMENTO DO JOGADOR E CÂMERA
     // Volta o jogador para o centro lógico da fase (Sala Inicial)
-    player.position = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
+    player.position = Vector2(
+      RoomComponent.roomWidth / 2,
+      RoomComponent.roomHeight / 2,
+    );
     currentRoomIndex = Vector2.zero();
 
     // Dá um "corte seco" na câmera de volta para o início
-    gameCamera.viewfinder.position = Vector2(RoomComponent.roomWidth / 2, RoomComponent.roomHeight / 2);
+    gameCamera.viewfinder.position = Vector2(
+      RoomComponent.roomWidth / 2,
+      RoomComponent.roomHeight / 2,
+    );
 
     // 4. ATUALIZA O MINIMAPA
     // Entrega o novo mapa para a HUD e limpa o contorno antigo
@@ -1027,7 +1141,11 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
   /// hitbox dos pés, a mesma que as paredes bloqueiam, e usa a espessura de
   /// parede (16px) como borda.
   void _prendeJogadorNaSala(
-      double roomLeft, double roomTop, double roomRight, double roomBottom) {
+    double roomLeft,
+    double roomTop,
+    double roomRight,
+    double roomBottom,
+  ) {
     const double parede = 16.0;
     final pes = player.physicsHitbox.toAbsoluteRect();
 
@@ -1071,7 +1189,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
 
     final double roomWidth = RoomComponent.roomWidth;
     final double roomHeight = RoomComponent.roomHeight;
-    final double threshold = 8.0; 
+    final double threshold = 8.0;
 
     double roomLeft = currentRoomIndex.x * roomWidth;
     double roomRight = roomLeft + roomWidth;
@@ -1088,8 +1206,8 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
     // pelo lado MAIS PERTO: quem afunda mais da metade dos 16px da parede é
     // cuspido pro lado de fora em vez de voltar pra dentro. Com a sala
     // trancada a regra é dura, então prendemos os pés no interior dela.
-    final salaAtual = loadedRooms[
-        '${currentRoomIndex.x.toInt() + dungeonGridOrigin},${currentRoomIndex.y.toInt() + dungeonGridOrigin}'];
+    final salaAtual =
+        loadedRooms['${currentRoomIndex.x.toInt() + dungeonGridOrigin},${currentRoomIndex.y.toInt() + dungeonGridOrigin}'];
     if (salaAtual != null && salaAtual.isLocked) {
       _prendeJogadorNaSala(roomLeft, roomTop, roomRight, roomBottom);
       return;
@@ -1162,7 +1280,7 @@ class CreaturesRogueGame extends FlameGame with HasCollisionDetection, HasKeyboa
           onComplete: () {
             player.naoMove = false;
             freezeTmr = freezeTime;
-          }
+          },
         ),
       );
     }

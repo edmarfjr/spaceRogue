@@ -10,7 +10,13 @@ class Enraizar extends Ability {
   final double duracao;
 
   const Enraizar({this.reducaoDano = 1.0, this.duracao = 3.5})
-      : super(nome: 'Enraizar', cooldown: 7.0, tipo: AbilityTipo.defesa);
+    : super(
+        nome: 'Enraizar',
+        descricao:
+            'Crava raízes: reduz o dano recebido em troca de ficar parado.',
+        cooldown: 7.0,
+        tipo: AbilityTipo.defesa,
+      );
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

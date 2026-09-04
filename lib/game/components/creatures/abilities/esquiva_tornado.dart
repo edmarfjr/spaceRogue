@@ -17,27 +17,36 @@ class EsquivaTornado extends Ability {
     this.distancia = 32,
     this.duracao = 0.15,
     this.coefRastro = 0.5,
-  }) : super(nome: 'Esquiva Tornado', cooldown: 4.0, target: AbilityTarget.plrDir, tipo: AbilityTipo.esquiva);
+  }) : super(
+         nome: 'Esquiva Tornado',
+         descricao:
+             'Evasiva com i-frames que deixa um rastro de dano no caminho.',
+         cooldown: 4.0,
+         target: AbilityTarget.plrDir,
+         tipo: AbilityTipo.esquiva,
+       );
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
     final danoRastro = user.creatureData.stats.ataque * coefRastro;
     user.grantInvulnerability(duracao);
 
-    user.parent?.add(Projectile(
-          owner: user,
-          position: user.position.clone(),
-          direction: Vector2.zero(),
-          speed:0,
-          lifeTime: 3,
-          dmg: danoRastro,
-          sprPath: 'projeteis/tornado.png',
-          cor1: Palette.vermelho,
-          cor2: Palette.laranja,
-          tipo: user.creatureData.tipo,
-          radius: 8,
-          atravessa: 10
-        ));
+    user.parent?.add(
+      Projectile(
+        owner: user,
+        position: user.position.clone(),
+        direction: Vector2.zero(),
+        speed: 0,
+        lifeTime: 3,
+        dmg: danoRastro,
+        sprPath: 'projeteis/tornado.png',
+        cor1: Palette.vermelho,
+        cor2: Palette.laranja,
+        tipo: user.creatureData.tipo,
+        radius: 8,
+        atravessa: 10,
+      ),
+    );
 
     GhostEffect.spawnTrail(
       visual: user.visual,
@@ -45,12 +54,12 @@ class EsquivaTornado extends Ability {
       overDuration: duracao,
     );
 
-    user.add(MoveByEffect(
-      -dir.normalized() * distancia,
-      EffectController(duration: duracao),
-      onComplete: () {
-        
-      },
-    ));
+    user.add(
+      MoveByEffect(
+        -dir.normalized() * distancia,
+        EffectController(duration: duracao),
+        onComplete: () {},
+      ),
+    );
   }
 }
