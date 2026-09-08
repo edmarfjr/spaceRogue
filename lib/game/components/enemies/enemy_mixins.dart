@@ -223,12 +223,12 @@ mixin ShooterAttack on MovementHost {
 
 mixin ChaseMovement on MovementHost {
   static const double _cegoTrocaDirecao = 0.7;
-
+  
   final Random _cegoRandom = Random();
   Vector2 _cegoDirecao = Vector2.zero();
   double _cegoTrocaTimer = 0.0;
 
-  void updateChaseMovement(double dt) {
+  void updateChaseMovement(double dt,{double velAux = 1.0}) {
     if (cegoTimer > 0) {
       _updateCegoMovement(dt);
       return;
@@ -242,7 +242,7 @@ mixin ChaseMovement on MovementHost {
       Vector2 direction = distanceToPlayer.normalized();
       
       // Anda na direção do jogador
-      position += direction * speed * dt;
+      position += direction * speed * velAux * dt;
       
       // Espelha o sprite para olhar para o jogador
       if (direction.x < 0 && !visual.isFlippedHorizontally) {

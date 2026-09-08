@@ -11,7 +11,7 @@ import '../enemy_mixins.dart';
 /// A poça é um Projectile parado (speed 0) com `isEnemy: true`, mesmo truque
 /// do tornado da Esquiva Tornado. Sem ShooterAttack: a cadência é um timer
 /// simples, e `arrastar` precisa do visual.scale só pra si.
-class SlimePlantaEnemy extends Enemy with WanderMovement {
+class SlimePlantaEnemy extends Enemy{
   static const double _intervaloPoca = 0.5;
   static const double _duracaoPoca = 5.0;
   static const double _danoPoca = 2.0;

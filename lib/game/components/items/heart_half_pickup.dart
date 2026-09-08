@@ -20,7 +20,7 @@ class HeartHalfPickup extends Collectible {
       player.parent?.add(TextEffect(
         text: player.game.buildContext!.l10n.effect_maisVida(1),
         position: player.position.clone() + Vector2(0, -player.size.y / 2 - 4),
-        color: Palette.branco,
+        color: Palette.amarelo,
       ));
     }
     return curou;

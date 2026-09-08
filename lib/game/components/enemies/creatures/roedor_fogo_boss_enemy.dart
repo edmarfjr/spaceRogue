@@ -15,7 +15,7 @@ import '../enemy_mixins.dart';
 ///
 /// Fase 2 (≤50%): o leque abre mais e recarrega mais rápido — mais projéteis
 /// no ar ao mesmo tempo, não só mais dano por acerto.
-class RoedorFogoBossEnemy extends Enemy with WanderMovement, ShooterAttack {
+class RoedorFogoBossEnemy extends Enemy with ShooterAttack {
   static const double _vidaInicial = 200.0; // 4x a normal (30)
   static const double _alcanceGatilho = 90.0;
 
@@ -34,11 +34,11 @@ class RoedorFogoBossEnemy extends Enemy with WanderMovement, ShooterAttack {
     required super.position,
     required super.playerTarget,
   }) : super(
-         creature: CreatureRegistry.roedorFogo,
+         creature: CreatureRegistry.roedorFogoEvo,
          speed: 38.0,
          health: _vidaInicial,
          dmg: 2,
-         size: Vector2(32, 32),        // dobro do padrão (16x16)
+         size: Vector2(48, 48),        // dobro do padrão (16x16)
          hitboxSize: Vector2(16, 20),  // dobro do hitbox normal (8, 10)
          isPushable: false,
        );

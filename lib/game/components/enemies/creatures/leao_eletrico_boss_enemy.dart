@@ -11,7 +11,7 @@ import '../enemy_mixins.dart';
 /// em cima do jogador, com uma queda elétrica em área ao pousar. A forma
 /// jogável nunca vê essa fase; é o que a diferencia do inimigo comum sem
 /// precisar de uma terceira habilidade.
-class LeaoEletricoBossEnemy extends Enemy with ChaseMovement, ShooterAttack, JumpMovement {
+class LeaoEletricoBossEnemy extends Enemy with ShooterAttack, JumpMovement {
   static const double _vidaInicial = 250.0; // 4x a normal (26)
   static const double _fireRate = 1.4;
   static const double _alcanceTiro = 60.0;

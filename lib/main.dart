@@ -10,6 +10,7 @@ import 'package:creatures_rogue/game/components/creatures/creature_progress.dart
 import 'package:creatures_rogue/game/overlays/boss_reveal_overlay.dart';
 import 'package:creatures_rogue/game/overlays/console_overlay.dart';
 import 'package:creatures_rogue/game/overlays/creature_select_overlay.dart';
+import 'package:creatures_rogue/game/overlays/evolution_overlay.dart';
 import 'package:creatures_rogue/game/overlays/game_over_overlay.dart';
 import 'package:creatures_rogue/game/overlays/intro_overlay.dart';
 import 'package:creatures_rogue/game/overlays/main_menu_overlay.dart';
@@ -32,6 +33,7 @@ bool get isDesktopPlatform {
       return false;
   }
 }
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await CreatureProgress.instance.load();
@@ -48,7 +50,7 @@ void main() async {
   //    DeviceOrientation.landscapeLeft,
   //    DeviceOrientation.landscapeRight,
   //  ]);
- // }
+  // }
 
   final creaturesGame = CreaturesRogueGame(
     // Esquema escolhido na última sessão (ver GameSettings).
@@ -74,7 +76,9 @@ void main() async {
         'BossReveal': (context, game) => BossRevealOverlay(game: game),
         'PauseMenu': (context, game) => PauseMenuOverlay(game: game),
         'Hud': (context, game) => HudOverlay(game: game),
-        'GameOver': (context, game) => GameOverMenu(game: game), // <--- REGISTRO NOVO
+        'GameOver': (context, game) =>
+            GameOverMenu(game: game), // <--- REGISTRO NOVO
+        'Evolution': (context, game) => EvolutionOverlay(game: game),
       },
       initialActiveOverlays: const ['MainMenu'], // Começa no Menu
     ),
@@ -98,5 +102,4 @@ void main() async {
   );
 }
 
-class GameOverOverlay {
-}
+class GameOverOverlay {}

@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'dart:ui' as ui;
+import 'package:creatures_rogue/game/components/enemies/enemy_mixins.dart';
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
@@ -25,7 +26,7 @@ import '../player/player.dart';
 import '../utils/palette_swapper.dart';
 import '../utils/y_sort.dart';
 
-abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameRef, MovementHost {
+abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameRef, MovementHost, WanderMovement, ChaseMovement {
   final Player playerTarget;
   
   double speed;
@@ -93,7 +94,8 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   /// Gancho usado por habilidades de controle de grupo (ex.: Corrente
   /// Estática). Enquanto > 0, o inimigo não chama `movimento`.
   double stunTimer = 0.0;
-
+  double paralisedTimer = 0.0;
+  double fearTimer = 0.0;
   /// Gancho de guarda defensiva (ex.: casco fechado da tartaruga). Neutro por
   /// padrão: 0.0 não muda nada. Lido em `takeDamage`.
   double damageReduction = 0.0;
@@ -271,6 +273,8 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
     conditionIcons.queimaduraAtivo = dots.containsKey(DotKind.queimadura);
     conditionIcons.lentidaoAtivo = lentidaoTimer > 0;
     conditionIcons.cegoAtivo = cegoTimer > 0;
+    conditionIcons.paralisadoAtivo = paralisedTimer > 0;
+    conditionIcons.medoAtivo = fearTimer > 0;
 
 
     if (!knockbackVelocity.isZero()) {
@@ -285,8 +289,18 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
       return; // Pula o método de movimento, o inimigo não "pensa" enquanto voa pra trás
     }
 
+    if (paralisedTimer > 0) {
+      paralisedTimer -= dt;
+      return;
+    }
     if (stunTimer > 0) {
       stunTimer -= dt;
+      updateWanderMovement(dt, minPause: 0.0, maxPause: 0.2);
+      return;
+    }
+    if (fearTimer > 0) {
+      fearTimer -= dt;
+      updateChaseMovement(dt, velAux: -1.0);
       return;
     }
     movimento(dt);
@@ -337,6 +351,10 @@ abstract class Enemy extends PositionComponent with CollisionCallbacks, HasGameR
   /// a duração final depender só da ordem de processamento da lista.
   void applyStun(double t){
     stunTimer = t > stunTimer ? t : stunTimer;
+  }
+
+  void applyParalise(double t){
+    paralisedTimer = t > paralisedTimer ? t : paralisedTimer;
   }
 
   /// [fator] é a fração da velocidade original (0.5 = metade). Reaplicar

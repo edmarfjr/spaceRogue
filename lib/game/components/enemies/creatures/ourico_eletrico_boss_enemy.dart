@@ -14,7 +14,7 @@ import '../enemy_mixins.dart';
 /// de tempos em tempos se enrosca (guarda, quase imune) e ao abrir solta uma
 /// onda maior no lugar. Fase 2 (≤50%) encurta o ciclo e escala dano/raio —
 /// igual ao padrão da Tartaruga Ancestral, mas com choque em vez de força.
-class OuricoEletricoBossEnemy extends Enemy with WanderMovement {
+class OuricoEletricoBossEnemy extends Enemy{
   static const double _vidaInicial = 200.0; // 4x a normal (20)
 
   static const double _cooldownRetaliacao = 0.8;

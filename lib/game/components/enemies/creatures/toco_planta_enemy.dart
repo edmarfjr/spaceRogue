@@ -11,7 +11,7 @@ import '../enemy_mixins.dart';
 /// redor dele o tempo todo — a mesma órbita da versão jogável, só que
 /// permanente em vez de sob cooldown. O perigo não é perseguição, é chegar
 /// perto demais.
-class TocoPlantaEnemy extends Enemy with WanderMovement {
+class TocoPlantaEnemy extends Enemy {
   static const int _numEspinhos = 5;
   static const double _raio = 20;
   static const double _velocidadeAngular = 3;

@@ -107,7 +107,7 @@ class PowerUpItem extends Collectible {
     player.parent?.add(TextEffect(
       text: type.descricao(player.game.buildContext!),
       position: player.position.clone() + Vector2(0, -player.size.y / 2 - 4),
-      color: Palette.branco,
+      color: Palette.amarelo,
     ));
     return true; // upgrade sempre pode ser pego
   }

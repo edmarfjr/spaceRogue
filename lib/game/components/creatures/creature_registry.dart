@@ -1,8 +1,12 @@
 import 'package:creatures_rogue/game/components/creatures/abilities/brado_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/choque_eletrico_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/disparada_congelante.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/disparada_veloz_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/esquiva_tornado_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/jato_aquatico_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/jogada_de_corpo_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/mega_soco%20evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/soco_flamejante_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/tiro_de_gelo.dart';
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
@@ -319,6 +323,23 @@ class CreatureRegistry {
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) =>
         GriloEletricoEnemy(position: pos, playerTarget: plr),
+    evoluir: () => griloEletricoEvo,
+  );
+
+  static final CreatureData griloEletricoEvo = CreatureData(
+    id: 'grilo_eletrico',
+    nome: 'Grilo Eletrico Evoluido',
+    spritePath: 'actors/griloEletricEvo.png',
+    tipo: CreatureType.eletrico,
+    corClara: Palette.laranja,
+    corEscura: Palette.marromEsc,
+    stats: BaseStats(maxHp: 4, speed: 80, defesa: 1, ataque: 4),
+    ability1: ChoqueEletricoEvo(),
+    ability2: DisparadaVelozEvo(),
+    moveAnim: MovementAnimation.saltitar,
+    hitboxSize: Vector2(8, 10),
+    enemyBuilder: (pos, plr) =>
+        GriloEletricoEnemy(position: pos, playerTarget: plr),
     //passive: ReflexoEletrico(),
   );
 
@@ -332,6 +353,23 @@ class CreatureRegistry {
     stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 4),
     ability1: SocoFlamejante(),
     ability2: EsquivaTornado(),
+    moveAnim: MovementAnimation.flutuar,
+    hitboxSize: Vector2(8, 10),
+    enemyBuilder: (pos, plr) =>
+        TornadoFogoEnemy(position: pos, playerTarget: plr),
+    evoluir: () => tornadoFogoEvo,
+  );
+
+  static final CreatureData tornadoFogoEvo = CreatureData(
+    id: 'tornado_fogo',
+    nome: 'Tornado de Fogo',
+    spritePath: 'actors/furacFogoEvo.png',
+    tipo: CreatureType.fogo,
+    corClara: Palette.vermelho,
+    corEscura: Palette.roxoEsc,
+    stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 4),
+    ability1: SocoFlamejanteEvo(),
+    ability2: EsquivaTornadoEvo(),
     moveAnim: MovementAnimation.flutuar,
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) =>
@@ -477,7 +515,7 @@ class CreatureRegistry {
 
   static final CreatureData caoNeutro = CreatureData(
     id: 'cao_neutro',
-    nome: 'Barko',
+    nome: 'Doguin',
     spritePath: 'actors/caoNeutro.png',
     tipo: CreatureType.neutro,
     corClara: Palette.marromEsc,
@@ -493,7 +531,7 @@ class CreatureRegistry {
 
   static final CreatureData gatoNeutro = CreatureData(
     id: 'gato_neutro',
-    nome: 'Whisko',
+    nome: 'Meao',
     spritePath: 'actors/gatoNeutro.png',
     tipo: CreatureType.neutro,
     corClara: Palette.cinza,
@@ -509,7 +547,7 @@ class CreatureRegistry {
 
   static final CreatureData aveNeutro = CreatureData(
     id: 'ave_neutro',
-    nome: 'Chirpling',
+    nome: 'paassarin',
     spritePath: 'actors/aveNeutro.png',
     tipo: CreatureType.neutro,
     corClara: Palette.picotronBege,
@@ -525,7 +563,7 @@ class CreatureRegistry {
 
   static final CreatureData peixeNeutro = CreatureData(
     id: 'peixe_neutro',
-    nome: 'Flopper',
+    nome: 'layfishy',
     spritePath: 'actors/peixeNeutro.png',
     tipo: CreatureType.neutro,
     corClara: Palette.salmon,

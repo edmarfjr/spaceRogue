@@ -8,7 +8,7 @@ import '../enemy_mixins.dart';
 ///
 /// Fase 2 (≤50%): cadência de mordida quase dobra e o dano sobe — a matilha
 /// não dá descanso quando fica acuada.
-class CaoNeutroBossEnemy extends Enemy with ChaseMovement, ShooterAttack {
+class CaoNeutroBossEnemy extends Enemy with ShooterAttack {
   static const double _vidaInicial = 100.0;
   static const double _alcanceMordida = 20.0;
   static const double _fireRateFase1 = 0.9;

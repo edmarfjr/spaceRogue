@@ -311,6 +311,30 @@ class CreaturesRogueGame extends FlameGame
   /// desbloquear, e o andar de boss vira andar comum.
   BossOption? runBoss;
 
+  /// Criatura antes/depois da evolução em andamento (ver PIVOT_EVOLUCAO) —
+  /// só usado pra `EvolutionOverlay` desenhar as duas formas. `null` quando
+  /// não há tela de evolução aberta.
+  CreatureData? evolucaoBase;
+  CreatureData? evolucaoNova;
+
+  /// Chamado por `Player._evoluir()` assim que a troca de dados já
+  /// aconteceu (o jogador já É a forma evoluída por baixo) — esta tela é só
+  /// a cerimônia visual por cima, pausando o jogo até o toque de continuar.
+  void mostrarEvolucao(CreatureData base, CreatureData nova) {
+    evolucaoBase = base;
+    evolucaoNova = nova;
+    pauseEngine();
+    overlays.add('Evolution');
+  }
+
+  /// Chamado pelo botão "CONTINUAR" da `EvolutionOverlay`.
+  void dismissEvolucao() {
+    overlays.remove('Evolution');
+    evolucaoBase = null;
+    evolucaoNova = null;
+    resumeEngine();
+  }
+
   final Random _bossRandom = Random();
 
   bool get isBossFloor => currentFloor % andaresPorBoss == 0;
@@ -1096,9 +1120,7 @@ class CreaturesRogueGame extends FlameGame
         currentLevel: currentLevel,
         floor: currentFloor,
         bossBuilder: isBossFloor ? _buildRunBoss : null,
-        wildCreatureBuilder: currentFloor % 2 == 2
-            ? _buildWildCreature
-            : null,
+        wildCreatureBuilder: currentFloor % 2 == 2 ? _buildWildCreature : null,
       );
       loadedRooms['${roomData.x},${roomData.y}'] = room;
       dungeonWorld.add(room);

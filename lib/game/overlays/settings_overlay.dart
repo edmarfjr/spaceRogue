@@ -54,15 +54,39 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
           style: const TextStyle(color: Palette.preto),
         ),
         actions: [
-          TextButton(
+          OutlinedButton(
             onPressed: withBtnSfx(() => Navigator.of(dialogContext).pop(false)),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 10,
+              ),
+              backgroundColor: Palette.branco,
+              side: BorderSide(color: Palette.preto),
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+                side: BorderSide(color: Palette.preto, width: 5),
+              ),
+            ),
             child: Text(
               context.l10n.settings_confirmarResetNao,
               style: const TextStyle(color: Palette.preto),
             ),
           ),
-          TextButton(
+          OutlinedButton(
             onPressed: withBtnSfx(() => Navigator.of(dialogContext).pop(true)),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 10,
+              ),
+              backgroundColor: Palette.branco,
+              side: BorderSide(color: Palette.preto),
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.zero,
+                side: BorderSide(color: Palette.preto, width: 5),
+              ),
+            ),
             child: Text(
               context.l10n.settings_confirmarResetSim,
               style: const TextStyle(

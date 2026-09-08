@@ -6,7 +6,7 @@ import '../enemy_mixins.dart';
 /// Ave Neutro como inimigo: persegue sem parar e dispara bicadas fracas e
 /// rápidas de curto alcance. Voa — atravessa pedra e buraco, igual à Ave
 /// Elétrica, só que sem elemento nenhum no bico.
-class AveNeutroEnemy extends Enemy with ChaseMovement, ShooterAttack {
+class AveNeutroEnemy extends Enemy with ShooterAttack {
   static const double _fireRate = 1.4;
   static const double _alcanceTiro = 0.3;
 

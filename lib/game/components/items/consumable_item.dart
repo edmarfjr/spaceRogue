@@ -111,7 +111,7 @@ class ConsumablePickup extends Collectible {
       parent?.add(TextEffect(
         text: game.buildContext!.l10n.effect_cheio,
         position: position.clone() + Vector2(0, -10),
-        color: Palette.branco,
+        color: Palette.amarelo,
       ));
     }
 

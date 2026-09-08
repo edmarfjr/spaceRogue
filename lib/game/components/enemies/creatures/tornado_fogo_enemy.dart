@@ -10,7 +10,7 @@ import '../enemy_mixins.dart';
 /// `flutuar` é a única animação de movimento que não escreve visual.scale, então
 /// é a única que pode conviver com o pulso de ataque do ShooterAttack no mesmo
 /// frame sem disputar canal.
-class TornadoFogoEnemy extends Enemy with ChaseMovement, ShooterAttack {
+class TornadoFogoEnemy extends Enemy with ShooterAttack {
   static const double _alcanceSoco = 16.0;
   static const double _fireRate = 1.1;
   static const double _alcanceSegundos = 0.05;

@@ -28,6 +28,7 @@ class BradoEvo extends Ability {
         knockback: empurrao,
         size: Vector2(64, 64),
         tipo: user.creatureData.tipo,
+        paraliseDuration: 2.0,
       ),
     );
   }

@@ -12,7 +12,7 @@ import '../enemy_mixins.dart';
 /// fora), aqui o perigo é ficar perto do bicho, não na frente dele.
 ///
 /// Fase 2 (≤50%): mais penas, giro mais rápido.
-class AveNeutroBossEnemy extends Enemy with ChaseMovement, ShooterAttack {
+class AveNeutroBossEnemy extends Enemy with ShooterAttack {
   static const double _vidaInicial = 120;
   static const double _alcanceGatilho = 60.0;
   static const double _fireRate = 2.2;

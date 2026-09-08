@@ -41,13 +41,13 @@ class CobraAguaBossEnemy extends Enemy with JumpMovement {
     required super.position,
     required super.playerTarget,
   }) : super(
-         creature: CreatureRegistry.cobraAgua,
+         creature: CreatureRegistry.cobraAguaEvo,
          moveAnim: null, // o bote é a animação
          speed: 0.0,     // quem move é o JumpMovement
          health: _vidaInicial,
          dmg: 2,
          shadowOffset: Vector2(0, 5),
-         size: Vector2(28, 28),        // dobro do padrão (14x14)
+         size: Vector2(48, 48),        // dobro do padrão (14x14)
          hitboxSize: Vector2(18, 28),  // dobro do hitbox normal (9, 14)
          isPushable: false,
        );

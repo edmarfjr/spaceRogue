@@ -16,7 +16,7 @@ import '../enemy_mixins.dart';
 ///
 /// Todo atirador daqui ensina "desvie uma vez". Esse ensina "desvie e continue
 /// andando", que é leitura nova no elenco.
-class PinguimAguaEnemy extends Enemy with WanderMovement, ShooterAttack {
+class PinguimAguaEnemy extends Enemy with ShooterAttack {
   static const double _fireRate = 2.6;
 
   static const double _velocidadeTiro = 70.0;

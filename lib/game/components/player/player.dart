@@ -15,7 +15,7 @@ import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/creatures/damageable_by_enemy.dart';
-import 'package:creatures_rogue/game/components/creatures/passive.dart';
+//import 'package:creatures_rogue/game/components/creatures/passive.dart';
 import 'package:creatures_rogue/game/components/effects/ghost_effect.dart';
 import 'package:creatures_rogue/game/components/effects/movement_animator.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
@@ -197,7 +197,7 @@ class Player extends PositionComponent
 
   /// Quanto de XP falta pra evoluir. Só uma constante por enquanto — todas
   /// as criaturas evoluem no mesmo ritmo.
-  static const double xpParaEvoluir = 20.0;
+  static const double xpParaEvoluir = 2.0;
 
   double get xpFracao => evoluida ? 1.0 : (xp / xpParaEvoluir).clamp(0.0, 1.0);
 
@@ -227,6 +227,7 @@ class Player extends PositionComponent
   /// exatamente como estavam (só `trocarCriatura`, que troca pra uma criatura
   /// DIFERENTE do banco, reseta esse estado de combate).
   void _evoluir() {
+    final base = creatureData;
     final proxima = creatureData.evoluir!();
     creatureData = proxima;
     evoluida = true;
@@ -241,6 +242,13 @@ class Player extends PositionComponent
     // Assíncrono, sem await — mesmo motivo de `trocarCriatura`: o cache de
     // sprite já foi aquecido em `_preloadCombatSprites`.
     _montarVisualEHitbox();
+
+    // A troca de dado já aconteceu acima — isto só abre a cerimônia visual
+    // por cima (pausa o jogo até o toque de continuar). Ver
+    // `CreaturesRogueGame.mostrarEvolucao`/`EvolutionOverlay`.
+    if (jogo is CreaturesRogueGame) {
+      jogo.mostrarEvolucao(base, proxima);
+    }
   }
 
   /// Estado "segurado" de cada habilidade — dois canais independentes porque
@@ -453,11 +461,11 @@ class Player extends PositionComponent
   // Barra que ENCHE conforme a esquiva recarrega (vazia assim que usa, cheia
   // quando pronta) — oposto do indicador de habilidade da Hud, que ESVAZIA um
   // cinza por cima do ícone. Não tem ícone aqui pra esvaziar, é só uma cor.
-  static final Paint _dodgeBarraMoldura = Paint()..color = Palette.preto;
-  static final Paint _dodgeBarraFundo = Paint()..color = Palette.cinzaEsc;
-  static final Paint _dodgeBarraPreenchimento = Paint()..color = Palette.verde;
-  static const double _dodgeBarraLargura = 14.0;
-  static const double _dodgeBarraAltura = 2.0;
+  //static final Paint _dodgeBarraMoldura = Paint()..color = Palette.preto;
+  //static final Paint _dodgeBarraFundo = Paint()..color = Palette.cinzaEsc;
+  //static final Paint _dodgeBarraPreenchimento = Paint()..color = Palette.verde;
+  //static const double _dodgeBarraLargura = 14.0;
+  //static const double _dodgeBarraAltura = 2.0;
 
   /// Não é `final`: `_montarVisualEHitboxInterno` reatribui a cada remontagem
   /// (troca de criatura, evolução). Com `late final` a segunda remontagem já
@@ -489,18 +497,30 @@ class Player extends PositionComponent
       );
     }
   }
-
+*/
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    if (_dentroGramaAlta){
-      canvas.drawRect(
-        Rect.fromLTWH(0, size.y + 4, size.x, 1),
-        Paint()..color = Palette.vermelho,
-      );
+    if (shieldVisualActive) {
+      for (var i = 0; i < shieldHits; i++) {
+        canvas.drawCircle(
+          Offset(-4, i * 4 + 5),
+          2.0,
+          Paint()..color = Palette.azul
+          ..filterQuality = FilterQuality.none,
+        );
+        canvas.drawCircle(
+          Offset(-4, i * 4 + 5),
+          2.0,
+          Paint()..color = Palette.preto
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.8
+          ..filterQuality = FilterQuality.none,
+        );
+      }
     }
   }
-*/
+
   Player({required this.moveJoystick, required this.creatureData})
     : maxHealth = creatureData.stats.maxHp,
       currentHealth = creatureData.stats.maxHp,
@@ -589,8 +609,9 @@ class Player extends PositionComponent
     add(visual);
 
     Vector2 floatOffset = Vector2.zero();
+    Vector2 evoOff = evoluida ? Vector2(0, -8) : Vector2.zero();
 
-    conditionIcons = ConditionIcons()..position = Vector2(size.x / 2, -6);
+    conditionIcons = ConditionIcons()..position = Vector2(size.x / 2, -6 + evoOff.y);
     add(conditionIcons);
 
     if (creatureData.moveAnim == MovementAnimation.flutuar) {
@@ -604,7 +625,7 @@ class Player extends PositionComponent
       tipo: () => creatureData.ability1.tipo,
       cooldownFraction: () => ability1CooldownFraction,
       raio: 4,
-      position: Vector2(4, -4 + floatOffset.y),
+      position: Vector2(4, -4 + floatOffset.y + evoOff.y),
     )..priority = 2;
     add(_ringAbility1!);
 
@@ -612,7 +633,7 @@ class Player extends PositionComponent
       tipo: () => creatureData.ability2.tipo,
       cooldownFraction: () => ability2CooldownFraction,
       raio: 4,
-      position: Vector2(12, -4 + floatOffset.y),
+      position: Vector2(12, -4 + floatOffset.y + evoOff.y),
     )..priority = 2;
     add(_ringAbility2!);
 
@@ -1093,8 +1114,8 @@ class Player extends PositionComponent
 
   @override
   void placeBomb(Vector2 dir) {
-    if (bombsAmount <= 0) return;
-    bombsAmount--;
+    //if (bombsAmount <= 0) return;
+    //bombsAmount--;
     parent?.add(Bomb(position: position.clone() + (dir * 17)));
   }
 
@@ -1217,7 +1238,7 @@ class Player extends PositionComponent
           )) {
         continue;
       }
-      enemy.applyStun(duracao);
+      enemy.applyParalise(duracao);
       congelouAlgum = true;
     }
 

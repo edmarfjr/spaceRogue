@@ -14,11 +14,13 @@ class ConditionIcons extends PositionComponent {
   bool queimaduraAtivo = false;
   bool lentidaoAtivo = false;
   bool cegoAtivo = false;
+  bool paralisadoAtivo = false;
+  bool medoAtivo = false;
 
   final List<SpriteComponent> _icones = [];
 
   List<bool> get _estados =>
-      [stunAtivo, venenoAtivo, queimaduraAtivo, lentidaoAtivo, cegoAtivo];
+      [stunAtivo, venenoAtivo, queimaduraAtivo, lentidaoAtivo, cegoAtivo, paralisadoAtivo, medoAtivo];
 
   ConditionIcons() : super(anchor: Anchor.bottomCenter);
 
@@ -30,6 +32,8 @@ class ConditionIcons extends PositionComponent {
       ('effects/fogo.png', Palette.laranja, Palette.vermelho), // queimadura
       ('effects/lento.png', Palette.azul, Palette.indigo),        // lentidão
       ('effects/cego.png', Palette.cinza, Palette.cinzaEsc),   // cegueira
+      ('effects/chain.png', Palette.cinza, Palette.indigo), // paralisia
+      ('effects/fear.png', Palette.cinza, Palette.azulEsc),   // medo
     ];
 
     for (final (caminho, clara, escura) in definicoes) {

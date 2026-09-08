@@ -12,7 +12,7 @@ import '../enemy_mixins.dart';
 /// Sem ShooterAttack, então `caminhada` fica livre pra escrever visual.scale.
 /// A pancada usa visual.scale também, mas nunca no mesmo frame: a caminhada só
 /// roda quando não está preparando o golpe.
-class UrsoPlantaEnemy extends Enemy with ChaseMovement {
+class UrsoPlantaEnemy extends Enemy{
   static const double _alcancePancada = 22.0;
   static const double _preparoPancada = 0.6;
   static const double _recuperacao = 1.2;

@@ -13,7 +13,7 @@ import '../enemy_mixins.dart';
 ///
 /// Fase 2 (≤50%): um segundo anel sai logo atrás do primeiro, girado meio
 /// passo — fecha os buracos entre os projéteis do primeiro anel.
-class AveEletricaBossEnemy extends Enemy with ChaseMovement, ShooterAttack {
+class AveEletricaBossEnemy extends Enemy with ShooterAttack {
   static const double _vidaInicial = 120;
   static const double _alcanceGatilho = 70.0; // maior que a normal (45): AoE ameaça de mais longe
   static const double _fireRate = 1.8;
@@ -32,13 +32,13 @@ class AveEletricaBossEnemy extends Enemy with ChaseMovement, ShooterAttack {
     required super.position,
     required super.playerTarget,
   }) : super(
-         creature: CreatureRegistry.aveEletrica,
+         creature: CreatureRegistry.aveEletricaEvo,
          speed: 34.0,
          health: _vidaInicial,
          dmg: 2,
          isAirborne: true, // passa por cima de pedra e buraco, igual à normal
          shadowOffset: Vector2(0, 10),
-         size: Vector2(32, 32),        // dobro do padrão (16x16)
+         size: Vector2(48, 48),        // dobro do padrão (16x16)
          hitboxSize: Vector2(18, 22),  // dobro do hitbox normal (9, 11)
          isPushable: false,
        );

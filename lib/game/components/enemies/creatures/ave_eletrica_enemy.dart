@@ -9,7 +9,7 @@ import '../enemy_mixins.dart';
 ///
 /// `flutuar` é a única animação de movimento que não escreve visual.scale,
 /// por isso combina com o pulso do ShooterAttack sem brigar por canal.
-class AveEletricaEnemy extends Enemy with ChaseMovement, ShooterAttack {
+class AveEletricaEnemy extends Enemy with ShooterAttack {
   static const double _fireRate = 1.4;
   static const double _alcanceTiro = 0.3; // vida curta do projétil = alcance curto
 

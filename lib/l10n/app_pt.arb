@@ -14,7 +14,7 @@
   "settings_progressoResetado": " PROGRESSO RESETADO ",
   "settings_resetarProgresso": " RESETAR PROGRESSO ",
   "settings_confirmarResetTitulo": "TEM CERTEZA?",
-  "settings_confirmarResetMensagem": "Isso vai apagar todo o progresso salvo (criaturas liberadas e a intro). Não dá pra desfazer.",
+  "settings_confirmarResetMensagem": "Isso vai apagar todo o progresso salvo, deseja continuar?.",
   "settings_confirmarResetSim": " SIM ",
   "settings_confirmarResetNao": " NÃO ",
   "settings_voltar": " VOLTAR ",
@@ -78,15 +78,17 @@
   },
   "captureSwap_soltar": "SOLTAR",
 
+  "evolution_titulo": "EVOLUINDO!",
+
   "bossReveal_vs": "VS",
   "bossReveal_entrar": " ENTRAR ",
 
-  "intro_pagina1": "FOGO, ÁGUA, PLANTA e RELÂMPAGO",
-  "intro_pagina2": "Há muito tempo, nós viviamos em harmonia.",
-  "intro_pagina3": "Então tudo mudou quando o treinador surgiu...",
-  "intro_pagina4": "Cabe a você libertar nossos irmãos capturados!",
+  "intro_pagina1": "FOGO, ÁGUA, PLANTA e RELÂMPAGO. Há muito tempo, as CRIATURAS viviamos paz e harmonia.",
+  "intro_pagina2": "Então tudo mudou quando o treinador surgiu...",
+  "intro_pagina3": "Com ele, um novo elemento surgiu...NORMAL",
+  "intro_pagina4": "Cabe a você liderar uma revolta! E libertar seus irmãos capturados!",
   "intro_pular": "PULAR",
-  "intro_escolhaPrimeira": "ESCOLHA SUA PRIMEIRA CRIATURA",
+  "intro_escolhaPrimeira": "QUEM É VOCÊ?",
   "intro_escolher": " ESCOLHER ",
   "intro_saude": "SAÚDE {valor}",
   "@intro_saude": {

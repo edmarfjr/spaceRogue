@@ -40,14 +40,14 @@ enum _Fase { dialogo, escolha }
 /// Candidatas da primeira escolha: uma por tipo elemental, pra escolha ser
 /// escolha de verdade e não só "a única opção".
 const List<String> _idsIniciais = [
-  //'roedor_fogo',
-  //'tartaruga_planta',
-  //'sapo_agua',
-  //'ave_eletrica',
-  'cao_neutro',
+  'roedor_fogo',
+  'tartaruga_planta',
+  'sapo_agua',
+  'ave_eletrica',
+  //'cao_neutro',
   //'gato_neutro',
-  'ave_neutro',
-  'peixe_neutro',
+  //'ave_neutro',
+  //'peixe_neutro',
 ];
 
 class _IntroOverlayState extends State<IntroOverlay> {

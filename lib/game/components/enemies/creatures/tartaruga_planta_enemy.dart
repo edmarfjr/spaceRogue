@@ -9,7 +9,7 @@ import '../enemy_mixins.dart';
 /// em tempos **fecha o casco** — para de andar e quase não toma dano. A janela
 /// de guarda é o que a define: ensina o jogador a parar de gastar tiro e
 /// reposicionar em vez de martelar o mesmo alvo.
-class TartarugaPlantaEnemy extends Enemy with WanderMovement, ShooterAttack {
+class TartarugaPlantaEnemy extends Enemy with ShooterAttack {
   static const double _fireRate = 2.8;
 
   // Ciclo da guarda, contado dentro de movimento(dt) — nunca com Future.delayed,

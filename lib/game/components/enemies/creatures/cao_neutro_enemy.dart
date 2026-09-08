@@ -6,7 +6,7 @@ import '../enemy_mixins.dart';
 /// só alcança colado, via projétil de vida curtíssima (mesmo truque do
 /// Tornado de Fogo). Sem elemento, sem vantagem/desvantagem: o perigo dele é
 /// só não largar do seu rastro.
-class CaoNeutroEnemy extends Enemy with ChaseMovement, ShooterAttack {
+class CaoNeutroEnemy extends Enemy with ShooterAttack {
   static const double _alcanceMordida = 16.0;
   static const double _fireRate = 0.9;
   static const double _alcanceSegundos = 0.05;

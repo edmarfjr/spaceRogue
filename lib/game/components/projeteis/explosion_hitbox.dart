@@ -20,6 +20,7 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
   /// Se true, além do dano, atordoa (zera a ação) os inimigos atingidos.
   final bool isStun;
   final double stunDuration;
+  final double paraliseDuration;
   final bool isEnemy;
   final Color cor1;
   final Color cor2;
@@ -47,7 +48,8 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
     this.dmg = 1,
     this.isStun = false,
     this.isEnemy = false,
-    this.stunDuration = 1.5,
+    this.stunDuration = 0,
+    this.paraliseDuration = 0,
     this.knockback = 50.0,
     this.tipo = CreatureType.neutro,
     this.lentidaoDuracao = 0,
@@ -131,6 +133,9 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
       other.takeDamage(dmg * Player.danoMult, tipoAtacante: tipo);
       if (isStun){
         other.applyStun(stunDuration);
+      }
+      if(paraliseDuration>0){
+        other.applyParalise(paraliseDuration);
       }
       if (lentidaoDuracao > 0) other.applyLentidao(lentidaoDuracao, fator: lentidaoFator);
       if (cegoDuracao > 0) other.applyCego(cegoDuracao);

@@ -10,7 +10,7 @@ import '../enemy_mixins.dart';
 /// e de tempos em tempos se recolhe no casco (quase imune, parado) — mesmo
 /// ciclo de guarda da Tartaruga, janela segura pro jogador reposicionar em
 /// vez de gastar tiro. O boss inverte isso soltando cinza ao reabrir.
-class CaranguejoErmitaoEnemy extends Enemy with WanderMovement, ShooterAttack {
+class CaranguejoErmitaoEnemy extends Enemy with ShooterAttack {
   static const double _fireRate = 2.2;
 
   static const double _tempoAteGuardar = 5.0;

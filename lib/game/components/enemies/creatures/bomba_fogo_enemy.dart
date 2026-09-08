@@ -11,7 +11,7 @@ import '../enemy_mixins.dart';
 ///
 /// Sem ShooterAttack, então `saltitar` fica livre pra escrever visual.scale
 /// pelo ChaseMovement. O pavio não mexe em escala nenhuma — só conta tempo.
-class BombaFogoEnemy extends Enemy with ChaseMovement {
+class BombaFogoEnemy extends Enemy{
   static const double _alcanceGatilho = 20.0;
   static const double _pavio = 0.5;
   static const double _danoExplosao = 4.0;

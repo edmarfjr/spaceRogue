@@ -19,35 +19,65 @@ class EnemySpawner {
   /// raros. Sem isso, uma dungeon de 12 salas pode encher de Urso.
   static final List<List<SpawnOption>> _pool = [
     [
-      SpawnOption(CreatureRegistry.aveEletrica, 20), // frágil, comum 20
-      SpawnOption(CreatureRegistry.roedorFogo, 20), // frágil, comum 16
-      SpawnOption(CreatureRegistry.griloEletrico, 20), // frágil, comum 14
-      SpawnOption(CreatureRegistry.sapoAgua, 20), // médio 12
-      SpawnOption(CreatureRegistry.slimePlanta, 20), // médio, suja a arena 9
-      SpawnOption(CreatureRegistry.pinguimAgua, 20), // tanque, menos comum8
-      SpawnOption(CreatureRegistry.tartarugaPlanta, 20), // tanque, menos comum8
-      SpawnOption(CreatureRegistry.ouricoEletrico, 20), // tanque, menos comum7
-      SpawnOption(CreatureRegistry.caranguejoErmitao, 20,), // tanque, menos comum7
-      SpawnOption(CreatureRegistry.tocoPlanta, 20,), // tanque parado, menos comum7
-      SpawnOption(CreatureRegistry.bombaFogo, 20), // ameaça alta, raro6
-      SpawnOption(CreatureRegistry.cobraAgua, 20), // ameaça alta, raro5
-      SpawnOption(CreatureRegistry.leaoEletrico, 20), // ameaça alta, raro5
-      SpawnOption(CreatureRegistry.tornadoFogo, 20), // ameaça alta, muito raro4
-      SpawnOption(CreatureRegistry.ursoPlanta, 20), // ameaça alta, muito raro3
-      SpawnOption(CreatureRegistry.tubaraoAgua, 20), // ameaça alta, muito raro3
-      SpawnOption(CreatureRegistry.caoNeutro, 20), // frágil, sem elemento
-      SpawnOption(CreatureRegistry.gatoNeutro, 20), // frágil, sem elemento
-      SpawnOption(CreatureRegistry.aveNeutro, 20), // frágil, sem elemento
-      SpawnOption(CreatureRegistry.peixeNeutro, 20), // frágil, sem elemento
+      SpawnOption(CreatureRegistry.aveEletrica, 20),
+      SpawnOption(CreatureRegistry.roedorFogo, 20),
+      SpawnOption(CreatureRegistry.griloEletrico, 20),
+      SpawnOption(CreatureRegistry.sapoAgua, 20), 
+      SpawnOption(CreatureRegistry.slimePlanta, 20), 
+      SpawnOption(CreatureRegistry.pinguimAgua, 20), 
+      SpawnOption(CreatureRegistry.tartarugaPlanta, 20), 
+      SpawnOption(CreatureRegistry.ouricoEletrico, 20), 
+      SpawnOption(CreatureRegistry.caranguejoErmitao, 20,), 
+      SpawnOption(CreatureRegistry.tocoPlanta, 20,), 
+      SpawnOption(CreatureRegistry.bombaFogo, 20),
+      SpawnOption(CreatureRegistry.cobraAgua, 20), 
+      SpawnOption(CreatureRegistry.leaoEletrico, 20), 
+      SpawnOption(CreatureRegistry.tornadoFogo, 20), 
+      SpawnOption(CreatureRegistry.ursoPlanta, 20), 
+      SpawnOption(CreatureRegistry.tubaraoAgua, 20), 
+      SpawnOption(CreatureRegistry.caoNeutro, 20), 
+      SpawnOption(CreatureRegistry.gatoNeutro, 20), 
+      SpawnOption(CreatureRegistry.aveNeutro, 20), 
+      SpawnOption(CreatureRegistry.peixeNeutro, 20), 
     ],
     [
-      //SpawnOption(CreatureRegistry.roedorFogo, 20),
-      //SpawnOption(CreatureRegistry.tartarugaPlanta, 20),
-      //SpawnOption(CreatureRegistry.sapoAgua, 20),
-      //SpawnOption(CreatureRegistry.aveEletrica, 20),
+      SpawnOption(CreatureRegistry.roedorFogo, 20),
+      SpawnOption(CreatureRegistry.tartarugaPlanta, 20),
+      SpawnOption(CreatureRegistry.sapoAgua, 20),
+      SpawnOption(CreatureRegistry.aveEletrica, 20),
       SpawnOption(CreatureRegistry.caoNeutro, 20),
+      //SpawnOption(CreatureRegistry.gatoNeutro, 20),
+      //SpawnOption(CreatureRegistry.aveNeutro, 20),
+      //SpawnOption(CreatureRegistry.peixeNeutro, 20),
+    ],
+    [
+      SpawnOption(CreatureRegistry.tornadoFogo, 20), 
+      SpawnOption(CreatureRegistry.ursoPlanta, 20),
+      SpawnOption(CreatureRegistry.cobraAgua, 20),
+      SpawnOption(CreatureRegistry.griloEletrico, 20),
+      //SpawnOption(CreatureRegistry.caoNeutro, 20),
       SpawnOption(CreatureRegistry.gatoNeutro, 20),
+      //SpawnOption(CreatureRegistry.aveNeutro, 20),
+      //SpawnOption(CreatureRegistry.peixeNeutro, 20),
+    ],
+    [
+      SpawnOption(CreatureRegistry.bombaFogo, 20),
+      SpawnOption(CreatureRegistry.slimePlanta, 20),
+      SpawnOption(CreatureRegistry.pinguimAgua, 20),
+      SpawnOption(CreatureRegistry.ouricoEletrico, 20),
+      //SpawnOption(CreatureRegistry.caoNeutro, 20),
+      //SpawnOption(CreatureRegistry.gatoNeutro, 20),
       SpawnOption(CreatureRegistry.aveNeutro, 20),
+      //SpawnOption(CreatureRegistry.peixeNeutro, 20),
+    ],
+    [
+      SpawnOption(CreatureRegistry.caranguejoErmitao, 20),
+      SpawnOption(CreatureRegistry.tocoPlanta, 20),
+      SpawnOption(CreatureRegistry.tubaraoAgua, 20),
+      SpawnOption(CreatureRegistry.leaoEletrico, 20),
+      //SpawnOption(CreatureRegistry.caoNeutro, 20),
+      //SpawnOption(CreatureRegistry.gatoNeutro, 20),
+      //SpawnOption(CreatureRegistry.aveNeutro, 20),
       SpawnOption(CreatureRegistry.peixeNeutro, 20),
     ],
   ];

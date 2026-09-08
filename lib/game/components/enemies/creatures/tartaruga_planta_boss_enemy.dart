@@ -14,7 +14,7 @@ import '../enemy_mixins.dart';
 ///
 /// Fase 2 (≤50%): guarda quase total (reduz quase todo dano) e o ciclo
 /// inteiro encurta — a onda vem com mais frequência, não só mais forte.
-class TartarugaPlantaBossEnemy extends Enemy with WanderMovement, ShooterAttack {
+class TartarugaPlantaBossEnemy extends Enemy with ShooterAttack {
   static const double _vidaInicial = 320.0; // 4x a normal (80)
   static const double _fireRate = 2.8;
 
@@ -43,7 +43,7 @@ class TartarugaPlantaBossEnemy extends Enemy with WanderMovement, ShooterAttack 
     required super.position,
     required super.playerTarget,
   }) : super(
-         creature: CreatureRegistry.tartarugaPlanta,
+         creature: CreatureRegistry.tartarugaPlantaEvo,
          speed: 18.0,
          health: _vidaInicial,
          dmg: 2,
@@ -51,7 +51,7 @@ class TartarugaPlantaBossEnemy extends Enemy with WanderMovement, ShooterAttack 
          bltImg: 'projeteis/proj1.png',
          bltCor1: CreatureRegistry.tartarugaPlanta.corClara,
          bltCor2: CreatureRegistry.tartarugaPlanta.corEscura,
-         size: Vector2(32, 32),        // dobro do padrão (16x16)
+         size: Vector2(48, 48),        // dobro do padrão (16x16)
          hitboxSize: Vector2(28, 28),  // dobro do hitbox normal (14, 14)
          isPushable: false,
        );

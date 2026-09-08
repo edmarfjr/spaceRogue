@@ -13,7 +13,7 @@ import '../enemy_mixins.dart';
 /// que cobre bem mais chão que um passo normal e aterrissa com onda maior.
 /// Continua tendo a pancada de perto no meio tempo; o salto é um golpe extra
 /// na rotação, não substitui o resto.
-class UrsoPlantaBossEnemy extends Enemy with ChaseMovement {
+class UrsoPlantaBossEnemy extends Enemy{
   static const double _vidaInicial = 300.0; // 4x a normal (100)
   static const double _alcancePancada = 30.0;
   static const double _preparoPancada = 0.6;
@@ -51,11 +51,11 @@ class UrsoPlantaBossEnemy extends Enemy with ChaseMovement {
     required super.position,
     required super.playerTarget,
   }) : super(
-         creature: CreatureRegistry.ursoPlanta,
+         creature: CreatureRegistry.ursoPlantaEvo,
          speed: 14.0, // continua o mais lento — a solução é o salto, não a perna
          health: _vidaInicial,
          dmg: 2,
-         size: Vector2(32, 32),        // dobro do padrão (16x16)
+         size: Vector2(48, 48),        // dobro do padrão (16x16)
          hitboxSize: Vector2(30, 32),  // dobro do hitbox normal (15, 16)
          isPushable: false,
        );

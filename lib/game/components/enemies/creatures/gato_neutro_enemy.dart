@@ -12,7 +12,7 @@ import '../enemy_mixins.dart';
 ///
 /// `moveAnim` null: o JumpMovement escreve visual.scale e visual.position.y.
 class GatoNeutroEnemy extends Enemy with JumpMovement {
-  static const double _alcanceBote = 50.0;
+  static const double _alcanceBote = 64.0;
   static const int _danoImpacto = 1;
   static const double _empurraoImpacto = 30.0;
 

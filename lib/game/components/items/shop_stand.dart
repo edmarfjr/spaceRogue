@@ -76,7 +76,7 @@ class ShopStand extends Collectible {
     parent?.add(TextEffect(
       text: texto,
       position: position.clone() + Vector2(0, -12),
-      color: Palette.branco,
+      color: Palette.amarelo,
     ));
   }
 

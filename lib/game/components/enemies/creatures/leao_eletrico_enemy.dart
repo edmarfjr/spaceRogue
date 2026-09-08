@@ -4,7 +4,7 @@ import '../enemy_mixins.dart';
 
 /// Leão Elétrico como inimigo: persegue e crava estocadas relâmpago de curto
 /// alcance quando fecha distância — cavaleiro que caça, não atirador parado.
-class LeaoEletricoEnemy extends Enemy with ChaseMovement, ShooterAttack {
+class LeaoEletricoEnemy extends Enemy with ShooterAttack {
   static const double _fireRate = 1.6;
   static const double _alcanceTiro = 55.0;
 

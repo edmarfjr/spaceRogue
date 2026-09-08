@@ -39,13 +39,13 @@ class SapoAguaBossEnemy extends Enemy with JumpMovement {
     required super.position,
     required super.playerTarget,
   }) : super(
-         creature: CreatureRegistry.sapoAgua,
+         creature: CreatureRegistry.sapoAguaEvo,
          moveAnim: null, // o pulo é a animação
          speed: 0.0,     // quem move é o JumpMovement
          health: _vidaInicial,
          dmg: 2,
          shadowOffset: Vector2(0, 6),
-         size: Vector2(32, 32),        // dobro do padrão (16x16)
+         size: Vector2(48, 48),        // dobro do padrão (16x16)
          hitboxSize: Vector2(24, 20),  // dobro do hitbox normal (12, 10)
          isPushable: false,
        );

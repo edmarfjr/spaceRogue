@@ -14,7 +14,7 @@ import '../enemy_mixins.dart';
 /// redor do próprio corpo, empurrando o jogador pra longe (Player não tem
 /// atordoamento — knockback é o equivalente de "não fica perto disso").
 /// Intervalo mínimo entre disparos pra não virar um combo de empurrão infinito.
-class OuricoEletricoEnemy extends Enemy with WanderMovement {
+class OuricoEletricoEnemy extends Enemy {
   static const double _cooldownRetaliacao = 1.0;
   static const double _danoRetaliacao = 2.0;
   static const double _empurraoRetaliacao = 60.0;

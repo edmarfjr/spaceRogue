@@ -14,7 +14,7 @@ import '../enemy_mixins.dart';
 /// demais, ele carrega em linha reta na última direção vista, furando o
 /// espaço que só dava pra kitar. Fica exposto um instante depois — mesma
 /// linguagem de janela-de-punição dos outros bosses.
-class TornadoFogoBossEnemy extends Enemy with ChaseMovement, ShooterAttack {
+class TornadoFogoBossEnemy extends Enemy with ShooterAttack {
   static const double _vidaInicial = 200.0; // 4x a normal (20)
   static const double _alcanceSoco = 34.0;
   static const double _fireRate = 1.1;
@@ -43,7 +43,7 @@ class TornadoFogoBossEnemy extends Enemy with ChaseMovement, ShooterAttack {
     required super.position,
     required super.playerTarget,
   }) : super(
-         creature: CreatureRegistry.tornadoFogo,
+         creature: CreatureRegistry.tornadoFogoEvo,
          speed: 50.0,
          health: _vidaInicial,
          dmg: 2,
@@ -51,7 +51,7 @@ class TornadoFogoBossEnemy extends Enemy with ChaseMovement, ShooterAttack {
          bltImg: 'projeteis/soco.png',
          bltCor1: CreatureRegistry.tornadoFogo.corClara,
          bltCor2: CreatureRegistry.tornadoFogo.corEscura,
-         size: Vector2(32, 32),        // dobro do padrão (16x16)
+         size: Vector2(48, 48),        // dobro do padrão (16x16)
          hitboxSize: Vector2(18, 22),  // dobro do hitbox normal (9, 11)
          isPushable: false,
        );

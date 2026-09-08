@@ -9,7 +9,7 @@ import '../enemy_mixins.dart';
 /// Roedor de Fogo como inimigo: rápido, vaga sem parar e dispara um leque de
 /// 3 brasas — o espelho da Rajada de Brasa do jogador. Alto dano por rajada,
 /// mas morre num golpe sólido. Pressão de "sai do cone".
-class RoedorFogoEnemy extends Enemy with WanderMovement, ShooterAttack {
+class RoedorFogoEnemy extends Enemy with ShooterAttack {
   static const double _fireRate = 2.2;
   static const double _anguloLequeGraus = 20;
 

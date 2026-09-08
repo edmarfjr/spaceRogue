@@ -16,7 +16,7 @@ class BolhaProtetora extends Ability {
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
-    user.shieldHits = 1;
+    user.shieldHits = 3;
     user.shieldVisualActive = true;
 
     Future.delayed(Duration(milliseconds: (duracao * 1000).round()), () {
