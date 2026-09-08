@@ -1,4 +1,5 @@
 import 'dart:ui' as ui;
+import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
@@ -110,10 +111,10 @@ class SpikeTrap extends PositionComponent with CollisionCallbacks, HasGameRef {
 
     if (other is Enemy) {
       _atingidosNestaAtivacao.add(other);
-      other.takeDamage(2);
+      other.takeDamage(2, tipoAtacante:CreatureType.neutro);
     } else if (other is DamageableByEnemy) {
       _atingidosNestaAtivacao.add(other);
-      other.takeDamage(1);
+      other.takeDamage(1, CreatureType.neutro );
     }
   }
 

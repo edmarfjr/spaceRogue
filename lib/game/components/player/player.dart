@@ -1,4 +1,5 @@
 import 'dart:ui' as ui;
+import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
 import 'package:creatures_rogue/game/components/effects/condition_icons.dart';
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
@@ -92,6 +93,13 @@ class Player extends PositionComponent
   double shieldRegenAmount = 1.0;
   double shieldRegenInterval = 5.0;
   double _shieldRegenTimer = 0.0;
+
+  /// Quanto falta pro escudo passivo ganhar a próxima carga (0 = acabou de
+  /// regenerar, 1 = prestes a ganhar) — lido pela Hud pro indicador vertical.
+  /// NÃO é a bolha de habilidade (`shieldVisualActive`); é o escudo derivado
+  /// da defesa, o mesmo que os corações azuis já mostram por carga inteira.
+  double get shieldRegenFraction =>
+      (_shieldRegenTimer / shieldRegenInterval).clamp(0.0, 1.0);
 
   int bombsAmount = 3;
 
@@ -229,7 +237,7 @@ class Player extends PositionComponent
       jogo.companionCreatures[jogo.companionAtivoIndex] = proxima;
     }
 
-     GameAudio.instance.play(Sfx.liberar);
+    GameAudio.instance.play(Sfx.liberar);
     // Assíncrono, sem await — mesmo motivo de `trocarCriatura`: o cache de
     // sprite já foi aquecido em `_preloadCombatSprites`.
     _montarVisualEHitbox();
@@ -325,12 +333,19 @@ class Player extends PositionComponent
 
   /// Reaplicar renova a duração e fica com o fator mais forte — nunca
   /// multiplica um sobre o outro, senão duas nuvens seguidas travam o jogador.
+  /// Timer de [grantStatusImmunity] — enquanto > 0, `aplicarLentidao`,
+  /// `aplicarCegueira` e `applyKnockback` viram no-op. NÃO cobre dano: golpe
+  /// ainda chega normal em `takeDamage`.
+  double _statusImunidadeTimer = 0.0;
+
   void aplicarLentidao(double duracao, {double fator = 0.5}) {
+    if (_statusImunidadeTimer > 0) return;
     if (duracao > lentidaoTimer) lentidaoTimer = duracao;
     if (fator < lentidaoFator) lentidaoFator = fator;
   }
 
   void aplicarCegueira(double duracao) {
+    if (_statusImunidadeTimer > 0) return;
     if (duracao <= cegoTimer) return;
     cegoTimer = duracao;
     cegoDuracaoInicial = duracao;
@@ -338,6 +353,10 @@ class Player extends PositionComponent
 
   void grantInvulnerability(double seconds) {
     if (seconds > _invulnerabilityTimer) _invulnerabilityTimer = seconds;
+  }
+
+  void grantStatusImmunity(double seconds) {
+    if (seconds > _statusImunidadeTimer) _statusImunidadeTimer = seconds;
   }
 
   /// Ação pessoal do jogador — não passa por `Ability` nenhuma. Mesma receita
@@ -733,9 +752,11 @@ class Player extends PositionComponent
       visual.setOpacity(1.0);
     }
 
+    if (_statusImunidadeTimer > 0) _statusImunidadeTimer -= dt;
+
     shieldVisual.setOpacity(shieldVisualActive ? 1.0 : 0.0);
 
-    if (shield < shieldMax) {
+    if (shield <= shieldMax) {
       _shieldRegenTimer += dt;
       if (_shieldRegenTimer >= shieldRegenInterval) {
         _shieldRegenTimer = 0.0;
@@ -859,6 +880,7 @@ class Player extends PositionComponent
   /// Empurra o jogador para longe de [sourcePosition]. Usado por explosões
   /// de inimigos que repelem (Brado, bote da Cobra).
   void applyKnockback(Vector2 sourcePosition, double force) {
+    if (_statusImunidadeTimer > 0) return;
     final direction = (absolutePosition - sourcePosition);
     if (direction.length == 0) return;
     knockbackVelocity = direction.normalized() * force;
@@ -965,7 +987,7 @@ class Player extends PositionComponent
       if (other.enemyHitbox.toAbsoluteRect().overlaps(
         playerHitbox.toAbsoluteRect(),
       )) {
-        takeDamage(1);
+        takeDamage(1, other.creature!.tipo);
       }
     }
 
@@ -997,13 +1019,19 @@ class Player extends PositionComponent
     }
   }
 
-  void takeDamage(double amount) {
+  void takeDamage(double amount, CreatureType tipoAtacante) {
     if (_invulnerabilityTimer > 0) return;
 
-    // Piso em 0, não em 1: com o piso antigo nenhum item ou habilidade de
-    // redução percentual conseguia fazer diferença num golpe de 1 (o contato
-    // de inimigo), porque 1 * (1 - qualquer coisa) voltava pra 1.
-    double amountFinal = amount * (1 - damageReduction);
+    final mult = typeMultiplier(tipoAtacante, creatureData.tipo);
+    Color corTxt = Palette.amarelo;
+    if (mult > 1.0) {
+      corTxt = Palette.vermelho;
+    } else if (mult < 1.0) {
+      //fontSize = 4;
+      corTxt = Palette.cinza;
+    }
+
+    double amountFinal = mult * amount * (1 - damageReduction);
     if (amountFinal <= 0)
       return; // golpe totalmente mitigado: não gasta i-frame
     GameAudio.instance.play(Sfx.hit);
@@ -1025,7 +1053,7 @@ class Player extends PositionComponent
       TextEffect.dano(
         amountFinal,
         position: position.clone() + Vector2(0, -size.y / 2 - 4),
-        color: Palette.vermelho,
+        color: corTxt,
       ),
     );
 

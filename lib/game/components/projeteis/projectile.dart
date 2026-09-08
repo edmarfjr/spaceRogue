@@ -216,7 +216,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         if (cegoDuracao > 0) other.aplicarCegueira(cegoDuracao);
 
         if (dmg > 0) {
-          other.takeDamage(dmg);
+          other.takeDamage(dmg,tipo);
           atravessa--;
           if (atravessa <= 0) onDestroy();
         }

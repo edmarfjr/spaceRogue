@@ -14,7 +14,7 @@ class CorrenteEstaticaEvo extends Ability {
 
   const CorrenteEstaticaEvo({
     this.coef = 5.0,
-    this.duracaoStun = 2.5,
+    this.duracaoStun = 3.5,
     this.atrasoSegundoPulso = 0.3,
   }) : super(
          nome: 'Tempestade Estática',
@@ -35,7 +35,7 @@ class CorrenteEstaticaEvo extends Ability {
         cor1: Palette.amarelo,
         cor2: Palette.laranja,
         tipo: user.creatureData.tipo,
-        size: Vector2(48, 48),
+        size: Vector2(52, 52),
       ),
     );
   }

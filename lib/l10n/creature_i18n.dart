@@ -23,6 +23,10 @@ String creatureName(BuildContext context, String creatureId) {
     'toco_planta' => l.creatureName_toco_planta,
     'tubarao_agua' => l.creatureName_tubarao_agua,
     'leao_eletrico' => l.creatureName_leao_eletrico,
+    'cao_neutro' => l.creatureName_cao_neutro,
+    'gato_neutro' => l.creatureName_gato_neutro,
+    'ave_neutro' => l.creatureName_ave_neutro,
+    'peixe_neutro' => l.creatureName_peixe_neutro,
     _ => creatureId,
   };
 }

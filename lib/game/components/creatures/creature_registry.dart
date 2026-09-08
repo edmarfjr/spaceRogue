@@ -1,4 +1,8 @@
+import 'package:creatures_rogue/game/components/creatures/abilities/brado_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/disparada_congelante.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/jato_aquatico_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/jogada_de_corpo_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/mega_soco%20evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/tiro_de_gelo.dart';
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
@@ -10,7 +14,9 @@ import 'package:creatures_rogue/game/components/creatures/abilities/esquiva_bomb
 import 'package:creatures_rogue/game/components/creatures/abilities/esquiva_tornado.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/explosao_venenosa.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/soco_flamejante.dart';
+import 'abilities/arranhao.dart';
 import 'abilities/baforada_de_cinzas.dart';
+import 'abilities/bicada_rapida.dart';
 import 'abilities/bico_eletrico.dart';
 import 'abilities/bico_eletrico_evo.dart';
 import 'abilities/bola_dagua_evo.dart';
@@ -25,7 +31,13 @@ import 'abilities/cuspe_de_semente_evo.dart';
 import 'abilities/disparada_flamejante_evo.dart';
 import 'abilities/cuspe_de_semente.dart';
 import 'abilities/disparada_flamejante.dart';
+import 'abilities/escamas_escorregadias.dart';
+import 'abilities/latido_feroz.dart';
+import 'abilities/mordida_certeira.dart';
+import 'abilities/rabanada.dart';
 import 'abilities/rajada_de_brasa_evo.dart';
+import 'abilities/salto_felino.dart';
+import 'abilities/voo_alto.dart';
 import 'abilities/enraizar.dart';
 import 'abilities/ericar.dart';
 import 'abilities/escudo_de_espinhos.dart';
@@ -62,7 +74,11 @@ import '//passives/golpe_de_lanca.dart';
 */
 import '../effects/movement_animator.dart';
 import '../enemies/creatures/ave_eletrica_enemy.dart';
+import '../enemies/creatures/ave_neutro_enemy.dart';
 import '../enemies/creatures/bomba_fogo_enemy.dart';
+import '../enemies/creatures/cao_neutro_enemy.dart';
+import '../enemies/creatures/gato_neutro_enemy.dart';
+import '../enemies/creatures/peixe_neutro_enemy.dart';
 import '../enemies/creatures/caranguejo_ermitao_enemy.dart';
 import '../enemies/creatures/cobra_agua_enemy.dart';
 import '../enemies/creatures/grilo_eletrico_enemy.dart';
@@ -235,7 +251,24 @@ class CreatureRegistry {
     hitboxSize: Vector2(9, 14),
     enemyBuilder: (pos, plr) =>
         CobraAguaEnemy(position: pos, playerTarget: plr),
-    //passive: SaltoAquatico(),
+    evoluir: () => cobraAguaEvo,
+  );
+
+  static final CreatureData cobraAguaEvo = CreatureData(
+    id: 'cobra_agua',
+    nome: 'Cobra de Água Evoluida',
+    spritePath: 'actors/cobraAguaEvo.png',
+    tipo: CreatureType.agua,
+    corClara: Palette.azul,
+    corEscura: Palette.pumpkin,
+    stats: BaseStats(maxHp: 4, speed: 48, defesa: 1, ataque: 4),
+    ability1: JatoAquaticoEvo(),
+    ability2: JogadaDeCorpoEvo(),
+    moveAnim: MovementAnimation.arrastar,
+    hitboxSize: Vector2(14, 14),
+    enemyBuilder: (pos, plr) =>
+        CobraAguaEnemy(position: pos, playerTarget: plr),
+    spriteSize: Vector2(24, 24),
   );
 
   static final CreatureData ursoPlanta = CreatureData(
@@ -252,7 +285,24 @@ class CreatureRegistry {
     hitboxSize: Vector2(15, 16),
     enemyBuilder: (pos, plr) =>
         UrsoPlantaEnemy(position: pos, playerTarget: plr),
-    //passive: BradoReflexo(),
+    evoluir: () => ursoPlantaEvo,
+  );
+
+  static final CreatureData ursoPlantaEvo = CreatureData(
+    id: 'urso_planta',
+    nome: 'Urso de Planta Evoluido',
+    spritePath: 'actors/ursoPlantaEvo.png',
+    tipo: CreatureType.planta,
+    corClara: Palette.verde,
+    corEscura: Palette.marromEsc,
+    stats: BaseStats(maxHp: 4, speed: 25, defesa: 1, ataque: 4),
+    ability1: MegaSocoEvo(),
+    ability2: BradoEvo(),
+    moveAnim: MovementAnimation.arrastar,
+    hitboxSize: Vector2(14, 14),
+    enemyBuilder: (pos, plr) =>
+        UrsoPlantaEnemy(position: pos, playerTarget: plr),
+    spriteSize: Vector2(24, 24),
   );
 
   static final CreatureData griloEletrico = CreatureData(
@@ -425,6 +475,70 @@ class CreatureRegistry {
     //passive: GolpeDeLanca(),
   );
 
+  static final CreatureData caoNeutro = CreatureData(
+    id: 'cao_neutro',
+    nome: 'Barko',
+    spritePath: 'actors/caoNeutro.png',
+    tipo: CreatureType.neutro,
+    corClara: Palette.marromEsc,
+    corEscura: Palette.chocolate,
+    stats: BaseStats(maxHp: 4, speed: 60, defesa: 1, ataque: 3),
+    ability1: MordidaCerteira(),
+    ability2: LatidoFeroz(),
+    moveAnim: MovementAnimation.caminhada,
+    hitboxSize: Vector2(10, 12),
+    enemyBuilder: (pos, plr) =>
+        CaoNeutroEnemy(position: pos, playerTarget: plr),
+  );
+
+  static final CreatureData gatoNeutro = CreatureData(
+    id: 'gato_neutro',
+    nome: 'Whisko',
+    spritePath: 'actors/gatoNeutro.png',
+    tipo: CreatureType.neutro,
+    corClara: Palette.cinza,
+    corEscura: Palette.cinzaEsc,
+    stats: BaseStats(maxHp: 4, speed: 45, defesa: 1, ataque: 2),
+    ability1: Arranhao(),
+    ability2: SaltoFelino(),
+    moveAnim: MovementAnimation.saltitar,
+    hitboxSize: Vector2(8, 9),
+    enemyBuilder: (pos, plr) =>
+        GatoNeutroEnemy(position: pos, playerTarget: plr),
+  );
+
+  static final CreatureData aveNeutro = CreatureData(
+    id: 'ave_neutro',
+    nome: 'Chirpling',
+    spritePath: 'actors/aveNeutro.png',
+    tipo: CreatureType.neutro,
+    corClara: Palette.picotronBege,
+    corEscura: Palette.chocolate,
+    stats: BaseStats(maxHp: 4, speed: 75, defesa: 1, ataque: 1),
+    ability1: BicadaRapida(),
+    ability2: VooAlto(),
+    moveAnim: MovementAnimation.flutuar,
+    hitboxSize: Vector2(8, 10),
+    enemyBuilder: (pos, plr) =>
+        AveNeutroEnemy(position: pos, playerTarget: plr),
+  );
+
+  static final CreatureData peixeNeutro = CreatureData(
+    id: 'peixe_neutro',
+    nome: 'Flopper',
+    spritePath: 'actors/peixeNeutro.png',
+    tipo: CreatureType.neutro,
+    corClara: Palette.salmon,
+    corEscura: Palette.coral,
+    stats: BaseStats(maxHp: 4, speed: 40, defesa: 1, ataque: 3),
+    ability1: Rabanada(),
+    ability2: EscamasEscorregadias(),
+    moveAnim: MovementAnimation.arrastar,
+    hitboxSize: Vector2(10, 8),
+    enemyBuilder: (pos, plr) =>
+        PeixeNeutroEnemy(position: pos, playerTarget: plr),
+  );
+
   static final List<CreatureData> all = [
     roedorFogo,
     tartarugaPlanta,
@@ -442,6 +556,10 @@ class CreatureRegistry {
     tocoPlanta,
     tubaraoAgua,
     leaoEletrico,
+    caoNeutro,
+    gatoNeutro,
+    aveNeutro,
+    peixeNeutro,
   ];
 
   static CreatureData byId(String id) => all.firstWhere((c) => c.id == id);

@@ -10,19 +10,19 @@ import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart'
 /// projéteis quanto o toque de inimigos. Ao aterrissar, uma explosão empurra
 /// tudo ao redor pra longe.
 /// Dano = ataque da criatura × [coef] — ver BaseStats.
-class JogadaDeCorpo extends Ability {
+class JogadaDeCorpoEvo extends Ability {
   final double distancia;
   final double duracao;
   final double altura;
   final double coef;
   final double empurrao;
 
-  const JogadaDeCorpo({
-    this.distancia = 40,
+  const JogadaDeCorpoEvo({
+    this.distancia = 56,
     this.duracao = 0.3,
-    this.altura = 16,
-    this.coef = 0.75,
-    this.empurrao = 50,
+    this.altura = 24,
+    this.coef = 1.5,
+    this.empurrao = 75,
   }) : super(
          nome: 'Jogada de Corpo',
          descricao:

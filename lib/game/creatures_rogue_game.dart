@@ -198,13 +198,17 @@ class CreaturesRogueGame extends FlameGame
   /// vai pro banco com vida 0 e o jogo troca sozinho pro primeiro slot
   /// disponível. Sem ninguém disponível, é Game Over — mesmo grupo esgotado
   /// que o modelo antigo tratava como "a criatura morreu".
+  /// A ativa bateu 0 de vida: SAI do grupo, não fica "estacionada" com vida 0
+  /// no banco — o slot fica livre de novo, do mesmo jeito que antes de
+  /// alguém entrar nele (o item MAPA ou a sala da escada podem preencher com
+  /// outra criatura). Derrotada é derrotada; nada neste jogo revive.
   void pocketarSlotAtivo() {
     final slotAtual = companionAtivoIndex;
-    companionCreatures[slotAtual] = player.creatureData;
+    companionCreatures[slotAtual] = null;
     companionSavedHealth[slotAtual] = 0.0;
-    companionPocketed[slotAtual] = true;
-    companionXp[slotAtual] = player.xp;
-    companionEvoluida[slotAtual] = player.evoluida;
+    companionPocketed[slotAtual] = false;
+    companionXp[slotAtual] = 0.0;
+    companionEvoluida[slotAtual] = false;
     GameAudio.instance.play(Sfx.retorno);
     dungeonWorld.add(
       CompanionRecallEffect(
@@ -467,6 +471,7 @@ class CreaturesRogueGame extends FlameGame
     );
 
     final hud = Hud(
+      game: this,
       player: player,
       companionCreatureAt: (slot) => companionCreatures[slot],
       companionPocketFractionAt: (slot) => companionPocketFraction(slot),
@@ -1081,7 +1086,6 @@ class CreaturesRogueGame extends FlameGame
     }
 
     // 3. GERAÇÃO DE NOVO MAPA
-    // Você pode até aumentar o maxRooms a cada nível se quiser um desafio maior!
     final generator = DungeonGenerator(maxRooms: 12);
     mapData = generator.generate();
 
@@ -1092,7 +1096,7 @@ class CreaturesRogueGame extends FlameGame
         currentLevel: currentLevel,
         floor: currentFloor,
         bossBuilder: isBossFloor ? _buildRunBoss : null,
-        wildCreatureBuilder: currentFloor == andaresPorBoss - 1
+        wildCreatureBuilder: currentFloor % 2 == 2
             ? _buildWildCreature
             : null,
       );

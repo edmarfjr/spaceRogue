@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
+import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/UI/ability_cooldown_indicator.dart';
@@ -11,6 +12,7 @@ import '../player/player.dart';
 
 class Hud extends PositionComponent with HasGameRef {
   final Player player;
+  final CreaturesRogueGame game;
 
   /// Grupo de até três — cada função recebe o índice do slot (0/1/2).
   /// `companionCreatureAt` fica fixa mesmo quando o slot está no banco
@@ -43,8 +45,6 @@ class Hud extends PositionComponent with HasGameRef {
 
   final Paint paint = Paint()..filterQuality = FilterQuality.none;
 
-  late final TextPaint textPaint;
-
   final Vector2 heartSize = Vector2(16, 16);
   final Vector2 bombIconSize = Vector2(16, 16);
   final double spacing = -11.0;
@@ -67,7 +67,7 @@ class Hud extends PositionComponent with HasGameRef {
   //     ? 0
   //    : math.min(_shieldBarSize.x, _barraLarguraMax / maxValor);
 
-  late final TextPaint coinTextPaint;
+  late final TextPaint textPaint;
 
   /// Barra de evolução (ver PIVOT_EVOLUCAO) — linha preta de fundo (o
   /// "comprimento alvo") com um preenchimento verde por cima que cresce
@@ -78,12 +78,20 @@ class Hud extends PositionComponent with HasGameRef {
   static const double _evoBarWidth = 32;
   static const double _evoBarY = 15;
   static const double _evoBarHeight = 2;
+
+  /// Regeneração do escudo passivo (defesa) — barra vertical (4x12 máx.) que
+  /// cresce de baixo pra cima, no lugar onde o próximo `shieldSprite` nasce.
+  final Paint _shieldRegenPaint = Paint()..color = Palette.azul;
+  final Paint _shieldRegenBorderPaint = Paint()..color = Palette.preto..style = PaintingStyle.stroke..strokeWidth = 1.0;
+  static const double _shieldRegenLargura = 4;
+  static const double _shieldRegenAlturaMax = 10;
   // final Paint _shieldMoldura = Paint()..color = Palette.preto;
   // final Paint _shieldFundo = Paint()..color = Palette.preto;
   // final Paint _shieldPreenchimento = Paint()..color = Palette.azul;
   // final Paint _hpPreenchimento = Paint()..color = Palette.vermelho;
 
   Hud({
+    required this.game,
     required this.player,
     required this.companionCreatureAt,
     required this.companionPocketFractionAt,
@@ -171,18 +179,6 @@ class Hud extends PositionComponent with HasGameRef {
       style: const TextStyle(
         fontFamily: 'pixelFont',
         color: Palette.branco,
-        fontSize: 10,
-        fontWeight: FontWeight.bold,
-        shadows: [
-          Shadow(color: Colors.black, offset: Offset(1, 1), blurRadius: 1),
-        ],
-      ),
-    );
-
-    coinTextPaint = TextPaint(
-      style: const TextStyle(
-        fontFamily: 'pixelFont',
-        color: Palette.branco,
         fontSize: 12,
         fontWeight: FontWeight.bold,
         shadows: [
@@ -244,7 +240,7 @@ class Hud extends PositionComponent with HasGameRef {
       size: bombIconSize,
       overridePaint: paint,
     );
-    coinTextPaint.render(canvas, ':${player.coins}', Vector2(16, 19));
+    textPaint.render(canvas, ':${player.coins}', Vector2(16, 19));
 
     // --- LÓGICA DO MEIO-CORAÇÃO ---
     // Quantos corações INICIAIS (capacidade total) o jogador tem na tela?
@@ -302,8 +298,41 @@ class Hud extends PositionComponent with HasGameRef {
       //canvas.drawRect(Rect.fromLTWH(shieldX, shieldY, _shieldBarSize.x * fracao, _shieldBarSize.y), _shieldPreenchimento);
     }
 
+    // --- REGENERAÇÃO DO ESCUDO PASSIVO (defesa) --- Indicador da PRÓXIMA
+    // carga enchendo, no espaço onde o próximo `shieldSprite` vai nascer
+    // quando a carga completar. NÃO é a bolha de habilidade
+    // (`shieldVisualActive`/`shieldVisual`) — essa é outra coisa, desenhada
+    // em cima do próprio sprite do jogador, não na Hud.
+    if (player.shield < player.shieldMax) {
+      final proximoIndice = player.shield.floor();
+      final double regenX =
+          3 +
+          player.maxHealth / 2 * (heartSize.x + spacing) +
+          (proximoIndice * (heartSize.x + spacing)) -
+          ((heartSize.x + spacing) + 2);
+      final double altura = _shieldRegenAlturaMax * player.shieldRegenFraction;
+      canvas.drawOval(
+        Rect.fromLTWH(
+          regenX+6,
+          heartSize.y - 3 - altura,
+          _shieldRegenLargura,
+          altura,
+        ),
+        _shieldRegenPaint,
+      );
+      canvas.drawOval(
+        Rect.fromLTWH(
+          regenX+6,
+          heartSize.y - 3 - altura,
+          _shieldRegenLargura,
+          altura,
+        ),
+        _shieldRegenBorderPaint,
+      );
+    }
+
     //double bombY = heartSize.y + 2;
     //bombSprite.render(canvas, position: Vector2(0, bombY), size: bombIconSize, overridePaint: paint);
-    //textPaint.render(canvas, ':${player.bombsAmount}', Vector2(bombIconSize.x + 0, bombY+1));
+    textPaint.render(canvas, '${game.currentFloor.toString()} - ${game.currentLevel.toString()}', Vector2(84, 1));
   }
 }

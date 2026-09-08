@@ -30,6 +30,54 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
     if (mounted) setState(() => _resetado = true);
   }
 
+  /// Não dá pra desfazer (apaga criaturas liberadas + intro), então confirma
+  /// antes — mesmo padrão de qualquer ação destrutiva: pergunta, não executa
+  /// direto no toque do botão.
+  Future<void> _confirmarReset() async {
+    final confirmou = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Palette.branco,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero,
+          side: BorderSide(color: Palette.preto, width: 2),
+        ),
+        title: Text(
+          context.l10n.settings_confirmarResetTitulo,
+          style: const TextStyle(
+            color: Palette.preto,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          context.l10n.settings_confirmarResetMensagem,
+          style: const TextStyle(color: Palette.preto),
+        ),
+        actions: [
+          TextButton(
+            onPressed: withBtnSfx(() => Navigator.of(dialogContext).pop(false)),
+            child: Text(
+              context.l10n.settings_confirmarResetNao,
+              style: const TextStyle(color: Palette.preto),
+            ),
+          ),
+          TextButton(
+            onPressed: withBtnSfx(() => Navigator.of(dialogContext).pop(true)),
+            child: Text(
+              context.l10n.settings_confirmarResetSim,
+              style: const TextStyle(
+                color: Palette.preto,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmou == true) await _resetar();
+  }
+
   Future<void> _escolher(ControlScheme scheme) async {
     widget.game.controlScheme = scheme;
     await GameSettings.instance.setControlScheme(scheme);
@@ -240,7 +288,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                 side: BorderSide(color: Palette.preto, width: 2),
               ),
             ),
-            onPressed: withBtnSfx(_resetado ? null : _resetar),
+            onPressed: withBtnSfx(_resetado ? null : _confirmarReset),
             child: Text(
               _resetado
                   ? context.l10n.settings_progressoResetado

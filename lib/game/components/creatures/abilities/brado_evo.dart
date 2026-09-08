@@ -1,22 +1,20 @@
 import 'package:flame/components.dart';
-import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 
-/// Ave de Eletricidade — botão B. Área ao redor do próprio corpo: dano baixo
-/// mais atordoamento. É a habilidade de quebrar cerco de quem luta colado.
+/// Urso de Planta — botão B. Um rugido que sacode a área ao redor e empurra
+/// tudo pra longe. Pouco dano, muito peso.
 /// Dano = ataque da criatura × [coef] — ver BaseStats.
-class CorrenteEstatica extends Ability {
+class BradoEvo extends Ability {
   final double coef;
-  final double duracaoStun;
+  final double empurrao;
 
-  const CorrenteEstatica({this.coef = 3.0, this.duracaoStun = 2.5})
+  const BradoEvo({this.coef = 1, this.empurrao = 150})
     : super(
-        nome: 'Corrente Estática',
-        descricao:
-            'Descarga ao redor do corpo: dano baixo e atordoa quem está colado.',
-        cooldown: 5.0,
+        nome: 'Brado',
+        descricao: 'Rugido que empurra tudo ao redor; pouco dano, muito peso.',
+        cooldown: 6.0,
         tipo: AbilityTipo.defesa,
       );
 
@@ -27,12 +25,9 @@ class CorrenteEstatica extends Ability {
       ExplosionHitbox(
         position: user.position.clone(),
         dmg: dano,
-        isStun: true,
-        stunDuration: duracaoStun,
-        cor1: Palette.amarelo,
-        cor2: Palette.laranja,
+        knockback: empurrao,
+        size: Vector2(64, 64),
         tipo: user.creatureData.tipo,
-        size: Vector2(48, 48),
       ),
     );
   }

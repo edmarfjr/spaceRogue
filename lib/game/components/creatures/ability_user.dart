@@ -30,6 +30,12 @@ mixin AbilityUser on PositionComponent {
 
   void grantInvulnerability(double seconds);
 
+  /// Janela de imunidade a STATUS (lentidão, cegueira, knockback) — DIFERENTE
+  /// de [grantInvulnerability], que bloqueia DANO. Existe pro Peixe Neutro
+  /// (Escamas Escorregadias, ver PIVOT_NEUTRO): a criatura ainda pode levar
+  /// dano normal, só não é lentificada/cegada/empurrada enquanto durar.
+  void grantStatusImmunity(double seconds);
+
   void startJump({
     required Vector2 direction,
     required double distance,

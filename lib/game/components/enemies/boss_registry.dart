@@ -6,7 +6,11 @@ import 'package:creatures_rogue/game/components/creatures/creature_progress.dart
 import 'package:creatures_rogue/game/components/player/player.dart';
 import 'package:creatures_rogue/l10n/creature_i18n.dart';
 import 'creatures/ave_eletrica_boss_enemy.dart';
+import 'creatures/ave_neutro_boss_enemy.dart';
 import 'creatures/bomba_fogo_boss_enemy.dart';
+import 'creatures/cao_neutro_boss_enemy.dart';
+import 'creatures/gato_neutro_boss_enemy.dart';
+import 'creatures/peixe_neutro_boss_enemy.dart';
 import 'creatures/caranguejo_ermitao_boss_enemy.dart';
 import 'creatures/cobra_agua_boss_enemy.dart';
 import 'creatures/grilo_eletrico_boss_enemy.dart';
@@ -31,15 +35,13 @@ class BossOption {
 
   final BossBuilder builder;
 
-  const BossOption({
-    required this.creatureId,
-    required this.builder,
-  });
+  const BossOption({required this.creatureId, required this.builder});
 
   /// Nome mostrado na barra de vida e no reveal. Derivado da criatura em vez de
   /// guardado aqui: os nomes das criaturas ainda estão sendo definidos, e
   /// duplicar faria a barra do boss divergir do resto do jogo.
-  String nome(BuildContext context) => creatureName(context, creatureId).toUpperCase();
+  String nome(BuildContext context) =>
+      creatureName(context, creatureId).toUpperCase();
 }
 
 /// Quais bosses existem e qual deles cai na run atual.
@@ -51,67 +53,103 @@ class BossRegistry {
   static final List<BossOption> all = [
     BossOption(
       creatureId: 'bomba_fogo',
-      builder: (pos, plr) => BombaFogoBossEnemy(position: pos, playerTarget: plr),
+      builder: (pos, plr) =>
+          BombaFogoBossEnemy(position: pos, playerTarget: plr),
     ),
     BossOption(
       creatureId: 'slime_planta',
-      builder: (pos, plr) => SlimePlantaBossEnemy(position: pos, playerTarget: plr),
+      builder: (pos, plr) =>
+          SlimePlantaBossEnemy(position: pos, playerTarget: plr),
     ),
     BossOption(
       creatureId: 'tartaruga_planta',
-      builder: (pos, plr) => TartarugaPlantaBossEnemy(position: pos, playerTarget: plr),
+      builder: (pos, plr) =>
+          TartarugaPlantaBossEnemy(position: pos, playerTarget: plr),
     ),
     BossOption(
       creatureId: 'cobra_agua',
-      builder: (pos, plr) => CobraAguaBossEnemy(position: pos, playerTarget: plr),
+      builder: (pos, plr) =>
+          CobraAguaBossEnemy(position: pos, playerTarget: plr),
     ),
     BossOption(
       creatureId: 'tornado_fogo',
-      builder: (pos, plr) => TornadoFogoBossEnemy(position: pos, playerTarget: plr),
+      builder: (pos, plr) =>
+          TornadoFogoBossEnemy(position: pos, playerTarget: plr),
     ),
     BossOption(
       creatureId: 'urso_planta',
-      builder: (pos, plr) => UrsoPlantaBossEnemy(position: pos, playerTarget: plr),
+      builder: (pos, plr) =>
+          UrsoPlantaBossEnemy(position: pos, playerTarget: plr),
     ),
     BossOption(
       creatureId: 'ave_eletrica',
-      builder: (pos, plr) => AveEletricaBossEnemy(position: pos, playerTarget: plr),
+      builder: (pos, plr) =>
+          AveEletricaBossEnemy(position: pos, playerTarget: plr),
     ),
     BossOption(
       creatureId: 'roedor_fogo',
-      builder: (pos, plr) => RoedorFogoBossEnemy(position: pos, playerTarget: plr),
+      builder: (pos, plr) =>
+          RoedorFogoBossEnemy(position: pos, playerTarget: plr),
     ),
     BossOption(
       creatureId: 'grilo_eletrico',
-      builder: (pos, plr) => GriloEletricoBossEnemy(position: pos, playerTarget: plr),
+      builder: (pos, plr) =>
+          GriloEletricoBossEnemy(position: pos, playerTarget: plr),
     ),
     BossOption(
       creatureId: 'sapo_agua',
-      builder: (pos, plr) => SapoAguaBossEnemy(position: pos, playerTarget: plr),
+      builder: (pos, plr) =>
+          SapoAguaBossEnemy(position: pos, playerTarget: plr),
     ),
     BossOption(
       creatureId: 'ourico_eletrico',
-      builder: (pos, plr) => OuricoEletricoBossEnemy(position: pos, playerTarget: plr),
+      builder: (pos, plr) =>
+          OuricoEletricoBossEnemy(position: pos, playerTarget: plr),
     ),
     BossOption(
       creatureId: 'caranguejo_fogo',
-      builder: (pos, plr) => CaranguejoErmitaoBossEnemy(position: pos, playerTarget: plr),
+      builder: (pos, plr) =>
+          CaranguejoErmitaoBossEnemy(position: pos, playerTarget: plr),
     ),
     BossOption(
       creatureId: 'pinguim_agua',
-      builder: (pos, plr) => PinguimAguaBossEnemy(position: pos, playerTarget: plr),
+      builder: (pos, plr) =>
+          PinguimAguaBossEnemy(position: pos, playerTarget: plr),
     ),
     BossOption(
       creatureId: 'toco_planta',
-      builder: (pos, plr) => TocoPlantaBossEnemy(position: pos, playerTarget: plr),
+      builder: (pos, plr) =>
+          TocoPlantaBossEnemy(position: pos, playerTarget: plr),
     ),
     BossOption(
       creatureId: 'tubarao_agua',
-      builder: (pos, plr) => TubaraoAguaBossEnemy(position: pos, playerTarget: plr),
+      builder: (pos, plr) =>
+          TubaraoAguaBossEnemy(position: pos, playerTarget: plr),
     ),
     BossOption(
       creatureId: 'leao_eletrico',
-      builder: (pos, plr) => LeaoEletricoBossEnemy(position: pos, playerTarget: plr),
+      builder: (pos, plr) =>
+          LeaoEletricoBossEnemy(position: pos, playerTarget: plr),
+    ),
+    BossOption(
+      creatureId: 'cao_neutro',
+      builder: (pos, plr) =>
+          CaoNeutroBossEnemy(position: pos, playerTarget: plr),
+    ),
+    BossOption(
+      creatureId: 'gato_neutro',
+      builder: (pos, plr) =>
+          GatoNeutroBossEnemy(position: pos, playerTarget: plr),
+    ),
+    BossOption(
+      creatureId: 'ave_neutro',
+      builder: (pos, plr) =>
+          AveNeutroBossEnemy(position: pos, playerTarget: plr),
+    ),
+    BossOption(
+      creatureId: 'peixe_neutro',
+      builder: (pos, plr) =>
+          PeixeNeutroBossEnemy(position: pos, playerTarget: plr),
     ),
   ];
 

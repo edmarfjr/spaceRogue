@@ -138,7 +138,7 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
       final kind = dotKind;
       if (kind != null) other.applyDot(kind, dotTicks);
     } else if (other is DamageableByEnemy && isEnemy) {
-      other.takeDamage(dmg);
+      other.takeDamage(dmg,tipo);
       if (lentidaoDuracao > 0) other.aplicarLentidao(lentidaoDuracao, fator: lentidaoFator);
       if (cegoDuracao > 0) other.aplicarCegueira(cegoDuracao);
       if (knockback > 0) other.applyKnockback(absolutePosition, knockback);

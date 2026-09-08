@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
 import 'package:flame/components.dart';
 
 /// Quem pode ser vítima de dano inimigo (projétil, explosão, bomba). Ver
@@ -5,7 +6,7 @@ import 'package:flame/components.dart';
 /// grupo entram aqui, substituindo o antigo teste `other is Player` nos três
 /// pontos de dano (`Projectile`, `ExplosionHitbox`, `Bomb`).
 mixin DamageableByEnemy on PositionComponent {
-  void takeDamage(double amount);
+  void takeDamage(double amount,CreatureType tipoAtacante);
 
   /// Reaplicar renova a duração e fica com o fator mais forte — nunca
   /// multiplica um sobre o outro, mesma regra do `Enemy`.
