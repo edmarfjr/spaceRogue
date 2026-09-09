@@ -18,7 +18,6 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
   double dmg;
 
   /// Se true, além do dano, atordoa (zera a ação) os inimigos atingidos.
-  final bool isStun;
   final double stunDuration;
   final double paraliseDuration;
   final bool isEnemy;
@@ -46,7 +45,6 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
   ExplosionHitbox({
     required Vector2 position,
     this.dmg = 1,
-    this.isStun = false,
     this.isEnemy = false,
     this.stunDuration = 0,
     this.paraliseDuration = 0,
@@ -131,7 +129,7 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
       // Mesma razão do Projectile: os upgrades de dano da run entram no ponto
       // de acerto, não nas habilidades.
       other.takeDamage(dmg * Player.danoMult, tipoAtacante: tipo);
-      if (isStun){
+      if (stunDuration>0){
         other.applyStun(stunDuration);
       }
       if(paraliseDuration>0){

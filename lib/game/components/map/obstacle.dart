@@ -192,3 +192,17 @@ class GramaAlta extends Obstacle {
          collisionType: CollisionType.active,
        );
 }
+
+class Cogumelos extends Obstacle {
+  Cogumelos({
+    required super.position,
+    Vector2? size,
+    super.cor1,
+    super.cor2,
+    super.cor3,
+  }) : super(
+         spritePath: 'tileset/cogumelos.png',
+         size: size ?? Vector2(16, 16),
+         collisionType: CollisionType.active,
+       );
+}

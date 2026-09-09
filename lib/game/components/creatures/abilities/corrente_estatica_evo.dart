@@ -30,7 +30,6 @@ class CorrenteEstaticaEvo extends Ability {
       ExplosionHitbox(
         position: user.position.clone(),
         dmg: user.creatureData.stats.ataque * coefPulso,
-        isStun: true,
         stunDuration: duracaoStun,
         cor1: Palette.amarelo,
         cor2: Palette.laranja,

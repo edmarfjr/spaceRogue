@@ -25,11 +25,17 @@ class ShopStand extends Collectible {
   /// exige `BuildContext`.
   final String? msgFalha;
 
+  /// Texto mostrado ao comprar com sucesso — mesma descrição que o item
+  /// mostraria ao ser pego/usado direto (ver `ConsumableTypeData.descricao`
+  /// e `PowerUpTypeData.descricao`), pra loja e chão lerem igual.
+  final String Function(BuildContext context) descricao;
+
   ShopStand({
     required super.position,
     required this.preco,
     required this.entregar,
     required super.spritePath,
+    required this.descricao,
     this.msgFalha,
     super.cor1,
     super.cor2,
@@ -69,16 +75,19 @@ class ShopStand extends Collectible {
     }
 
     player.coins -= preco;
-    
+    _avisar(descricao(game.buildContext!));
+
     return true;
   }
 
   void _avisar(String texto) {
-    parent?.add(TextEffect(
-      text: texto,
-      position: position.clone() + Vector2(0, -12),
-      color: Palette.amarelo,
-    ));
+    parent?.add(
+      TextEffect(
+        text: texto,
+        position: position.clone() + Vector2(0, -12),
+        color: Palette.amarelo,
+      ),
+    );
   }
 
   @override

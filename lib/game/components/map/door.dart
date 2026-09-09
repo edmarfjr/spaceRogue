@@ -17,6 +17,7 @@ class Door extends Obstacle {
   final Color cor1;
   final Color cor2;
   final Color cor3;
+  final Color cor4;
 
   final String spritePath;
 
@@ -26,6 +27,7 @@ class Door extends Obstacle {
     this.cor1 = Palette.marromEsc,
     this.cor2 = Palette.onyx,
     this.cor3 = Palette.verde,
+    this.cor4 = Palette.branco,
     bool isOpen = false,
     this.flipX = false,
     required this.spritePath,
@@ -61,7 +63,7 @@ class Door extends Obstacle {
       imagePath: 'tileset/floor1.png',//'tileset/doorOpen1.png',
       lightGrayReplacement: cor1,
       darkGrayReplacement: cor2,
-      whiteReplacement: cor3,
+      whiteReplacement: cor4,
     );
     
     _closedSprite = Sprite(swappedImageClose);

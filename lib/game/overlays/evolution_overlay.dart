@@ -10,17 +10,16 @@ import '../audio/ui_sfx.dart';
 /// Cerimônia de evolução (ver PIVOT_EVOLUCAO): o jogo já pausou e já trocou
 /// os dados por baixo (`Player._evoluir`) — esta tela é só a encenação.
 ///
-/// Sequência (uma `AnimationController` só, dividida em trechos):
-/// 1. `_fechando` (0–30%): círculo vermelho fecha até o centro sobre o
-///    sprite BASE — o que o círculo ainda não cobre mostra o sprite; o
-///    resto já é vermelho.
-/// 2. `_flashBranco` (30–40%): fechou de vez (raio 0, sprite 100% coberto)
-///    — troca o fundo pra branco ("toda a sprite fica branca"). O sprite é
-///    trocado pro EVOLUÍDO aqui, escondido atrás do branco.
-/// 3. `_abrindo` (40–70%): fundo volta a vermelho, círculo reabre — revela
-///    o sprite evoluído aos poucos.
-/// 4. `_assentando` (70–100%): já revelado; um resíduo branco esmaece,
-///    "as cores voltam ao normal".
+/// Sequência (uma `AnimationController` só, dividida em trechos por tempo):
+/// 1. `_fechando` (1000ms): fundo preto, sprite BASE em cores normais, uma
+///    CIRCUNFERÊNCIA OCA vermelha (só o contorno — não preenche nada) fecha
+///    do raio aberto até o centro (raio 0).
+/// 2. `_flashBranco` (500ms): círculo já fechado, some da tela — o sprite
+///    inteiro vira branco sólido.
+/// 3. `_abrindo` (500ms): troca o sprite pro EVOLUÍDO, a circunferência
+///    reabre até o raio cheio e o branco esmaece de volta pras cores
+///    normais do sprite evoluído — assim que termina de abrir, some (não
+///    fica crescendo pra fora da tela).
 ///
 /// Só depois de tudo isso o diálogo "continuar" aparece.
 class EvolutionOverlay extends StatefulWidget {
@@ -33,8 +32,16 @@ class EvolutionOverlay extends StatefulWidget {
 
 class _EvolutionOverlayState extends State<EvolutionOverlay>
     with SingleTickerProviderStateMixin {
-  static const double _boxSize = 96;
-  static const double _raioMax = 70; // cobre a caixa inteira (diagonal/2 ≈ 68)
+  static const double _boxSize = 120;
+
+  /// Raio da circunferência "aberta" — início do fechamento, e ponto de
+  /// partida da reabertura.
+  static const double _raioAnel = 62.0;
+
+  static const int _msFechando = 1000;
+  static const int _msFlash = 500;
+  static const int _msAbrindo = 500;
+  static const int _msTotal = _msFechando + _msFlash + _msAbrindo;
 
   late final AnimationController _controle;
   ui.Image? _imgBase;
@@ -47,7 +54,7 @@ class _EvolutionOverlayState extends State<EvolutionOverlay>
     super.initState();
     _controle = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: const Duration(milliseconds: _msTotal),
     )..addListener(() => setState(() {}));
 
     _controle.addStatusListener((status) {
@@ -171,93 +178,111 @@ class _EvolutionOverlayState extends State<EvolutionOverlay>
   }
 
   Widget _buildAnimacao() {
-    final t = _controle.value;
+    final tMs = _controle.value * _msTotal;
 
-    // Trechos da sequência — ver doc da classe.
-    const fimFechando = 0.30;
-    const fimFlash = 0.40;
-    const fimAbrindo = 0.70;
-
-    late final double raio;
-    late final Color fundo;
+    late final double raioAnel;
+    late final bool mostraAnel;
     late final bool mostraEvoluida;
-    late final double opacidadeResiduo;
+    late final double alphaBranco; // 0 = cores normais, 1 = branco sólido
 
-    if (t < fimFechando) {
-      final progresso = t / fimFechando;
-      raio = _raioMax * (1 - progresso);
-      fundo = Palette.branco;
+    if (tMs < _msFechando) {
+      final progresso = tMs / _msFechando;
+      raioAnel = _raioAnel * (1 - progresso);
+      mostraAnel = true;
       mostraEvoluida = false;
-      opacidadeResiduo = 0;
-    } else if (t < fimFlash) {
-      raio = 0;
-      fundo = Palette.branco;
-      mostraEvoluida = true; // já escondida atrás do branco
-      opacidadeResiduo = 0;
-    } else if (t < fimAbrindo) {
-      final progresso = (t - fimFlash) / (fimAbrindo - fimFlash);
-      raio = _raioMax * progresso;
-      fundo = Palette.branco;
-      mostraEvoluida = true;
-      opacidadeResiduo = 0;
+      alphaBranco = 0;
+    } else if (tMs < _msFechando + _msFlash) {
+      raioAnel = 0;
+      mostraAnel = false;
+      mostraEvoluida = false;
+      alphaBranco = 1;
     } else {
-      final progresso = (t - fimAbrindo) / (1 - fimAbrindo);
-      raio = _raioMax;
-      fundo = Palette.branco;
+      final progresso = ((tMs - _msFechando - _msFlash) / _msAbrindo).clamp(
+        0.0,
+        1.0,
+      );
+      raioAnel = _raioAnel * progresso;
+      // Assim que termina de abrir (progresso 1.0), some — não fica
+      // parado no raio cheio nem cresce pra fora da tela.
+      mostraAnel = progresso < 1.0;
       mostraEvoluida = true;
-      opacidadeResiduo = (1 - progresso).clamp(0.0, 1.0) * 0.6;
+      alphaBranco = 1 - progresso;
     }
 
     final imagem = mostraEvoluida ? _imgEvoluida : _imgBase;
+    final centro = Offset(_boxSize / 2, _boxSize / 2);
 
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Container(width: _boxSize, height: _boxSize, color: fundo),
-        ClipPath(
-          clipper: _CirculoClipper(raio, Offset(_boxSize / 2, _boxSize / 2)),
-          child: SizedBox(
-            width: _boxSize,
-            height: _boxSize,
-            child: imagem == null
-                ? null
-                : RawImage(
-                    image: imagem,
-                    // Sem `width`/`height`, RawImage desenha no tamanho
-                    // NATIVO da imagem (16x16/24x24), ignorando o SizedBox —
-                    // mesma pegadinha que `CreatureSprite` já documenta.
-                    width: _boxSize,
-                    height: _boxSize,
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.none,
-                  ),
-          ),
-        ),
-        if (opacidadeResiduo > 0)
-          Opacity(
-            opacity: opacidadeResiduo,
-            child: Container(
-              width: _boxSize,
-              height: _boxSize,
-              color: Palette.branco,
+    return ClipRect(
+      child: Container(
+        width: _boxSize,
+        height: _boxSize,
+        color: Palette.branco,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            ColorFiltered(
+              // Alpha 0 = filtro é transparente, imagem passa intacta.
+              // Alpha 255 = tinge tudo de branco preservando o formato
+              // (alfa) da imagem — silhueta sólida branca. Ver fórmula do
+              // Porter-Duff `srcATop`.
+              colorFilter: ColorFilter.mode(
+                Palette.amarelo.withAlpha((alphaBranco * 255).round()),
+                BlendMode.srcATop,
+              ),
+              child: SizedBox(
+                width: _boxSize,
+                height: _boxSize,
+                child: imagem == null
+                    ? null
+                    : RawImage(
+                        image: imagem,
+                        // Sem `width`/`height`, RawImage desenha no tamanho
+                        // NATIVO da imagem (16x16/24x24), ignorando o
+                        // SizedBox — mesma pegadinha que `CreatureSprite`
+                        // já documenta.
+                        width: _boxSize,
+                        height: _boxSize,
+                        fit: BoxFit.contain,
+                        filterQuality: FilterQuality.none,
+                      ),
+              ),
             ),
-          ),
-      ],
+            if (mostraAnel)
+              CustomPaint(
+                size: const Size(_boxSize, _boxSize),
+                painter: _CircunferenciaPainter(raio: raioAnel, centro: centro),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class _CirculoClipper extends CustomClipper<Path> {
+/// Só o contorno (`PaintingStyle.stroke`) — uma circunferência OCA, não um
+/// disco preenchido. `raio <= 0` não desenha nada (evita um traço
+/// degenerado no instante exato em que fecha de vez).
+class _CircunferenciaPainter extends CustomPainter {
   final double raio;
   final Offset centro;
+  static const double _espessura = 4;
 
-  _CirculoClipper(this.raio, this.centro);
-
-  @override
-  Path getClip(Size size) =>
-      Path()..addOval(Rect.fromCircle(center: centro, radius: raio));
+  _CircunferenciaPainter({required this.raio, required this.centro});
 
   @override
-  bool shouldReclip(covariant _CirculoClipper oldClipper) =>
-      oldClipper.raio != raio;
+  void paint(Canvas canvas, Size size) {
+    if (raio <= 0) return;
+    canvas.drawCircle(
+      centro,
+      raio,
+      Paint()
+        ..color = Palette.vermelho
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = _espessura,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _CircunferenciaPainter oldDelegate) =>
+      oldDelegate.raio != raio;
 }

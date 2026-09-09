@@ -22,7 +22,6 @@ class CorrenteReflexa extends Passive {
     player.parent?.add(ExplosionHitbox(
       position: player.position.clone(),
       dmg: player.creatureData.stats.ataque * coef,
-      isStun: true,
       stunDuration: stunDuration,
       cor1: Palette.amarelo,
       cor2: Palette.laranja,

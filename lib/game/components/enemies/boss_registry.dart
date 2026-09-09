@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:flame/components.dart';
 import 'package:flutter/widgets.dart';
-import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/components/player/player.dart';
 import 'package:creatures_rogue/l10n/creature_i18n.dart';
 import 'creatures/ave_eletrica_boss_enemy.dart';
@@ -199,18 +198,16 @@ class BossRegistry {
     ],
   ];
 
-  /// Sorteia um boss cuja criatura o jogador AINDA NÃO tem.
+  /// Sorteia um boss pra dungeon `dungeon` (1 = primeira lista de [all], 2 =
+  /// segunda, e por aí em diante). Dungeons além das cadastradas ciclam de
+  /// volta pra lista 0, então a run nunca fica sem boss só por ter passado
+  /// da última dungeon definida.
   ///
-  /// Sortear entre os já derrotados desperdiçaria a run inteira (você lutaria
-  /// por um prêmio que já está na mão), então a poça só contém pendências.
-  /// Retorna null quando não há mais nada a conquistar — aí o andar de boss
-  /// volta a ser um andar comum.
-  static BossOption? sortearPendente(Random random, int level) {
-    final pendentes = all
-        .where((b) => !CreatureProgress.instance.isUnlocked(b[level].creatureId))
-        .toList();
-
-    if (pendentes.isEmpty) return null;
-    return pendentes[level][random.nextInt(pendentes.length)];
+  /// Pode sortear um boss cuja criatura o jogador já desbloqueou — repetir é
+  /// esperado (ver `BossRevealOverlay`, que mostra a criatura colorida
+  /// quando já é dele, e toda preta quando ainda não).
+  static BossOption sortear(Random random, int dungeon) {
+    final lista = all[(dungeon - 1) % all.length];
+    return lista[random.nextInt(lista.length)];
   }
 }

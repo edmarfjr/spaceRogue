@@ -313,9 +313,10 @@ class CreaturesRogueGame extends FlameGame
   /// inteira.
   static const int andaresPorBoss = 5;
 
-  /// Boss sorteado no começo da run e mantido até ela acabar, pra dar tempo de
-  /// revelar ao jogador o que espera no andar final. Null = nada pendente pra
-  /// desbloquear, e o andar de boss vira andar comum.
+  /// Boss da dungeon ATUAL — resorteado toda vez que uma dungeon nova começa
+  /// (ver `nextLevel`), não só uma vez no início da run. Revelado com
+  /// antecedência (`BossRevealOverlay`) assim que o andar 1 da dungeon nova
+  /// carrega, pra dar tempo de saber o que espera no andar final.
   BossOption? runBoss;
 
   /// Criatura antes/depois da evolução em andamento (ver PIVOT_EVOLUCAO) —
@@ -455,7 +456,7 @@ class CreaturesRogueGame extends FlameGame
     // andar final desta run.
     currentLevel = 1;
     currentFloor = 1;
-    runBoss = BossRegistry.sortearPendente(_bossRandom, currentLevel);
+    runBoss = BossRegistry.sortear(_bossRandom, currentLevel);
 
     final generator = DungeonGenerator(
       maxRooms: 12,
@@ -565,7 +566,8 @@ class CreaturesRogueGame extends FlameGame
   void _spawnTestBoss() {
     if (!_runStarted) return;
 
-    final option = BossRegistry.all[currentLevel].first;
+    final option =
+        BossRegistry.all[(currentLevel - 1) % BossRegistry.all.length].first;
     final boss = option.builder(player.position + Vector2(0, -40), player);
     boss.ehBoss = true;
     dungeonWorld.add(boss);
@@ -1122,9 +1124,14 @@ class CreaturesRogueGame extends FlameGame
 
     currentFloor++;
 
-    if (currentFloor > numFloors) {
+    // Só troca de dungeon (e resorteia o boss dela) quando o andar estoura
+    // o ciclo — dentro da mesma dungeon o boss já sorteado continua valendo
+    // até o andar final dela.
+    final novaDungeon = currentFloor > numFloors;
+    if (novaDungeon) {
       currentLevel++;
       currentFloor = 1;
+      runBoss = BossRegistry.sortear(_bossRandom, currentLevel);
     }
 
     // 3. GERAÇÃO DE NOVO MAPA
@@ -1161,6 +1168,15 @@ class CreaturesRogueGame extends FlameGame
     // 4. ATUALIZA O MINIMAPA
     // Entrega o novo mapa para a HUD e limpa o contorno antigo
     minimapHud.mapData = mapData;
+
+    // Dungeon nova: revela o boss dela antes de liberar o jogo de novo —
+    // mesma cerimônia de `startRun`. Motor pausado aqui também segura a
+    // `LevelTransitionOverlay` no frame preto (`_fechou`), então o círculo
+    // só reabre depois que o jogador confirma em `dismissBossReveal`.
+    if (novaDungeon) {
+      pauseEngine();
+      overlays.add('BossReveal');
+    }
   }
 
   /// Chamado pelo `Player.onDeath` quando a vida chega a zero. Congela o jogo

@@ -30,11 +30,11 @@ class RoomComponent extends PositionComponent with HasGameRef {
   final Player player;
 
   bool isLocked = false;
-  List<Door> roomDoors = []; 
-  List activeEnemies = []; 
-  
+  List<Door> roomDoors = [];
+  List activeEnemies = [];
+
   final Random _random = Random();
-  
+
   static const double roomWidth = 16 * 12.0;
   static const double roomHeight = 16 * 12.0;
   static const double wallThickness = 16.0;
@@ -79,13 +79,13 @@ class RoomComponent extends PositionComponent with HasGameRef {
     this.bossBuilder,
     this.wildCreatureBuilder,
   }) : super(
-          size: Vector2(roomWidth, roomHeight),
-          position: Vector2(
-            (data.x - dungeonGridOrigin) * roomWidth,
-            (data.y - dungeonGridOrigin) * roomHeight,
-          ),
-          priority: _prioridadePiso,
-        ) {
+         size: Vector2(roomWidth, roomHeight),
+         position: Vector2(
+           (data.x - dungeonGridOrigin) * roomWidth,
+           (data.y - dungeonGridOrigin) * roomHeight,
+         ),
+         priority: _prioridadePiso,
+       ) {
     theme = DungeonTheme.getThemeForLevel(dungeon);
   }
 
@@ -97,8 +97,8 @@ class RoomComponent extends PositionComponent with HasGameRef {
   Future<void> onLoad() async {
     super.onLoad();
 
-  //  floorSprite = await gameRef.loadSprite('tileset/floor.png');
-  //  doorSprite = await gameRef.loadSprite('tileset/door1.png');
+    //  floorSprite = await gameRef.loadSprite('tileset/floor.png');
+    //  doorSprite = await gameRef.loadSprite('tileset/door1.png');
 
     floorPaint = Paint()
       ..filterQuality = FilterQuality.none
@@ -110,8 +110,11 @@ class RoomComponent extends PositionComponent with HasGameRef {
 
     lockedDoorPaint = Paint()
       ..filterQuality = FilterQuality.none
-      ..colorFilter = const ColorFilter.mode(Palette.preto, BlendMode.srcATop); // Deixa a porta escura  
-      
+      ..colorFilter = const ColorFilter.mode(
+        Palette.preto,
+        BlendMode.srcATop,
+      ); // Deixa a porta escura
+
     _generateWalls();
     _generateFloorDetails();
     _generateDoors();
@@ -122,7 +125,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
       _spawnTreasure();
     } else if (data.type == RoomType.shop) {
       _spawnShop();
-    }//else if (data.type == RoomType.start) {
+    } //else if (data.type == RoomType.start) {
     //  Enemy enemy = DummyEnemy(
     //    position: Vector2(width / 2, height / 2 - 32),
     //    playerTarget: player,
@@ -138,18 +141,18 @@ class RoomComponent extends PositionComponent with HasGameRef {
     // quatro upgrades nunca apareciam no jogo.
     final tipo = PowerUpType.values[_random.nextInt(PowerUpType.values.length)];
 
-    parent?.add(PedestalComponent(
-      position: centerPos,
-      powerUpType: tipo,
-    ));
+    parent?.add(PedestalComponent(position: centerPos, powerUpType: tipo));
 
     // Um item de uso único ao lado do pedestal — hoje é a única fonte deles,
     // porque a recompensa de sala limpa é só moeda ou cura. Se preferir que os
     // consumíveis venham só da loja, é esta chamada que sai.
-    parent?.add(ConsumablePickup(
-      position: centerPos + Vector2(28, 0),
-      tipo: ConsumableType.values[_random.nextInt(ConsumableType.values.length)],
-    ));
+    parent?.add(
+      ConsumablePickup(
+        position: centerPos + Vector2(28, 0),
+        tipo: ConsumableType
+            .values[_random.nextInt(ConsumableType.values.length)],
+      ),
+    );
   }
 
   /// Três balcões, sempre nas mesmas posições: cura, um item de uso único e um
@@ -166,38 +169,47 @@ class RoomComponent extends PositionComponent with HasGameRef {
     final upgrade =
         PowerUpType.values[_random.nextInt(PowerUpType.values.length)];
 
-    parent?.add(ShopStand(
-      position: centro + Vector2(-32, -8),
-      preco: 4,
-      spritePath: 'items/heart.png',
-      cor1: Palette.vermelho,
-      cor2: Palette.roxoEsc,
-      // `heal` devolve false com a vida cheia — e é isso que evita cobrar por
-      // uma cura que não curou.
-      entregar: (p) => p.heal(4),
-      msgFalha: game.buildContext!.l10n.effect_vidaCheia,
-    ));
+    parent?.add(
+      ShopStand(
+        position: centro + Vector2(-32, -8),
+        preco: 4,
+        spritePath: 'items/heart.png',
+        cor1: Palette.vermelho,
+        cor2: Palette.roxoEsc,
+        // `heal` devolve false com a vida cheia — e é isso que evita cobrar por
+        // uma cura que não curou.
+        entregar: (p) => p.heal(4),
+        msgFalha: game.buildContext!.l10n.effect_vidaCheia,
+        descricao: (context) => context.l10n.effect_maisVida(4),
+      ),
+    );
 
-    parent?.add(ShopStand(
-      position: centro + Vector2(0, -8),
-      preco: 7,
-      spritePath: consumivel.spritePath,
-      cor1: consumivel.cor1,
-      cor2: consumivel.cor2,
-      entregar: (p) => p.addConsumable(consumivel),
-    ));
+    parent?.add(
+      ShopStand(
+        position: centro + Vector2(0, -8),
+        preco: 7,
+        spritePath: consumivel.spritePath,
+        cor1: consumivel.cor1,
+        cor2: consumivel.cor2,
+        entregar: (p) => p.addConsumable(consumivel),
+        descricao: consumivel.descricao,
+      ),
+    );
 
-    parent?.add(ShopStand(
-      position: centro + Vector2(32, -8),
-      preco: 14,
-      spritePath: upgrade.spritePath,
-      cor1: upgrade.cor1,
-      cor2: upgrade.cor2,
-      entregar: (p) {
-        upgrade.aplicar(p);
-        return true; // upgrade não tem como falhar
-      },
-    ));
+    parent?.add(
+      ShopStand(
+        position: centro + Vector2(32, -8),
+        preco: 14,
+        spritePath: upgrade.spritePath,
+        cor1: upgrade.cor1,
+        cor2: upgrade.cor2,
+        entregar: (p) {
+          upgrade.aplicar(p);
+          return true; // upgrade não tem como falhar
+        },
+        descricao: upgrade.descricao,
+      ),
+    );
   }
 
   /// Recompensa por limpar a sala: quase sempre uma moeda, raramente um
@@ -222,17 +234,29 @@ class RoomComponent extends PositionComponent with HasGameRef {
   void _generateFloorDetails() {
     for (double y = 16.0; y < height - 16.0; y += 16.0) {
       for (double x = 16.0; x < width - 16.0; x += 16.0) {
-        
         int roll = _random.nextInt(100);
 
-        if(dungeon == 2){
-          add(ChaoCave(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,cor3: theme.corBranca));
-        }else{
+        if (dungeon == 2) {
+          add(
+            ChaoCave(
+              position: Vector2(x, y),
+              cor1: theme.corClara,
+              cor2: theme.corEscura,
+              cor3: theme.corBranca,
+            ),
+          );
+        } else {
           if (roll < 45) {
-            add(Grama(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,cor3: theme.corBranca));
-          } 
+            add(
+              Grama(
+                position: Vector2(x, y),
+                cor1: theme.corClara,
+                cor2: theme.corEscura,
+                cor3: theme.corBranca,
+              ),
+            );
+          }
         }
-        
       }
     }
   }
@@ -240,17 +264,17 @@ class RoomComponent extends PositionComponent with HasGameRef {
   void _generateObstacles() {
     for (double y = 16.0; y < height - 16.0; y += 16.0) {
       for (double x = 16.0; x < width - 16.0; x += 16.0) {
-        
         // REGRA 1: Não spawnar pedras bem no meio da sala
-        //bool isCenter = (x >= width / 2 - 24 && x <= width / 2 + 8) && 
+        //bool isCenter = (x >= width / 2 - 24 && x <= width / 2 + 8) &&
         //                (y >= height / 2 - 24 && y <= height / 2 + 8);
         //
         // REGRA 2: Não spawnar bloqueando o corredor das portas
-        bool isDoorPathHorizontal = (y >= height / 2 - 16 && y <= height / 2 + 16);
+        bool isDoorPathHorizontal =
+            (y >= height / 2 - 16 && y <= height / 2 + 16);
         bool isDoorPathVertical = (x >= width / 2 - 16 && x <= width / 2 + 16);
-        
-        if (/*isCenter ||*/ isDoorPathHorizontal || isDoorPathVertical) {
-          continue; 
+
+        if ( /*isCenter ||*/ isDoorPathHorizontal || isDoorPathVertical) {
+          continue;
         }
 
         int roll = _random.nextInt(100);
@@ -261,18 +285,46 @@ class RoomComponent extends PositionComponent with HasGameRef {
           // inteiro, e não conforme quem está "mais pra baixo" na tela — por
           // isso vai pro `parent` (mundo) em vez de filha desta sala.
           final rockPos = position + Vector2(x, y);
-          final rock = Rock(position: rockPos, cor1: theme.corClara, cor2: theme.corEscura);
+          final rock = Rock(
+            position: rockPos,
+            cor1: theme.corClara,
+            cor2: theme.corEscura,
+            cor3: theme.corBranca,
+          );
           rock.priority = ySortPriority(rockPos.y + rock.size.y);
           _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
           parent?.add(rock);
         } else if (roll >= 5 && roll < 8) {
-          add(Hole(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,));
+          add(
+            Hole(
+              position: Vector2(x, y),
+              cor1: theme.corClara,
+              cor2: theme.corEscura,
+              cor3: theme.corBranca,
+            ),
+          );
           _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
         } else if (roll >= 8 && roll < 15) {
-          add(GramaAlta(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,cor3: Palette.branco));
+          if(dungeon == 2){
+            add(
+            Cogumelos(
+              position: Vector2(x, y),
+              cor1: theme.corClara,
+              cor2: theme.corEscura,
+              cor3: theme.corBranca,
+            ),);
+          }else{
+            add(GramaAlta(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,cor3: theme.corBranca));
+          }
           _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
         } else if (roll >= 15 && roll < 18) {
-          add(SpikeTrap(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura));
+          add(
+            SpikeTrap(
+              position: Vector2(x, y),
+              cor1: theme.corClara,
+              cor2: theme.corEscura,
+            ),
+          );
           _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
         }
       }
@@ -280,18 +332,20 @@ class RoomComponent extends PositionComponent with HasGameRef {
   }
 
   void _generateDoors() {
-    bool initialOpen = data.isCleared || data.type == RoomType.start || !data.isVisited;
+    bool initialOpen =
+        data.isCleared || data.type == RoomType.start || !data.isVisited;
     void addDoorHalf(Vector2 pos, double rot, {bool flipX = false}) {
       var spritePath = 'tileset/arvore2.png';
-      if(dungeon == 2)spritePath = 'tileset/pedraCave2.png';
+      if (dungeon == 2) spritePath = 'tileset/pedraCave2.png';
       var d = Door(
         position: pos,
-        angleVal: 0,//rot,
+        angleVal: 0, //rot,
         isOpen: initialOpen,
-        flipX: false,//flipX,
-        cor1: theme.corClara,  
+        flipX: false, //flipX,
+        cor1: theme.corClara,
         cor2: theme.corEscura,
         cor3: theme.corBranca,
+        cor4: theme.corChao,
         spritePath: spritePath,
       );
       roomDoors.add(d);
@@ -299,19 +353,27 @@ class RoomComponent extends PositionComponent with HasGameRef {
     }
 
     if (data.doorTop) {
-      addDoorHalf(Vector2((width / 2) - 16, 0), math.pi/2, flipX: false);
-      addDoorHalf(Vector2(width / 2, 0), math.pi/2, flipX: true);
+      addDoorHalf(Vector2((width / 2) - 16, 0), math.pi / 2, flipX: false);
+      addDoorHalf(Vector2(width / 2, 0), math.pi / 2, flipX: true);
     }
     if (data.doorBottom) {
-      addDoorHalf(Vector2((width / 2) - 16, height - 16), -math.pi/2, flipX: true);
-      addDoorHalf(Vector2(width / 2, height - 16), -math.pi/2, flipX: false);
+      addDoorHalf(
+        Vector2((width / 2) - 16, height - 16),
+        -math.pi / 2,
+        flipX: true,
+      );
+      addDoorHalf(Vector2(width / 2, height - 16), -math.pi / 2, flipX: false);
     }
     if (data.doorLeft) {
       addDoorHalf(Vector2(0, (height / 2) - 16), 0, flipX: true);
       addDoorHalf(Vector2(0, height / 2), 0, flipX: false);
     }
     if (data.doorRight) {
-      addDoorHalf(Vector2(width - 16, (height / 2) - 16), math.pi, flipX: false);
+      addDoorHalf(
+        Vector2(width - 16, (height / 2) - 16),
+        math.pi,
+        flipX: false,
+      );
       addDoorHalf(Vector2(width - 16, height / 2), math.pi, flipX: true);
     }
   }
@@ -327,28 +389,28 @@ class RoomComponent extends PositionComponent with HasGameRef {
   void _lockRoom() {
     isLocked = true;
     for (var door in roomDoors) {
-      door.close(); 
+      door.close();
     }
   }
 
   void _unlockRoom() {
     isLocked = false;
     data.isCleared = true;
-    
+
     for (var door in roomDoors) {
       door.open();
     }
 
     if (data.type == RoomType.boss) {
-      parent?.add(Stairs(
-        position: position + Vector2(width / 2, height / 2)
-      ));
+      parent?.add(Stairs(position: position + Vector2(width / 2, height / 2)));
 
       final construirCriatura = wildCreatureBuilder;
       if (construirCriatura != null) {
         // Posição própria (height/2 - 28), livre da escada (height/2) e da
         // recompensa (height/2 + 28) — ver PIVOT_CONTROLE_DIRETO.md §5.2.
-        final npc = construirCriatura(position + Vector2(width / 2, height / 2 - 28));
+        final npc = construirCriatura(
+          position + Vector2(width / 2, height / 2 - 28),
+        );
         if (npc != null) parent?.add(npc);
       }
     }
@@ -356,10 +418,12 @@ class RoomComponent extends PositionComponent with HasGameRef {
     _spawnRecompensa();
   }
 
-  void _spawnBoss(){
+  void _spawnBoss() {
     final construirBoss = bossBuilder;
     if (construirBoss != null) {
-      final boss = construirBoss(position + Vector2(width / 2, height / 2 - 24));
+      final boss = construirBoss(
+        position + Vector2(width / 2, height / 2 - 24),
+      );
       if (boss != null) {
         activeEnemies.add(boss);
         parent?.add(boss);
@@ -377,15 +441,15 @@ class RoomComponent extends PositionComponent with HasGameRef {
       _spawnBoss();
       return;
     }
-    
+
     int count = floor + _random.nextInt(3);
     //int count = floor + 1;
-    
+
     for (int i = 0; i < count; i++) {
       double px = 0;
       double py = 0;
       bool validPosition = false;
-      int attempts = 0; 
+      int attempts = 0;
 
       while (!validPosition && attempts < 30) {
         px = 48 + _random.nextInt(6) * 16.0;
@@ -400,20 +464,20 @@ class RoomComponent extends PositionComponent with HasGameRef {
 
       Vector2 spawnPos = position + Vector2(px, py) + Vector2(8, 8);
 
-      Enemy enemy = EnemySpawner.getRandomEnemy(spawnPos, player,dungeon);
-      
+      Enemy enemy = EnemySpawner.getRandomEnemy(spawnPos, player, dungeon);
+
       activeEnemies.add(enemy);
-      parent?.add(enemy); 
+      parent?.add(enemy);
     }
   }
 
   @override
   void update(double dt) {
     super.update(dt);
-    
+
     if (isLocked) {
       activeEnemies.removeWhere((enemy) => enemy.isRemoved);
-      
+
       if (activeEnemies.isEmpty) {
         _unlockRoom();
       }
@@ -425,9 +489,9 @@ class RoomComponent extends PositionComponent with HasGameRef {
     final int tilesX = (width / tileSize).round();
     final int tilesY = (height / tileSize).round();
 
-    String pathWall = 'tileset/arvore1.png';//'tileset/wall.png';       
-    //final String pathCorner = 'tileset/arvore1.png';//'tileset/wallQuina.png'; 
-    if (dungeon == 2){
+    String pathWall = 'tileset/arvore1.png'; //'tileset/wall.png';
+    //final String pathCorner = 'tileset/arvore1.png';//'tileset/wallQuina.png';
+    if (dungeon == 2) {
       pathWall = 'tileset/pedraCave.png';
     }
 
@@ -439,14 +503,25 @@ class RoomComponent extends PositionComponent with HasGameRef {
         bool isRight = x == tilesX - 1;
 
         if (isTop || isBottom || isLeft || isRight) {
-          
-          bool isDoorTop = isTop && data.doorTop && (x >= (tilesX / 2) - 1 && x <= (tilesX / 2));
-          bool isDoorBottom = isBottom && data.doorBottom && (x >= (tilesX / 2) - 1 && x <= (tilesX / 2));
-          bool isDoorLeft = isLeft && data.doorLeft && (y >= (tilesY / 2) - 1 && y <= (tilesY / 2));
-          bool isDoorRight = isRight && data.doorRight && (y >= (tilesY / 2) - 1 && y <= (tilesY / 2));
+          bool isDoorTop =
+              isTop &&
+              data.doorTop &&
+              (x >= (tilesX / 2) - 1 && x <= (tilesX / 2));
+          bool isDoorBottom =
+              isBottom &&
+              data.doorBottom &&
+              (x >= (tilesX / 2) - 1 && x <= (tilesX / 2));
+          bool isDoorLeft =
+              isLeft &&
+              data.doorLeft &&
+              (y >= (tilesY / 2) - 1 && y <= (tilesY / 2));
+          bool isDoorRight =
+              isRight &&
+              data.doorRight &&
+              (y >= (tilesY / 2) - 1 && y <= (tilesY / 2));
 
           if (isDoorTop || isDoorBottom || isDoorLeft || isDoorRight) {
-            continue; 
+            continue;
           }
 
           String spriteToUse = pathWall;
@@ -464,14 +539,16 @@ class RoomComponent extends PositionComponent with HasGameRef {
           */
 
           if (spriteToUse.isNotEmpty) {
-            add(WallTile(
-              position: Vector2(x * tileSize, y * tileSize),
-              spritePath: spriteToUse,
-              angleVal: rotation,
-              cor1: theme.corClara,   
-              cor2: theme.corEscura,
-              cor3: theme.corBranca,
-            ));
+            add(
+              WallTile(
+                position: Vector2(x * tileSize, y * tileSize),
+                spritePath: spriteToUse,
+                angleVal: rotation,
+                cor1: theme.corClara,
+                cor2: theme.corEscura,
+                cor3: theme.corBranca,
+              ),
+            );
           }
         }
       }
@@ -482,31 +559,81 @@ class RoomComponent extends PositionComponent with HasGameRef {
     double doorSpan = 32.0;
 
     if (data.doorTop) {
-      add(WallBarrier(position: Vector2(0, 0), size: Vector2(midX - (doorSpan / 2), 16)));
-      add(WallBarrier(position: Vector2(midX + (doorSpan / 2), 0), size: Vector2(midX - (doorSpan / 2), 16)));
+      add(
+        WallBarrier(
+          position: Vector2(0, 0),
+          size: Vector2(midX - (doorSpan / 2), 16),
+        ),
+      );
+      add(
+        WallBarrier(
+          position: Vector2(midX + (doorSpan / 2), 0),
+          size: Vector2(midX - (doorSpan / 2), 16),
+        ),
+      );
     } else {
       add(WallBarrier(position: Vector2(0, 0), size: Vector2(width, 16)));
     }
 
     if (data.doorBottom) {
-      add(WallBarrier(position: Vector2(0, height - 16), size: Vector2(midX - (doorSpan / 2), 16)));
-      add(WallBarrier(position: Vector2(midX + (doorSpan / 2), height - 16), size: Vector2(midX - (doorSpan / 2), 16)));
+      add(
+        WallBarrier(
+          position: Vector2(0, height - 16),
+          size: Vector2(midX - (doorSpan / 2), 16),
+        ),
+      );
+      add(
+        WallBarrier(
+          position: Vector2(midX + (doorSpan / 2), height - 16),
+          size: Vector2(midX - (doorSpan / 2), 16),
+        ),
+      );
     } else {
-      add(WallBarrier(position: Vector2(0, height - 16), size: Vector2(width, 16)));
+      add(
+        WallBarrier(
+          position: Vector2(0, height - 16),
+          size: Vector2(width, 16),
+        ),
+      );
     }
 
     if (data.doorLeft) {
-      add(WallBarrier(position: Vector2(0, 0), size: Vector2(16, midY - (doorSpan / 2))));
-      add(WallBarrier(position: Vector2(0, midY + (doorSpan / 2)), size: Vector2(16, midY - (doorSpan / 2))));
+      add(
+        WallBarrier(
+          position: Vector2(0, 0),
+          size: Vector2(16, midY - (doorSpan / 2)),
+        ),
+      );
+      add(
+        WallBarrier(
+          position: Vector2(0, midY + (doorSpan / 2)),
+          size: Vector2(16, midY - (doorSpan / 2)),
+        ),
+      );
     } else {
       add(WallBarrier(position: Vector2(0, 0), size: Vector2(16, height)));
     }
 
     if (data.doorRight) {
-      add(WallBarrier(position: Vector2(width - 16, 0), size: Vector2(16, midY - (doorSpan / 2))));
-      add(WallBarrier(position: Vector2(width - 16, midY + (doorSpan / 2)), size: Vector2(16, midY - (doorSpan / 2))));
+      add(
+        WallBarrier(
+          position: Vector2(width - 16, 0),
+          size: Vector2(16, midY - (doorSpan / 2)),
+        ),
+      );
+      add(
+        WallBarrier(
+          position: Vector2(width - 16, midY + (doorSpan / 2)),
+          size: Vector2(16, midY - (doorSpan / 2)),
+        ),
+      );
     } else {
-      add(WallBarrier(position: Vector2(width - 16, 0), size: Vector2(16, height)));
+      add(
+        WallBarrier(
+          position: Vector2(width - 16, 0),
+          size: Vector2(16, height),
+        ),
+      );
     }
   }
 
@@ -519,14 +646,14 @@ class RoomComponent extends PositionComponent with HasGameRef {
     canvas.drawRect(_roomBackgroundRect, Paint()..color = theme.corChao);
 
     super.render(canvas);
-    
   }
 
   CameraComponent? _camera;
 
   bool _isOnCamera() {
     final cam = _camera ?? CameraComponent.currentCamera;
-    if (cam == null || !cam.isMounted) return true; // sem câmera ainda: não corta nada
+    if (cam == null || !cam.isMounted)
+      return true; // sem câmera ainda: não corta nada
     _camera = cam;
     return cam.visibleWorldRect.overlaps(toAbsoluteRect());
   }

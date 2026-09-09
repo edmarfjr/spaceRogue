@@ -32,11 +32,12 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   int atravessa;
   bool noChao;
   final CreatureType tipo;
-  final DotKind? dotKind;
-  final int dotTicks;
-  final double lentidaoDuracao;
-  final double lentidaoFator;
-  final double cegoDuracao;
+  DotKind? dotKind;
+  int dotTicks;
+  double lentidaoDuracao;
+  double lentidaoFator;
+  double stunDuration;
+  double cegoDuracao;
 
   bool atravessaObstaculos;
 
@@ -72,6 +73,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     this.dotTicks = 1,
     this.lentidaoDuracao = 0,
     this.lentidaoFator = 0.5,
+    this.stunDuration = 0,
     this.cegoDuracao = 0,
     this.atravessaObstaculos = false,
     this.estilhaca = false,
@@ -129,6 +131,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
           tipo: tipo,
           dotKind: dotKind,
           dotTicks: dotTicks,
+          stunDuration: stunDuration,
           playSfx: false,
         ));
       }
@@ -238,6 +241,9 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         if (kind != null) other.applyDot(kind, dotTicks);
         if (lentidaoDuracao > 0) other.applyLentidao(lentidaoDuracao, fator: lentidaoFator);
         if (cegoDuracao > 0) other.applyCego(cegoDuracao);
+        if (stunDuration>0){
+          other.applyStun(stunDuration);
+        }
 
         other.takeDamage(dmg * Player.danoMult, tipoAtacante: tipo);
         other.applyKnockback(absolutePosition, kbForce);

@@ -169,6 +169,15 @@ class Player extends PositionComponent
   final Set<GramaAlta> _gramaAltaSobrepostas = {};
   bool get _dentroGramaAlta => _gramaAltaSobrepostas.isNotEmpty;
 
+  /// Visão limitada dentro de `Cogumelos` — mesmo motivo do Set acima
+  /// (terreno, não debuff de inimigo: sem timer, dura enquanto os pés
+  /// estiverem dentro). Antes isso chamava `aplicarCegueira` a cada frame de
+  /// colisão, o que reiniciava o timer de 0.3s repetidamente e fazia a
+  /// vinheta piscar (fecha, quase reabre, fecha de novo) em vez de segurar
+  /// fechada — ver `BlindOverlay`, que lê `dentroCogumelo` direto, sem timer.
+  final Set<Cogumelos> _cogumelosSobrepostos = {};
+  bool get dentroCogumelo => _cogumelosSobrepostos.isNotEmpty;
+
   /// Mira travada de cada habilidade — recalculada todo frame em
   /// [_atualizarMira], a partir da própria posição (inimigo mais próximo ou
   /// direção que o sprite está olhando, conforme `Ability.target`).
@@ -504,18 +513,20 @@ class Player extends PositionComponent
     if (shieldVisualActive) {
       for (var i = 0; i < shieldHits; i++) {
         canvas.drawCircle(
-          Offset(-4, i * 5 + 4),
+          Offset(-4, i * 6 + 4),
           2.0,
-          Paint()..color = creatureData.corClara
-          ..filterQuality = FilterQuality.none,
+          Paint()
+            ..color = creatureData.corClara
+            ..filterQuality = FilterQuality.none,
         );
         canvas.drawCircle(
-          Offset(-4, i * 5 + 4),
+          Offset(-4, i * 6 + 4),
           2.0,
-          Paint()..color = creatureData.corEscura
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.8
-          ..filterQuality = FilterQuality.none,
+          Paint()
+            ..color = creatureData.corEscura
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 0.8
+            ..filterQuality = FilterQuality.none,
         );
       }
     }
@@ -611,7 +622,8 @@ class Player extends PositionComponent
     Vector2 floatOffset = Vector2.zero();
     Vector2 evoOff = evoluida ? Vector2(0, -8) : Vector2.zero();
 
-    conditionIcons = ConditionIcons()..position = Vector2(size.x / 2, -6 + evoOff.y);
+    conditionIcons = ConditionIcons()
+      ..position = Vector2(size.x / 2, -6 + evoOff.y);
     add(conditionIcons);
 
     if (creatureData.moveAnim == MovementAnimation.flutuar) {
@@ -986,6 +998,10 @@ class Player extends PositionComponent
     if (other is GramaAlta && isPhysicsCollision(other) && !isAirborne) {
       _gramaAltaSobrepostas.add(other);
     }
+
+    if (other is Cogumelos && isPhysicsCollision(other) && !isAirborne) {
+      _cogumelosSobrepostos.add(other);
+    }
   }
 
   @override
@@ -997,6 +1013,10 @@ class Player extends PositionComponent
     // não desliga o efeito cedo demais.
     if (other is GramaAlta && !isPhysicsCollision(other)) {
       _gramaAltaSobrepostas.remove(other);
+    }
+
+    if (other is Cogumelos && !isPhysicsCollision(other)) {
+      _cogumelosSobrepostos.remove(other);
     }
   }
 
@@ -1017,7 +1037,7 @@ class Player extends PositionComponent
     // empurrão abaixo, senão `GramaAlta` (que é um `Obstacle` como
     // qualquer outro) seria tratada como sólida — o efeito de velocidade em
     // si é todo tratado em `onCollisionStart`/`onCollisionEnd`, não aqui.
-    if (other is GramaAlta) return;
+    if (other is GramaAlta || other is Cogumelos) return;
 
     if (other is WallBarrier || other is Obstacle) {
       // MÁGICA AQUI: Só para de andar se bater os pés (sombra)!

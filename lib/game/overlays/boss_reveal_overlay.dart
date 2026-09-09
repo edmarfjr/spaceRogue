@@ -1,17 +1,21 @@
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/core/responsive.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/overlays/creature_select_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 
-/// Mostrado uma vez, no começo da run, quando há um boss pendente pra essa
-/// run (ver `CreaturesRogueGame.runBoss`). Consentimento informado antes de
-/// investir os N andares: você sabe o que te espera e o que ganha ao vencer,
-/// mas não sabe SE vai conseguir — a aleatoriedade continua na escolha de
-/// qual boss, só a incerteza "será que valeu a pena entrar" que sai.
+/// Mostrado no início de CADA dungeon (ver `CreaturesRogueGame.nextLevel`),
+/// não só uma vez na run inteira — o boss é resorteado a cada dungeon nova.
+/// Consentimento informado antes de investir os N andares: você sabe o que
+/// te espera e o que ganha ao vencer, mas não sabe SE vai conseguir.
+///
+/// O sorteio pode repetir um boss já derrotado antes: a criatura já
+/// desbloqueada aparece colorida, a que ainda falta aparece toda preta —
+/// mesma regra do `CreatureSelectOverlay`.
 class BossRevealOverlay extends StatelessWidget {
   final CreaturesRogueGame game;
   const BossRevealOverlay({super.key, required this.game});
@@ -45,7 +49,11 @@ class BossRevealOverlay extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          CreatureSprite(creature: recompensa, size: 120, tudoPreto: true),
+          CreatureSprite(
+            creature: recompensa,
+            size: 120,
+            tudoPreto: !CreatureProgress.instance.isUnlocked(boss.creatureId),
+          ),
           const SizedBox(height: 6),
           ElevatedButton(
             style: ElevatedButton.styleFrom(

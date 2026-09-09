@@ -81,10 +81,10 @@ class Hud extends PositionComponent with HasGameRef {
 
   /// Regeneração do escudo passivo (defesa) — barra vertical (4x12 máx.) que
   /// cresce de baixo pra cima, no lugar onde o próximo `shieldSprite` nasce.
-  final Paint _shieldRegenPaint = Paint()..color = Palette.azul;
-  final Paint _shieldRegenBorderPaint = Paint()..color = Palette.preto..style = PaintingStyle.stroke..strokeWidth = 1.0;
-  static const double _shieldRegenLargura = 4;
-  static const double _shieldRegenAlturaMax = 10;
+  //final Paint _shieldRegenPaint = Paint()..color = Palette.azul;
+  //final Paint _shieldRegenBorderPaint = Paint()..color = Palette.preto..style = PaintingStyle.stroke..strokeWidth = 1.0;
+  //static const double _shieldRegenLargura = 4;
+  //static const double _shieldRegenAlturaMax = 10;
   // final Paint _shieldMoldura = Paint()..color = Palette.preto;
   // final Paint _shieldFundo = Paint()..color = Palette.preto;
   // final Paint _shieldPreenchimento = Paint()..color = Palette.azul;
@@ -334,6 +334,6 @@ class Hud extends PositionComponent with HasGameRef {
 
     //double bombY = heartSize.y + 2;
     //bombSprite.render(canvas, position: Vector2(0, bombY), size: bombIconSize, overridePaint: paint);
-    textPaint.render(canvas, '${game.currentFloor.toString()} - ${game.currentLevel.toString()}', Vector2(82, 1));
+    textPaint.render(canvas, '${game.currentFloor.toString()} - ${game.currentLevel.toString()}', Vector2(83, 1));
   }
 }

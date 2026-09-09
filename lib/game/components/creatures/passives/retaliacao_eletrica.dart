@@ -18,7 +18,6 @@ class RetaliacaoEletrica extends Passive {
     player.parent?.add(ExplosionHitbox(
       position: player.position.clone(),
       dmg: player.creatureData.stats.ataque * coef,
-      isStun: true,
       stunDuration: stunDuration,
     ));
   }

@@ -27,7 +27,6 @@ class CorrenteEstatica extends Ability {
       ExplosionHitbox(
         position: user.position.clone(),
         dmg: dano,
-        isStun: true,
         stunDuration: duracaoStun,
         cor1: Palette.amarelo,
         cor2: Palette.laranja,
