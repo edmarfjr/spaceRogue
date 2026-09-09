@@ -4,6 +4,8 @@
   "menu_titulo": "CREATURES ROGUE",
   "menu_novoJogo": " NEW GAME ",
   "menu_configuracoes": " SETTINGS ",
+  "menu_confirmarNovoJogoTitulo": "START OVER?",
+  "menu_confirmarNovoJogoMensagem": "There's already a saved run. Starting a new game will delete that save.",
 
   "settings_titulo": "SETTINGS",
   "settings_controle": "CONTROLS",

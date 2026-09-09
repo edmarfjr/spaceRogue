@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui' as ui;
 
@@ -36,10 +37,12 @@ import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/creatures/wild_creature_npc.dart';
+import 'package:creatures_rogue/game/components/items/consumable_item.dart';
 import 'package:creatures_rogue/game/components/map/dungeon_generator.dart';
 import 'package:creatures_rogue/game/components/map/room_component.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
+import 'package:creatures_rogue/game/run_save.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'components/player/player.dart';
 
@@ -418,7 +421,14 @@ class CreaturesRogueGame extends FlameGame
   /// Começa uma run nova com a criatura escolhida no seletor. Pode ser
   /// chamado mais de uma vez: voltar ao menu e escolher outra criatura
   /// derruba a run anterior (jogador e dungeon) e monta tudo de novo.
-  void startRun(CreatureData creature) {
+  ///
+  /// [save] é o atalho pra "CONTINUAR" (ver `continuarSalva`): quando não é
+  /// nulo, [creature] já veio pré-resolvida pelo chamador na forma certa
+  /// (evoluída ou não — ver `_formaSalva`), então o `Player` já nasce com o
+  /// visual correto sem precisar remontar depois. `save` então só
+  /// sobrescreve stats/andar/dungeon/grupo por cima, e pula a tela de
+  /// "BossReveal" (o boss já foi revelado antes de salvar).
+  void startRun(CreatureData creature, {Map<String, dynamic>? save}) {
     // Varredura explícita por tipo além do loop genérico abaixo: encontramos
     // um caso (Game Over → "Menu Principal") em que dois `startRun` corriam
     // em sequência com o motor pausado, e o `Player` da run anterior
@@ -452,11 +462,15 @@ class CreaturesRogueGame extends FlameGame
     companionCreatures[0] = creature;
     companionPocketed[0] = false;
 
-    // Run nova: volta pro primeiro andar e sorteia o boss que espera no
-    // andar final desta run.
-    currentLevel = 1;
-    currentFloor = 1;
-    runBoss = BossRegistry.sortear(_bossRandom, currentLevel);
+    if (save != null) {
+      _aplicarSave(save);
+    } else {
+      // Run nova: volta pro primeiro andar e sorteia o boss que espera no
+      // andar final desta run.
+      currentLevel = 1;
+      currentFloor = 1;
+      runBoss = BossRegistry.sortear(_bossRandom, currentLevel);
+    }
 
     final generator = DungeonGenerator(
       maxRooms: 12,
@@ -525,16 +539,165 @@ class CreaturesRogueGame extends FlameGame
     gameCamera.viewport.add(minimapHud);
 
     overlays.remove('CreatureSelect');
+    overlays.remove('MainMenu');
 
     // Boss pendente nesta run: mostra quem espera no andar final antes de
-    // liberar o jogo. Motor continua pausado até `dismissBossReveal`.
-    if (runBoss != null) {
+    // liberar o jogo. Motor continua pausado até `dismissBossReveal`. Numa
+    // run continuada o boss já foi revelado antes de salvar — não mostra de
+    // novo.
+    if (save == null && runBoss != null) {
       overlays.add('BossReveal');
     } else {
       overlays.add('Hud');
       resumeEngine();
     }
+
+    unawaited(_salvarProgresso());
   }
+
+  /// Chamado pelo botão "CONTINUAR" do menu principal. Reconstrói a run a
+  /// partir do save (ver `RunSave`) e entra direto no jogo, sem passar pelo
+  /// seletor de criaturas.
+  void continuarSalva() {
+    final dados = RunSave.instance.dados;
+    if (dados == null) return; // botão não deveria nem aparecer sem save
+
+    final grupo = (dados['grupo'] as List).cast<Map<String, dynamic>>();
+    final ativoIdx = dados['ativo'] as int;
+    final ativoSlot = grupo[ativoIdx];
+    final creature = _formaSalva(
+      ativoSlot['id'] as String,
+      ativoSlot['evoluida'] as bool,
+    );
+
+    startRun(creature, save: dados);
+  }
+
+  /// Forma (evoluída ou base) da criatura de id [baseId] — usado ao
+  /// restaurar um save, que só guarda o id BASE (ver
+  /// `CreatureRegistry.baseDe`) mais a flag [evoluida].
+  CreatureData _formaSalva(String baseId, bool evoluida) {
+    final base = CreatureRegistry.byId(baseId);
+    if (!evoluida) return base;
+    return base.evoluir?.call() ?? base;
+  }
+
+  /// Acha o `BossOption` de id [creatureId] na lista da dungeon [dungeon].
+  /// Se as listas de `BossRegistry` mudarem entre um save antigo e a versão
+  /// atual do jogo (comum em desenvolvimento) e o id sumir, sorteia um novo
+  /// em vez de travar o carregamento.
+  BossOption _acharBoss(String creatureId, int dungeon) {
+    final lista = BossRegistry.all[(dungeon - 1) % BossRegistry.all.length];
+    return lista.firstWhere(
+      (b) => b.creatureId == creatureId,
+      orElse: () => BossRegistry.sortear(_bossRandom, dungeon),
+    );
+  }
+
+  /// Aplica por cima do estado recém-montado por `startRun` os dados de um
+  /// save (ver `RunSave`/`_serializarRun`). `player.creatureData` já
+  /// chegou aqui na forma certa (quem chamou — `continuarSalva` — já
+  /// resolveu isso), então só falta stats, andar/dungeon/boss e o resto do
+  /// grupo.
+  void _aplicarSave(Map<String, dynamic> dados) {
+    currentLevel = dados['dungeon'] as int;
+    currentFloor = dados['andar'] as int;
+
+    final bossId = dados['bossId'] as String?;
+    runBoss = bossId == null ? null : _acharBoss(bossId, currentLevel);
+
+    companionAtivoIndex = dados['ativo'] as int;
+
+    final grupo = (dados['grupo'] as List).cast<Map<String, dynamic>>();
+    for (int i = 0; i < maxCompanions; i++) {
+      final slot = grupo[i];
+      final id = slot['id'] as String?;
+      final evoluida = slot['evoluida'] as bool;
+      companionCreatures[i] = id == null ? null : _formaSalva(id, evoluida);
+      companionEvoluida[i] = evoluida;
+      companionPocketed[i] = slot['pocketed'] as bool;
+      companionSavedHealth[i] = (slot['vida'] as num).toDouble();
+      companionXp[i] = (slot['xp'] as num).toDouble();
+    }
+    // O slot ativo nunca fica marcado como "no banco" — mesma invariante de
+    // `startRun`/`_trocarParaSlot`.
+    companionPocketed[companionAtivoIndex] = false;
+
+    player.xp = companionXp[companionAtivoIndex];
+    player.evoluida = companionEvoluida[companionAtivoIndex];
+
+    final j = dados['jogador'] as Map<String, dynamic>;
+    player.maxHealth = (j['maxHealth'] as num).toDouble();
+    player.currentHealth = (j['vida'] as num).toDouble();
+    player.shieldMax = (j['shieldMax'] as num).toDouble();
+    player.shield = (j['shield'] as num).toDouble();
+    player.velMult = (j['velMult'] as num).toDouble();
+    player.cdMult = (j['cdMult'] as num).toDouble();
+    Player.danoMult = (j['danoMult'] as num).toDouble();
+    player.critChance = (j['critChance'] as num).toDouble();
+    player.critMult = (j['critMult'] as num).toDouble();
+    player.bombsAmount = j['bombs'] as int;
+    player.coins = j['coins'] as int;
+    final slotsSalvos = (j['slots'] as List).cast<String?>();
+    for (int i = 0; i < player.slots.length; i++) {
+      final nome = slotsSalvos[i];
+      player.slots[i] = nome == null
+          ? null
+          : ConsumableType.values.byName(nome);
+    }
+  }
+
+  /// Serializa a run atual pro formato que `RunSave` grava — ver
+  /// `_aplicarSave` pro caminho inverso.
+  Map<String, dynamic> _serializarRun() {
+    // O slot ativo só é sincronizado de volta pro array em
+    // `_trocarParaSlot` (ver comentário lá) — salvar no meio de uma
+    // criatura ativa (o caso comum) pegaria dado velho sem isto.
+    companionCreatures[companionAtivoIndex] = player.creatureData;
+    companionEvoluida[companionAtivoIndex] = player.evoluida;
+    companionXp[companionAtivoIndex] = player.xp;
+
+    String? baseId(int i) {
+      final c = companionCreatures[i];
+      if (c == null) return null;
+      return companionEvoluida[i] ? CreatureRegistry.baseDe(c).id : c.id;
+    }
+
+    return {
+      'dungeon': currentLevel,
+      'andar': currentFloor,
+      'bossId': runBoss?.creatureId,
+      'ativo': companionAtivoIndex,
+      'grupo': [
+        for (int i = 0; i < maxCompanions; i++)
+          {
+            'id': baseId(i),
+            'evoluida': companionEvoluida[i],
+            'pocketed': companionPocketed[i],
+            'vida': companionSavedHealth[i],
+            'xp': companionXp[i],
+          },
+      ],
+      'jogador': {
+        'maxHealth': player.maxHealth,
+        'vida': player.currentHealth,
+        'shieldMax': player.shieldMax,
+        'shield': player.shield,
+        'velMult': player.velMult,
+        'cdMult': player.cdMult,
+        'danoMult': Player.danoMult,
+        'critChance': player.critChance,
+        'critMult': player.critMult,
+        'bombs': player.bombsAmount,
+        'coins': player.coins,
+        'slots': player.slots.map((s) => s?.name).toList(),
+      },
+    };
+  }
+
+  /// Chamado a cada andar novo (ver `startRun`/`nextLevel`) — fire-and-forget
+  /// de propósito: nada na run trava esperando o disco gravar.
+  Future<void> _salvarProgresso() => RunSave.instance.salvar(_serializarRun());
 
   /// Chamado pelo botão "ENTRAR" do `BossRevealOverlay`.
   void dismissBossReveal() {
@@ -1177,15 +1340,22 @@ class CreaturesRogueGame extends FlameGame
       pauseEngine();
       overlays.add('BossReveal');
     }
+
+    unawaited(_salvarProgresso());
   }
 
   /// Chamado pelo `Player.onDeath` quando a vida chega a zero. Congela o jogo
   /// e troca a Hud pela tela de Game Over — as ações de RESTART/MENU dela já
   /// esperam o motor pausado (ver comentário em game_over_overlay.dart).
+  ///
+  /// Apaga o save aqui: roguelike é permadeath, e morrer é o único jeito de
+  /// zerar a run em si (RESTART logo em seguida começa uma run NOVA, que já
+  /// grava o save dela própria).
   void _handleGameOver() {
     overlays.remove('Hud');
     overlays.add('GameOver');
     pauseEngine();
+    unawaited(RunSave.instance.apagar());
     onGameOver?.call();
   }
 

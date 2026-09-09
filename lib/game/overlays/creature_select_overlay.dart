@@ -69,29 +69,36 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 16, bottom: 8),
-              child: Stack(
-                alignment: Alignment.center,
+              padding: const EdgeInsets.only(
+                top: 16,
+                bottom: 8,
+                left: 8,
+                right: 8,
+              ),
+              child: Row(
                 children: [
-                  Text(
-                    context.l10n.creatureSelect_titulo,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Palette.preto,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                  IconButton(
+                    onPressed: withBtnSfx(() {
+                      widget.game.overlays.remove('CreatureSelect');
+                      widget.game.overlays.add('MainMenu');
+                    }),
+                    icon: const Icon(Icons.arrow_back, color: Palette.preto),
+                  ),
+                  Expanded(
+                    child: Text(
+                      context.l10n.creatureSelect_titulo,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Palette.preto,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
-                  Positioned(
-                    left: 12,
-                    child: IconButton(
-                      onPressed: withBtnSfx(() {
-                        widget.game.overlays.remove('CreatureSelect');
-                        widget.game.overlays.add('MainMenu');
-                      }),
-                      icon: const Icon(Icons.arrow_back, color: Palette.preto),
-                    ),
-                  ),
+                  // Espaçador do mesmo tamanho do botão — sem ele o título
+                  // centraliza no espaço que sobra à direita DO botão, não
+                  // no meio de verdade da tela.
+                  const SizedBox(width: 48),
                 ],
               ),
             ),

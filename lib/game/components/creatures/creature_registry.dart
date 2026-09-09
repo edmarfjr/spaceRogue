@@ -619,4 +619,19 @@ class CreatureRegistry {
   ];
 
   static CreatureData byId(String id) => all.firstWhere((c) => c.id == id);
+
+  /// Acha o registro BASE (o que está em `all`) cuja evolução é [evoluida] —
+  /// necessário porque `all`/`byId` só indexam formas base; uma forma
+  /// evoluída (produzida pelo closure `evoluir`) não tem `id` cadastrado
+  /// ali. Usado ao salvar/restaurar uma run: só o id base é persistido, e
+  /// isto devolve ele a partir da instância evoluída em mãos.
+  ///
+  /// `orElse` devolve [evoluida] mesma: nunca deveria faltar, mas travar o
+  /// save por causa disso é pior que salvar um id levemente errado.
+  static CreatureData baseDe(CreatureData evoluida) {
+    return all.firstWhere(
+      (base) => base.evoluir?.call().id == evoluida.id,
+      orElse: () => evoluida,
+    );
+  }
 }

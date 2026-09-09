@@ -4,6 +4,8 @@
   "menu_titulo": "CREATURES ROGUE",
   "menu_novoJogo": " NOVO JOGO ",
   "menu_configuracoes": " CONFIGURAÇÕES ",
+  "menu_confirmarNovoJogoTitulo": "COMEÇAR DE NOVO?",
+  "menu_confirmarNovoJogoMensagem": "Já existe uma partida salva. Começar um jogo novo vai apagar esse save.",
 
   "settings_titulo": "CONFIGURAÇÕES",
   "settings_controle": "CONTROLE",

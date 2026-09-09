@@ -17,6 +17,7 @@ import 'package:creatures_rogue/game/overlays/main_menu_overlay.dart';
 import 'package:creatures_rogue/game/overlays/pause_overlay.dart';
 import 'package:creatures_rogue/game/overlays/settings_overlay.dart';
 import 'package:creatures_rogue/game/game_settings.dart';
+import 'package:creatures_rogue/game/run_save.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:creatures_rogue/game/audio/game_audio.dart';
 import 'package:creatures_rogue/l10n/gen/app_localizations.dart';
@@ -38,6 +39,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await CreatureProgress.instance.load();
   await GameSettings.instance.load();
+  await RunSave.instance.load();
   // Sem `await`: os .wav são pequenos, mas carregar áudio não pode ser o que
   // atrasa a primeira tela. `GameAudio.play()` já é seguro de chamar antes
   // disso terminar — só fica mudo até o pool ficar pronto.
