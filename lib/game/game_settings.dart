@@ -19,12 +19,14 @@ class GameSettings {
   static const _localeKey = 'creatures_rogue.locale';
   static const _soundEnabledKey = 'creatures_rogue.sound_enabled';
   static const _musicEnabledKey = 'creatures_rogue.music_enabled';
+  static const _godModeKey = 'creatures_rogue.god_mode';
 
   static const ControlScheme defaultControlScheme = ControlScheme.botoes;
 
   late final SharedPreferences _prefs;
   ControlScheme _controlScheme = defaultControlScheme;
   bool _loaded = false;
+  bool _godMode = false;
 
   /// `null` = segue o idioma do sistema (padrão). Vive num `ValueNotifier`,
   /// não num campo simples como `_controlScheme`, porque trocar o idioma
@@ -44,6 +46,7 @@ class GameSettings {
     // `controlScheme`.
     GameAudio.instance.enabled = _prefs.getBool(_soundEnabledKey) ?? true;
     GameMusic.instance.enabled = _prefs.getBool(_musicEnabledKey) ?? true;
+    _godMode = _prefs.getBool(_godModeKey) ?? false;
     _loaded = true;
   }
 
@@ -67,7 +70,8 @@ class GameSettings {
     }
   }
 
-  static Locale? _parseLocale(String? salvo) => salvo == null ? null : Locale(salvo);
+  static Locale? _parseLocale(String? salvo) =>
+      salvo == null ? null : Locale(salvo);
 
   bool get soundEnabled => GameAudio.instance.enabled;
 
@@ -89,6 +93,15 @@ class GameSettings {
       await GameMusic.instance.pause();
     }
     await _prefs.setBool(_musicEnabledKey, value);
+  }
+
+  /// Cheat: inimigo morre com um golpe, qualquer que seja o dano. Ver
+  /// `Enemy.takeDamage`.
+  bool get godMode => _godMode;
+
+  Future<void> setGodMode(bool value) async {
+    _godMode = value;
+    await _prefs.setBool(_godModeKey, value);
   }
 
   /// Volta ao padrão em vez de estourar quando o valor gravado não corresponde

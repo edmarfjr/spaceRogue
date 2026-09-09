@@ -6,7 +6,8 @@ import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 
 import '../player/player.dart';
 
-class Stairs extends PositionComponent with CollisionCallbacks, HasGameRef<CreaturesRogueGame> {
+class Stairs extends PositionComponent
+    with CollisionCallbacks, HasGameRef<CreaturesRogueGame> {
   late final Sprite sprite;
   final Paint _paint = Paint()..filterQuality = FilterQuality.none;
 
@@ -16,8 +17,8 @@ class Stairs extends PositionComponent with CollisionCallbacks, HasGameRef<Creat
   /// avançava dois andares de uma vez em vez de um.
   bool _avancado = false;
 
-  Stairs({required Vector2 position}) 
-      : super(position: position, size: Vector2(16, 16), anchor: Anchor.center);
+  Stairs({required Vector2 position})
+    : super(position: position, size: Vector2(16, 16), anchor: Anchor.center);
 
   @override
   Future onLoad() async {
@@ -38,9 +39,10 @@ class Stairs extends PositionComponent with CollisionCallbacks, HasGameRef<Creat
 
     if (_avancado) return;
     if (other is Player) {
-      // Quando o jogador pisa no alçapão, chama a função de avançar nível
+      // Quando o jogador pisa no alçapão, anima a transição (círculo fecha,
+      // troca o andar por baixo, círculo abre) em vez de trocar na cara.
       _avancado = true;
-      gameRef.nextLevel();
+      gameRef.startLevelTransition();
     }
   }
 }

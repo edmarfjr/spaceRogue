@@ -10,12 +10,12 @@ import '../enemy_mixins.dart';
 /// de guarda é o que a define: ensina o jogador a parar de gastar tiro e
 /// reposicionar em vez de martelar o mesmo alvo.
 class TartarugaPlantaEnemy extends Enemy with ShooterAttack {
-  static const double _fireRate = 2.8;
+  static const double _fireRate = 2.0;
 
   // Ciclo da guarda, contado dentro de movimento(dt) — nunca com Future.delayed,
   // que ignoraria pause do jogo e o freeze de transição de sala.
   static const double _tempoAteGuardar = 5.0;
-  static const double _duracaoGuarda = 2.2;
+  static const double _duracaoGuarda = 2.0;
   static const double _reducaoGuarda = 0.85;
 
   double _guardaTimer = 0.0;
@@ -27,7 +27,7 @@ class TartarugaPlantaEnemy extends Enemy with ShooterAttack {
   }) : super(
          creature: CreatureRegistry.tartarugaPlanta,
          speed: 18.0,  // stats.speed 35 → a segunda mais lenta
-         health: 35,    // stats.maxHp 20 → tanque do elenco, escalado pro combate
+         health: 30,    // stats.maxHp 20 → tanque do elenco, escalado pro combate
          dmg: 1,
          bltSpeed: 55, // semente pesada e lenta
          bltImg: 'projeteis/proj1.png',

@@ -69,6 +69,7 @@ class ShopStand extends Collectible {
     }
 
     player.coins -= preco;
+    
     return true;
   }
 

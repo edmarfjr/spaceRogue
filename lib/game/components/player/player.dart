@@ -197,7 +197,7 @@ class Player extends PositionComponent
 
   /// Quanto de XP falta pra evoluir. Só uma constante por enquanto — todas
   /// as criaturas evoluem no mesmo ritmo.
-  static const double xpParaEvoluir = 2.0;
+  static const double xpParaEvoluir = 35.0;
 
   double get xpFracao => evoluida ? 1.0 : (xp / xpParaEvoluir).clamp(0.0, 1.0);
 
@@ -504,15 +504,15 @@ class Player extends PositionComponent
     if (shieldVisualActive) {
       for (var i = 0; i < shieldHits; i++) {
         canvas.drawCircle(
-          Offset(-4, i * 4 + 5),
+          Offset(-4, i * 5 + 4),
           2.0,
-          Paint()..color = Palette.azul
+          Paint()..color = creatureData.corClara
           ..filterQuality = FilterQuality.none,
         );
         canvas.drawCircle(
-          Offset(-4, i * 4 + 5),
+          Offset(-4, i * 5 + 4),
           2.0,
-          Paint()..color = Palette.preto
+          Paint()..color = creatureData.corEscura
           ..style = PaintingStyle.stroke
           ..strokeWidth = 0.8
           ..filterQuality = FilterQuality.none,
@@ -812,6 +812,7 @@ class Player extends PositionComponent
     Enemy? nearest;
     double nearestDistSq = double.infinity;
     for (final enemy in enemies) {
+      if (enemy.pulando) continue;
       if (room != null &&
           !room.toAbsoluteRect().contains(
             Offset(enemy.absolutePosition.x, enemy.absolutePosition.y),

@@ -70,13 +70,29 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
           children: [
             Padding(
               padding: const EdgeInsets.only(top: 16, bottom: 8),
-              child: Text(
-                context.l10n.creatureSelect_titulo,
-                style: const TextStyle(
-                  color: Palette.preto,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Text(
+                    context.l10n.creatureSelect_titulo,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Palette.preto,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Positioned(
+                    left: 12,
+                    child: IconButton(
+                      onPressed: withBtnSfx(() {
+                        widget.game.overlays.remove('CreatureSelect');
+                        widget.game.overlays.add('MainMenu');
+                      }),
+                      icon: const Icon(Icons.arrow_back, color: Palette.preto),
+                    ),
+                  ),
+                ],
               ),
             ),
             Expanded(

@@ -18,6 +18,8 @@ class Door extends Obstacle {
   final Color cor2;
   final Color cor3;
 
+  final String spritePath;
+
   Door({
     required super.position,
     required this.angleVal,
@@ -26,10 +28,11 @@ class Door extends Obstacle {
     this.cor3 = Palette.verde,
     bool isOpen = false,
     this.flipX = false,
+    required this.spritePath,
   })  : _isOpen = isOpen,
         
         super(
-          spritePath: 'tileset/door.png',
+          spritePath: spritePath,
           cor1: cor1,
           cor2: cor2,  
           cor3: cor3,  
@@ -48,17 +51,17 @@ class Door extends Obstacle {
     await super.onLoad();
     
     final ui.Image swappedImageClose = await PaletteSwapper.createSwappedImage(
-      imagePath: 'tileset/arvore2.png',//'tileset/door1.png',
+      imagePath: spritePath,//'tileset/door1.png',
       lightGrayReplacement: cor1,
       darkGrayReplacement: cor2,
       whiteReplacement: cor3,
     );
 
     final ui.Image swappedImage = await PaletteSwapper.createSwappedImage(
-      imagePath: 'tileset/floor.png',//'tileset/doorOpen1.png',
-      lightGrayReplacement: Palette.branco,// cor1,
-      darkGrayReplacement: Palette.branco,//cor2,
-      whiteReplacement: Palette.branco,//cor3,
+      imagePath: 'tileset/floor1.png',//'tileset/doorOpen1.png',
+      lightGrayReplacement: cor1,
+      darkGrayReplacement: cor2,
+      whiteReplacement: cor3,
     );
     
     _closedSprite = Sprite(swappedImageClose);

@@ -13,7 +13,7 @@ import '../enemy_mixins.dart';
 /// visual.scale e visual.position.y todo frame, e um MovementAnimator por cima
 /// disputaria os mesmos canais.
 class SapoAguaEnemy extends Enemy with JumpMovement, ShooterAttack {
-  static const double _fireRate = 2.0;
+  static const double _fireRate = 1.5;
 
   SapoAguaEnemy({
     required super.position,

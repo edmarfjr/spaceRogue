@@ -23,6 +23,7 @@
   "settings_audio": "AUDIO",
   "settings_som": "SOUND",
   "settings_musica": "MUSIC",
+  "settings_godMode": "GOD MODE",
 
   "pause_jogoPausado": "GAME PAUSED",
   "pause_continuar": " RESUME ",

@@ -36,6 +36,7 @@ mixin MovementHost on PositionComponent {
 
   Vector2 knockbackVelocity = Vector2.zero();
   bool isAirborne = false;
+  bool pulando = false;
   double lentidaoFator = 1.0;
   double cegoTimer = 0.0;
 
@@ -115,7 +116,7 @@ mixin MovementHost on PositionComponent {
     );
 
     for (final child in roomColliders) {
-      if (isAirborne && child is Obstacle) continue;
+      if ((pulando || isAirborne) && child is Obstacle) continue;
       if (child.toAbsoluteRect().overlaps(futureRect)) return false;
     }
 

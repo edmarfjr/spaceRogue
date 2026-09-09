@@ -12,12 +12,14 @@ class BicoEletricoEvo extends Ability {
   final double velocidade;
   final double alcanceSegundos;
   final double cegoDuracao;
+  final double kbForce;
 
   const BicoEletricoEvo({
     this.coef = 1.1,
     this.velocidade = 260,
     this.alcanceSegundos = 0.25,
     this.cegoDuracao = 0.6,
+    this.kbForce = 7,
   }) : super(nome: 'Bico Elétrico+', cooldown: 0.2);
 
   @override
@@ -30,6 +32,7 @@ class BicoEletricoEvo extends Ability {
         direction: dir,
         speed: velocidade,
         dmg: dano,
+        kbForce: kbForce,
         sprPath: 'projeteis/proj2.png',
         lifeTime: alcanceSegundos,
         cegoDuracao: cegoDuracao,

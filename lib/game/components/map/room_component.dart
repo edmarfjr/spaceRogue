@@ -74,7 +74,6 @@ class RoomComponent extends PositionComponent with HasGameRef {
   RoomComponent(
     this.data, {
     required this.player,
-    int currentLevel = 1,
     this.floor = 1,
     this.dungeon = 1,
     this.bossBuilder,
@@ -87,7 +86,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
           ),
           priority: _prioridadePiso,
         ) {
-    theme = DungeonTheme.getThemeForLevel(currentLevel);
+    theme = DungeonTheme.getThemeForLevel(dungeon);
   }
 
   late final Paint floorPaint;
@@ -226,9 +225,14 @@ class RoomComponent extends PositionComponent with HasGameRef {
         
         int roll = _random.nextInt(100);
 
-        if (roll < 45) {
-          add(Grama(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,cor3: Palette.branco));
-        } 
+        if(dungeon == 2){
+          add(ChaoCave(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,cor3: theme.corBranca));
+        }else{
+          if (roll < 45) {
+            add(Grama(position: Vector2(x, y),cor1: theme.corClara,cor2: theme.corEscura,cor3: theme.corBranca));
+          } 
+        }
+        
       }
     }
   }
@@ -278,6 +282,8 @@ class RoomComponent extends PositionComponent with HasGameRef {
   void _generateDoors() {
     bool initialOpen = data.isCleared || data.type == RoomType.start || !data.isVisited;
     void addDoorHalf(Vector2 pos, double rot, {bool flipX = false}) {
+      var spritePath = 'tileset/arvore2.png';
+      if(dungeon == 2)spritePath = 'tileset/pedraCave2.png';
       var d = Door(
         position: pos,
         angleVal: 0,//rot,
@@ -286,6 +292,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
         cor1: theme.corClara,  
         cor2: theme.corEscura,
         cor3: theme.corBranca,
+        spritePath: spritePath,
       );
       roomDoors.add(d);
       add(d);
@@ -418,8 +425,11 @@ class RoomComponent extends PositionComponent with HasGameRef {
     final int tilesX = (width / tileSize).round();
     final int tilesY = (height / tileSize).round();
 
-    final String pathWall = 'tileset/arvore1.png';//'tileset/wall.png';       
+    String pathWall = 'tileset/arvore1.png';//'tileset/wall.png';       
     //final String pathCorner = 'tileset/arvore1.png';//'tileset/wallQuina.png'; 
+    if (dungeon == 2){
+      pathWall = 'tileset/pedraCave.png';
+    }
 
     for (int y = 0; y < tilesY; y++) {
       for (int x = 0; x < tilesX; x++) {
@@ -501,19 +511,17 @@ class RoomComponent extends PositionComponent with HasGameRef {
   }
 
   // Criado uma única vez (antes era um Paint novo por sala, por frame)
-  late final Paint _roomBackgroundPaint = Paint()..color = Palette.branco;
+  //late final Paint _roomBackgroundPaint = Paint()..color = Palette.branco;
   late final Rect _roomBackgroundRect = Rect.fromLTWH(0, 0, width, height);
 
   @override
   void render(Canvas canvas) {
-    canvas.drawRect(_roomBackgroundRect, _roomBackgroundPaint);
+    canvas.drawRect(_roomBackgroundRect, Paint()..color = theme.corChao);
 
     super.render(canvas);
+    
   }
 
-  // --- CULLING: só a(s) sala(s) na tela gastam CPU/GPU ---
-  // Sem isso, as 12 salas desenhavam ~44 tiles de parede cada uma
-  // (~530 draw calls) e atualizavam toda a árvore de filhos por frame.
   CameraComponent? _camera;
 
   bool _isOnCamera() {

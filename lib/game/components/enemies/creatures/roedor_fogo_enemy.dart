@@ -10,7 +10,7 @@ import '../enemy_mixins.dart';
 /// 3 brasas — o espelho da Rajada de Brasa do jogador. Alto dano por rajada,
 /// mas morre num golpe sólido. Pressão de "sai do cone".
 class RoedorFogoEnemy extends Enemy with ShooterAttack {
-  static const double _fireRate = 2.2;
+  static const double _fireRate = 2.00;
   static const double _anguloLequeGraus = 20;
 
   RoedorFogoEnemy({
@@ -21,7 +21,7 @@ class RoedorFogoEnemy extends Enemy with ShooterAttack {
          speed: 45.0,   // stats.speed 70 → rápido, mas jogável de encarar
          health: 15,
          dmg: 1,
-         bltSpeed: 90,
+         bltSpeed: 120,
          bltImg: 'projeteis/fogo2.png',
          bltCor1: CreatureRegistry.roedorFogo.corClara,
          bltCor2: CreatureRegistry.roedorFogo.corEscura,

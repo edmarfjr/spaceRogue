@@ -10,11 +10,13 @@ class BicadaRapida extends Ability {
   final double coef;
   final double velocidade;
   final double alcanceSegundos;
+  final double kbForce;
 
   const BicadaRapida({
     this.coef = 1.0,
     this.velocidade = 260,
     this.alcanceSegundos = 0.25,
+    this.kbForce = 5,
   }) : super(
          nome: 'Bicada Rápida',
          descricao: 'Cadência altíssima, dano baixo por tiro.',
@@ -30,6 +32,7 @@ class BicadaRapida extends Ability {
         position: user.position.clone(),
         direction: dir,
         speed: velocidade,
+        kbForce: kbForce,
         dmg: dano,
         sprPath: 'projeteis/proj2.png',
         lifeTime: alcanceSegundos,

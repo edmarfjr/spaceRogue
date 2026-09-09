@@ -30,6 +30,7 @@ import 'package:creatures_rogue/game/components/UI/hud.dart';
 import 'package:creatures_rogue/game/components/enemies/boss_registry.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/UI/minimap_hud.dart';
+import 'package:creatures_rogue/game/components/UI/level_transition_overlay.dart';
 //import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
@@ -71,6 +72,8 @@ class CreaturesRogueGame extends FlameGame
     with HasCollisionDetection, HasKeyboardHandlerComponents {
   // O Mundo onde o mapa, inimigos e jogador existirão
   late final World dungeonWorld;
+
+  bool godMode = true;
 
   // A câmera que vai renderizar o mundo na resolução do Game Boy
   late final CameraComponent gameCamera;
@@ -246,7 +249,11 @@ class CreaturesRogueGame extends FlameGame
     if (slotVazio == -1) return null;
 
     final possiveis = CreatureRegistry.all
-        .where((c) => !companionCreatures.any((owned) => owned?.id == c.id))
+        .where(
+          (c) =>
+              !companionCreatures.any((owned) => owned?.id == c.id) &&
+              c.evoluir != null,
+        )
         .toList();
     if (possiveis.isEmpty) return null;
 
@@ -448,7 +455,7 @@ class CreaturesRogueGame extends FlameGame
     // andar final desta run.
     currentLevel = 1;
     currentFloor = 1;
-    runBoss = BossRegistry.sortearPendente(_bossRandom);
+    runBoss = BossRegistry.sortearPendente(_bossRandom, currentLevel);
 
     final generator = DungeonGenerator(
       maxRooms: 12,
@@ -461,12 +468,10 @@ class CreaturesRogueGame extends FlameGame
       final room = RoomComponent(
         roomData,
         player: player,
-        currentLevel: currentLevel,
+        dungeon: currentLevel,
         floor: currentFloor,
         bossBuilder: isBossFloor ? _buildRunBoss : null,
-        wildCreatureBuilder: currentFloor == andaresPorBoss - 1
-            ? _buildWildCreature
-            : null,
+        wildCreatureBuilder: currentFloor % 2 == 0 ? _buildWildCreature : null,
       );
       loadedRooms['${roomData.x},${roomData.y}'] = room;
       dungeonWorld.add(room);
@@ -560,7 +565,7 @@ class CreaturesRogueGame extends FlameGame
   void _spawnTestBoss() {
     if (!_runStarted) return;
 
-    final option = BossRegistry.all.first;
+    final option = BossRegistry.all[currentLevel].first;
     final boss = option.builder(player.position + Vector2(0, -40), player);
     boss.ehBoss = true;
     dungeonWorld.add(boss);
@@ -1083,6 +1088,19 @@ class CreaturesRogueGame extends FlameGame
     );
   }
 
+  /// Chamado pela `Stairs` ao encostar no jogador. Só encena a animação —
+  /// quem realmente troca o andar é o `aoFechar` de [LevelTransitionOverlay],
+  /// disparado no instante em que a tela fica 100% preta.
+  void startLevelTransition() {
+    gameCamera.viewport.add(
+      LevelTransitionOverlay(
+        player: player,
+        camera: gameCamera,
+        aoFechar: nextLevel,
+      ),
+    );
+  }
+
   // NOVO MÉTODO: Limpa e recria a fase!
   void nextLevel() {
     // 1. LIMPEZA TOTAL (O "faxineiro")
@@ -1117,10 +1135,10 @@ class CreaturesRogueGame extends FlameGame
       final room = RoomComponent(
         roomData,
         player: player,
-        currentLevel: currentLevel,
+        dungeon: currentLevel,
         floor: currentFloor,
         bossBuilder: isBossFloor ? _buildRunBoss : null,
-        wildCreatureBuilder: currentFloor % 2 == 2 ? _buildWildCreature : null,
+        wildCreatureBuilder: currentFloor % 2 == 0 ? _buildWildCreature : null,
       );
       loadedRooms['${roomData.x},${roomData.y}'] = room;
       dungeonWorld.add(room);

@@ -1,5 +1,6 @@
 import 'package:creatures_rogue/game/components/creatures/abilities/brado_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/choque_eletrico_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/deixar_bomba_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/disparada_congelante.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/disparada_veloz_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/esquiva_tornado_evo.dart';
@@ -386,6 +387,23 @@ class CreatureRegistry {
     corEscura: Palette.roxoEsc,
     stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 4),
     ability1: DeixarBomba(),
+    ability2: EsquivaBomba(),
+    moveAnim: MovementAnimation.saltitar,
+    hitboxSize: Vector2(8, 10),
+    enemyBuilder: (pos, plr) =>
+        BombaFogoEnemy(position: pos, playerTarget: plr),
+    evoluir: () => bombaFogoEvo,
+  );
+
+  static final CreatureData bombaFogoEvo = CreatureData(
+    id: 'bomba_fogo',
+    nome: 'Bomba de Fogo',
+    spritePath: 'actors/bombaFogoEvo.png',
+    tipo: CreatureType.fogo,
+    corClara: Palette.burgundy,
+    corEscura: Palette.roxoEsc,
+    stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 4),
+    ability1: DeixarBombaEvo(),
     ability2: EsquivaBomba(),
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(8, 10),

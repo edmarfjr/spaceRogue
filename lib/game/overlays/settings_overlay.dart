@@ -57,10 +57,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
           OutlinedButton(
             onPressed: withBtnSfx(() => Navigator.of(dialogContext).pop(false)),
             style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               backgroundColor: Palette.branco,
               side: BorderSide(color: Palette.preto),
               shape: const RoundedRectangleBorder(
@@ -76,10 +73,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
           OutlinedButton(
             onPressed: withBtnSfx(() => Navigator.of(dialogContext).pop(true)),
             style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               backgroundColor: Palette.branco,
               side: BorderSide(color: Palette.preto),
               shape: const RoundedRectangleBorder(
@@ -122,6 +116,11 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
 
   Future<void> _alternarMusica(bool valor) async {
     await GameSettings.instance.setMusicEnabled(valor);
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _alternarGodMode(bool valor) async {
+    await GameSettings.instance.setGodMode(valor);
     if (mounted) setState(() {});
   }
 
@@ -295,6 +294,16 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                 value: GameSettings.instance.musicEnabled,
                 activeThumbColor: Palette.preto,
                 onChanged: (valor) => _alternarMusica(valor),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                context.l10n.settings_godMode,
+                style: const TextStyle(color: Palette.preto, fontSize: 14),
+              ),
+              Switch(
+                value: GameSettings.instance.godMode,
+                activeThumbColor: Palette.preto,
+                onChanged: (valor) => _alternarGodMode(valor),
               ),
             ],
           ),

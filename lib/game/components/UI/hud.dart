@@ -128,7 +128,7 @@ class Hud extends PositionComponent with HasGameRef {
     );
 
     final ui.Image shieldImg = await PaletteSwapper.createSwappedImage(
-      imagePath: 'ui/heart.png',
+      imagePath: 'ui/escudo.png',
       lightGrayReplacement: Palette.azul,
       darkGrayReplacement: Palette.azulEsc,
     );
@@ -279,11 +279,11 @@ class Hud extends PositionComponent with HasGameRef {
 
     // --- BARRA DE ESCUDO PASSIVO (defesa) ---
     for (int i = 0; i < player.shield; i++) {
-      double shieldX =
-          3 +
-          player.maxHealth / 2 * (heartSize.x + spacing) +
-          (i * (heartSize.x + spacing)) -
-          ((heartSize.x + spacing) + 2); // Posição X após os corações
+      double shieldX = (i * (heartSize.x + spacing) - ((heartSize.x + spacing) + 2)) + 3;
+          //3 +
+          //player.maxHealth / 2 * (heartSize.x + spacing) +
+          //(i * (heartSize.x + spacing)) -
+          //((heartSize.x + spacing) + 2); // Posição X após os corações
       final double shieldY = 0; //heartSize.y + 1;
       //final fracao = (player.shield / player.shieldMax).clamp(0.0, 1.0);
 
@@ -303,7 +303,7 @@ class Hud extends PositionComponent with HasGameRef {
     // quando a carga completar. NÃO é a bolha de habilidade
     // (`shieldVisualActive`/`shieldVisual`) — essa é outra coisa, desenhada
     // em cima do próprio sprite do jogador, não na Hud.
-    if (player.shield < player.shieldMax) {
+    /*if (player.shield < player.shieldMax) {
       final proximoIndice = player.shield.floor();
       final double regenX =
           3 +
@@ -330,9 +330,10 @@ class Hud extends PositionComponent with HasGameRef {
         _shieldRegenBorderPaint,
       );
     }
+    */
 
     //double bombY = heartSize.y + 2;
     //bombSprite.render(canvas, position: Vector2(0, bombY), size: bombIconSize, overridePaint: paint);
-    textPaint.render(canvas, '${game.currentFloor.toString()} - ${game.currentLevel.toString()}', Vector2(84, 1));
+    textPaint.render(canvas, '${game.currentFloor.toString()} - ${game.currentLevel.toString()}', Vector2(82, 1));
   }
 }

@@ -13,8 +13,8 @@ class Ericar extends Ability {
   final int quantidade;
   final double velocidade;
 
-  const Ericar({this.coef = 0.5, this.quantidade = 8, this.velocidade = 110})
-      : super(nome: 'Eriçar', descricao: 'Saraivada de espinhos em todas as direções, sem mira.', cooldown: 2.2);
+  const Ericar({this.coef = 1, this.quantidade = 8, this.velocidade = 110})
+      : super(nome: 'Eriçar', descricao: 'Saraivada de espinhos em todas as direções, sem mira.', cooldown: 1.5);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
@@ -28,7 +28,7 @@ class Ericar extends Ability {
         direction: direcao,
         speed: velocidade,
         dmg: dano,
-        lifeTime: 0.5,
+        lifeTime: 0.75,
         sprPath: 'projeteis/raio.png',
         cor1: user.creatureData.corClara,
         cor2: user.creatureData.corEscura,

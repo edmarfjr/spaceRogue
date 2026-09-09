@@ -5,11 +5,11 @@ import 'package:creatures_rogue/game/components/effects/ghost_effect.dart';
 import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 
 /// Tornado de Fogo — botão B. Evasiva com i-frames, deixa rastro de dano.
-class EsquivaBomba extends Ability {
+class EsquivaBombaEvo extends Ability {
   final double distancia;
   final double duracao;
 
-  const EsquivaBomba({this.distancia = 32, this.duracao = 0.15})
+  const EsquivaBombaEvo({this.distancia = 48, this.duracao = 0.15})
     : super(
         nome: 'Esquiva Bomba',
         descricao: 'Evasiva com i-frames que também planta uma bomba.',
@@ -25,7 +25,7 @@ class EsquivaBomba extends Ability {
     // A mobilidade (dash + i-frames) é a metade defensiva desta habilidade e
     // não depende do recurso — só a bomba em si é suprimida sem estoque (ver
     // PIVOT_TREINADOR.md §3.2).
-    if (user.bombsAmount > 0) user.placeBomb(user.lockedAb2Direction);
+    user.placeBomb(user.lockedAb2Direction);
 
     GhostEffect.spawnTrail(
       visual: user.visual,
@@ -37,7 +37,9 @@ class EsquivaBomba extends Ability {
       MoveByEffect(
         -dir.normalized() * distancia,
         EffectController(duration: duracao),
-        onComplete: () {},
+        onComplete: () {
+          user.placeBomb(user.lockedAb2Direction);
+        },
       ),
     );
   }

@@ -38,7 +38,14 @@ class BossHealthBar extends PositionComponent {
         color: Palette.branco,
         fontSize: 8,
         fontWeight: FontWeight.bold,
-        shadows: [Shadow(color: Palette.preto, offset: Offset(1, 1))],
+        shadows: [Shadow(color: Palette.preto, offset: Offset(1, 1)),
+          Shadow(color: Palette.preto, offset: Offset(-1, -1)),
+          Shadow(color: Palette.preto, offset: Offset(1, -1)),
+          Shadow(color: Palette.preto, offset: Offset(-1, 1)),
+          Shadow(color: Palette.preto, offset: Offset(0, 1)),
+          Shadow(color: Palette.preto, offset: Offset(0, -1)),
+          Shadow(color: Palette.preto, offset: Offset(1, 0)),
+          Shadow(color: Palette.preto, offset: Offset(-1, 0)),],
       ),
     );
   }

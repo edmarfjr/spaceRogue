@@ -165,6 +165,20 @@ class Grama extends Obstacle {
        );
 }
 
+class ChaoCave extends Obstacle {
+  ChaoCave({
+    required super.position,
+    Vector2? size,
+    super.cor1,
+    super.cor2,
+    super.cor3,
+  }) : super(
+         spritePath: 'tileset/chaoCave.png',
+         size: size ?? Vector2(16, 16),
+         collisionType: CollisionType.inactive,
+       );
+}
+
 class GramaAlta extends Obstacle {
   GramaAlta({
     required super.position,

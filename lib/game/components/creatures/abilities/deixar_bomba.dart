@@ -10,9 +10,6 @@ class DeixarBomba extends Ability {
   /// não gira — habilidade inteira depende do recurso (ver PIVOT_TREINADOR.md
   /// §3.2), diferente de Esquiva Bomba, que também tem uma metade evasiva.
   @override
-  bool canExecute(AbilityUser user) => user.bombsAmount > 0;
-
-  @override
   void execute(AbilityUser user, Vector2 dir) {
     user.placeBomb(user.lockedAb1Direction);
   }

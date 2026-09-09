@@ -340,7 +340,7 @@ mixin JumpMovement on MovementHost {
     switch (jumpState) {
 
       case JumpState.idle:
-        isAirborne = false;
+        pulando = false;
         visual.position.y = _baseVisualY;
         visual.scale = Vector2(flip, 1.0);
         enemyHitbox.position.y = _baseHitboxY;
@@ -359,7 +359,7 @@ mixin JumpMovement on MovementHost {
         break;
 
       case JumpState.preparing:
-        isAirborne = false;
+        pulando = false;
         visual.position.y = _baseVisualY;
         enemyHitbox.position.y = _baseHitboxY;
 
@@ -414,7 +414,7 @@ mixin JumpMovement on MovementHost {
         break;
 
       case JumpState.inAir:
-        isAirborne = true;
+        pulando = true;
 
         position += jumpDirection * _calculatedJumpSpeed * dt;
 
