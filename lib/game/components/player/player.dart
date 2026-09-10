@@ -45,6 +45,12 @@ class Player extends PositionComponent
         AbilityUser,
         DamageableByEnemy {
   final DynamicJoystickComponent moveJoystick;
+
+  /// Analógico direito — a direção que ele empurra (travada nos 4 eixos
+  /// cardeais, ver [_direcaoAtaqueTravada]) É a habilidade 1, disparada
+  /// enquanto ele estiver fora da zona morta. Substituiu botão/gesto pra
+  /// habilidade 1 (twin-stick de eixos travados).
+  final DynamicJoystickComponent aimJoystick;
   CreatureData creatureData;
 
   // Componente visual único, animado por transformação (escala/flip), não por troca de frame.
@@ -71,6 +77,11 @@ class Player extends PositionComponent
   bool _visualPronto = false;
 
   final Vector2 _keyboardMove = Vector2.zero();
+
+  /// Setas do teclado — equivalente do `aimJoystick` pro teclado (mesmo
+  /// padrão do `_keyboardMove` pro `moveJoystick`). Ver
+  /// [_direcaoAtaqueTravada].
+  final Vector2 _keyboardAtaqueDir = Vector2.zero();
 
   double maxHealth;
   double currentHealth;
@@ -178,8 +189,10 @@ class Player extends PositionComponent
   final Set<Cogumelos> _cogumelosSobrepostos = {};
   bool get dentroCogumelo => _cogumelosSobrepostos.isNotEmpty;
 
-  /// Mira travada de cada habilidade — recalculada todo frame em
-  /// [_atualizarMira], a partir da própria posição (inimigo mais próximo ou
+  /// Direção de disparo de cada habilidade. `lockedAb1Direction` vem do
+  /// analógico/setas (ver [_direcaoAtaqueTravada], twin-stick de eixos
+  /// travados — não é mais mira automática). `lockedAb2Direction` continua
+  /// recalculada todo frame em [_atualizarMira] (inimigo mais próximo ou
   /// direção que o sprite está olhando, conforme `Ability.target`).
   Vector2 lockedAb1Direction = Vector2(0, 1);
   Vector2 lockedAb2Direction = Vector2(0, 1);
@@ -260,15 +273,15 @@ class Player extends PositionComponent
     }
   }
 
-  /// Estado "segurado" de cada habilidade — dois canais independentes porque
-  /// um vem do toque/gesto (`AbilityButton`/`GestureActionArea`, escreve
-  /// direto) e o outro do teclado (recomputado a cada evento a partir de
+  /// Estado "segurado" da habilidade 2 (o botão que sobrou) — dois canais
+  /// independentes porque um vem do toque (`AbilityButton`, escreve direto)
+  /// e o outro do teclado (recomputado a cada evento a partir de
   /// `keysPressed`, mesmo padrão de `_keyboardMove`). O disparo em si só
   /// acontece quando pelo menos um dos dois está true E o cooldown zerou —
-  /// ver [_updateAbilities].
-  bool touchHoldAbility1 = false;
+  /// ver [_updateAbilities]. Habilidade 1 não tem mais canal "segurado":
+  /// dispara direto pela direção do analógico/setas, ver
+  /// [_direcaoAtaqueTravada].
   bool touchHoldAbility2 = false;
-  bool _keyboardHoldAbility1 = false;
   bool _keyboardHoldAbility2 = false;
 
   bool naoMove = false;
@@ -532,12 +545,15 @@ class Player extends PositionComponent
     }
   }
 
-  Player({required this.moveJoystick, required this.creatureData})
-    : maxHealth = creatureData.stats.maxHp,
-      currentHealth = creatureData.stats.maxHp,
-      shieldMax = creatureData.stats.shieldMax,
-      shield = creatureData.stats.shieldMax,
-      super(size: Vector2(16, 16), anchor: Anchor.center) {
+  Player({
+    required this.moveJoystick,
+    required this.aimJoystick,
+    required this.creatureData,
+  }) : maxHealth = creatureData.stats.maxHp,
+       currentHealth = creatureData.stats.maxHp,
+       shieldMax = creatureData.stats.shieldMax,
+       shield = creatureData.stats.shieldMax,
+       super(size: Vector2(16, 16), anchor: Anchor.center) {
     // Um Player novo é exatamente uma run nova (ver `startRun`), então este é
     // o lugar certo pra zerar o multiplicador estático de dano — senão os
     // upgrades da run anterior valeriam na próxima.
@@ -840,20 +856,13 @@ class Player extends PositionComponent
     return nearest;
   }
 
+  /// Só a habilidade 2 mira sozinha agora — a 1 é sempre o jogador quem
+  /// aponta (ver [_direcaoAtaqueTravada]).
   void _atualizarMira() {
     final alvo = _nearestEnemy();
     final dirCorpo = visual.isFlippedHorizontally
         ? Vector2(-1, 0)
         : Vector2(1, 0);
-
-    if (creatureData.ability1.target == AbilityTarget.enemyDir) {
-      if (alvo != null) {
-        final delta = alvo.absolutePosition - absolutePosition;
-        if (delta.length != 0) lockedAb1Direction = delta.normalized();
-      }
-    } else if (creatureData.ability1.target == AbilityTarget.plrDir) {
-      lockedAb1Direction = dirCorpo;
-    }
 
     if (creatureData.ability2.target == AbilityTarget.enemyDir) {
       if (alvo != null) {
@@ -865,10 +874,31 @@ class Player extends PositionComponent
     }
   }
 
-  /// Dispara `ability1`/`ability2` se o cooldown já zerou — chamado a cada
-  /// frame enquanto o input está "segurado" (ver [_updateAbilities]), e
-  /// também exposto como disparo avulso pro esquema de gestos, onde a
-  /// habilidade B não tem canal de hold (ver `GestureActionArea.onAbility2`).
+  /// Zona morta do analógico de ataque — abaixo disso conta como "solto",
+  /// senão um toque leve/trêmulo dispararia a habilidade 1 sem intenção.
+  static const double _zonaMortaAtaque = 0.35;
+
+  /// Direção travada (só as 4 cardeais — trava no eixo de maior
+  /// deslocamento) do analógico direito ou das setas do teclado.
+  /// `Vector2.zero()` quando nenhum dos dois está empurrado além da zona
+  /// morta — nesse caso a habilidade 1 simplesmente não dispara neste
+  /// frame (ver [_updateAbilities]).
+  Vector2 _direcaoAtaqueTravada() {
+    var bruto = aimJoystick.relativeDelta;
+    if (bruto.length2 < _zonaMortaAtaque * _zonaMortaAtaque) {
+      bruto = Vector2.zero();
+    }
+    if (bruto.isZero() && !_keyboardAtaqueDir.isZero()) {
+      bruto = _keyboardAtaqueDir;
+    }
+    if (bruto.isZero()) return Vector2.zero();
+
+    return bruto.x.abs() >= bruto.y.abs()
+        ? Vector2(bruto.x.sign, 0)
+        : Vector2(0, bruto.y.sign);
+  }
+
+  /// Dispara `ability1`/`ability2` se o cooldown já zerou.
   void dispararAbility1() {
     if (_cooldown1 > 0) return;
     if (!creatureData.ability1.canExecute(this)) return;
@@ -885,18 +915,22 @@ class Player extends PositionComponent
     _cooldown2 = _cooldownMax2;
   }
 
-  /// Duas habilidades diretas, uma por botão/tecla — cada uma dispara sozinha
-  /// enquanto o input estiver "segurado" (toque, gesto ou tecla) e o
-  /// cooldown já tiver zerado, mesmo padrão que a IA autônoma do companion já
-  /// usava (ver PIVOT_TREINADOR.md), só que decidido pelo jogador em vez de
-  /// pelo inimigo mais próximo sozinho.
+  /// Habilidade 1: twin-stick de eixos travados — dispara sozinha, na
+  /// direção travada, enquanto o analógico/setas estiver fora da zona
+  /// morta. Habilidade 2: continua um botão/tecla "segurada", mesmo padrão
+  /// que a IA autônoma do companion já usava (ver PIVOT_TREINADOR.md).
   void _updateAbilities(double dt) {
     if (_cooldown1 > 0) _cooldown1 -= dt;
     if (_cooldown2 > 0) _cooldown2 -= dt;
 
     _atualizarMira();
 
-    if (touchHoldAbility1 || _keyboardHoldAbility1) dispararAbility1();
+    final direcaoAtaque = _direcaoAtaqueTravada();
+    if (!direcaoAtaque.isZero()) {
+      lockedAb1Direction = direcaoAtaque;
+      dispararAbility1();
+    }
+
     if (touchHoldAbility2 || _keyboardHoldAbility2) dispararAbility2();
   }
 
@@ -1142,19 +1176,26 @@ class Player extends PositionComponent
 
   @override
   bool onKeyEvent(KeyEvent event, Set<LogicalKeyboardKey> keysPressed) {
+    // WASD = movimento (equivalente ao analógico esquerdo).
     _keyboardMove.setZero();
-    if (keysPressed.contains(LogicalKeyboardKey.arrowLeft))
-      _keyboardMove.x -= 1;
-    if (keysPressed.contains(LogicalKeyboardKey.arrowRight))
-      _keyboardMove.x += 1;
-    if (keysPressed.contains(LogicalKeyboardKey.arrowUp)) _keyboardMove.y -= 1;
-    if (keysPressed.contains(LogicalKeyboardKey.arrowDown))
-      _keyboardMove.y += 1;
+    if (keysPressed.contains(LogicalKeyboardKey.keyA)) _keyboardMove.x -= 1;
+    if (keysPressed.contains(LogicalKeyboardKey.keyD)) _keyboardMove.x += 1;
+    if (keysPressed.contains(LogicalKeyboardKey.keyW)) _keyboardMove.y -= 1;
+    if (keysPressed.contains(LogicalKeyboardKey.keyS)) _keyboardMove.y += 1;
 
-    // Z/X = as duas habilidades, seguradas (mesmo padrão do toque/gesto) —
-    // Espaço = esquiva pessoal, um único aperto por vez.
-    _keyboardHoldAbility1 = keysPressed.contains(LogicalKeyboardKey.keyZ);
-    _keyboardHoldAbility2 = keysPressed.contains(LogicalKeyboardKey.keyX);
+    // Setas = direção do ataque (habilidade 1, equivalente ao analógico
+    // direito — ver `_direcaoAtaqueTravada`). Espaço = habilidade 2,
+    // segurada (mesmo padrão do botão de toque).
+    _keyboardAtaqueDir.setZero();
+    if (keysPressed.contains(LogicalKeyboardKey.arrowLeft))
+      _keyboardAtaqueDir.x -= 1;
+    if (keysPressed.contains(LogicalKeyboardKey.arrowRight))
+      _keyboardAtaqueDir.x += 1;
+    if (keysPressed.contains(LogicalKeyboardKey.arrowUp))
+      _keyboardAtaqueDir.y -= 1;
+    if (keysPressed.contains(LogicalKeyboardKey.arrowDown))
+      _keyboardAtaqueDir.y += 1;
+    _keyboardHoldAbility2 = keysPressed.contains(LogicalKeyboardKey.space);
 
     // Teclas 1 e 2 = os dois slots do inventário, equivalente a clicar neles.
     // Só no KeyDownEvent: o teclado repete a tecla segurada, e com isso o
@@ -1162,7 +1203,6 @@ class Player extends PositionComponent
     if (event is KeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.digit1) useSlot(0);
       if (event.logicalKey == LogicalKeyboardKey.digit2) useSlot(1);
-      // if (event.logicalKey == LogicalKeyboardKey.space) dodge();
     }
 
     return super.onKeyEvent(event, keysPressed);

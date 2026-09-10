@@ -1,13 +1,14 @@
-import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:creatures_rogue/game/components/UI/ability_icons.dart';
+import 'package:creatures_rogue/game/components/UI/ability_button_sprites.dart';
 import 'package:creatures_rogue/game/components/UI/pointer_tracker.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 
-/// Botão de habilidade: círculo de cor base com o ícone da habilidade no meio.
+/// Botão de habilidade: sprite de dois quadros (`ui/btn<Tipo>.png`, ver
+/// `AbilityButtonSprites`) — neutro e pressionado, sem círculo/ícone
+/// desenhados por cima.
 ///
 /// Não desenha cooldown: isso agora é do `AbilityCooldownIndicator`, na HUD,
 /// que vale também no esquema de gestos — onde não existe botão em que desenhar.
@@ -19,7 +20,7 @@ import 'package:creatures_rogue/game/components/creatures/ability.dart';
 /// [onPressedChanged]:
 ///
 /// 1. Tap dentro do botão — resposta imediata, sem depender de movimento.
-/// 2. Qualquer ponteiro de arraste do [PointerTracker] dentro do círculo — é
+/// 2. Qualquer ponteiro de arraste do [PointerTracker] dentro do botão — é
 ///    isso que faz o deslizar-para-dentro funcionar, e também o deslizar de um
 ///    botão para o outro (o primeiro solta, o segundo pressiona).
 ///
@@ -28,12 +29,9 @@ import 'package:creatures_rogue/game/components/creatures/ability.dart';
 /// ponteiro já está sendo rastreado — não sobra buraco entre as duas fontes.
 class AbilityButton extends PositionComponent
     with HasGameReference, ComponentViewportMargin, TapCallbacks {
-  final Color baseColor;
-  final Color pressedColor;
-
-  /// Papel da habilidade, que decide o ícone — o mesmo que o indicador de
-  /// cooldown da HUD desenha. Lido a cada frame: o botão é montado no onLoad do
-  /// jogo, antes de existir jogador, e a criatura muda a cada run.
+  /// Papel da habilidade, que decide o sprite — o mesmo que o indicador de
+  /// cooldown da HUD usa pro ícone. Lido a cada frame: o botão é montado no
+  /// onLoad do jogo, antes de existir jogador, e a criatura muda a cada run.
   final AbilityTipo Function() tipo;
 
   final PointerTracker pointerTracker;
@@ -42,13 +40,12 @@ class AbilityButton extends PositionComponent
   bool _tapDown = false;
   bool _pressed = false;
 
-  /// `FilterQuality.none` mantém o pixel art nítido: o sprite é 16x16 e o botão
-  /// tem 100px de diâmetro no mobile.
-  final Paint _spritePaint = Paint()..filterQuality = FilterQuality.none..colorFilter..color=Palette.cinza..blendMode=BlendMode.multiply;
+  /// `FilterQuality.none` mantém o pixel art nítido: o sprite é 24x24 e o
+  /// botão tem 100px de diâmetro no mobile.
+  final Paint _spritePaint = Paint()..filterQuality = FilterQuality.none;
+
   AbilityButton({
     required double radius,
-    required this.baseColor,
-    required this.pressedColor,
     required this.tipo,
     required this.pointerTracker,
     required this.onPressedChanged,
@@ -57,18 +54,6 @@ class AbilityButton extends PositionComponent
     // ComponentViewportMargin usa pra calcular a posição a partir da margem.
   }) : super(size: Vector2.all(radius * 2)) {
     this.margin = margin;
-  }
-
-  /// Área de toque circular, igual ao círculo desenhado. O `containsLocalPoint`
-  /// padrão é o retângulo do `size`, o que daria cantos clicáveis fora do
-  /// visual — atrapalha justamente no deslize entre os dois botões, onde os
-  /// cantos de um invadem a vizinhança do outro.
-  @override
-  bool containsLocalPoint(Vector2 point) {
-    final radius = size.x / 2;
-    final dx = point.x - radius;
-    final dy = point.y - radius;
-    return dx * dx + dy * dy <= radius * radius;
   }
 
   @override
@@ -105,27 +90,9 @@ class AbilityButton extends PositionComponent
 
   @override
   void render(Canvas canvas) {
-    final center = Offset(size.x / 2, size.y / 2);
-    final radius = size.x / 2;
-
-    canvas.drawCircle(
-      center,
-      radius*1.1,
-      Paint()..color = Palette.preto,
-    );
-
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()..color = _pressed ? pressedColor : baseColor,
-    );
-
-    final iconSize = Vector2.all(size.x * 0.6);
-    AbilityIcons.of(tipo()).render(
-      canvas,
-      position: (size - iconSize) / 2,
-      size: iconSize,
-      overridePaint: _spritePaint,
-    );
+    final sprite = _pressed
+        ? AbilityButtonSprites.pressionado(tipo())
+        : AbilityButtonSprites.neutro(tipo());
+    sprite.render(canvas, size: size, overridePaint: _spritePaint);
   }
 }

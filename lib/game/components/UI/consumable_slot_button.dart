@@ -14,15 +14,23 @@ import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 /// item queimado por acidente. Aqui é só `TapCallbacks`, e de propósito no
 /// `onTapUp` — arrastar o dedo pra fora cancela o toque e o item não é gasto.
 ///
-/// Fica na faixa de [alturaFaixa] px reservada no topo da tela. Essa faixa
-/// existe porque os dois esquemas de controle cobrem a tela inteira (joystick
-/// na metade esquerda, `GestureActionArea` na direita, ambos de altura total):
-/// um slot sobreposto ao esquema de gestos dispararia a habilidade 1 no mesmo
-/// toque que usa o item.
+/// Fica na faixa de [alturaFaixa] px reservada no topo da tela (PAISAGEM) ou
+/// no topo da banda de controle do rodapé (RETRATO) — ver
+/// `CreaturesRogueGame._reflowControles`, que é quem posiciona esse
+/// componente. Essa faixa existe porque o joystick cobre o resto da altura
+/// disponível: um slot sobreposto a ele disparia movimento no mesmo toque
+/// que usa o item.
+///
+/// Posição fixada de fora (não usa `ComponentViewportMargin`): a posição
+/// depende de PAISAGEM x RETRATO, e essa decisão já mora em
+/// `CreaturesRogueGame`, junto com a do resto dos controles — duplicar a
+/// lógica de orientação aqui só pra alimentar uma margem seria dois lugares
+/// calculando a mesma coisa.
 class ConsumableSlotButton extends PositionComponent
-    with HasGameReference, ComponentViewportMargin, TapCallbacks {
-  /// Altura reservada no topo da tela para o inventário. O joystick e a área
-  /// de gestos descontam isso da própria altura.
+    with HasGameReference, TapCallbacks {
+  /// Altura reservada no topo da tela para o inventário, em PAISAGEM. O
+  /// joystick desconta isso da própria altura (ver
+  /// `DynamicJoystickComponent.onGameResize`).
   static const double alturaFaixa = 72.0;
 
   /// Lido a cada frame: o slot é montado no onLoad do jogo, antes de existir
@@ -45,10 +53,7 @@ class ConsumableSlotButton extends PositionComponent
     required double radius,
     required this.conteudo,
     required this.onUsar,
-    EdgeInsets? margin,
-  }) : super(size: Vector2.all(radius * 2)) {
-    this.margin = margin;
-  }
+  }) : super(size: Vector2.all(radius * 2));
 
   @override
   Future<void> onLoad() async {
@@ -91,8 +96,14 @@ class ConsumableSlotButton extends PositionComponent
     //canvas.drawCircle(center, radius, tipo == null ? _fundoVazio : _fundoCheio);
     //canvas.drawCircle(center, radius - 1, _borda);
 
-    canvas.drawRect(Rect.fromCenter(center: center, width:  size.x, height:  size.y), tipo == null ? _fundoVazio : _fundoCheio);
-    canvas.drawRect(Rect.fromCenter(center: center, width:  size.x, height:  size.y), _borda);
+    canvas.drawRect(
+      Rect.fromCenter(center: center, width: size.x, height: size.y),
+      tipo == null ? _fundoVazio : _fundoCheio,
+    );
+    canvas.drawRect(
+      Rect.fromCenter(center: center, width: size.x, height: size.y),
+      _borda,
+    );
 
     if (tipo == null) return;
 

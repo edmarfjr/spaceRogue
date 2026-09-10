@@ -5,7 +5,6 @@ import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/game.dart';
-import 'package:flame/palette.dart';
 //import 'package:flutter/animation.dart';
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform;
@@ -18,6 +17,7 @@ import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/components/UI/gameboy_bezel.dart';
 import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:creatures_rogue/game/components/UI/ability_button.dart';
+import 'package:creatures_rogue/game/components/UI/ability_button_sprites.dart';
 import 'package:creatures_rogue/game/components/UI/ability_icons.dart';
 import 'package:creatures_rogue/game/components/effects/companion_recall_effect.dart';
 import 'package:creatures_rogue/game/components/effects/companion_revive_effect.dart';
@@ -27,6 +27,7 @@ import 'package:creatures_rogue/game/components/UI/pointer_tracker.dart';
 import 'package:creatures_rogue/game/components/UI/blind_overlay.dart';
 import 'package:creatures_rogue/game/components/UI/boss_health_bar.dart';
 import 'package:creatures_rogue/game/components/UI/dynamic_joystick_component.dart';
+import 'package:creatures_rogue/game/components/UI/dpad_indicator.dart';
 import 'package:creatures_rogue/game/components/UI/hud.dart';
 import 'package:creatures_rogue/game/components/enemies/boss_registry.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart';
@@ -81,9 +82,18 @@ class CreaturesRogueGame extends FlameGame
   // A câmera que vai renderizar o mundo na resolução do Game Boy
   late final CameraComponent gameCamera;
 
+  // `onGameResize` pode disparar antes do `onLoad` terminar (e montar
+  // `gameCamera`) — sem essa trava, `_reposicionarVidro` explodiria com
+  // LateInitializationError no primeiro resize.
+  bool _camaraPronta = false;
+
   // Joystick de movimento. Não há mais joystick de mira: a mira das
   // habilidades é sempre a última direção de movimento do jogador.
   late final DynamicJoystickComponent moveJoystick;
+
+  /// Analógico direito — direção travada (4 eixos) = habilidade 1. Ver
+  /// `Player.aimJoystick`/`Player._direcaoAtaqueTravada`.
+  late final DynamicJoystickComponent aimJoystick;
 
   /// Posição de todos os dedos na tela. Os botões de habilidade consultam isso
   /// pra se ativarem quando um dedo desliza para dentro deles, e não só quando
@@ -383,6 +393,7 @@ class CreaturesRogueGame extends FlameGame
     // botões nascem aqui, sem jogador ainda, e escolhem o ícone na hora de
     // desenhar conforme a criatura da run.
     await AbilityIcons.carregar();
+    await AbilityButtonSprites.carregar();
 
     _setupJoysticks();
     _setupAbilityControls();
@@ -412,8 +423,16 @@ class CreaturesRogueGame extends FlameGame
       RoomComponent.roomWidth / 2,
       RoomComponent.roomHeight / 2,
     );
-    add(gameCamera);
+    // `await`: o `onLoad` do viewport (que ele mesmo dispara ao montar) faz
+    // o auto-centralizado padrão do Flame — sem esperar aqui, nosso
+    // `_reposicionarVidro` rodava ANTES desse `onLoad` e era sobrescrito por
+    // ele assim que a câmera terminasse de montar, e o jogo carregava direto
+    // no modo RETRATO já com o vidro errado (só um resize de verdade depois
+    // corrigia).
+    await add(gameCamera);
     add(GameboyBezel(camera: gameCamera));
+    _camaraPronta = true;
+    _reflowControles(size);
 
     pauseEngine();
   }
@@ -451,7 +470,11 @@ class CreaturesRogueGame extends FlameGame
     }
     loadedRooms.clear();
 
-    player = Player(moveJoystick: moveJoystick, creatureData: creature);
+    player = Player(
+      moveJoystick: moveJoystick,
+      aimJoystick: aimJoystick,
+      creatureData: creature,
+    );
     _runStarted = true;
     player.position = Vector2(
       RoomComponent.roomWidth / 2,
@@ -768,14 +791,63 @@ class CreaturesRogueGame extends FlameGame
   @override
   void onGameResize(Vector2 canvasSize) {
     super.onGameResize(canvasSize);
-    // Garante que o minimapa e o joystick fiquem nos lugares certos se a tela girar ou mudar
-    // Você pode acessar os filhos do jogo filtrando pelo tipo deles:
-    // children.whereType<MinimapHud>().forEach((minimap) {
-    //   minimap.position = Vector2(canvasSize.x - 40, 40);
-    // });
+    _reflowControles(canvasSize);
+  }
 
-    // Exemplo para o joystick caso ele esteja se perdendo:
-    // moveJoystick.position = Vector2(80, canvasSize.y - 80);
+  /// PAISAGEM: vidro da câmera intocado — a resolução fixa (ver `onLoad`) já
+  /// centraliza sozinha, é o comportamento de sempre. Slots do inventário na
+  /// faixa do topo (`ConsumableSlotButton.alturaFaixa`).
+  ///
+  /// RETRATO: a área de jogo fica presa no TOPO da tela, sobrando uma banda
+  /// embaixo pro rodapé de controles (`DynamicJoystickComponent.alturaBanda`
+  /// — mesma conta, reservada sozinha pelo joystick via seu próprio
+  /// `onGameResize`) e os slots do inventário migram pro topo dessa banda —
+  /// nada fica em cima da área de jogo (ver `HudOverlay`, que faz o mesmo
+  /// pro botão de pausa, um widget do Flutter fora da árvore do Flame).
+  ///
+  /// Chamado de três lugares — `onLoad` (montagem), `onGameResize` (resize
+  /// de verdade) e `update` (rede de segurança, ver comentário lá): o
+  /// `onLoad`/`onGameResize` de um `FixedResolutionViewport` roda seu PRÓPRIO
+  /// auto-centralizado ao montar, então depender de um cálculo único feito
+  /// cedo demais (antes do tamanho final da janela estar disponível em todas
+  /// as plataformas) deixava o vidro preso num tamanho errado sem gerar
+  /// nenhum resize de verdade depois pra corrigir.
+  void _reflowControles(Vector2 canvasSize) {
+    if (!_camaraPronta) return;
+
+    final retrato = DynamicJoystickComponent.retrato(canvasSize);
+    double slotsTop = 10;
+
+    if (retrato) {
+      final alturaBanda = DynamicJoystickComponent.alturaBanda(canvasSize);
+      final ladoVidro = min(canvasSize.x, canvasSize.y - alturaBanda);
+      final vidroLeft = (canvasSize.x - ladoVidro) / 2;
+
+      // NÃO usar `viewport.size = ...` direto: esse setter aciona
+      // `onViewportResize()`, que pro tipo de viewport da câmera
+      // (`FixedAspectRatioViewport`, por trás do `withFixedResolution`)
+      // recalcula a máscara de recorte num referencial CENTRALIZADO
+      // (-metade a +metade). O caminho normal de resize
+      // (`onGameResize`/`_handleResize`, disparado sozinho pelo Flame num
+      // resize de verdade) usa um referencial no CANTO SUPERIOR ESQUERDO (0
+      // a tamanho) — os dois divergem, e via `size =` só metade do vidro
+      // (o quadrante que sobra da interseção dos dois referenciais) ficava
+      // visível. `onGameResize` chama `_handleResize` por dentro, então é o
+      // jeito de forçar o tamanho certo sem cair nesse descompasso.
+      gameCamera.viewport.onGameResize(Vector2.all(ladoVidro));
+      gameCamera.viewport.position = Vector2(vidroLeft, 0);
+      slotsTop = canvasSize.y - alturaBanda + 10;
+    }
+
+    const margemEsquerda = 16.0;
+    const gap = 10.0;
+    final raio = _isDesktop ? 22.0 : 50.0;
+    for (var i = 0; i < _slotButtons.length; i++) {
+      _slotButtons[i].position = Vector2(
+        margemEsquerda + i * (raio * 2 + gap),
+        slotsTop,
+      );
+    }
   }
 
   /// Pré-processa toda combinação caminho+cores que o jogo pode desenhar em
@@ -1056,29 +1128,58 @@ class CreaturesRogueGame extends FlameGame
       defaultTargetPlatform == TargetPlatform.linux;
 
   void _setupJoysticks() {
-    // Estilo do joystick
-    final knobPaint = BasicPalette.lightGray.withAlpha(200).paint();
-    final bgPaint = BasicPalette.black.withAlpha(100).paint();
-
     final scale = _isDesktop ? 0.75 : 1.0;
 
     // Joystick Esquerdo (Movimento). A mira sumiu: a mira das habilidades
     // agora é sempre a última direção de movimento (ver Player.lockedFireDirection).
     //
-    // Flutuante: não fica fixo num canto — nasce onde o dedo toca, dentro da
-    // metade esquerda da tela (spawnAreaSize cobre só essa metade), e some
-    // ao soltar. Ver DynamicJoystickComponent pro porquê de não reaproveitar
-    // o JoystickComponent fixo do Flame aqui.
+    // Sem manípulo/fundo próprios (knob/background nulos): o feedback visual
+    // do movimento é o `DPadIndicator` montado logo abaixo, não um manípulo
+    // que nasce embaixo do dedo. A área de captura (arrasto, metade
+    // esquerda da tela) continua igual.
     moveJoystick = DynamicJoystickComponent(
-      knob: CircleComponent(radius: 26 * scale, paint: knobPaint),
-      background: CircleComponent(radius: 60 * scale, paint: bgPaint),
+      knobRadius: 60 * scale,
       spawnAreaSize: Vector2(size.x / 2, size.y),
     );
 
-    // Adicionamos o joystick DIRETAMENTE ao jogo, e não ao World.
-    // Isso garante que ele seja tratado como HUD (Interface) e
-    // não sofra o zoom/escala da resolução de 160x144.
+    // Joystick Direito (Ataque): a direção que ele é empurrado É a
+    // habilidade 1, travada nos 4 eixos cardeais (ver
+    // `Player._direcaoAtaqueTravada`) — twin-stick, não mira automática.
+    // Metade DIREITA da tela (`ladoDireito: true`), senão sobreporia a
+    // área de captura do joystick de movimento. Mesmo tratamento do
+    // movimento: sem manípulo/fundo próprios, o `DPadIndicator` (com
+    // `ui/apad.png`) montado abaixo é o feedback visual.
+    aimJoystick = DynamicJoystickComponent(
+      knobRadius: 60 * scale,
+      spawnAreaSize: Vector2(size.x / 2, size.y),
+      ladoDireito: true,
+    );
+
+    // Adicionamos os joysticks DIRETAMENTE ao jogo, e não ao World.
+    // Isso garante que eles sejam tratados como HUD (Interface) e
+    // não sofram o zoom/escala da resolução de 160x144.
     add(moveJoystick);
+    add(aimJoystick);
+
+    // Indicadores dos dois D-pads (ver doc da classe): cada um nasce onde o
+    // dedo toca dentro da área do respectivo joystick, e fica ali depois
+    // que solta.
+    add(
+      DPadIndicator(
+        posicao: () => moveJoystick.ultimoToqueAbsoluto,
+        direcao: () => moveJoystick.relativeDelta,
+        spritePath: 'ui/dpad.png',
+        tamanho: 144,
+      ),
+    );
+    add(
+      DPadIndicator(
+        posicao: () => aimJoystick.ultimoToqueAbsoluto,
+        direcao: () => aimJoystick.relativeDelta,
+        spritePath: 'ui/apad.png',
+        tamanho: 144,
+      ),
+    );
   }
 
   /// Componentes de controle montados pelo esquema atual, guardados pra poder
@@ -1090,6 +1191,15 @@ class CreaturesRogueGame extends FlameGame
   /// (Re)monta o esquema de controle escolhido. Idempotente: derruba o que o
   /// esquema anterior tinha posto antes de montar o novo, então serve tanto pro
   /// onLoad quanto pra troca em runtime.
+  ///
+  /// O seletor BOTÕES/GESTOS foi comentado na tela de Configurações (a pedido
+  /// do usuário — "posso usar depois", não apagar): a habilidade 1 virou o
+  /// analógico direito (`aimJoystick`, montado sempre em `_setupJoysticks`,
+  /// fora do esquema), então só sobra a habilidade 2 por botão pra montar
+  /// aqui. Os dois `case` fazem a mesma coisa de propósito — cobre quem
+  /// ainda tiver "gestos" salvo de uma sessão anterior à mudança.
+  /// `_setupGestureControls` continua definida abaixo (corpo comentado),
+  /// só não é mais chamada.
   void _setupAbilityControls() {
     for (final control in _abilityControls) {
       control.removeFromParent();
@@ -1100,132 +1210,134 @@ class CreaturesRogueGame extends FlameGame
       case ControlScheme.botoes:
         _setupActionButtons();
       case ControlScheme.gestos:
-        _setupGestureControls();
+        _setupActionButtons();
     }
 
     addAll(_abilityControls);
   }
 
-  /// Metade direita da tela como área de gesto, sem botão desenhado
-  /// (PIVOT_CONTROLE_DIRETO.md §2.7): toque parado e mantido = habilidade A
-  /// (segura enquanto o cooldown zera, mesmo padrão do esquema de botões);
-  /// arrastar pra cima = habilidade B (dispara uma vez por arraste — sem
-  /// hold contínuo aqui, limitação conhecida e aceitável do gesto, ver o
-  /// doc); arrastar pra baixo = esquiva.
-  void _setupGestureControls() {
-    _abilityControls.add(
-      GestureActionArea(
-        onAbility1HoldChanged: (active) {
-          if (_runStarted) player.touchHoldAbility1 = active;
-        },
-        onAbility2: () {
-          if (_runStarted) player.dispararAbility2();
-        },
-        onDodge: () {
-          if (_runStarted) player.dodge();
-        },
-      ),
-    );
-  }
+  // APOSENTADO — comentado, não apagado (ver doc de `_setupAbilityControls`).
+  // Metade direita da tela como área de gesto, sem botão desenhado: toque
+  // parado e mantido = habilidade A; arrastar pra cima = habilidade B;
+  // arrastar pra baixo = esquiva. Deixou de fazer sentido quando a
+  // habilidade 1 virou o analógico direito (não tem mais "segurar"/"tocar"
+  // pra configurar) — corpo comentado porque `player.touchHoldAbility1` foi
+  // removido junto.
+  //
+  // void _setupGestureControls() {
+  //   _abilityControls.add(
+  //     GestureActionArea(
+  //       onAbility1HoldChanged: (active) {
+  //         if (_runStarted) player.touchHoldAbility1 = active;
+  //       },
+  //       onAbility2: () {
+  //         if (_runStarted) player.dispararAbility2();
+  //       },
+  //       onDodge: () {
+  //         if (_runStarted) player.dodge();
+  //       },
+  //     ),
+  //   );
+  // }
+
+  /// Os dois botões dos slots, guardados pra poder reposicionar em
+  /// PAISAGEM x RETRATO (ver `_reflowControles`) — a mesma razão de
+  /// `_abilityControls` existir como lista: `add` do Flame é diferido.
+  final List<ConsumableSlotButton> _slotButtons = [];
 
   /// Os dois slots de item de uso único. Montados uma única vez, fora de
   /// [_abilityControls]: eles não dependem do esquema de controle e não podem
   /// ser derrubados quando o jogador troca de esquema nas configurações.
   ///
-  /// Ficam na faixa reservada do topo (ver `ConsumableSlotButton.alturaFaixa`),
-  /// que o joystick e a área de gestos descontam da própria altura.
+  /// Posição real fica por conta de `_reflowControles` (muda com a
+  /// orientação da tela).
   void _setupInventorySlots() {
-    final raio = _isDesktop ? 22.0 : 50.0;
-    const double margemEsquerda = 16.0;
-    const double gap = 10.0;
+    final raio = _isDesktop ? 56.0 : 56.0;
 
     for (int i = 0; i < 2; i++) {
-      add(
-        ConsumableSlotButton(
-          radius: raio,
-          // Índice capturado por valor no loop: cada slot lê o seu.
-          conteudo: () => _runStarted ? player.slots[i] : null,
-          onUsar: () {
-            if (_runStarted) player.useSlot(i);
-          },
-          margin: EdgeInsets.only(
-            top: 10,
-            left: margemEsquerda + i * (raio * 2 + gap),
-          ),
-        ),
+      final slot = ConsumableSlotButton(
+        radius: raio,
+        // Índice capturado por valor no loop: cada slot lê o seu.
+        conteudo: () => _runStarted ? player.slots[i] : null,
+        onUsar: () {
+          if (_runStarted) player.useSlot(i);
+        },
       );
+      _slotButtons.add(slot);
+      add(slot);
     }
   }
 
   void _setupActionButtons() {
-    // Três botões: habilidade A, habilidade B, esquiva (PIVOT_CONTROLE_DIRETO.md
-    // §2.7) — controle direto de novo, sem override de companion nenhum.
+    // Só a habilidade 2 tem botão agora — a 1 é o analógico direito
+    // (`aimJoystick`, twin-stick de eixos travados, montado sempre em
+    // `_setupJoysticks`, fora daqui). Botão da habilidade A e o de esquiva
+    // ficam comentados abaixo, não apagados.
     //
     // Raio 50 (100dp de diâmetro) no mobile é o piso de alvo de toque do
     // Material — com 18 (36dp) o botão ficava menor que o mínimo recomendado.
-    final buttonRadius = (_isDesktop ? 22.0 : 50.0);
-
-    // Margens DERIVADAS do raio, não fixas: garante que os três nunca se
-    // sobrepõem em X, não importa o valor de buttonRadius.
+    final buttonRadius = (_isDesktop ? 56.0 : 56.0);
     const double edgeMarginX = 20;
     const double edgeMarginY = 35;
-    const double gap = 10;
-    final double marginRightA = edgeMarginX;
-    final double marginRightB = edgeMarginX + buttonRadius * 2 + gap;
-    final double marginBottomC = edgeMarginY + buttonRadius * 2 + gap;
 
-    // Habilidade A — segurar dispara enquanto o cooldown permitir, mesmo
-    // padrão do teclado (`Player.touchHoldAbility1`).
-    _abilityControls.add(
-      AbilityButton(
-        radius: buttonRadius,
-        tipo: () => _runStarted
-            ? player.creatureData.ability1.tipo
-            : AbilityTipo.ataque,
-        baseColor: Palette.cinza.withAlpha(255),
-        pressedColor: Palette.cinza.withAlpha(140),
-        pointerTracker: pointerTracker,
-        margin: EdgeInsets.only(right: marginRightB, bottom: edgeMarginY),
-        onPressedChanged: (pressed) {
-          if (_runStarted) player.touchHoldAbility1 = pressed;
-        },
-      ),
-    );
-
-    // Habilidade B — mesmo padrão da A.
+    // Habilidade B (segunda habilidade) — canto inferior ESQUERDO da tela,
+    // a pedido do usuário. Segurar dispara enquanto o cooldown permitir,
+    // mesmo padrão do teclado (`Player._keyboardHoldAbility2`, tecla espaço).
     _abilityControls.add(
       AbilityButton(
         radius: buttonRadius,
         tipo: () => _runStarted
             ? player.creatureData.ability2.tipo
             : AbilityTipo.ataque,
-        baseColor: Palette.cinza.withAlpha(255),
-        pressedColor: Palette.cinza.withAlpha(140),
         pointerTracker: pointerTracker,
-        margin: EdgeInsets.only(right: marginRightA, bottom: marginBottomC),
+        margin: EdgeInsets.only(right: edgeMarginX, bottom: edgeMarginY),
         onPressedChanged: (pressed) {
           if (_runStarted) player.touchHoldAbility2 = pressed;
         },
       ),
     );
 
+    // APOSENTADO — comentado, não apagado. Habilidade A por botão: virou o
+    // analógico direito (`aimJoystick`). `marginRightB`/`marginRightA`
+    // dependiam de `gap`, que só existia pra essas margens — se
+    // reativar, recalcule.
+    // const double gap = 10;
+    // final double marginRightA = edgeMarginX;
+    // final double marginRightB = edgeMarginX + buttonRadius * 2 + gap;
+    // final double marginBottomC = edgeMarginY + buttonRadius * 2 + gap;
+    // _abilityControls.add(
+    //   AbilityButton(
+    //     radius: buttonRadius,
+    //     tipo: () => _runStarted
+    //         ? player.creatureData.ability1.tipo
+    //         : AbilityTipo.ataque,
+    //     baseColor: Palette.cinza.withAlpha(255),
+    //     pressedColor: Palette.cinza.withAlpha(140),
+    //     pointerTracker: pointerTracker,
+    //     margin: EdgeInsets.only(right: marginRightB, bottom: edgeMarginY),
+    //     onPressedChanged: (pressed) {
+    //       if (_runStarted) player.touchHoldAbility1 = pressed;
+    //     },
+    //   ),
+    // );
+
     // Esquiva pessoal, não uma habilidade de criatura — ver `Player.dodge`.
     // Sem cooldown desenhado aqui (a barra própria da esquiva vive embaixo
-    // do sprite do jogador, ver `Player.render`).
-    /* _abilityControls.add(
-      AbilityButton(
-        radius: buttonRadius,
-        tipo: () => AbilityTipo.esquiva,
-        baseColor: Palette.cinza.withAlpha(255),
-        pressedColor: Palette.cinza.withAlpha(140),
-        pointerTracker: pointerTracker,
-        margin: EdgeInsets.only(right: marginRightA, bottom: marginBottomC),
-        onPressedChanged: (pressed) {
-          if (pressed) player.dodge();
-        },
-      ),
-    );
-    */
+    // do sprite do jogador, ver `Player.render`). Já estava comentada antes
+    // desta mudança.
+    // _abilityControls.add(
+    //   AbilityButton(
+    //     radius: buttonRadius,
+    //     tipo: () => AbilityTipo.esquiva,
+    //     baseColor: Palette.cinza.withAlpha(255),
+    //     pressedColor: Palette.cinza.withAlpha(140),
+    //     pointerTracker: pointerTracker,
+    //     margin: EdgeInsets.only(right: marginRightA, bottom: marginBottomC),
+    //     onPressedChanged: (pressed) {
+    //       if (pressed) player.dodge();
+    //     },
+    //   ),
+    // );
   }
 
   @override
@@ -1236,6 +1348,11 @@ class CreaturesRogueGame extends FlameGame
     }
     super.update(dt);
     _checkCameraTransition();
+    // Rede de segurança pro layout RETRATO x PAISAGEM (ver doc de
+    // `_reflowControles`): reafirma a cada frame, não só no resize — barato
+    // (poucas contas) e cobre qualquer plataforma/ordem de montagem em que
+    // `onGameResize` não disparasse de novo com o tamanho final da janela.
+    _reflowControles(size);
   }
 
   /// Fração de vida FALTANDO no banco (0 = vida cheia, 1 = zerada) — mesma
