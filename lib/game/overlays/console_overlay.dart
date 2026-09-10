@@ -72,7 +72,7 @@ class _PauseButton extends StatefulWidget {
 }
 
 class _PauseButtonState extends State<_PauseButton> {
-  static const double _tamanho = 64;
+  static const double _tamanho = 128;
 
   bool _pressionado = false;
 

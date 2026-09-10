@@ -46,8 +46,8 @@ class DPadIndicator extends PositionComponent with HasGameReference {
       5,
       (i) => Sprite(
         imagem,
-        srcPosition: Vector2(i * 48.0, 0),
-        srcSize: Vector2(48, 48),
+        srcPosition: Vector2(i * imagem.height.toDouble(), 0),
+        srcSize: Vector2(imagem.height.toDouble(), imagem.height.toDouble()),
       ),
     );
   }

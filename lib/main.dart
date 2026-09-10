@@ -44,7 +44,7 @@ void main() async {
   // atrasa a primeira tela. `GameAudio.play()` já é seguro de chamar antes
   // disso terminar — só fica mudo até o pool ficar pronto.
   unawaited(GameAudio.instance.preload());
-  await Flame.device.setLandscape();
+  //await Flame.device.setLandscape();
   await Flame.device.fullScreen();
 
   //if (!isDesktopPlatform) {
