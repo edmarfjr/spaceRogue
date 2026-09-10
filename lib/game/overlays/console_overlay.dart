@@ -49,7 +49,7 @@ class HudOverlay extends StatelessWidget {
     return Stack(
       children: [
         Positioned(
-          top: tela.height - alturaBanda + 8,
+          top: tela.height - alturaBanda - 16,
           left: 0,
           right: 0,
           child: Center(child: botao),

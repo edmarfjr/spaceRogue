@@ -1169,7 +1169,7 @@ class CreaturesRogueGame extends FlameGame
         posicao: () => moveJoystick.ultimoToqueAbsoluto,
         direcao: () => moveJoystick.relativeDelta,
         spritePath: 'ui/dpad.png',
-        tamanho: 144,
+        tamanho: 224,
       ),
     );
     add(
@@ -1177,7 +1177,7 @@ class CreaturesRogueGame extends FlameGame
         posicao: () => aimJoystick.ultimoToqueAbsoluto,
         direcao: () => aimJoystick.relativeDelta,
         spritePath: 'ui/apad.png',
-        tamanho: 144,
+        tamanho: 224,
       ),
     );
   }
@@ -1252,7 +1252,7 @@ class CreaturesRogueGame extends FlameGame
   /// Posição real fica por conta de `_reflowControles` (muda com a
   /// orientação da tela).
   void _setupInventorySlots() {
-    final raio = _isDesktop ? 56.0 : 56.0;
+    final raio = _isDesktop ? 22.0 : 48.0;
 
     for (int i = 0; i < 2; i++) {
       final slot = ConsumableSlotButton(
