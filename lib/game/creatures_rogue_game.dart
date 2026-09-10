@@ -19,6 +19,7 @@ import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:creatures_rogue/game/components/UI/ability_button.dart';
 import 'package:creatures_rogue/game/components/UI/ability_button_sprites.dart';
 import 'package:creatures_rogue/game/components/UI/ability_icons.dart';
+import 'package:creatures_rogue/game/components/UI/pause_button_sprite.dart';
 import 'package:creatures_rogue/game/components/effects/companion_recall_effect.dart';
 import 'package:creatures_rogue/game/components/effects/companion_revive_effect.dart';
 import 'package:creatures_rogue/game/components/UI/consumable_slot_button.dart';
@@ -394,6 +395,7 @@ class CreaturesRogueGame extends FlameGame
     // desenhar conforme a criatura da run.
     await AbilityIcons.carregar();
     await AbilityButtonSprites.carregar();
+    await PauseButtonSprite.carregar();
 
     _setupJoysticks();
     _setupAbilityControls();
@@ -839,9 +841,9 @@ class CreaturesRogueGame extends FlameGame
       slotsTop = canvasSize.y - alturaBanda + 10;
     }
 
-    const margemEsquerda = 16.0;
-    const gap = 10.0;
-    final raio = _isDesktop ? 22.0 : 50.0;
+    const margemEsquerda = 8.0;
+    const gap = 8.0;
+    final raio = _isDesktop ? 32.0 : 32.0;
     for (var i = 0; i < _slotButtons.length; i++) {
       _slotButtons[i].position = Vector2(
         margemEsquerda + i * (raio * 2 + gap),
@@ -1169,7 +1171,9 @@ class CreaturesRogueGame extends FlameGame
         posicao: () => moveJoystick.ultimoToqueAbsoluto,
         direcao: () => moveJoystick.relativeDelta,
         spritePath: 'ui/dpad.png',
-        tamanho: 224,
+        cor1: UiTheme.dpadCor1,
+        cor2: UiTheme.dpadCor2,
+        tamanho: 168,
       ),
     );
     add(
@@ -1177,7 +1181,9 @@ class CreaturesRogueGame extends FlameGame
         posicao: () => aimJoystick.ultimoToqueAbsoluto,
         direcao: () => aimJoystick.relativeDelta,
         spritePath: 'ui/apad.png',
-        tamanho: 224,
+        cor1: UiTheme.apadCor1,
+        cor2: UiTheme.apadCor2,
+        tamanho: 168,
       ),
     );
   }
@@ -1252,7 +1258,7 @@ class CreaturesRogueGame extends FlameGame
   /// Posição real fica por conta de `_reflowControles` (muda com a
   /// orientação da tela).
   void _setupInventorySlots() {
-    final raio = _isDesktop ? 22.0 : 48.0;
+    final raio = _isDesktop ? 32.0 : 32.0;
 
     for (int i = 0; i < 2; i++) {
       final slot = ConsumableSlotButton(
@@ -1276,9 +1282,9 @@ class CreaturesRogueGame extends FlameGame
     //
     // Raio 50 (100dp de diâmetro) no mobile é o piso de alvo de toque do
     // Material — com 18 (36dp) o botão ficava menor que o mínimo recomendado.
-    final buttonRadius = (_isDesktop ? 56.0 : 56.0);
-    const double edgeMarginX = 20;
-    const double edgeMarginY = 35;
+    final buttonRadius = (_isDesktop ? 48.0 : 48.0);
+    const double edgeMarginX = 5;
+    const double edgeMarginY = 5;
 
     // Habilidade B (segunda habilidade) — canto inferior ESQUERDO da tela,
     // a pedido do usuário. Segurar dispara enquanto o cooldown permitir,

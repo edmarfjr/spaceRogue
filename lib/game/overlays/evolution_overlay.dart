@@ -10,16 +10,20 @@ import '../audio/ui_sfx.dart';
 /// Cerimônia de evolução (ver PIVOT_EVOLUCAO): o jogo já pausou e já trocou
 /// os dados por baixo (`Player._evoluir`) — esta tela é só a encenação.
 ///
-/// Sequência (uma `AnimationController` só, dividida em trechos por tempo):
-/// 1. `_fechando` (1000ms): fundo preto, sprite BASE em cores normais, uma
-///    CIRCUNFERÊNCIA OCA vermelha (só o contorno — não preenche nada) fecha
-///    do raio aberto até o centro (raio 0).
+/// Diálogo normal (fundo semi-transparente, card branco) — só a JANELA da
+/// animação (`_boxSize`x`_boxSize`) é preta. Sequência (uma
+/// `AnimationController` só, dividida em trechos por tempo):
+/// 1. `_fechando` (1000ms): sprite BASE em cores normais, uma CIRCUNFERÊNCIA
+///    OCA vermelha (só o contorno) fecha do raio aberto até o centro
+///    (implosão).
 /// 2. `_flashBranco` (500ms): círculo já fechado, some da tela — o sprite
-///    inteiro vira branco sólido.
-/// 3. `_abrindo` (500ms): troca o sprite pro EVOLUÍDO, a circunferência
-///    reabre até o raio cheio e o branco esmaece de volta pras cores
-///    normais do sprite evoluído — assim que termina de abrir, some (não
-///    fica crescendo pra fora da tela).
+///    inteiro vira branco sólido, e É NESSA JANELA que ele pisca rapidamente
+///    entre a forma BASE e a EVOLUÍDA (acelerando conforme avança —
+///    `Curves.easeIn` no relógio dos flips), terminando na evoluída.
+/// 3. `_abrindo` (500ms): a circunferência reabre até o raio cheio
+///    (explosão) e o branco esmaece de volta pras cores normais do sprite
+///    evoluído — assim que termina de abrir, some (não fica crescendo pra
+///    fora da tela).
 ///
 /// Só depois de tudo isso o diálogo "continuar" aparece.
 class EvolutionOverlay extends StatefulWidget {
@@ -42,6 +46,12 @@ class _EvolutionOverlayState extends State<EvolutionOverlay>
   static const int _msFlash = 500;
   static const int _msAbrindo = 500;
   static const int _msTotal = _msFechando + _msFlash + _msAbrindo;
+
+  /// Quantas vezes o sprite troca de forma durante a janela branca
+  /// (`_msFlash`). Número par: a última troca (índice ímpar, ver
+  /// `_quadroDaFase`) cai na forma evoluída, então nunca termina na base por
+  /// acaso mesmo se o arredondamento bater bem no fim da janela.
+  static const int _totalFlips = 10;
 
   late final AnimationController _controle;
   ui.Image? _imgBase;
@@ -109,8 +119,8 @@ class _EvolutionOverlayState extends State<EvolutionOverlay>
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Palette.branco,
-            border: Border.all(color: Palette.preto, width: 3),
+            color: Palette.preto,
+            border: Border.all(color: Palette.branco, width: 3),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -118,7 +128,7 @@ class _EvolutionOverlayState extends State<EvolutionOverlay>
               Text(
                 context.l10n.evolution_titulo,
                 style: const TextStyle(
-                  color: Palette.preto,
+                  color: Palette.branco,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -194,8 +204,15 @@ class _EvolutionOverlayState extends State<EvolutionOverlay>
     } else if (tMs < _msFechando + _msFlash) {
       raioAnel = 0;
       mostraAnel = false;
-      mostraEvoluida = false;
       alphaBranco = 1;
+      // Pisca rapidamente entre base/evoluída ENQUANTO o sprite está
+      // branco — acelera conforme a janela avança (`Curves.easeIn` no
+      // relógio dos flips: intervalo entre trocas começa longo e encolhe).
+      final progressoFlash = (tMs - _msFechando) / _msFlash;
+      final aceleradoFlash = Curves.easeIn.transform(
+        progressoFlash.clamp(0.0, 1.0),
+      );
+      mostraEvoluida = (aceleradoFlash * _totalFlips).floor().isOdd;
     } else {
       final progresso = ((tMs - _msFechando - _msFlash) / _msAbrindo).clamp(
         0.0,
@@ -216,7 +233,9 @@ class _EvolutionOverlayState extends State<EvolutionOverlay>
       child: Container(
         width: _boxSize,
         height: _boxSize,
-        color: Palette.branco,
+        // Só esta janela é preta — o resto do diálogo continua no estilo
+        // branco/preto normal (ver `build`).
+        color: Palette.preto,
         child: Stack(
           alignment: Alignment.center,
           children: [
@@ -226,7 +245,7 @@ class _EvolutionOverlayState extends State<EvolutionOverlay>
               // (alfa) da imagem — silhueta sólida branca. Ver fórmula do
               // Porter-Duff `srcATop`.
               colorFilter: ColorFilter.mode(
-                Palette.amarelo.withAlpha((alphaBranco * 255).round()),
+                Palette.branco.withAlpha((alphaBranco * 255).round()),
                 BlendMode.srcATop,
               ),
               child: SizedBox(
@@ -236,10 +255,13 @@ class _EvolutionOverlayState extends State<EvolutionOverlay>
                     ? null
                     : RawImage(
                         image: imagem,
-                        // Sem `width`/`height`, RawImage desenha no tamanho
-                        // NATIVO da imagem (16x16/24x24), ignorando o
-                        // SizedBox — mesma pegadinha que `CreatureSprite`
-                        // já documenta.
+                        // `width`/`height`+`fit: contain` OBRIGATÓRIOS: a
+                        // forma base é 16x16 e a evoluída 24x24 — sem isso,
+                        // `RawImage` desenha cada uma no seu tamanho NATIVO
+                        // (mesma pegadinha que `CreatureSprite` documenta),
+                        // e a evoluída apareceria maior que a base no
+                        // pisca-pisca. `contain` escala as duas pro mesmo
+                        // tamanho final (ambas são quadradas).
                         width: _boxSize,
                         height: _boxSize,
                         fit: BoxFit.contain,

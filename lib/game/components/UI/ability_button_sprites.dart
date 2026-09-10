@@ -1,11 +1,14 @@
 import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
-import 'package:flame/flame.dart';
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
+import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 
 /// Sprite dos dois estados (neutro, pressionado) do botão de cada
 /// [AbilityTipo] — `ui/btn<Tipo>.png`, tira 48x24, 2 quadros de 24x24.
+/// Cinza claro/escuro do desenho vira `UiTheme.actionButtonCor1`/`Cor2` via
+/// `PaletteSwapper`, mesmo tratamento dos sprites de criatura.
 ///
 /// Carregado uma vez só, mesma razão do `AbilityIcons`: o `AbilityButton`
 /// nasce no `onLoad` do jogo, antes de existir jogador — e o tipo muda
@@ -22,7 +25,11 @@ class AbilityButtonSprites {
   /// Chamada uma vez no `onLoad` do jogo, antes de montar os controles.
   static Future<void> carregar() async {
     for (final entrada in _caminhos.entries) {
-      final ui.Image imagem = await Flame.images.load(entrada.value);
+      final ui.Image imagem = await PaletteSwapper.createSwappedImage(
+        imagePath: entrada.value,
+        lightGrayReplacement: UiTheme.actionButtonCor1,
+        darkGrayReplacement: UiTheme.actionButtonCor2,
+      );
       _quadros[entrada.key] = List.generate(
         2,
         (i) => Sprite(

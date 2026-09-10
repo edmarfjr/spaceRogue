@@ -1,8 +1,8 @@
 import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
-import 'package:flame/flame.dart';
-import 'package:flutter/material.dart' show Paint, FilterQuality, Canvas;
+import 'package:flutter/material.dart' show Color, Paint, FilterQuality, Canvas;
+import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 
 /// Indicador visual de um dos dois joysticks (esquerdo/movimento ou
 /// direito/ataque — ver [spritePath]): tira de 240x48, 5 quadros de 48x48 —
@@ -27,6 +27,12 @@ class DPadIndicator extends PositionComponent with HasGameReference {
   final Vector2 Function() direcao;
   final String spritePath;
 
+  /// Cores que substituem o cinza claro/escuro do desenho original (ver
+  /// `UiTheme.dpadCor1`/`dpadCor2` e `apadCor1`/`apadCor2`) — mesmo
+  /// `PaletteSwapper` usado pelos sprites de criatura.
+  final Color cor1;
+  final Color cor2;
+
   late final List<Sprite> _quadros;
 
   final Paint _paint = Paint()..filterQuality = FilterQuality.none;
@@ -35,13 +41,19 @@ class DPadIndicator extends PositionComponent with HasGameReference {
     required this.posicao,
     required this.direcao,
     required this.spritePath,
+    required this.cor1,
+    required this.cor2,
     required double tamanho,
   }) : super(size: Vector2.all(tamanho), anchor: Anchor.center);
 
   @override
   Future<void> onLoad() async {
     await super.onLoad();
-    final ui.Image imagem = await Flame.images.load(spritePath);
+    final ui.Image imagem = await PaletteSwapper.createSwappedImage(
+      imagePath: spritePath,
+      lightGrayReplacement: cor1,
+      darkGrayReplacement: cor2,
+    );
     _quadros = List.generate(
       5,
       (i) => Sprite(

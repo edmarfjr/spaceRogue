@@ -13,7 +13,7 @@ class CuspeDeSementeEvo extends Ability {
   final double kbForce;
 
   const CuspeDeSementeEvo({
-    this.coef = 1.4,
+    this.coef = 2.0,
     this.velocidade = 90,
     this.kbForce = 30,
   }) : super(nome: 'Cuspe de Semente+', cooldown: 1.4);

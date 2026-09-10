@@ -23,6 +23,7 @@ import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 import 'package:creatures_rogue/game/game_settings.dart';
 import 'package:creatures_rogue/l10n/creature_i18n.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
+import '../items/xp_pickup.dart';
 import '../player/player.dart';
 import '../utils/palette_swapper.dart';
 import '../utils/y_sort.dart';
@@ -505,14 +506,9 @@ abstract class Enemy extends PositionComponent
 
   // `direcaoLivre` e `spawnAlerta` vêm de MovementHost.
 
-  /// XP de evolução (ver `PIVOT_EVOLUCAO`) que este inimigo rende à criatura
-  /// ativa quando morre — boss vale mais que um comum.
-  static const double _xpComum = 1.0;
-  static const double _xpBoss = 8.0;
-
   void death() {
     GameAudio.instance.play(Sfx.enemy_die);
-    playerTarget.ganharXp(ehBoss ? _xpBoss : _xpComum);
+    _dropXp();
     // Sem await de propósito: death() não é async (chamado de dentro de
     // takeDamage, síncrono), e a contagem não precisa bloquear a morte —
     // só precisa acabar gravada eventualmente.
@@ -530,6 +526,28 @@ abstract class Enemy extends PositionComponent
     );
     parent?.add(effect);
     removeFromParent();
+  }
+
+  /// Itens de XP (ver `XpPickup`) que este inimigo derruba ao morrer —
+  /// substituiu o XP fixo por golpe direto em `playerTarget.ganharXp`: comum
+  /// solta de 0 a 2, boss solta 10. Pequeno espalhamento aleatório na
+  /// posição pra não empilhar tudo exatamente no mesmo pixel quando é mais
+  /// de um item.
+  void _dropXp() {
+    final random = Random();
+    final quantidade = ehBoss ? 10 : random.nextInt(3);
+    for (var i = 0; i < quantidade; i++) {
+      parent?.add(
+        XpPickup(
+          position:
+              position +
+              Vector2(
+                random.nextDouble() * 16 - 8,
+                random.nextDouble() * 16 - 8,
+              ),
+        ),
+      );
+    }
   }
 
   /// Libera `creature` pra jogar e avisa na tela — cada boss chama isto no

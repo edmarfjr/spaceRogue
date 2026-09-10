@@ -6,11 +6,13 @@ import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
+import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 
 import '../player/player.dart';
 
 // A classe é abstrata, não pode ser instanciada diretamente.
-abstract class Collectible extends PositionComponent with CollisionCallbacks, HasGameRef {
+abstract class Collectible extends PositionComponent
+    with CollisionCallbacks, HasGameReference<CreaturesRogueGame> {
   final String spritePath; // Cada filho dirá qual imagem carregar
   final Color cor1;
   final Color cor2;
@@ -31,26 +33,33 @@ abstract class Collectible extends PositionComponent with CollisionCallbacks, Ha
     required this.spritePath,
     this.cor1 = Palette.cinza,
     this.cor2 = Palette.cinzaEsc,
-  }) : super(position: position, size: Vector2(16, 16), anchor: Anchor.center);
+    Vector2? size,
+    // Sem `size` explícito, todo item cai no 16x16 de sempre (moeda,
+    // coração, power-up). `XpPickup` passa 8x8 — o sprite dele é menor.
+  }) : super(
+         position: position,
+         size: size ?? Vector2(16, 16),
+         anchor: Anchor.center,
+       );
 
   @override
   Future onLoad() async {
-
     final ui.Image img = await PaletteSwapper.createSwappedImage(
       imagePath: spritePath,
       lightGrayReplacement: cor1,
       darkGrayReplacement: cor2,
     );
-    
 
     _sprite = Sprite(img);
-    
-    add(RectangleHitbox(
-      size: Vector2(16, 16),
-      anchor: Anchor.center,
-      position: size / 2,
-      collisionType: CollisionType.passive,
-    ));
+
+    add(
+      RectangleHitbox(
+        size: size,
+        anchor: Anchor.center,
+        position: size / 2,
+        collisionType: CollisionType.passive,
+      ),
+    );
   }
 
   @override
@@ -77,5 +86,5 @@ abstract class Collectible extends PositionComponent with CollisionCallbacks, Ha
 
   // NOVO: Método abstrato!
   // Retorna 'true' se o item foi consumido, ou 'false' se não (ex: vida já estava cheia)
-  bool onCollect(Player player); 
+  bool onCollect(Player player);
 }

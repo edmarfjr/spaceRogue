@@ -2,6 +2,7 @@ import 'package:flame/components.dart' show Vector2;
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/UI/dynamic_joystick_component.dart';
+import 'package:creatures_rogue/game/components/UI/pause_button_sprite.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 
 class HudOverlay extends StatelessWidget {
@@ -29,7 +30,7 @@ class HudOverlay extends StatelessWidget {
       return SafeArea(
         child: Align(
           alignment: Alignment.topRight,
-          child: Padding(padding: const EdgeInsets.all(32.0), child: botao),
+          child: Padding(padding: const EdgeInsets.all(8), child: botao),
         ),
       );
     }
@@ -49,7 +50,7 @@ class HudOverlay extends StatelessWidget {
     return Stack(
       children: [
         Positioned(
-          top: tela.height - alturaBanda - 16,
+          top: tela.height - alturaBanda + 2,
           left: 0,
           right: 0,
           child: Center(child: botao),
@@ -59,10 +60,10 @@ class HudOverlay extends StatelessWidget {
   }
 }
 
-/// Botão de pausa: sprite de dois quadros (`ui/btnPause.png`, tira 64x32, 2
-/// quadros de 32x32 — mesma convenção do `AbilityButtonSprites`: neutro e
-/// pressionado). `StatefulWidget` só pra isso — o `HudOverlay` não precisa
-/// saber de estado de toque, só de posição.
+/// Botão de pausa: sprite de dois quadros já com a paleta trocada (ver
+/// `PauseButtonSprite`) — neutro e pressionado. `StatefulWidget` só pra
+/// isso — o `HudOverlay` não precisa saber de estado de toque, só de
+/// posição.
 class _PauseButton extends StatefulWidget {
   final VoidCallback? onPressed;
   const _PauseButton({required this.onPressed});
@@ -72,7 +73,7 @@ class _PauseButton extends StatefulWidget {
 }
 
 class _PauseButtonState extends State<_PauseButton> {
-  static const double _tamanho = 128;
+  static const double _tamanho = 96;
 
   bool _pressionado = false;
 
@@ -90,28 +91,40 @@ class _PauseButtonState extends State<_PauseButton> {
         widget.onPressed?.call();
       },
       onTapCancel: () => _setPressionado(false),
-      // `DecorationImage`: a tira inteira (2 quadros) escala pra caber a
-      // ALTURA da caixa — a largura escalada fica o dobro da caixa — e
-      // `alignment` escolhe qual metade (quadro) aparece; o resto é
-      // recortado sozinho (`paintImage` do Flutter recorta quando o
-      // tamanho ajustado passa do tamanho da caixa). Tentativa anterior
-      // com `Align`+`Transform` não funcionava: `Align` limita o filho ao
-      // tamanho da própria caixa mesmo com `width`/`height` explícitos no
-      // `Image.asset`, espremendo a tira inteira em vez de recortar.
-      child: Container(
+      child: SizedBox(
         width: _tamanho,
         height: _tamanho,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: const AssetImage('assets/images/ui/btnPause.png'),
-            fit: BoxFit.fitHeight,
-            alignment: _pressionado
-                ? const Alignment(1, 0)
-                : const Alignment(-1, 0),
-            filterQuality: FilterQuality.none,
-          ),
-        ),
+        child: CustomPaint(painter: _PauseButtonPainter(_pressionado)),
       ),
     );
   }
+}
+
+/// Recorta o quadro certo (`Canvas.drawImageRect`) direto da imagem já
+/// paletizada — mais simples e exato que o truque de `DecorationImage`
+/// (escalar a tira inteira e confiar no `BoxFit`/`alignment` pra cortar).
+class _PauseButtonPainter extends CustomPainter {
+  final bool pressionado;
+  _PauseButtonPainter(this.pressionado);
+
+  static final Paint _paint = Paint()..filterQuality = FilterQuality.none;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final imagem = PauseButtonSprite.imagem;
+    final larguraQuadro = imagem.width / 2;
+    final alturaQuadro = imagem.height.toDouble();
+    final origem = Rect.fromLTWH(
+      pressionado ? larguraQuadro : 0,
+      0,
+      larguraQuadro,
+      alturaQuadro,
+    );
+    final destino = Rect.fromLTWH(0, 0, size.width, size.height);
+    canvas.drawImageRect(imagem, origem, destino, _paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _PauseButtonPainter oldDelegate) =>
+      oldDelegate.pressionado != pressionado;
 }

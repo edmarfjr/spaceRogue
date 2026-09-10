@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/items/heart_half_pickup.dart';
 import 'package:creatures_rogue/game/components/items/heart_pickup.dart';
+import 'package:creatures_rogue/game/components/items/xp_pickup.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 
 /// Quanto e pra onde empurrar [corpo] pra tirá-lo de dentro de [alvo]: o eixo
@@ -24,8 +25,10 @@ import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 /// Só um eixo é mexido de propósito: preservar o outro é o que faz quem anda
 /// na diagonal deslizar pela parede em vez de travar.
 Vector2 empurraoParaFora({required Rect corpo, required Rect alvo}) {
-  final sobreposicaoX = min(corpo.right, alvo.right) - max(corpo.left, alvo.left);
-  final sobreposicaoY = min(corpo.bottom, alvo.bottom) - max(corpo.top, alvo.top);
+  final sobreposicaoX =
+      min(corpo.right, alvo.right) - max(corpo.left, alvo.left);
+  final sobreposicaoY =
+      min(corpo.bottom, alvo.bottom) - max(corpo.top, alvo.top);
 
   if (sobreposicaoX <= 0 || sobreposicaoY <= 0) return Vector2.zero();
 
@@ -59,8 +62,9 @@ abstract class Obstacle extends PositionComponent with HasGameRef {
   /// `onLoad` (que espera trocas de paleta) um `close()` chamado antes disso
   /// buscava o filho, não achava nada e virava no-op silencioso — a porta
   /// ficava trancada na lógica e atravessável na prática.
-  late final RectangleHitbox hitbox =
-      RectangleHitbox(collisionType: collisionType);
+  late final RectangleHitbox hitbox = RectangleHitbox(
+    collisionType: collisionType,
+  );
 
   late final Sprite obstacleSprite;
   final String spritePath;
@@ -68,7 +72,7 @@ abstract class Obstacle extends PositionComponent with HasGameRef {
   final Color cor2;
   final Color cor3;
   final CollisionType collisionType;
-  
+
   final Paint paint = Paint()..filterQuality = FilterQuality.none;
 
   Obstacle({
@@ -84,16 +88,16 @@ abstract class Obstacle extends PositionComponent with HasGameRef {
   @override
   Future<void> onLoad() async {
     add(hitbox);
-    
+
     final ui.Image swappedImage = await PaletteSwapper.createSwappedImage(
       imagePath: spritePath,
       lightGrayReplacement: cor1,
       darkGrayReplacement: cor2,
       whiteReplacement: cor3,
     );
-    
+
     obstacleSprite = Sprite(swappedImage);
-    
+
     paint.filterQuality = FilterQuality.none;
     priority = ySortPriority(position.y + size.y / 2);
   }
@@ -113,26 +117,43 @@ class Rock extends Obstacle {
     super.cor3,
     Vector2? size,
   }) : super(
-         spritePath: sprPath, 
+         spritePath: sprPath,
          size: size ?? Vector2(16, 16),
-         collisionType: CollisionType.active, 
+         collisionType: CollisionType.active,
        );
 
   void blowUp() {
     final random = Random();
-    
+
     if (random.nextDouble() < 0.05) {
       double itemChance = random.nextDouble();
       if (itemChance <= 0.05) {
         parent?.add(HeartPickup(position: position.clone()));
-      } else if (itemChance > 0.05 && itemChance <= 0.15) {  
+      } else if (itemChance > 0.05 && itemChance <= 0.15) {
         parent?.add(HeartHalfPickup(position: position.clone()));
-      }else{
+      } else {
         parent?.add(CoinPickup(position: position.clone()));
       }
     }
 
-    removeFromParent(); 
+    // XP (ver `XpPickup`) é independente do drop de coração/moeda acima —
+    // uma pedra explodida pode soltar os dois. Até 3, uniforme (mesma regra
+    // do inimigo comum em `Enemy._dropXp`).
+    final quantidadeXp = random.nextInt(4);
+    for (var i = 0; i < quantidadeXp; i++) {
+      parent?.add(
+        XpPickup(
+          position:
+              position +
+              Vector2(
+                random.nextDouble() * 16 - 8,
+                random.nextDouble() * 16 - 8,
+              ),
+        ),
+      );
+    }
+
+    removeFromParent();
   }
 }
 
@@ -148,7 +169,6 @@ class Hole extends Obstacle {
          size: size ?? Vector2(16, 16),
          collisionType: CollisionType.active,
        );
-  
 }
 
 class Grama extends Obstacle {

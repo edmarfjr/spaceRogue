@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/foundation.dart';
@@ -67,7 +67,7 @@ void main() async {
   // andamento (era o bug: idioma trocava, mas o `MainMenu` aparecia encima da
   // Hud/tela ativa).
   final gameHome = Scaffold(
-    backgroundColor: Palette.cinza,
+    backgroundColor: UiTheme.screenBackground,
     body: GameWidget<CreaturesRogueGame>(
       game: creaturesGame,
       overlayBuilderMap: {
