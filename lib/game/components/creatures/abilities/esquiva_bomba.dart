@@ -35,7 +35,7 @@ class EsquivaBomba extends Ability {
 
     user.add(
       MoveByEffect(
-        -dir.normalized() * distancia,
+        user.dashOffsetLivre(-dir, distancia),
         EffectController(duration: duracao),
         onComplete: () {},
       ),

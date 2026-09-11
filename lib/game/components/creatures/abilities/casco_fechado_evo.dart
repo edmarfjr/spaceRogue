@@ -14,13 +14,13 @@ class CascoFechadoEvo extends Ability {
 
   const CascoFechadoEvo({
     this.reducaoDano = 1,
-    this.duracao = 3.5,
+    this.duracao = 0.6,
     this.coefEstouro = 1.5,
   }) : super(
          nome: 'Casco Espinhoso',
          descricao:
              'Casco reforçado: mesma imunidade e reflexo, dura mais e ainda estoura ao fechar.',
-         cooldown: 5.0,
+         cooldown: 1.5,
          tipo: AbilityTipo.defesa,
        );
 

@@ -231,7 +231,7 @@ class Player extends PositionComponent
   /// de dentro do `onCollisionStart` de um projétil — ou seja, em PLENO
   /// meio da varredura de colisão do frame. Evoluir na hora remontaria
   /// `playerHitbox`/`physicsHitbox` (remove+add) com a varredura ainda
-  /// iterando sobre eles, travando o jogo. Por isso só marca a intenção
+  /// iterando sobre eles, travando o jogo. Por isso só marcAbilityTarget.plrDira a intenção
   /// aqui; `update()` (que roda ANTES da varredura de colisão de cada
   /// frame — mesma ordem que o fix da grama alta já explorou) dispara
   /// `_evoluir()` de verdade um frame depois, fora da varredura.
@@ -860,17 +860,14 @@ class Player extends PositionComponent
   /// aponta (ver [_direcaoAtaqueTravada]).
   void _atualizarMira() {
     final alvo = _nearestEnemy();
-    final dirCorpo = visual.isFlippedHorizontally
-        ? Vector2(-1, 0)
-        : Vector2(1, 0);
-
+   
     if (creatureData.ability2.target == AbilityTarget.enemyDir) {
       if (alvo != null) {
         final delta = alvo.absolutePosition - absolutePosition;
         if (delta.length != 0) lockedAb2Direction = delta.normalized();
       }
     } else if (creatureData.ability2.target == AbilityTarget.plrDir) {
-      lockedAb2Direction = dirCorpo;
+      lockedAb2Direction = plrDir;
     }
   }
 
@@ -943,6 +940,45 @@ class Player extends PositionComponent
       if (room.toAbsoluteRect().contains(center)) return room;
     }
     return null;
+  }
+
+  @override
+  Vector2 dashOffsetLivre(Vector2 dir, double distancia) {
+    final d = dir.normalized();
+    if (d.isZero() || distancia <= 0) return Vector2.zero();
+
+    final room = currentRoom;
+    if (room == null) return d * distancia;
+
+    // Mesma regra sólida do `onCollision`: GramaAlta/Cogumelos são andáveis
+    // (nunca sólidos), Hole só bloqueia fora do ar. Pro resto dos `Obstacle`
+    // (Rock, Door, Pedestal...) usa o `collisionType` AO VIVO do hitbox —
+    // Grama/ChaoCave são decoração de chão (`CollisionType.inactive`, nunca
+    // colidem de verdade) e Door alterna passive/inactive ao abrir/fechar, e
+    // seu campo `collisionType` (fixo, só reflete o valor da construção) não
+    // acompanha isso — só o `hitbox.collisionType` está sempre atualizado.
+    final solidos = room.children.whereType<PositionComponent>().where((c) {
+      if (c is WallBarrier) return true;
+      if (c is GramaAlta || c is Cogumelos) return false;
+      if (c is Hole) return !isAirborne;
+      if (c is Obstacle) return c.hitbox.collisionType != CollisionType.inactive;
+      return false;
+    });
+
+    // Anda em passos de 4px (bem menor que os 16px de um tile) simulando o
+    // `physicsHitbox`, pra achar o ponto mais longe livre antes da parede —
+    // `MoveByEffect` move a posição direto, sem checar colisão a cada frame.
+    const passo = 4.0;
+    final pesBase = physicsHitbox.toAbsoluteRect();
+    final passos = (distancia / passo).ceil();
+    var livre = 0.0;
+    for (var i = 1; i <= passos; i++) {
+      final p = i < passos ? i * passo : distancia;
+      final testRect = pesBase.shift(ui.Offset(d.x * p, d.y * p));
+      if (solidos.any((s) => s.toAbsoluteRect().overlaps(testRect))) break;
+      livre = p;
+    }
+    return d * livre;
   }
 
   /// Empurra o jogador para longe de [sourcePosition]. Usado por explosões

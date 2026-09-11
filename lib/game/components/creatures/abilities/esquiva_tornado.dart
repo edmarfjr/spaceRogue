@@ -14,9 +14,9 @@ class EsquivaTornado extends Ability {
   final double coefRastro;
 
   const EsquivaTornado({
-    this.distancia = 32,
+    this.distancia = 48,
     this.duracao = 0.15,
-    this.coefRastro = 0.5,
+    this.coefRastro = 1,
   }) : super(
          nome: 'Esquiva Tornado',
          descricao:
@@ -37,7 +37,7 @@ class EsquivaTornado extends Ability {
         position: user.position.clone(),
         direction: Vector2.zero(),
         speed: 0,
-        lifeTime: 4,
+        lifeTime: 5,
         dmg: danoRastro,
         sprPath: 'projeteis/tornado.png',
         cor1: Palette.vermelho,
@@ -56,7 +56,7 @@ class EsquivaTornado extends Ability {
 
     user.add(
       MoveByEffect(
-        dir.normalized() * distancia,
+        user.dashOffsetLivre(dir, distancia),
         EffectController(duration: duracao),
         onComplete: () {},
       ),

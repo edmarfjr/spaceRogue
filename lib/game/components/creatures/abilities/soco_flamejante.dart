@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
@@ -12,15 +14,22 @@ class SocoFlamejante extends Ability {
   final double velocidade;
   final double alcanceSegundos;
 
-  const SocoFlamejante({this.coef = 1.0, this.velocidade = 260, this.alcanceSegundos = 0.15})
+  const SocoFlamejante({this.coef = 1.0, this.velocidade = 260, this.alcanceSegundos = 0.2})
       : super(nome: 'Soco Flamejante', descricao: 'Cooldown baixo, dano alto, alcance curto.', cooldown: 0.4);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
+    Vector2 dirOff = Vector2(0,0); 
+    int rand = Random().nextInt(8) - 4;
+    if (dir.x == 0 ){
+      dirOff = Vector2(rand.toDouble(), 0);
+    } else {
+      dirOff = Vector2(0, rand.toDouble());
+    }
     user.parent?.add(Projectile(
       owner: user,
-      position: user.position.clone(),
+      position: user.position.clone() + dirOff,
       direction: dir,
       speed: velocidade,
       dmg: dano,

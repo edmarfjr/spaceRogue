@@ -283,7 +283,7 @@ class CreatureRegistry {
     tipo: CreatureType.planta,
     corClara: Palette.bege,
     corEscura: Palette.forest,
-    stats: BaseStats(maxHp: 4, speed: 22, defesa: 1, ataque: 4),
+    stats: BaseStats(maxHp: 4, speed: 35, defesa: 1, ataque: 4),
     ability1: MegaSoco(),
     ability2: Brado(),
     moveAnim: MovementAnimation.caminhada,

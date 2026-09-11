@@ -29,7 +29,7 @@ class MordidaCerteira extends Ability {
     user.grantInvulnerability(duracao+0.3);
     user.add(
       MoveByEffect(
-        dir.normalized() * distancia,
+        user.dashOffsetLivre(dir, distancia),
         EffectController(duration: duracao),
         onComplete: () {
           user.parent?.add(

@@ -296,7 +296,7 @@ class _IntroOverlayState extends State<IntroOverlay> {
       children: [
         titulo,
         Expanded(
-          child: Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(child: Center(child: listaCandidatas)),

@@ -15,8 +15,8 @@ class CuspeDeSementeEvo extends Ability {
   const CuspeDeSementeEvo({
     this.coef = 2.0,
     this.velocidade = 90,
-    this.kbForce = 30,
-  }) : super(nome: 'Cuspe de Semente+', cooldown: 1.4);
+    this.kbForce = 50,
+  }) : super(nome: 'Cuspe de Semente+', cooldown: 1.0);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

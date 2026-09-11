@@ -840,6 +840,21 @@ class CreaturesRogueGame extends FlameGame
       // 16px pra baixo, a pedido — não presa exatamente na borda superior.
       gameCamera.viewport.position = Vector2(vidroLeft, 48);
       slotsTop = canvasSize.y - alturaBanda + 58;
+
+      // Botão da habilidade 2: em PAISAGEM ele usa `margin` (ver
+      // `_setupActionButtons`), que se autoajusta sozinho no resize — não
+      // mexe aqui. Em RETRATO esse mesmo margin (5px da borda inferior da
+      // tela cheia) deixava o botão colado bem embaixo da banda de
+      // controle, baixo demais pro polegar alcançar direito — sobrescreve
+      // com uma posição própria, centralizada na altura da banda.
+      final botao = _ability2Button;
+      if (botao != null) {
+        const margemBorda = 5.0;
+        botao.position = Vector2(
+          canvasSize.x - margemBorda - botao.size.x,
+          (canvasSize.y - alturaBanda) + (alturaBanda - botao.size.y) / 2,
+        );
+      }
     }
 
     const margemEsquerda = 8.0;
@@ -1195,6 +1210,11 @@ class CreaturesRogueGame extends FlameGame
   /// trocado no mesmo frame ainda não apareceria em `children`.
   final List<Component> _abilityControls = [];
 
+  /// Referência direta ao botão da habilidade 2, além de estar em
+  /// `_abilityControls` — pra `_reflowControles` poder reposicioná-lo em
+  /// RETRATO sem precisar de `whereType` a cada frame.
+  AbilityButton? _ability2Button;
+
   /// (Re)monta o esquema de controle escolhido. Idempotente: derruba o que o
   /// esquema anterior tinha posto antes de montar o novo, então serve tanto pro
   /// onLoad quanto pra troca em runtime.
@@ -1212,6 +1232,7 @@ class CreaturesRogueGame extends FlameGame
       control.removeFromParent();
     }
     _abilityControls.clear();
+    _ability2Button = null;
 
     switch (_controlScheme) {
       case ControlScheme.botoes:
@@ -1290,19 +1311,18 @@ class CreaturesRogueGame extends FlameGame
     // Habilidade B (segunda habilidade) — canto inferior ESQUERDO da tela,
     // a pedido do usuário. Segurar dispara enquanto o cooldown permitir,
     // mesmo padrão do teclado (`Player._keyboardHoldAbility2`, tecla espaço).
-    _abilityControls.add(
-      AbilityButton(
-        radius: buttonRadius,
-        tipo: () => _runStarted
-            ? player.creatureData.ability2.tipo
-            : AbilityTipo.ataque,
-        pointerTracker: pointerTracker,
-        margin: EdgeInsets.only(right: edgeMarginX, bottom: edgeMarginY),
-        onPressedChanged: (pressed) {
-          if (_runStarted) player.touchHoldAbility2 = pressed;
-        },
-      ),
+    _ability2Button = AbilityButton(
+      radius: buttonRadius,
+      tipo: () => _runStarted
+          ? player.creatureData.ability2.tipo
+          : AbilityTipo.ataque,
+      pointerTracker: pointerTracker,
+      margin: EdgeInsets.only(right: edgeMarginX, bottom: edgeMarginY),
+      onPressedChanged: (pressed) {
+        if (_runStarted) player.touchHoldAbility2 = pressed;
+      },
     );
+    _abilityControls.add(_ability2Button!);
 
     // APOSENTADO — comentado, não apagado. Habilidade A por botão: virou o
     // analógico direito (`aimJoystick`). `marginRightB`/`marginRightA`

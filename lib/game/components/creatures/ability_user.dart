@@ -44,6 +44,12 @@ mixin AbilityUser on PositionComponent {
     VoidCallback? onLand,
   });
 
+  /// Distância real que dá pra avançar em [dir] antes de bater em parede ou
+  /// obstáculo sólido — usada pelas habilidades de dash/esquiva (que movem
+  /// via `MoveByEffect`, um tween de posição que não passa pelo
+  /// `onCollision` a cada frame) pra não atravessar paredes finas de uma vez.
+  Vector2 dashOffsetLivre(Vector2 dir, double distancia);
+
   // --- Ganchos usados pelas habilidades das criaturas ---
   // Neutros por padrão: nada muda enquanto nenhuma habilidade os usa.
   bool shieldVisualActive = false;
