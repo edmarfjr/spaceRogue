@@ -51,7 +51,7 @@ class _EvolutionOverlayState extends State<EvolutionOverlay>
   /// (`_msFlash`). Número par: a última troca (índice ímpar, ver
   /// `_quadroDaFase`) cai na forma evoluída, então nunca termina na base por
   /// acaso mesmo se o arredondamento bater bem no fim da janela.
-  static const int _totalFlips = 10;
+  static const int _totalFlips = 50;
 
   late final AnimationController _controle;
   ui.Image? _imgBase;

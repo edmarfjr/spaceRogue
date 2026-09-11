@@ -122,13 +122,30 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
                       onPlay: () => widget.game.startRun(_selected),
                     );
 
+                    // O painel sozinho, dentro de um `Expanded`, esticava até
+                    // preencher o que sobrasse — numa tela bem alta (retrato,
+                    // celular redimensionado bem estreito) ficava
+                    // ridiculamente alto, numa bem larga (paisagem de
+                    // desktop) ridiculamente largo. `ConstrainedBox` trava um
+                    // teto quadrado de referência e o `Center` deixa a sobra
+                    // como respiro em vez de esticar o cartão.
+                    final detailLimitado = Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: 480,
+                          maxHeight: 480,
+                        ),
+                        child: detail,
+                      ),
+                    );
+
                     if (constraints.maxWidth < Responsive.larguraEstreita) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           SizedBox(height: 160, child: list),
                           const SizedBox(height: 12),
-                          Expanded(child: detail),
+                          Expanded(child: detailLimitado),
                         ],
                       );
                     }
@@ -138,7 +155,7 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
                       children: [
                         SizedBox(width: 160, child: list),
                         const SizedBox(width: 12),
-                        Expanded(child: detail),
+                        Expanded(child: detailLimitado),
                       ],
                     );
                   },

@@ -324,7 +324,7 @@ abstract class Enemy extends PositionComponent
   static const double _hpBarraLargura = 14.0;
   static const double _hpBarraAltura = 2.0;
 
-  void _renderBarraEsquiva(Canvas canvas) {
+  void _renderBarraVida(Canvas canvas) {
     final porcentagem = (health / maxHealth);
     final left = (size.x - _hpBarraLargura) / 2;
     final top = -4.0;
@@ -349,7 +349,7 @@ abstract class Enemy extends PositionComponent
   @override
   void render(Canvas canvas) {
     super.render(canvas);
-    _renderBarraEsquiva(canvas);
+    if(!ehBoss)_renderBarraVida(canvas);
   }
 
   void applyDot(DotKind kind, int ticks) {

@@ -30,7 +30,7 @@ class HudOverlay extends StatelessWidget {
       return SafeArea(
         child: Align(
           alignment: Alignment.topRight,
-          child: Padding(padding: const EdgeInsets.all(8), child: botao),
+          child: Padding(padding: const EdgeInsets.all(2), child: botao),
         ),
       );
     }
@@ -50,7 +50,7 @@ class HudOverlay extends StatelessWidget {
     return Stack(
       children: [
         Positioned(
-          top: tela.height - alturaBanda + 2,
+          top: tela.height - alturaBanda + 24,
           left: 0,
           right: 0,
           child: Center(child: botao),
@@ -112,7 +112,7 @@ class _PauseButtonPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final imagem = PauseButtonSprite.imagem;
-    final larguraQuadro = imagem.width / 2;
+    final larguraQuadro = imagem.height.toDouble();
     final alturaQuadro = imagem.height.toDouble();
     final origem = Rect.fromLTWH(
       pressionado ? larguraQuadro : 0,

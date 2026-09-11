@@ -107,7 +107,7 @@ class CompanionPortraitIndicator extends PositionComponent with TapCallbacks {
     // fica parado enquanto a criatura está no banco: só muda de novo quando
     // ela volta a campo (vida cheia) ou desmaia lá fora (vida 0 — o cinza
     // cobre o retrato inteiro).
-    final fraction = pocketFraction().clamp(0.0, 1.0);
+    /*final fraction = pocketFraction().clamp(0.0, 1.0);
     if (fraction > 0) {
       final progresso = 1 - fraction;
       final altura = size.y * progresso;
@@ -116,7 +116,7 @@ class CompanionPortraitIndicator extends PositionComponent with TapCallbacks {
         _cooldownPaint,
       );
     }
-
+    */
     final sprite = _sprite;
     if (sprite != null) {
       sprite.render(canvas, size: size, overridePaint: _spritePaint);

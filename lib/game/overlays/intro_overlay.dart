@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:flame/components.dart' show Vector2;
 import 'package:flutter/material.dart';
 
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
+import 'package:creatures_rogue/game/components/UI/dynamic_joystick_component.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/core/responsive.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
@@ -185,61 +187,128 @@ class _IntroOverlayState extends State<IntroOverlay> {
   }
 
   Widget _construirEscolha() {
+    final tela = MediaQuery.sizeOf(context);
+    final retrato = DynamicJoystickComponent.retrato(
+      Vector2(tela.width, tela.height),
+    );
+
+    // Uma linha só, cada cartão dividindo a largura disponível igualmente —
+    // nem `Wrap` (quebrava em 2 linhas com espaço morto nas pontas) nem
+    // largura fixa por cartão (era isso que forçava a fonte do nome a
+    // encolher pra caber). A largura disponível muda com o modo (ver
+    // branches abaixo), o cartão mesmo é sempre "preencha o que te derem".
+    //
+    // SEM `crossAxisAlignment: stretch` aqui: em RETRATO este `Row` fica
+    // direto dentro da `Column` de fora, que dá altura DESLIMITADA (0 a
+    // Infinity) pra filho sem `Expanded` — "stretch" tentando esticar os
+    // cartões pra uma altura infinita derrubava o layout inteiro
+    // ("RenderFlex... can't have infinite height"). Sem stretch, o cartão
+    // só usa a altura do próprio conteúdo, e isso é seguro nos dois modos.
+    final listaCandidatas = Row(
+      children: [
+        for (final criatura in _candidatas)
+          Expanded(
+            child: _CartaoCandidata(
+              criatura: criatura,
+              selecionada: criatura.id == _selecionada.id,
+              onTap: () => setState(() => _selecionada = criatura),
+            ),
+          ),
+      ],
+    );
+
+    final titulo = Padding(
+      padding: EdgeInsets.only(top: retrato ? 12 : 4, bottom: retrato ? 10 : 4),
+      child: Text(
+        context.l10n.intro_escolhaPrimeira,
+        style: const TextStyle(
+          color: Palette.preto,
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+
+    final botao = Padding(
+      padding: EdgeInsets.only(bottom: retrato ? 10 : 4, top: retrato ? 0 : 4),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Palette.branco,
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
+          elevation: 0,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.zero,
+            side: BorderSide(color: Palette.preto, width: 2),
+          ),
+        ),
+        // Toque no cartão seleciona, este botão confirma: escolha
+        // permanente merece dois toques.
+        onPressed: withBtnSfx(_confirmando ? null : _confirmar),
+        child: Text(
+          context.l10n.intro_escolher,
+          style: const TextStyle(
+            fontSize: 18,
+            color: Palette.preto,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+
+    if (retrato) {
+      return Column(
+        children: [
+          titulo,
+          // A lista ocupa a largura da TELA (menos o padding do `SafeArea`)
+          // — só o `Row` acima já faz isso sozinho, não precisa de mais
+          // nada aqui.
+          listaCandidatas,
+          const SizedBox(height: 10),
+          // `Center`, não `Expanded` direto no `_FaixaDetalhe`: só o
+          // `Expanded` sozinho fazia a caixa esticar pra preencher TODA a
+          // altura que sobrasse — numa tela bem alta virava uma caixa
+          // enorme quase vazia. O `Expanded` aqui fora só reserva o espaço
+          // (mantém o botão ESCOLHER onde já estava), o `Center` deixa a
+          // sobra como respiro em vez de esticar a caixa.
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: _FaixaDetalhe(criatura: _selecionada),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          botao,
+        ],
+      );
+    }
+
+    // PAISAGEM: lista e caixa de detalhe lado a lado — a lista ocupa o que
+    // sobra da largura depois da caixa (capada em 360, mais estreita que o
+    // teto de 480 do retrato porque aqui ela empresta altura da TELA
+    // TODA, não só de uma faixa embaixo dos cartões — sobra menos altura
+    // pra caber o mesmo conteúdo). `Expanded` em volta do `Row`, não
+    // `Column` com `SizedBox`/`Center` espalhados: era esse empilhamento
+    // vertical (cartões, depois a caixa inteira, cada um com seu próprio
+    // respiro) que deixava tanto vão em branco na paisagem.
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 12, bottom: 10),
-          child: Text(
-            context.l10n.intro_escolhaPrimeira,
-            style: const TextStyle(
-              color: Palette.preto,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+        titulo,
+        Expanded(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: Center(child: listaCandidatas)),
+              const SizedBox(width: 12),
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 360),
+                child: _FaixaDetalhe(criatura: _selecionada),
+              ),
+            ],
           ),
         ),
-        // `Wrap`, não `Row`: 4 cards de 116px lado a lado (~530px) não cabem
-        // numa tela de celular em retrato — `Wrap` quebra em duas linhas em
-        // vez de estourar a largura.
-        Wrap(
-          alignment: WrapAlignment.center,
-          children: [
-            for (final criatura in _candidatas)
-              _CartaoCandidata(
-                criatura: criatura,
-                selecionada: criatura.id == _selecionada.id,
-                onTap: () => setState(() => _selecionada = criatura),
-              ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Expanded(child: _FaixaDetalhe(criatura: _selecionada)),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Palette.branco,
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
-              elevation: 0,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-                side: BorderSide(color: Palette.preto, width: 2),
-              ),
-            ),
-            // Toque no cartão seleciona, este botão confirma: escolha
-            // permanente merece dois toques.
-            onPressed: withBtnSfx(_confirmando ? null : _confirmar),
-            child: Text(
-              context.l10n.intro_escolher,
-              style: const TextStyle(
-                fontSize: 18,
-                color: Palette.preto,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ),
+        botao,
       ],
     );
   }
@@ -323,6 +392,8 @@ class _CartaoCandidata extends StatelessWidget {
   final bool selecionada;
   final VoidCallback onTap;
 
+  static const double _padding = 4;
+
   const _CartaoCandidata({
     required this.criatura,
     required this.selecionada,
@@ -332,12 +403,14 @@ class _CartaoCandidata extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: InkWell(
         onTap: withBtnSfx(onTap),
         child: Container(
-          width: 116,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          padding: const EdgeInsets.symmetric(
+            vertical: 8,
+            horizontal: _padding,
+          ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.zero,
             border: Border.all(
@@ -345,25 +418,56 @@ class _CartaoCandidata extends StatelessWidget {
               width: selecionada ? 4 : 2,
             ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CreatureSprite(creature: criatura, size: 52),
-              const SizedBox(height: 6),
-              Text(
-                creatureName(context, criatura.id),
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Palette.preto,
-                  fontSize: 12,
-                  fontWeight: selecionada ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-              Text(
-                CreatureSelectOverlay.typeLabel(context, criatura.tipo),
-                style: const TextStyle(color: Palette.preto, fontSize: 12),
-              ),
-            ],
+          // O cartão agora preenche o que o `Expanded` do chamador der —
+          // sem largura fixa pra alimentar o `SizedBox` do `FittedBox`
+          // abaixo, precisa medir a largura de verdade em tempo real
+          // (mesma pegadinha documentada em `_FaixaDetalhe`: sem isso o
+          // `FittedBox` mede a largura intrínseca do texto e nunca
+          // encolhe/cresce com o cartão).
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final largura = constraints.maxWidth;
+              // Sprite acompanha o cartão (mais espaço = sprite maior),
+              // com teto pra não ficar gigante numa lista bem larga.
+              final tamanhoSprite = (largura * 0.55).clamp(48.0, 96.0);
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CreatureSprite(creature: criatura, size: tamanhoSprite),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    width: largura,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        creatureName(context, criatura.id),
+                        style: TextStyle(
+                          color: Palette.preto,
+                          fontSize: 14,
+                          fontWeight: selecionada
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: largura,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        CreatureSelectOverlay.typeLabel(context, criatura.tipo),
+                        style: const TextStyle(
+                          color: Palette.preto,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -380,22 +484,27 @@ class _FaixaDetalhe extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        // 720 é a largura "de design"; `Responsive.largura` encolhe só numa
-        // tela menor que isso, nunca cresce além.
-        width: Responsive.largura(context, 720),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: const BoxDecoration(
-          borderRadius: BorderRadius.zero,
-          border: Border.fromBorderSide(
-            BorderSide(color: Palette.preto, width: 2),
-          ),
+    // Sem `Center`/largura fixa aqui dentro: quem chama decide o teto de
+    // largura E se isto fica centralizado (retrato, sobra vertical) ou
+    // esticado pra preencher a altura (paisagem, lado a lado com a lista) —
+    // ver `_construirEscolha`. `Center` interno no `Row` só centraliza o
+    // BLOCO de stats/habilidades verticalmente quando a caixa fica mais
+    // alta que o conteúdo precisa (a esticada da paisagem), em vez de
+    // deixar tudo colado no topo com um vão embaixo.
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: const BoxDecoration(
+        borderRadius: BorderRadius.zero,
+        border: Border.fromBorderSide(
+          BorderSide(color: Palette.preto, width: 2),
         ),
+      ),
+      child: Center(
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
+            Flexible(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -415,7 +524,8 @@ class _FaixaDetalhe extends StatelessWidget {
                 ],
               ),
             ),
-            Expanded(
+            const SizedBox(width: 16),
+            Flexible(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,

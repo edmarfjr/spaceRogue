@@ -37,14 +37,14 @@ class EsquivaTornado extends Ability {
         position: user.position.clone(),
         direction: Vector2.zero(),
         speed: 0,
-        lifeTime: 3,
+        lifeTime: 4,
         dmg: danoRastro,
         sprPath: 'projeteis/tornado.png',
         cor1: Palette.vermelho,
         cor2: Palette.laranja,
         tipo: user.creatureData.tipo,
         radius: 8,
-        atravessa: 10,
+        atravessa: 100,
       ),
     );
 
@@ -56,7 +56,7 @@ class EsquivaTornado extends Ability {
 
     user.add(
       MoveByEffect(
-        -dir.normalized() * distancia,
+        dir.normalized() * distancia,
         EffectController(duration: duracao),
         onComplete: () {},
       ),

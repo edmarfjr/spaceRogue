@@ -837,8 +837,9 @@ class CreaturesRogueGame extends FlameGame
       // visível. `onGameResize` chama `_handleResize` por dentro, então é o
       // jeito de forçar o tamanho certo sem cair nesse descompasso.
       gameCamera.viewport.onGameResize(Vector2.all(ladoVidro));
-      gameCamera.viewport.position = Vector2(vidroLeft, 0);
-      slotsTop = canvasSize.y - alturaBanda + 10;
+      // 16px pra baixo, a pedido — não presa exatamente na borda superior.
+      gameCamera.viewport.position = Vector2(vidroLeft, 48);
+      slotsTop = canvasSize.y - alturaBanda + 58;
     }
 
     const margemEsquerda = 8.0;
