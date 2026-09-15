@@ -1,6 +1,7 @@
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/core/responsive.dart';
+import 'package:creatures_rogue/game/run_save.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
@@ -27,6 +28,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
 
   Future<void> _resetar() async {
     await CreatureProgress.instance.resetIntro();
+    await RunSave.instance.apagar();
     if (mounted) setState(() => _resetado = true);
   }
 

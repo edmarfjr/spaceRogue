@@ -13,7 +13,7 @@ import '../player/player.dart';
 /// Nenhum deles pede mira: os dois polegares já estão ocupados (joystick de um
 /// lado, habilidades do outro), então clicar num slot no meio da briga já custa
 /// movimento — pedir alvo em cima disso seria injogável.
-enum ConsumableType { pocao, escudo, congelar, mapa }
+enum ConsumableType { pocao, escudo, congelar, mapa, doce }
 
 extension ConsumableTypeData on ConsumableType {
   String get spritePath => switch (this) {
@@ -21,6 +21,7 @@ extension ConsumableTypeData on ConsumableType {
         ConsumableType.escudo => 'items/shell.png',
         ConsumableType.congelar => 'items/gelo.png',
         ConsumableType.mapa => 'items/mapa.png',
+        ConsumableType.doce => 'items/doce.png',
       };
 
   Color get cor1 => switch (this) {
@@ -28,6 +29,7 @@ extension ConsumableTypeData on ConsumableType {
         ConsumableType.escudo => Palette.indigo,
         ConsumableType.congelar => Palette.azul,
         ConsumableType.mapa => Palette.bege,
+        ConsumableType.doce => Palette.azul,
       };
 
   Color get cor2 => switch (this) {
@@ -35,6 +37,7 @@ extension ConsumableTypeData on ConsumableType {
         ConsumableType.escudo => Palette.royal,
         ConsumableType.congelar => Palette.royal,
         ConsumableType.mapa => Palette.marromEsc,
+        ConsumableType.doce => Palette.royal,
       };
 
   /// Texto mostrado acima do jogador quando o item faz efeito de verdade
@@ -46,6 +49,7 @@ extension ConsumableTypeData on ConsumableType {
       ConsumableType.escudo => l.effect_escudoAtivo,
       ConsumableType.congelar => l.effect_inimigosCongelados,
       ConsumableType.mapa => l.effect_mapaRevelado,
+      ConsumableType.doce => '15 XP',//l.effect_doce,
     };
   }
 
@@ -65,13 +69,17 @@ extension ConsumableTypeData on ConsumableType {
       case ConsumableType.pocao:
         sucesso = player.heal(4);
       case ConsumableType.escudo:
-        player.shieldHits = 3;
-        player.shieldVisualActive = true;
+        // Escudo sem prazo: empilha com a bolha de habilidade em vez de
+        // sobrescrevê-la, e é o ÚLTIMO a ser gasto — golpe leva primeiro o
+        // escudo temporário, que ia expirar sozinho de qualquer jeito.
+        player.adicionarEscudoPermanente(1);
         sucesso = true;
       case ConsumableType.congelar:
         sucesso = player.congelarInimigos(3.0);
       case ConsumableType.mapa:
         sucesso = player.revelarMapa();
+      case ConsumableType.doce:
+        sucesso = player.ganharXp(15);
     }
 
     if (sucesso) {

@@ -17,7 +17,7 @@ class RajadaDeBrasaEvo extends Ability {
     this.coef = 0.7,
     this.anguloLequeGraus = 18,
     this.alcanceSegundos = 0.5,
-  }) : super(nome: 'Rajada de Brasa+', cooldown: 0.8);
+  }) : super(nome: 'Rajada de Brasa+', cooldown: 0.3, custoEnergia: 3.0);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
@@ -14,15 +16,18 @@ class BicoEletrico extends Ability {
   final double kbForce;
 
   const BicoEletrico({this.coef = 1.0, this.velocidade = 260, this.alcanceSegundos = 0.25, this.kbForce = 5})
-      : super(nome: 'Bico Elétrico', descricao: 'Cooldown baixíssimo, dano baixo — o DPS vem do volume de disparos.', cooldown: 0.25);
+      : super(nome: 'Bico Elétrico', descricao: 'bicadas elétricas velozes.', cooldown: 0.2, custoEnergia: 1.5);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
+    final anguloGraus = Random().nextDouble() * 30 - 15; // Random angle between -15 and 15 degrees
+    final anguloRad = anguloGraus * pi / 180;
+    final rotated = dir.clone()..rotate(anguloRad);
     user.parent?.add(Projectile(
       owner: user,
       position: user.position.clone(),
-      direction: dir,
+      direction: rotated,
       speed: velocidade,
       dmg: dano,
       sprPath: 'projeteis/proj2.png',

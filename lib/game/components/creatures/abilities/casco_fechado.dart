@@ -8,12 +8,12 @@ class CascoFechado extends Ability {
   final double reducaoDano;
   final double duracao;
 
-  const CascoFechado({this.reducaoDano = 1, this.duracao = 0.5})
+  const CascoFechado({this.reducaoDano = 1, this.duracao = 1.0})
     : super(
         nome: 'Casco Fechado',
         descricao:
             'Fecha o casco: imune a dano e reflete projéteis, mas fica parado.',
-        cooldown: 1.5,
+        cooldown: 2.0,
         tipo: AbilityTipo.defesa,
       );
 

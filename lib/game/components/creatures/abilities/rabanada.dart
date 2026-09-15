@@ -15,6 +15,7 @@ class Rabanada extends Ability {
         nome: 'Rabanada',
         descricao: 'Golpe de cauda em área curta.',
         cooldown: 0.9,
+        custoEnergia: 2.5,
       );
 
   @override

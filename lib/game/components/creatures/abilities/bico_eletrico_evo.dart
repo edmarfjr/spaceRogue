@@ -19,11 +19,14 @@ class BicoEletricoEvo extends Ability {
     this.alcanceSegundos = 0.25,
     this.duracaoStun = 0.6,
     this.kbForce = 7,
-  }) : super(nome: 'Bico Elétrico+', cooldown: 0.2);
+  }) : super(nome: 'Bico Elétrico+', cooldown: 0.15, custoEnergia: 1.5);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
+    final anguloGraus = Random().nextDouble() * 20 - 10; // Random angle between -10 and 10 degrees
+    final anguloRad = anguloGraus * pi / 180;
+    final rotated = dir.clone()..rotate(anguloRad);
     double stunChance = Random().nextDouble();
     double stunDur = 0;
     if (stunChance <= 0.2){
@@ -33,7 +36,7 @@ class BicoEletricoEvo extends Ability {
       Projectile(
         owner: user,
         position: user.position.clone(),
-        direction: dir,
+        direction: rotated,
         speed: velocidade,
         dmg: dano,
         kbForce: kbForce,

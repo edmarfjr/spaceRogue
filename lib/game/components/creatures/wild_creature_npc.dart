@@ -49,7 +49,14 @@ class WildCreatureNpc extends PositionComponent
 
     _visual = SpriteComponent(
       sprite: Sprite(spriteImage),
-      size: size,
+      // Mesma regra do `Player`: o visual usa a resolução do PNG, não o
+      // `size` do componente — hoje toda selvagem é forma base (16x16), mas
+      // uma evoluída apareceria espremida aqui pelo mesmo motivo que já
+      // aconteceu com três evoluções no jogador.
+      size: Vector2(
+        spriteImage.width.toDouble(),
+        spriteImage.height.toDouble(),
+      ),
       anchor: Anchor.bottomCenter,
       position: visualBasePosition,
       paint: Paint()..filterQuality = FilterQuality.none,

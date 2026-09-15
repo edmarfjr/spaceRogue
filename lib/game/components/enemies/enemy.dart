@@ -308,7 +308,7 @@ abstract class Enemy extends PositionComponent
     }
     if (stunTimer > 0) {
       stunTimer -= dt;
-      updateWanderMovement(dt, minPause: 0.0, maxPause: 0.2);
+      updateWanderMovement(dt, minPause: 0.2, maxPause: 0.5,minMove: 0.2, maxMove: 0.5);
       return;
     }
     if (fearTimer > 0) {
@@ -437,7 +437,7 @@ abstract class Enemy extends PositionComponent
     parent?.add(
       Projectile(
         owner: this,
-        position: position.clone() + direction * size.x / 2,
+        position: position.clone() + direction * size.x,
         direction: direction,
         isEnemy: true,
         speed: bltSpeed,
@@ -479,7 +479,7 @@ abstract class Enemy extends PositionComponent
     GameAudio.instance.play(Sfx.hit);
 
     var critChance = Random().nextDouble() * 100;
-    if (playerTarget.critChance >= critChance) {
+    if ((playerTarget.critChance + playerTarget.creatureData.stats.critBonus) >= critChance) {
       amountFinal *= playerTarget.critMult;
       corTxt = Palette.vermelho;
       //print('crit $critChance');

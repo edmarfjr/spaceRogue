@@ -6,7 +6,6 @@ import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/effects/sprite_effect.dart';
 import 'package:creatures_rogue/game/components/map/obstacle.dart';
 import 'package:creatures_rogue/game/components/map/room_component.dart';
-import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
 
 /// Contrato que os cinco mixins de IA em `enemy_mixins.dart`
 /// (`GridMovement`, `WanderMovement`, `ShooterAttack`, `ChaseMovement`,
@@ -88,7 +87,7 @@ mixin MovementHost on PositionComponent {
 
     final localColliders = room.children
         .whereType<PositionComponent>()
-        .where((c) => c is WallBarrier || c is Obstacle);
+        .where((c) => barraMovimento(c, isAirborne: isAirborne));
 
     final p = parent;
     final worldRocks = p == null
@@ -116,7 +115,6 @@ mixin MovementHost on PositionComponent {
     );
 
     for (final child in roomColliders) {
-      if ((pulando || isAirborne) && child is Obstacle) continue;
       if (child.toAbsoluteRect().overlaps(futureRect)) return false;
     }
 

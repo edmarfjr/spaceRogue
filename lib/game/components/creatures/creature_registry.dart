@@ -136,7 +136,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) =>
         RoedorFogoEnemy(position: pos, playerTarget: plr),
-    spriteSize: Vector2(24, 24),
   );
 
   static final CreatureData tartarugaPlanta = CreatureData(
@@ -171,7 +170,6 @@ class CreatureRegistry {
     hitboxSize: Vector2(14, 14),
     enemyBuilder: (pos, plr) =>
         TartarugaPlantaEnemy(position: pos, playerTarget: plr),
-    spriteSize: Vector2(24, 24),
   );
 
   static final CreatureData sapoAgua = CreatureData(
@@ -204,7 +202,6 @@ class CreatureRegistry {
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(12, 10),
     enemyBuilder: (pos, plr) => SapoAguaEnemy(position: pos, playerTarget: plr),
-    spriteSize: Vector2(24, 24),
   );
 
   static final CreatureData aveEletrica = CreatureData(
@@ -214,7 +211,7 @@ class CreatureRegistry {
     tipo: CreatureType.eletrico,
     corClara: Palette.amarelo,
     corEscura: Palette.pumpkin,
-    stats: BaseStats(maxHp: 4, speed: 80, defesa: 1, ataque: 1),
+    stats: BaseStats(maxHp: 4, speed: 80, defesa: 1, ataque: 1, critBonus: 5),
     ability1: BicoEletrico(),
     ability2: CorrenteEstatica(),
     moveAnim: MovementAnimation.flutuar,
@@ -239,12 +236,11 @@ class CreatureRegistry {
     hitboxSize: Vector2(9, 11),
     enemyBuilder: (pos, plr) =>
         AveEletricaEnemy(position: pos, playerTarget: plr),
-    spriteSize: Vector2(24, 24),
   );
 
   static final CreatureData cobraAgua = CreatureData(
     id: 'cobra_agua',
-    nome: 'Cobra de Água',
+    nome: 'Seadracon',
     spritePath: 'actors/cobraAgua.png',
     tipo: CreatureType.agua,
     corClara: Palette.azul,
@@ -261,7 +257,7 @@ class CreatureRegistry {
 
   static final CreatureData cobraAguaEvo = CreatureData(
     id: 'cobra_agua',
-    nome: 'Cobra de Água Evoluida',
+    nome: 'Seadracon',
     spritePath: 'actors/cobraAguaEvo.png',
     tipo: CreatureType.agua,
     corClara: Palette.azul,
@@ -273,12 +269,11 @@ class CreatureRegistry {
     hitboxSize: Vector2(14, 14),
     enemyBuilder: (pos, plr) =>
         CobraAguaEnemy(position: pos, playerTarget: plr),
-    spriteSize: Vector2(24, 24),
   );
 
   static final CreatureData ursoPlanta = CreatureData(
     id: 'urso_planta',
-    nome: 'Urso de Planta',
+    nome: 'Panjoin',
     spritePath: 'actors/ursoPlanta.png',
     tipo: CreatureType.planta,
     corClara: Palette.bege,
@@ -295,7 +290,7 @@ class CreatureRegistry {
 
   static final CreatureData ursoPlantaEvo = CreatureData(
     id: 'urso_planta',
-    nome: 'Urso de Planta Evoluido',
+    nome: 'Panjoin',
     spritePath: 'actors/ursoPlantaEvo.png',
     tipo: CreatureType.planta,
     corClara: Palette.verde,
@@ -307,12 +302,11 @@ class CreatureRegistry {
     hitboxSize: Vector2(14, 14),
     enemyBuilder: (pos, plr) =>
         UrsoPlantaEnemy(position: pos, playerTarget: plr),
-    spriteSize: Vector2(24, 24),
   );
 
   static final CreatureData griloEletrico = CreatureData(
     id: 'grilo_eletrico',
-    nome: 'Grilo Eletrico',
+    nome: 'Hicrick',
     spritePath: 'actors/griloEletric.png',
     tipo: CreatureType.eletrico,
     corClara: Palette.laranja,
@@ -329,7 +323,7 @@ class CreatureRegistry {
 
   static final CreatureData griloEletricoEvo = CreatureData(
     id: 'grilo_eletrico',
-    nome: 'Grilo Eletrico Evoluido',
+    nome: 'Hicrick',
     spritePath: 'actors/griloEletricEvo.png',
     tipo: CreatureType.eletrico,
     corClara: Palette.laranja,
@@ -346,7 +340,7 @@ class CreatureRegistry {
 
   static final CreatureData tornadoFogo = CreatureData(
     id: 'tornado_fogo',
-    nome: 'Tornado de Fogo',
+    nome: 'Flamenado',
     spritePath: 'actors/furacFogo.png',
     tipo: CreatureType.fogo,
     corClara: Palette.vermelho,
@@ -363,7 +357,7 @@ class CreatureRegistry {
 
   static final CreatureData tornadoFogoEvo = CreatureData(
     id: 'tornado_fogo',
-    nome: 'Tornado de Fogo',
+    nome: 'Flamenado',
     spritePath: 'actors/furacFogoEvo.png',
     tipo: CreatureType.fogo,
     corClara: Palette.vermelho,
@@ -380,7 +374,7 @@ class CreatureRegistry {
 
   static final CreatureData bombaFogo = CreatureData(
     id: 'bomba_fogo',
-    nome: 'Bomba de Fogo',
+    nome: 'Granadin',
     spritePath: 'actors/bombaFogo.png',
     tipo: CreatureType.fogo,
     corClara: Palette.burgundy,
@@ -397,7 +391,7 @@ class CreatureRegistry {
 
   static final CreatureData bombaFogoEvo = CreatureData(
     id: 'bomba_fogo',
-    nome: 'Bomba de Fogo',
+    nome: 'Granadin',
     spritePath: 'actors/bombaFogoEvo.png',
     tipo: CreatureType.fogo,
     corClara: Palette.burgundy,
@@ -414,7 +408,7 @@ class CreatureRegistry {
 
   static final CreatureData slimePlanta = CreatureData(
     id: 'slime_planta',
-    nome: 'Slime de Planta',
+    nome: 'Slimo',
     spritePath: 'actors/slimePlanta.png',
     tipo: CreatureType.planta,
     corClara: Palette.verde,
@@ -431,7 +425,7 @@ class CreatureRegistry {
 
   static final CreatureData ouricoEletrico = CreatureData(
     id: 'ourico_eletrico',
-    nome: 'Ouriço Elétrico',
+    nome: 'Jolthog',
     spritePath: 'actors/ouricoEletric.png',
     tipo: CreatureType.eletrico,
     corClara: Palette.amarelo,
@@ -448,7 +442,7 @@ class CreatureRegistry {
 
   static final CreatureData caranguejoErmitao = CreatureData(
     id: 'caranguejo_fogo',
-    nome: 'Caranguejo Ermitão de Fogo',
+    nome: 'Hermiton',
     spritePath: 'actors/caranguejoFogo.png',
     tipo: CreatureType.fogo,
     corClara: Palette.vermelho,
@@ -465,7 +459,7 @@ class CreatureRegistry {
 
   static final CreatureData pinguimAgua = CreatureData(
     id: 'pinguim_agua',
-    nome: 'Pinguim de Agua',
+    nome: 'Penpin',
     spritePath: 'actors/pinguimAgua.png',
     tipo: CreatureType.agua,
     corClara: Palette.azul,

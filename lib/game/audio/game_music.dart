@@ -28,6 +28,11 @@ class GameMusic {
     if (!enabled || _current == asset) return;
     _current = asset;
     try {
+      // Mesmo motivo do achado #7 em `GameAudio`: o `AudioPlayer` do `Bgm`
+      // vem com um `FramePositionUpdater`, que faz uma chamada de canal de
+      // plataforma por quadro enquanto toca. A música toca em loop, então
+      // aqui esse custo seria permanente, não só em combate.
+      FlameAudio.bgm.audioPlayer.positionUpdater = null;
       await FlameAudio.bgm.play(asset, volume: volume);
     } catch (_) {
       _current = null;

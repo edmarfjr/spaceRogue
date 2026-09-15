@@ -28,20 +28,15 @@ class EscudoDeEspinhos extends Ability {
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
-    user.shieldHits = golpes;
-    user.shieldVisualActive = true;
-    user.retaliaEspinhos = true;
+    user.adicionarEscudoTemporario(#escudoDeEspinhos, golpes, duracao);
+
     user.retaliaDano = user.creatureData.stats.ataque * coefDano;
     user.retaliaStunDuration = duracaoStun;
-
-    Future.delayed(Duration(milliseconds: (duracao * 1000).round()), () {
-      if (user.isMounted) {
-        if (user.shieldHits > 0) {
-          user.shieldHits = 0;
-          user.shieldVisualActive = false;
-        }
-        user.retaliaEspinhos = false;
-      }
-    });
+    user.aplicarEfeito(
+      #retaliaEspinhos,
+      duracao,
+      aoIniciar: () => user.retaliaEspinhos = true,
+      aoTerminar: () => user.retaliaEspinhos = false,
+    );
   }
 }

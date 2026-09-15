@@ -21,6 +21,7 @@ class BicadaRapida extends Ability {
          nome: 'Bicada Rápida',
          descricao: 'Cadência altíssima, dano baixo por tiro.',
          cooldown: 0.25,
+         custoEnergia: 1.0,
        );
 
   @override

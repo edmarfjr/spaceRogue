@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
 import 'dart:ui' as ui;
 import 'package:creatures_rogue/game/components/items/coin_pickup.dart';
 import 'package:creatures_rogue/game/components/utils/y_sort.dart';
@@ -225,4 +226,29 @@ class Cogumelos extends Obstacle {
          size: size ?? Vector2(16, 16),
          collisionType: CollisionType.active,
        );
+}
+
+/// Este componente barra o movimento de quem está a [isAirborne] do chão?
+///
+/// Regra ÚNICA de solidez do mapa. Existia duplicada em `dashOffsetLivre`
+/// (dash do jogador) e em `MovementHost.roomColliders` (IA dos inimigos), e as
+/// duas cópias divergiram: a do dash foi corrigida, a da IA continuou tratando
+/// TODO `Obstacle` como sólido — inclusive [Grama] e [ChaoCave], que são
+/// decoração de chão. Num bioma que forra a sala com esses tiles, nenhum pouso
+/// de salto era válido e os inimigos saltadores pulavam no lugar.
+///
+/// - [WallBarrier]: sempre sólido.
+/// - [GramaAlta]/[Cogumelos]: nunca sólidos (andáveis; só atrapalham).
+/// - [Hole]: sólido só pra quem anda no chão.
+/// - Resto dos [Obstacle] (Rock, Door, Pedestal...): usa o `collisionType` AO
+///   VIVO do hitbox. Grama/ChaoCave são `inactive` e nunca colidem de
+///   verdade; Door alterna passive/inactive ao abrir e fechar, e o campo
+///   `collisionType` (fixo, só guarda o valor da construção) não acompanha —
+///   só `hitbox.collisionType` está sempre atualizado.
+bool barraMovimento(PositionComponent c, {required bool isAirborne}) {
+  if (c is WallBarrier) return true;
+  if (c is GramaAlta || c is Cogumelos) return false;
+  if (c is Hole) return !isAirborne;
+  if (c is Obstacle) return c.hitbox.collisionType != CollisionType.inactive;
+  return false;
 }

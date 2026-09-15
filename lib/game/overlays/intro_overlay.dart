@@ -280,6 +280,7 @@ class _IntroOverlayState extends State<IntroOverlay> {
           ),
           const SizedBox(height: 8),
           botao,
+          const SizedBox(height: 100),
         ],
       );
     }
@@ -492,11 +493,13 @@ class _FaixaDetalhe extends StatelessWidget {
     // alta que o conteúdo precisa (a esticada da paisagem), em vez de
     // deixar tudo colado no topo com um vão embaixo.
     return Container(
+      width: Responsive.largura(context, 520),
+      height: Responsive.largura(context, 520),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: const BoxDecoration(
         borderRadius: BorderRadius.zero,
         border: Border.fromBorderSide(
-          BorderSide(color: Palette.preto, width: 2),
+          BorderSide(color: Palette.preto, width: 4),
         ),
       ),
       child: Center(

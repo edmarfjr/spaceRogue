@@ -13,20 +13,14 @@ class BolhaProtetoraEvo extends Ability {
     : super(
         nome: 'Bolha Reforçada',
         descricao: 'Escudo reforçado: absorve dois golpes e dura mais.',
-        cooldown: 6.0,
+        cooldown: 7.0,
         tipo: AbilityTipo.defesa,
       );
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
-    user.shieldHits = hits;
-    user.shieldVisualActive = true;
-
-    Future.delayed(Duration(milliseconds: (duracao * 1000).round()), () {
-      if (user.isMounted && user.shieldHits > 0) {
-        user.shieldHits = 0;
-        user.shieldVisualActive = false;
-      }
-    });
+    // Mesma chave da forma base: as duas são A bolha do Sapo, e a criatura
+    // nunca tem as duas ao mesmo tempo (evolução troca a habilidade).
+    user.adicionarEscudoTemporario(#bolhaProtetora, hits, duracao);
   }
 }

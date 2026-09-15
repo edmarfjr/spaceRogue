@@ -25,7 +25,7 @@ class DungeonTheme {
       corClara: Palette.marromEsc, 
       corEscura: Palette.chocolate,
       corBranca: Palette.pumpkin,
-      corChao: Palette.marromEsc,
+      corChao: Palette.chocolate,
     ),
     DungeonTheme(
       corClara: Palette.verdeEsc, 

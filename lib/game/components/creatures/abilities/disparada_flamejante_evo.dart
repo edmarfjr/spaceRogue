@@ -1,4 +1,5 @@
 import 'package:creatures_rogue/game/components/effects/dot.dart';
+import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
@@ -16,16 +17,18 @@ class DisparadaFlamejanteEvo extends Ability {
   final double duracao;
   final double coefRastro;
   final double coefExplosaoFinal;
+  final int pontosDoRastro;
 
   const DisparadaFlamejanteEvo({
     this.distancia = 48,
     this.duracao = 0.2,
     this.coefRastro = 0.8,
     this.coefExplosaoFinal = 1.4,
+    this.pontosDoRastro = 8,
   }) : super(
          nome: 'Disparada Flamejante+',
          descricao:
-             'Dash maior com i-frames; o rastro queima mais e termina num estouro.',
+             'Esquiva maior ; o rastro queima mais e termina num estouro.',
          cooldown: 1.3,
          target: AbilityTarget.plrDir,
          tipo: AbilityTipo.esquiva,
@@ -53,6 +56,31 @@ class DisparadaFlamejanteEvo extends Ability {
       add: (g) => user.parent?.add(g),
       overDuration: duracao,
     );
+    final danoRastro = user.creatureData.stats.ataque * coefRastro;
+    for (int i = 1; i <= pontosDoRastro; i++) {
+      final delayMs = (duracao * i / (pontosDoRastro + 1) * 1000).round();
+      Future.delayed(Duration(milliseconds: delayMs), () {
+        if (!user.isMounted) return;
+        user.parent?.add(
+          Projectile(
+            owner: user,
+            position: user.position.clone(),
+            direction: Vector2.zero(),
+            speed: 0,
+            lifeTime: 3,
+            dmg: danoRastro,
+            sprPath: 'projeteis/fogo.png',
+            cor1: Palette.vermelho,
+            cor2: Palette.laranja,
+            tipo: user.creatureData.tipo,
+            radius: 6,
+            atravessa: 100,
+            dotKind: DotKind.queimadura,
+            dotTicks: 5,
+          ),
+        );
+      });
+    }
 
     user.add(
       MoveByEffect(

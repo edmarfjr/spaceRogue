@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 import 'dart:math';
 import 'dart:ui' as ui;
 
@@ -47,6 +48,7 @@ import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:creatures_rogue/game/run_save.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'components/player/player.dart';
+import 'package:creatures_rogue/game/components/items/item_efeito.dart';
 
 /// Como o jogador aciona as duas habilidades. Os dois caminhos convivem no
 /// código; quem escolhe é `CreaturesRogueGame.controlScheme`, ajustado pelo
@@ -206,9 +208,57 @@ class CreaturesRogueGame extends FlameGame
   /// Tocar o retrato já ativo não faz nada (sem postura pra ciclar). Tocar um
   /// slot vazio, ou uma criatura já derrotada (vida 0, sem cura passiva pra
   /// trazer de volta), também não.
+  /// Itens com gatilho que AINDA podem aparecer nesta run.
+  ///
+  /// Sai da pool quando um pedestal OFERECE o item, não quando o jogador o
+  /// pega: um item deixado pra trás na sala já foi a chance dele. Consumíveis
+  /// e power-ups de stat não passam por aqui de propósito — eles repetem à
+  /// vontade, porque empilhar +dano de novo é um upgrade válido, enquanto ter
+  /// dois Estilhaço dispararia o mesmo gancho duas vezes.
+  final List<ItemEfeito> poolItens = [];
+
+  /// Tira um item da pool e devolve, ou `null` se a run já viu todos — nesse
+  /// caso o pedestal cai de volta em consumível/power-up. Usado por quem
+  /// ENTREGA o item na hora (pedestal): a oferta e a retirada são o mesmo ato.
+  ItemEfeito? sortearItemEfeito() {
+    if (poolItens.isEmpty) return null;
+    return poolItens.removeAt(_poolRandom.nextInt(poolItens.length));
+  }
+
+  /// Escolhe um item da pool SEM tirar — pra quem expõe uma oferta que pode
+  /// não se concretizar (a loja: o jogador pode não ter moeda). Quem espia
+  /// precisa chamar [consumirItemEfeito] na hora que a oferta virar entrega.
+  ItemEfeito? espiarItemEfeito() {
+    if (poolItens.isEmpty) return null;
+    return poolItens[_poolRandom.nextInt(poolItens.length)];
+  }
+
+  /// Tira [item] da pool. Devolve false se ele já não estava lá — o que
+  /// significa que outra fonte (um pedestal) entregou o mesmo item enquanto a
+  /// loja ainda o exibia. Nesse caso a venda deve ser RECUSADA: dois do mesmo
+  /// item na lista disparariam o gancho duas vezes por evento.
+  bool consumirItemEfeito(ItemEfeito item) =>
+      poolItens.remove(item);
+
+  final Random _poolRandom = Random();
+
+  /// Só a troca MANUAL respeita o cooldown. A troca forçada por desmaio
+  /// (`pocketarSlotAtivo`) ignora: ali não há escolha, e travá-la deixaria o
+  /// jogador sem criatura em campo.
+  static const double trocaCooldownMax = 3.0;
+  double trocaCooldown = 0.0;
+
+  /// 0 = pronto pra trocar, 1 = acabou de trocar. Pra indicador da Hud.
+  double get trocaCooldownFraction =>
+      (trocaCooldown / trocaCooldownMax).clamp(0.0, 1.0);
+
   void onTapCompanionSlot(int slot) {
     if (slot == companionAtivoIndex) return;
-    if (slotDisponivel(slot)) _trocarParaSlot(slot);
+    if (trocaCooldown > 0) return;
+    if (slotDisponivel(slot)) {
+      trocaCooldown = trocaCooldownMax;
+      _trocarParaSlot(slot);
+    }
   }
 
   /// A ativa bateu 0 de vida em combate (chamado por `Player.takeDamage`):
@@ -463,6 +513,10 @@ class CreaturesRogueGame extends FlameGame
       companionEvoluida[i] = false;
     }
     companionAtivoIndex = 0;
+    poolItens
+      ..clear()
+      ..addAll(ItemEfeitoRegistry.todos);
+    trocaCooldown = 0.0;
     dungeonWorld.children.whereType<Player>().toList().forEach(
       (p) => p.removeFromParent(),
     );
@@ -480,7 +534,7 @@ class CreaturesRogueGame extends FlameGame
     _runStarted = true;
     player.position = Vector2(
       RoomComponent.roomWidth / 2,
-      RoomComponent.roomHeight / 2,
+      RoomComponent.centerY,
     );
     dungeonWorld.add(player);
 
@@ -656,9 +710,39 @@ class CreaturesRogueGame extends FlameGame
     player.currentHealth = (j['vida'] as num).toDouble();
     player.shieldMax = (j['shieldMax'] as num).toDouble();
     player.shield = (j['shield'] as num).toDouble();
+    // Save antigo (anterior ao bônus de item) não tem as chaves: cai em 0, que
+    // é o mesmo que "nenhum upgrade de HP/escudo pego" — o total salvo acima
+    // continua valendo, só não se recompõe na próxima troca daquela run.
+    player.bonusHpItens = (j['bonusHp'] as num?)?.toDouble() ?? 0.0;
+    player.bonusShieldItens = (j['bonusShield'] as num?)?.toDouble() ?? 0.0;
+    final poolSalva = dados['poolItens'] as List?;
+    poolItens
+      ..clear()
+      ..addAll(
+        poolSalva == null
+            // Save anterior à pool: o que a run já ofereceu se perdeu, então
+            // o melhor palpite é "tudo menos o que o jogador está carregando".
+            ? ItemEfeitoRegistry.todos
+            : poolSalva.cast<String>().map(ItemEfeitoRegistry.porId).nonNulls,
+      );
+
+    player.itens
+      ..clear()
+      ..addAll(
+        ((j['itens'] as List?) ?? const [])
+            .cast<String>()
+            .map(ItemEfeitoRegistry.porId)
+            .nonNulls,
+      );
+    poolItens.removeWhere((i) => player.itens.any((p) => p.id == i.id));
     player.velMult = (j['velMult'] as num).toDouble();
     player.cdMult = (j['cdMult'] as num).toDouble();
     Player.danoMult = (j['danoMult'] as num).toDouble();
+    // Save anterior aos upgrades de energia: cai no padrão da criatura.
+    player.energiaMax =
+        (j['energiaMax'] as num?)?.toDouble() ?? energiaMaxPadrao;
+    player.energiaRegen =
+        (j['energiaRegen'] as num?)?.toDouble() ?? energiaRegenPorSegundo;
     player.critChance = (j['critChance'] as num).toDouble();
     player.critMult = (j['critMult'] as num).toDouble();
     player.bombsAmount = j['bombs'] as int;
@@ -691,6 +775,7 @@ class CreaturesRogueGame extends FlameGame
     return {
       'dungeon': currentLevel,
       'andar': currentFloor,
+      'poolItens': poolItens.map((i) => i.id).toList(),
       'bossId': runBoss?.creatureId,
       'ativo': companionAtivoIndex,
       'grupo': [
@@ -708,9 +793,14 @@ class CreaturesRogueGame extends FlameGame
         'vida': player.currentHealth,
         'shieldMax': player.shieldMax,
         'shield': player.shield,
+        'bonusHp': player.bonusHpItens,
+        'bonusShield': player.bonusShieldItens,
+        'itens': player.itens.map((i) => i.id).toList(),
         'velMult': player.velMult,
         'cdMult': player.cdMult,
         'danoMult': Player.danoMult,
+        'energiaMax': player.energiaMax,
+        'energiaRegen': player.energiaRegen,
         'critChance': player.critChance,
         'critMult': player.critMult,
         'bombs': player.bombsAmount,
@@ -852,7 +942,7 @@ class CreaturesRogueGame extends FlameGame
         const margemBorda = 5.0;
         botao.position = Vector2(
           canvasSize.x - margemBorda - botao.size.x,
-          (canvasSize.y - alturaBanda) + (alturaBanda - botao.size.y) / 2,
+          (canvasSize.y - alturaBanda) + (alturaBanda - botao.size.y) / 3,
         );
       }
     }
@@ -1374,6 +1464,7 @@ class CreaturesRogueGame extends FlameGame
       return;
     }
     super.update(dt);
+    if (trocaCooldown > 0) trocaCooldown -= dt;
     _checkCameraTransition();
     // Rede de segurança pro layout RETRATO x PAISAGEM (ver doc de
     // `_reflowControles`): reafirma a cada frame, não só no resize — barato
@@ -1401,6 +1492,7 @@ class CreaturesRogueGame extends FlameGame
   /// quem realmente troca o andar é o `aoFechar` de [LevelTransitionOverlay],
   /// disparado no instante em que a tela fica 100% preta.
   void startLevelTransition() {
+    player.naoMove = true;
     gameCamera.viewport.add(
       LevelTransitionOverlay(
         player: player,
@@ -1462,7 +1554,7 @@ class CreaturesRogueGame extends FlameGame
     // Volta o jogador para o centro lógico da fase (Sala Inicial)
     player.position = Vector2(
       RoomComponent.roomWidth / 2,
-      RoomComponent.roomHeight / 2,
+      RoomComponent.centerY,
     );
     currentRoomIndex = Vector2.zero();
 
@@ -1486,6 +1578,8 @@ class CreaturesRogueGame extends FlameGame
     }
 
     unawaited(_salvarProgresso());
+
+    player.naoMove = false;
   }
 
   /// Chamado pelo `Player.onDeath` quando a vida chega a zero. Congela o jogo
@@ -1513,7 +1607,10 @@ class CreaturesRogueGame extends FlameGame
 
   /// Empurra o jogador de volta pro interior da sala trancada. Trabalha na
   /// hitbox dos pés, a mesma que as paredes bloqueiam, e usa a espessura de
-  /// parede (16px) como borda.
+  /// parede (16px) como borda — exceto em cima, que soma também a faixa
+  /// reservada pra HUD (`RoomComponent.topoHud`, sem parede/colisão nenhuma),
+  /// senão esta função empurrava o jogador só até essa faixa vazia, atrás da
+  /// HUD, em vez de até a parede/porta de verdade.
   void _prendeJogadorNaSala(
     double roomLeft,
     double roomTop,
@@ -1521,6 +1618,7 @@ class CreaturesRogueGame extends FlameGame
     double roomBottom,
   ) {
     const double parede = 16.0;
+    final double paredeTopo = RoomComponent.topoHud + parede;
     final pes = player.physicsHitbox.toAbsoluteRect();
 
     double dx = 0;
@@ -1532,8 +1630,8 @@ class CreaturesRogueGame extends FlameGame
       dx = (roomRight - parede) - pes.right;
     }
 
-    if (pes.top < roomTop + parede) {
-      dy = (roomTop + parede) - pes.top;
+    if (pes.top < roomTop + paredeTopo) {
+      dy = (roomTop + paredeTopo) - pes.top;
     } else if (pes.bottom > roomBottom - parede) {
       dy = (roomBottom - parede) - pes.bottom;
     }
@@ -1631,7 +1729,16 @@ class CreaturesRogueGame extends FlameGame
       } else if (newRoomX < currentRoomIndex.x) {
         player.position.x -= pes.right - (roomLeft - threshold - margem);
       } else if (newRoomY > currentRoomIndex.y) {
-        player.position.y += (roomBottom + threshold + margem) - pes.top;
+        // Entrando pela porta de CIMA da sala nova: a sala nova reserva
+        // `RoomComponent.topoHud` (16px) no topo pra HUD, sem parede nem
+        // piso ali (ver RoomComponent) — pousar só `threshold+margem` além
+        // da borda (como antes) deixava o jogador dentro dessa faixa vazia,
+        // atrás da HUD, sem colisão nenhuma pra empurrá-lo pra fora. Soma
+        // `topoHud` pra pousar depois da faixa, no mesmo lugar relativo
+        // (dentro da linha da parede/porta) que já pousava antes.
+        player.position.y +=
+            (roomBottom + RoomComponent.topoHud + threshold + margem) -
+            pes.top;
       } else if (newRoomY < currentRoomIndex.y) {
         player.position.y -= pes.bottom - (roomTop - threshold - margem);
       }

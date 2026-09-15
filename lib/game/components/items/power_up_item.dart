@@ -6,7 +6,7 @@ import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'collectible.dart';
 import '../player/player.dart';
 
-enum PowerUpType { speedUp, fireRateUp, damageUp, hpUp, shieldUp, critChanceUp, critDamageUp }
+enum PowerUpType { speedUp, fireRateUp, damageUp, hpUp, shieldUp, critChanceUp, critDamageUp, energyUp, energyRegenUp }
 
 /// Sprite, cor e efeito de cada upgrade. Fica numa extension, e não dentro do
 /// [PowerUpItem], porque a loja também vende upgrades e precisa exatamente
@@ -20,6 +20,8 @@ extension PowerUpTypeData on PowerUpType {
         PowerUpType.shieldUp => 'items/garrafa.png',
         PowerUpType.critChanceUp => 'items/capsula.png',
         PowerUpType.critDamageUp => 'items/capsula.png',
+        PowerUpType.energyUp => 'items/garrafa.png',
+        PowerUpType.energyRegenUp => 'items/capsula.png',
       };
 
   Color get cor1 => switch (this) {
@@ -30,6 +32,8 @@ extension PowerUpTypeData on PowerUpType {
         PowerUpType.shieldUp => Palette.indigo,
         PowerUpType.critChanceUp => Palette.laranja,
         PowerUpType.critDamageUp => Palette.vermelho,
+        PowerUpType.energyUp => Palette.amarelo,
+        PowerUpType.energyRegenUp => Palette.laranja,
       };
 
   Color get cor2 => switch (this) {
@@ -40,6 +44,8 @@ extension PowerUpTypeData on PowerUpType {
         PowerUpType.shieldUp => Palette.azulEsc,
         PowerUpType.critChanceUp => Palette.laranja,
         PowerUpType.critDamageUp => Palette.vermelho,
+        PowerUpType.energyUp => Palette.laranja,
+        PowerUpType.energyRegenUp => Palette.marromEsc,
       };
 
   /// Texto mostrado acima do jogador ao pegar o upgrade.
@@ -53,6 +59,8 @@ extension PowerUpTypeData on PowerUpType {
       PowerUpType.shieldUp => l.effect_maisEscudoMaximo,
       PowerUpType.critChanceUp => l.effect_maisChanceCrit,
       PowerUpType.critDamageUp => l.effect_maisDanoCrit,
+      PowerUpType.energyUp => l.effect_maisEnergia,
+      PowerUpType.energyRegenUp => l.effect_maisRegenEnergia,
     };
   }
 
@@ -65,20 +73,29 @@ extension PowerUpTypeData on PowerUpType {
       case PowerUpType.fireRateUp:
         // Multiplica em vez de subtrair: dois upgrades nunca podem levar o
         // cooldown a zero (ou negativo, que travaria o indicador da Hud).
-        // `cdMult` reseta pra 1.0 em `Player.trocarCriatura` (PIVOT_CONTROLE_DIRETO.md
-        // §2.3) — o upgrade não atravessa a troca de criatura ativa, mesma
-        // regra que já valia quando isto vivia no companion.
         player.cdMult *= 0.88;
       case PowerUpType.damageUp:
         Player.danoMult += 0.15;
       case PowerUpType.hpUp:
+        // O bônus vai pro campo que sobrevive à troca E pro total de agora:
+        // `trocarCriatura` recompõe `maxHealth` como `stats.maxHp + bônus`.
+        player.bonusHpItens += 2;
         player.maxHealth += 2;
         player.currentHealth += 2;
       case PowerUpType.shieldUp:
+        player.bonusShieldItens += 1;
         player.shieldMax += 1;
         player.shield += 1;
       case PowerUpType.critChanceUp:
         player.critChance += 2.5;
+      case PowerUpType.energyUp:
+        // Soma o ganho também na energia ATUAL, igual ao `hpUp`: um teto maior
+        // que não enche na hora lê como se o item não tivesse feito nada.
+        final ganho = player.energiaMax * 0.20;
+        player.energiaMax += ganho;
+        player.energia += ganho;
+      case PowerUpType.energyRegenUp:
+        player.energiaRegen *= 1.25;
       case PowerUpType.critDamageUp:
         player.critMult += 0.50;
     }

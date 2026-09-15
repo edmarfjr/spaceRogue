@@ -22,7 +22,7 @@ class FolhasNavalha extends Ability {
     this.raio = 20,
     this.velocidadeAngular = 4.0,
     this.duracao = 4.0,
-  }) : super(nome: 'Folhas Navalha', descricao: 'Espinhos giram ao redor do usuário, acertando quem encostar.', cooldown: 6.5);
+  }) : super(nome: 'Folhas Navalha', descricao: 'Espinhos giram ao redor do usuário, acertando quem encostar.', cooldown: 6.5, custoEnergia: 10.0);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

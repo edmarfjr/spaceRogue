@@ -4,7 +4,7 @@ import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
 
 /// Bomba de Fogo — botão A. Deixa uma bomba no chão.
 class DeixarBombaEvo extends Ability {
-  const DeixarBombaEvo(): super(nome: 'Deixar Bomba', descricao: 'Deixa uma bomba no chão.', cooldown: 0.5, target: AbilityTarget.plrDir);
+  const DeixarBombaEvo(): super(nome: 'Deixar Bomba', descricao: 'Deixa uma bomba no chão.', cooldown: 0.5, custoEnergia: 1.5, target: AbilityTarget.plrDir);
 
   /// Sem bomba no contador do treinador, o botão não dispara e o cooldown
   /// não gira — habilidade inteira depende do recurso (ver PIVOT_TREINADOR.md

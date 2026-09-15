@@ -27,7 +27,7 @@ class TartarugaPlantaEnemy extends Enemy with ShooterAttack {
   }) : super(
          creature: CreatureRegistry.tartarugaPlanta,
          speed: 18.0,  // stats.speed 35 → a segunda mais lenta
-         health: 30,    // stats.maxHp 20 → tanque do elenco, escalado pro combate
+         health: 15,    // stats.maxHp 20 → tanque do elenco, escalado pro combate
          dmg: 1,
          bltSpeed: 55, // semente pesada e lenta
          bltImg: 'projeteis/proj1.png',

@@ -13,6 +13,11 @@ abstract class Ability {
   /// `ability2` são dado morto e não aparecem em nenhum card.
   final String descricao;
   final double cooldown;
+
+  /// Custo em energia pra disparar — só a `ability1` usa isto (ver
+  /// `Player.dispararAbility1`); `ability2` continua no `cooldown` de sempre.
+  /// 0 por padrão pras 16 `ability2`, que nunca leem este campo.
+  final double custoEnergia;
   final AbilityTarget target;
   final AbilityTipo tipo;
 
@@ -20,6 +25,7 @@ abstract class Ability {
     required this.nome,
     this.descricao = '',
     required this.cooldown,
+    this.custoEnergia = 0,
     this.target = AbilityTarget.enemyDir,
     this.tipo = AbilityTipo.ataque,
   });

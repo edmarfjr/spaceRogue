@@ -24,7 +24,7 @@ class JatoAquaticoEvo extends Ability {
     this.coef = 0.5,
     this.velocidade = 200,
     this.alcanceSegundos = 0.25,
-  }) : super(nome: "Jato d'Água", descricao: "Rajada curta de tiros em sequência.", cooldown: 1.5);
+  }) : super(nome: "Jato d'Água", descricao: "Rajada curta de tiros em sequência.", cooldown: 1.5, custoEnergia: 4.0);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

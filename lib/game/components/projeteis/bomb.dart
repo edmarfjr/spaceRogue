@@ -82,6 +82,7 @@ class Bomb extends SpriteAnimationComponent with CollisionCallbacks, HasGameRef 
       
     } else if (other is Enemy) {
       velocity.setZero();
+      _explode();
       
     } else if (other is WallBarrier || other is Obstacle) {
       velocity.setZero();

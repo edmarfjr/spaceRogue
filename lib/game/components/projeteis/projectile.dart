@@ -38,7 +38,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   double lentidaoFator;
   double stunDuration;
   double cegoDuracao;
-
+  double paralizDuracao;
   bool atravessaObstaculos;
 
   Map<PositionComponent,double> hits = {};
@@ -75,6 +75,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     this.lentidaoFator = 0.5,
     this.stunDuration = 0,
     this.cegoDuracao = 0,
+    this.paralizDuracao = 0,
     this.atravessaObstaculos = false,
     this.estilhaca = false,
     this.playSfx = true,
@@ -241,10 +242,11 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         if (kind != null) other.applyDot(kind, dotTicks);
         if (lentidaoDuracao > 0) other.applyLentidao(lentidaoDuracao, fator: lentidaoFator);
         if (cegoDuracao > 0) other.applyCego(cegoDuracao);
+        if (paralizDuracao > 0) other.applyParalise(paralizDuracao);
         if (stunDuration>0){
           other.applyStun(stunDuration);
         }
-
+        
         other.takeDamage(dmg * Player.danoMult, tipoAtacante: tipo);
         other.applyKnockback(absolutePosition, kbForce);
         atravessa--;
@@ -260,12 +262,16 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   }
 
   void refleteProjetil(PositionComponent owner) {
+    var dano = dmg;
+    if (owner is Player){
+      dano = owner.creatureData.stats.ataque;
+    }
     parent?.add(Projectile(
           owner: owner,
           position: position.clone(),
           direction: direction.clone()*-1,
           speed: speed,
-          dmg: dmg,
+          dmg: dano,
           kbForce: kbForce,
           lifeTime: lifeTimeIni,
           sprPath: sprPath,

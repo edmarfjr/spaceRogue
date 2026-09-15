@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'dart:math' as math;
 import 'package:creatures_rogue/game/components/map/spike_trap.dart';
 import 'package:flame/components.dart';
@@ -39,6 +40,20 @@ class RoomComponent extends PositionComponent with HasGameRef {
   static const double roomHeight = 16 * 12.0;
   static const double wallThickness = 16.0;
   static const double doorSize = 32.0;
+
+  /// Faixa reservada pra HUD no topo — a linha 0 de tiles (16px). Room em si
+  /// não cresce (a câmera é `withFixedResolution(roomWidth, roomHeight)`, e o
+  /// stride da grade de salas usa `roomHeight` também — crescer quebraria os
+  /// dois); a área jogável é que encolhe uma linha, de 10×10 pra 10×9 tiles.
+  /// Linha 0 fica sem parede/piso/colisão nenhuma — só fundo vazio, pra HUD
+  /// desenhar em cima sem disputar espaço com sprite de sala.
+  static const double topoHud = 16.0;
+
+  /// Centro vertical da área JOGÁVEL (linhas 1-11, y de 16 a 192) — usado
+  /// onde antes era `height / 2`, pra tudo que precisa ficar centralizado no
+  /// que sobrou depois da faixa da HUD (portas, obstáculos, spawns...).
+  /// `midX`/`width / 2` continuam valendo — só o eixo vertical mudou.
+  static const double centerY = (topoHud + roomHeight) / 2;
 
   /// Piso/paredes/grama ficam SEMPRE atrás de qualquer ator ou obstáculo
   /// Y-sorted — inclusive nas salas ao norte da origem, onde a coordenada Y
@@ -135,24 +150,12 @@ class RoomComponent extends PositionComponent with HasGameRef {
   }
 
   void _spawnTreasure() {
-    Vector2 centerPos = position + Vector2(width / 2, height / 2);
+    Vector2 centerPos = position + Vector2(width / 2, centerY);
 
-    // Sorteado entre TODOS os tipos: antes era `hpUp` fixo, então três dos
-    // quatro upgrades nunca apareciam no jogo.
-    final tipo = PowerUpType.values[_random.nextInt(PowerUpType.values.length)];
+    // O pedestal sorteia sozinho entre UPGRADE, CONSUMÍVEL e ITEM_EFEITO —
+    // ver `PedestalComponent.onLoad`, que é onde a pool da run fica acessível.
+    parent?.add(PedestalComponent(position: centerPos));
 
-    parent?.add(PedestalComponent(position: centerPos, powerUpType: tipo));
-
-    // Um item de uso único ao lado do pedestal — hoje é a única fonte deles,
-    // porque a recompensa de sala limpa é só moeda ou cura. Se preferir que os
-    // consumíveis venham só da loja, é esta chamada que sai.
-    parent?.add(
-      ConsumablePickup(
-        position: centerPos + Vector2(28, 0),
-        tipo: ConsumableType
-            .values[_random.nextInt(ConsumableType.values.length)],
-      ),
-    );
   }
 
   /// Três balcões, sempre nas mesmas posições: cura, um item de uso único e um
@@ -162,12 +165,22 @@ class RoomComponent extends PositionComponent with HasGameRef {
   /// Os preços são o botão de ajuste da economia: hoje uma sala limpa dá 1
   /// moeda e um andar tem ~10 salas de combate, ou seja, ~10 moedas por andar.
   void _spawnShop() {
-    final centro = position + Vector2(width / 2, height / 2);
+    final centro = position + Vector2(width / 2, centerY);
 
     final consumivel =
         ConsumableType.values[_random.nextInt(ConsumableType.values.length)];
     final upgrade =
         PowerUpType.values[_random.nextInt(PowerUpType.values.length)];
+
+    // A terceira bancada é meio a meio entre upgrade de stat e item com
+    // gatilho. Ao contrário do pedestal, a loja só ESPIA a pool — o item sai
+    // dela na hora da compra (ver `entregar` abaixo). Expor não gasta: uma
+    // loja que o jogador não tem moeda pra pagar deixa o item disponível pro
+    // resto da run.
+    final jogo = game;
+    final itemEfeito = _random.nextBool() && jogo is CreaturesRogueGame
+        ? jogo.espiarItemEfeito()
+        : null;
 
     parent?.add(
       ShopStand(
@@ -197,18 +210,41 @@ class RoomComponent extends PositionComponent with HasGameRef {
     );
 
     parent?.add(
-      ShopStand(
-        position: centro + Vector2(32, -8),
-        preco: 14,
-        spritePath: upgrade.spritePath,
-        cor1: upgrade.cor1,
-        cor2: upgrade.cor2,
-        entregar: (p) {
-          upgrade.aplicar(p);
-          return true; // upgrade não tem como falhar
-        },
-        descricao: upgrade.descricao,
-      ),
+      itemEfeito != null
+          // Mais caro que o upgrade de stat: muda como se joga, e a run só
+          // oferece cada um uma vez.
+          ? ShopStand(
+              position: centro + Vector2(32, -8),
+              preco: 20,
+              spritePath: itemEfeito.spritePath,
+              cor1: itemEfeito.cor1,
+              cor2: itemEfeito.cor2,
+              entregar: (p) {
+                // `consumirItemEfeito` devolve false se um pedestal entregou
+                // o mesmo item enquanto a loja o exibia. Recusar aqui é o que
+                // impede duas cópias na lista — e, como `ShopStand` só cobra
+                // quando `entregar` devolve true, o jogador não paga por nada.
+                final jogo = game;
+                if (jogo is! CreaturesRogueGame) return false;
+                if (!jogo.consumirItemEfeito(itemEfeito)) return false;
+                p.itens.add(itemEfeito);
+                return true;
+              },
+              msgFalha: game.buildContext!.l10n.effect_jaTemItem,
+              descricao: itemEfeito.descricao,
+            )
+          : ShopStand(
+              position: centro + Vector2(32, -8),
+              preco: 14,
+              spritePath: upgrade.spritePath,
+              cor1: upgrade.cor1,
+              cor2: upgrade.cor2,
+              entregar: (p) {
+                upgrade.aplicar(p);
+                return true; // upgrade não tem como falhar
+              },
+              descricao: upgrade.descricao,
+            ),
     );
   }
 
@@ -217,7 +253,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
   /// pedestal na sala de tesouro e pela escada na sala de boss (a moeda em cima
   /// da escada seria coletada junto com a troca de andar, e sumiria).
   void _spawnRecompensa() {
-    final pos = position + Vector2(width / 2, height / 2 + 28);
+    final pos = position + Vector2(width / 2, centerY + 28);
 
     // A chance de cura só é rolada com HP faltando: `heal()` devolve false com
     // a vida cheia, e aí o coração ficaria plantado no chão pra sempre no lugar
@@ -232,7 +268,9 @@ class RoomComponent extends PositionComponent with HasGameRef {
   }
 
   void _generateFloorDetails() {
-    for (double y = 16.0; y < height - 16.0; y += 16.0) {
+    // Linha 1 (y=16) agora é parede (ver `_generateWalls`) — piso começa na
+    // linha 2.
+    for (double y = topoHud + 16.0; y < height - 16.0; y += 16.0) {
       for (double x = 16.0; x < width - 16.0; x += 16.0) {
         int roll = _random.nextInt(100);
 
@@ -262,7 +300,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
   }
 
   void _generateObstacles() {
-    for (double y = 16.0; y < height - 16.0; y += 16.0) {
+    for (double y = topoHud + 16.0; y < height - 16.0; y += 16.0) {
       for (double x = 16.0; x < width - 16.0; x += 16.0) {
         // REGRA 1: Não spawnar pedras bem no meio da sala
         //bool isCenter = (x >= width / 2 - 24 && x <= width / 2 + 8) &&
@@ -353,8 +391,12 @@ class RoomComponent extends PositionComponent with HasGameRef {
     }
 
     if (data.doorTop) {
-      addDoorHalf(Vector2((width / 2) - 16, 0), math.pi / 2, flipX: false);
-      addDoorHalf(Vector2(width / 2, 0), math.pi / 2, flipX: true);
+      addDoorHalf(
+        Vector2((width / 2) - 16, topoHud),
+        math.pi / 2,
+        flipX: false,
+      );
+      addDoorHalf(Vector2(width / 2, topoHud), math.pi / 2, flipX: true);
     }
     if (data.doorBottom) {
       addDoorHalf(
@@ -380,7 +422,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
 
   void onPlayerEnter() {
     data.isVisited = true;
-    if (!data.isCleared && data.type != RoomType.start) {
+    if (!data.isCleared && (data.type == RoomType.normal || data.type == RoomType.boss)) {
       _lockRoom();
       _spawnEnemies();
     }
@@ -402,14 +444,14 @@ class RoomComponent extends PositionComponent with HasGameRef {
     }
 
     if (data.type == RoomType.boss) {
-      parent?.add(Stairs(position: position + Vector2(width / 2, height / 2)));
+      parent?.add(Stairs(position: position + Vector2(width / 2, centerY)));
 
       final construirCriatura = wildCreatureBuilder;
       if (construirCriatura != null) {
-        // Posição própria (height/2 - 28), livre da escada (height/2) e da
-        // recompensa (height/2 + 28) — ver PIVOT_CONTROLE_DIRETO.md §5.2.
+        // Posição própria (centerY - 28), livre da escada (centerY) e da
+        // recompensa (centerY + 28) — ver PIVOT_CONTROLE_DIRETO.md §5.2.
         final npc = construirCriatura(
-          position + Vector2(width / 2, height / 2 - 28),
+          position + Vector2(width / 2, centerY - 28),
         );
         if (npc != null) parent?.add(npc);
       }
@@ -422,7 +464,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
     final construirBoss = bossBuilder;
     if (construirBoss != null) {
       final boss = construirBoss(
-        position + Vector2(width / 2, height / 2 - 24),
+        position + Vector2(width / 2, centerY - 24),
       );
       if (boss != null) {
         activeEnemies.add(boss);
@@ -495,9 +537,11 @@ class RoomComponent extends PositionComponent with HasGameRef {
       pathWall = 'tileset/pedraCave.png';
     }
 
-    for (int y = 0; y < tilesY; y++) {
+    // Linha 0 fica de fora — reservada pra HUD (ver `topoHud`), sem parede
+    // nem piso ali. A parede "de cima" vira a linha 1.
+    for (int y = 1; y < tilesY; y++) {
       for (int x = 0; x < tilesX; x++) {
-        bool isTop = y == 0;
+        bool isTop = y == 1;
         bool isBottom = y == tilesY - 1;
         bool isLeft = x == 0;
         bool isRight = x == tilesX - 1;
@@ -558,21 +602,28 @@ class RoomComponent extends PositionComponent with HasGameRef {
     double midY = height / 2;
     double doorSpan = 32.0;
 
+    // Parede "de cima" agora fica na linha 1 (`topoHud`) — linha 0 é a faixa
+    // reservada pra HUD, sem barreira nenhuma ali.
     if (data.doorTop) {
       add(
         WallBarrier(
-          position: Vector2(0, 0),
+          position: Vector2(0, topoHud),
           size: Vector2(midX - (doorSpan / 2), 16),
         ),
       );
       add(
         WallBarrier(
-          position: Vector2(midX + (doorSpan / 2), 0),
+          position: Vector2(midX + (doorSpan / 2), topoHud),
           size: Vector2(midX - (doorSpan / 2), 16),
         ),
       );
     } else {
-      add(WallBarrier(position: Vector2(0, 0), size: Vector2(width, 16)));
+      add(
+        WallBarrier(
+          position: Vector2(0, topoHud),
+          size: Vector2(width, 16),
+        ),
+      );
     }
 
     if (data.doorBottom) {
@@ -597,11 +648,14 @@ class RoomComponent extends PositionComponent with HasGameRef {
       );
     }
 
+    // Segmento de cima das barreiras laterais também para na linha 1 (não em
+    // 0) — o de baixo do vão da porta não muda, já fica bem abaixo da faixa
+    // reservada.
     if (data.doorLeft) {
       add(
         WallBarrier(
-          position: Vector2(0, 0),
-          size: Vector2(16, midY - (doorSpan / 2)),
+          position: Vector2(0, topoHud),
+          size: Vector2(16, midY - (doorSpan / 2) - topoHud),
         ),
       );
       add(
@@ -611,14 +665,19 @@ class RoomComponent extends PositionComponent with HasGameRef {
         ),
       );
     } else {
-      add(WallBarrier(position: Vector2(0, 0), size: Vector2(16, height)));
+      add(
+        WallBarrier(
+          position: Vector2(0, topoHud),
+          size: Vector2(16, height - topoHud),
+        ),
+      );
     }
 
     if (data.doorRight) {
       add(
         WallBarrier(
-          position: Vector2(width - 16, 0),
-          size: Vector2(16, midY - (doorSpan / 2)),
+          position: Vector2(width - 16, topoHud),
+          size: Vector2(16, midY - (doorSpan / 2) - topoHud),
         ),
       );
       add(
@@ -630,8 +689,8 @@ class RoomComponent extends PositionComponent with HasGameRef {
     } else {
       add(
         WallBarrier(
-          position: Vector2(width - 16, 0),
-          size: Vector2(16, height),
+          position: Vector2(width - 16, topoHud),
+          size: Vector2(16, height - topoHud),
         ),
       );
     }
@@ -639,7 +698,14 @@ class RoomComponent extends PositionComponent with HasGameRef {
 
   // Criado uma única vez (antes era um Paint novo por sala, por frame)
   //late final Paint _roomBackgroundPaint = Paint()..color = Palette.branco;
-  late final Rect _roomBackgroundRect = Rect.fromLTWH(0, 0, width, height);
+  // Começa em `topoHud`, não 0 — senão a cor de chão pinta por baixo da HUD
+  // a faixa que devia ficar vazia.
+  late final Rect _roomBackgroundRect = Rect.fromLTWH(
+    0,
+    topoHud,
+    width,
+    height - topoHud,
+  );
 
   @override
   void render(Canvas canvas) {

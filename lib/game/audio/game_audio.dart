@@ -52,6 +52,18 @@ import 'sfx.dart';
 ///    voo, o toque é DESCARTADO (não enfileira, não tenta outra voz) — o
 ///    teto de chamadas simultâneas em voo passa a ser o número de vozes, não
 ///    a taxa de disparo do combate.
+/// 7. `positionUpdater = null` em cada voz. O construtor de `AudioPlayer`
+///    (audioplayers 6.7.1, `audioplayer.dart`) instala por conta própria um
+///    `FramePositionUpdater`, que a cada `resume()` começa a chamar
+///    `getCurrentPosition()` — uma ida e volta no canal de plataforma — UMA
+///    VEZ POR QUADRO, por voz tocando, reagendando um frame callback a cada
+///    tique. Com 10 vozes ativas num pico de combate isso são ~600 chamadas
+///    de canal por segundo, e o resultado vai pra um `positionStream` que
+///    nada neste projeto escuta: trabalho 100% jogado fora, que escala
+///    exatamente com a intensidade do combate (quanto mais som, mais lento o
+///    quadro). É por isso que pool e throttle sozinhos não resolviam — eles
+///    limitam quantos toques COMEÇAM, não o custo por quadro de cada voz
+///    enquanto ela toca.
 class GameAudio {
   GameAudio._();
   static final GameAudio instance = GameAudio._();
@@ -122,7 +134,6 @@ class GameAudio {
   /// isolado em pico de combate é aceitável, acumular um estoque de sons
   /// atrasados não é.
   final Set<AudioPlayer> _busy = {};
-  int _droppedByBusy = 0;
 
   double volume = 0.7;
   bool enabled = true;
@@ -168,7 +179,10 @@ class GameAudio {
         final players = <AudioPlayer>[];
         for (var i = 0; i < voiceCount; i++) {
           final player = AudioPlayer(playerId: '${entry.key.name}_$i')
-            ..audioCache = FlameAudio.audioCache;
+            ..audioCache = FlameAudio.audioCache
+            // Achado #7 (ver doc da classe): desliga o `FramePositionUpdater`
+            // que o `AudioPlayer` instala sozinho no construtor.
+            ..positionUpdater = null;
           await player.setPlayerMode(PlayerMode.mediaPlayer);
           await player.setAudioContext(audioContext);
           await player.setReleaseMode(ReleaseMode.stop);
@@ -181,12 +195,8 @@ class GameAudio {
       }
       _ready = true;
     } catch (e, st) {
-      // TODO(diagnóstico): trocado de `catch (_) {}` pra log temporário —
-      // o app travando em campo sem nenhuma exceção Dart aparecendo no
-      // console sugere que o erro real estava sendo engolido aqui ou no
-      // fire-and-forget de `play()`. Reverter pra silencioso assim que o
-      // crash em combate estiver resolvido de vez (áudio não deve nunca
-      // travar o jogo, mas precisamos ver o erro pra saber o que corrigir).
+      // Loga em vez de engolir: roda uma vez no boot, então o custo é zero e
+      // um preload que falha calado deixa o jogo mudo sem nenhuma pista.
       debugPrint('GameAudio.preload falhou: $e\n$st');
     }
   }
@@ -213,16 +223,7 @@ class GameAudio {
     _nextVoice[sfx] = (i + 1) % players.length;
 
     final player = players[i];
-    if (_busy.contains(player)) {
-      // TODO(diagnóstico): contador temporário — preciso saber se a guarda
-      // de vozes ocupadas está de fato descartando toques em combate, ou se
-      // (com o throttle atual) uma voz nunca chega a estar ocupada de novo
-      // antes do próximo toque, o que provaria que o atraso não é fila do
-      // lado Dart. Reverter junto com o resto do diagnóstico.
-      _droppedByBusy++;
-      debugPrint('GameAudio: descartou ${sfx.name} (voz ocupada), total=$_droppedByBusy');
-      return;
-    }
+    if (_busy.contains(player)) return;
     _busy.add(player);
 
     // Volume é fixado uma vez no preload (acima); só manda `setVolume` de
@@ -249,10 +250,8 @@ class GameAudio {
   /// guarda descartava som demais em rajada, ex. dois ataques de água quase
   /// simultâneos). Liberar a voz assim que o `seek` aterrissa é suficiente.
   ///
-  /// TODO(diagnóstico): `catch`/log foi o que expôs o bug do `seek` no modo
-  /// antigo (ver histórico do arquivo). Mantido por enquanto pra pegar
-  /// qualquer outro caso escondido; reverter pra silencioso quando o áudio
-  /// em combate ficar estável por um tempo.
+  /// O `catch`/log foi o que expôs o bug do `seek` no modo antigo (ver
+  /// histórico do arquivo). Fica: só dispara em erro, nunca no caminho comum.
   Future<void> _restart(Sfx sfx, AudioPlayer player) async {
     try {
       await player.seek(Duration.zero);

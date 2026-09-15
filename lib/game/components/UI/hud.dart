@@ -6,6 +6,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/UI/ability_cooldown_indicator.dart';
 import 'package:creatures_rogue/game/components/UI/companion_portrait_indicator.dart';
+import 'package:creatures_rogue/game/components/UI/cooldown_ring_indicator.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import '../player/player.dart';
@@ -76,8 +77,22 @@ class Hud extends PositionComponent with HasGameRef {
   final Paint _evoFundoPaint = Paint()..color = Palette.branco;
   final Paint _evoFillPaint = Paint()..color = Palette.jade;
   static const double _evoBarWidth = 32;
-  static const double _evoBarY = 15;
-  static const double _evoBarHeight = 2;
+  // Linha 0 (0-16px) é a faixa reservada da sala pra HUD (ver
+  // `RoomComponent.topoHud`); linha 1 (16-32px) já é parede. 32 pousa na
+  // linha 2, primeira linha de PISO — igual aos retratos do grupo, que já
+  // flutuam sobre o chão sem reclamação.
+  static const double _evoBarY = 184;
+  static const double _evoBarHeight = 4;
+
+  /// Barra de energia da habilidade 1 (substituiu o cooldown fixo — ver
+  /// `Player.energia`/`custoEnergia`). Mesmo estilo da barra de evolução,
+  /// logo abaixo dela, mas sempre visível (toda criatura usa energia agora).
+  final Paint _energiaTrackPaint = Paint()..color = Palette.preto;
+  final Paint _energiaFundoPaint = Paint()..color = Palette.branco;
+  final Paint _energiaFillPaint = Paint()..color = Palette.laranja;
+  static const double _energiaBarWidth = 32;
+  static const double _energiaBarY = 12;
+  static const double _energiaBarHeight = 3;
 
   /// Regeneração do escudo passivo (defesa) — barra vertical (4x12 máx.) que
   /// cresce de baixo pra cima, no lugar onde o próximo `shieldSprite` nasce.
@@ -160,10 +175,20 @@ class Hud extends PositionComponent with HasGameRef {
         position: Vector2(_iconeCooldownLado + 2, 14),
       ),
       */
+      // Anel de cooldown da habilidade 2 — antes vivia grudado no sprite do
+      // Player (`CooldownRingIndicator`, ver `Player._montarVisualEHitboxInterno`),
+      // agora fica fixo na Hud, do lado da barra de energia da habilidade 1.
+      CooldownRingIndicator(
+        tipo: () => player.creatureData.ability2.tipo,
+        cooldownFraction: () => player.ability2CooldownFraction,
+        raio: 4,
+        position: Vector2(40, 12),
+      ),
+
       // Três retratos, um por slot do grupo — mesmo cinza que o indicador de
       // cooldown usa, agora mostrando quanto falta curar no banco, mais o
       // destaque de quem é a ativa (ver `CompanionPortraitIndicator`). Abaixo
-      // do ícone+contagem de moedas (`render`, y 22-38) pra não sobrepor.
+      // da barra de energia (`_energiaBarY`+altura) pra não sobrepor.
       for (int slot = 0; slot < 3; slot++)
         CompanionPortraitIndicator(
           creatureData: () => companionCreatureAt(slot),
@@ -171,7 +196,7 @@ class Hud extends PositionComponent with HasGameRef {
           isAtiva: () => isCompanionAtivo(slot),
           onTap: () => onTapCompanionSlot(slot),
           lado: _iconeCooldownLado,
-          position: Vector2(2, 34 + (_iconeCooldownLado + 2) * slot),
+          position: Vector2(1, 17 + (_iconeCooldownLado + 2) * slot),
         ),
     ]);
 
@@ -193,6 +218,8 @@ class Hud extends PositionComponent with HasGameRef {
         ],
       ),
     );
+
+   
   }
 
   @override
@@ -213,19 +240,24 @@ class Hud extends PositionComponent with HasGameRef {
     // --- BARRA DE EVOLUÇÃO --- Só desenha pra quem tem forma evoluída
     // desenhada (`evoluir != null`) — as outras criaturas não têm o que
     // progredir ainda, então não ganham uma barra sempre vazia.
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, 192, 16),
+      Paint()..color = Palette.branco,
+    );
     if (player.creatureData.evoluir != null) {
+      textPaint.render(canvas, 'XP:', Vector2(2, _evoBarY - 6));
       canvas.drawRect(
-        Rect.fromLTWH(2, _evoBarY-1, _evoBarWidth+1, _evoBarHeight+2),
+        Rect.fromLTWH(25, _evoBarY-1, _evoBarWidth+1, _evoBarHeight+2),
         _evoTrackPaint,
       );
       canvas.drawRect(
-        Rect.fromLTWH(2, _evoBarY-1, _evoBarWidth, _evoBarHeight+1),
+        Rect.fromLTWH(25, _evoBarY-1, _evoBarWidth, _evoBarHeight+1),
         _evoFundoPaint,
       );
       
       canvas.drawRect(
         Rect.fromLTWH(
-          2,
+          25,
           _evoBarY,
           _evoBarWidth * player.xpFracao,
           _evoBarHeight,
@@ -234,13 +266,37 @@ class Hud extends PositionComponent with HasGameRef {
       );
     }
 
+    // --- BARRA DE ENERGIA (habilidade 1) ---
+    canvas.drawRect(
+      Rect.fromLTWH(
+        1,
+        _energiaBarY - 1,
+        _energiaBarWidth + 1,
+        _energiaBarHeight + 2,
+      ),
+      _energiaTrackPaint,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(1, _energiaBarY - 1, _energiaBarWidth, _energiaBarHeight + 1),
+      _energiaFundoPaint,
+    );
+    canvas.drawRect(
+      Rect.fromLTWH(
+        1,
+        _energiaBarY,
+        _energiaBarWidth * player.energiaFracao,
+        _energiaBarHeight,
+      ),
+      _energiaFillPaint,
+    );
+
     moedaSprite.render(
       canvas,
-      position: Vector2(0, 18),
+      position: Vector2(120, 0),
       size: bombIconSize,
       overridePaint: paint,
     );
-    textPaint.render(canvas, ':${player.coins}', Vector2(16, 19));
+    textPaint.render(canvas, ':${player.coins}', Vector2(136, 1));
 
     // --- LÓGICA DO MEIO-CORAÇÃO ---
     // Quantos corações INICIAIS (capacidade total) o jogador tem na tela?
@@ -271,7 +327,7 @@ class Hud extends PositionComponent with HasGameRef {
 
       spriteToDraw.render(
         canvas,
-        position: Vector2(xPosition, 0),
+        position: Vector2(xPosition, -2),
         size: heartSize,
         overridePaint: paint,
       );
@@ -284,7 +340,7 @@ class Hud extends PositionComponent with HasGameRef {
           //player.maxHealth / 2 * (heartSize.x + spacing) +
           //(i * (heartSize.x + spacing)) -
           //((heartSize.x + spacing) + 2); // Posição X após os corações
-      final double shieldY = 0; //heartSize.y + 1;
+      final double shieldY = -2; //heartSize.y + 1;
       //final fracao = (player.shield / player.shieldMax).clamp(0.0, 1.0);
 
       shieldSprite.render(

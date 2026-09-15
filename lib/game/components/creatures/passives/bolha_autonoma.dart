@@ -15,7 +15,6 @@ class BolhaAutonoma extends Passive {
   void aoAtualizar(Player player, double dt) {
     if (player.shieldHits > 0) return;
     if (player.tempoSemApanhar < tempoParaFormar) return;
-    player.shieldHits = 1;
-    player.shieldVisualActive = true;
+    player.adicionarEscudoPermanente(1);
   }
 }

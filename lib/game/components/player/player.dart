@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flame/collisions.dart';
 import 'package:creatures_rogue/game/audio/game_audio.dart';
 import 'package:creatures_rogue/game/audio/sfx.dart';
-import 'package:creatures_rogue/game/components/UI/cooldown_ring_indicator.dart';
 import 'package:creatures_rogue/game/components/UI/dynamic_joystick_component.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
@@ -30,6 +29,9 @@ import 'package:creatures_rogue/game/components/utils/y_sort.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:flutter/services.dart';
 import '../map/obstacle.dart';
+import 'package:creatures_rogue/game/components/effects/efeitos_temporarios.dart';
+import 'package:creatures_rogue/game/components/items/item_efeito.dart';
+import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 
 /// O jogador é a criatura ativa do grupo (ver PIVOT_CONTROLE_DIRETO.md) —
 /// controle direto, sem ator "treinador" separado. `creatureData` não é
@@ -42,6 +44,7 @@ class Player extends PositionComponent
         CollisionCallbacks,
         HasGameRef,
         KeyboardHandler,
+        EfeitosTemporarios,
         AbilityUser,
         DamageableByEnemy {
   final DynamicJoystickComponent moveJoystick;
@@ -101,6 +104,13 @@ class Player extends PositionComponent
   /// durante a run.
   double shieldMax;
   double shield;
+
+  /// Bônus de HP/escudo vindos de upgrade de run (`hpUp`, `shieldUp`), somados
+  /// POR FORA do stat da criatura. Existem porque `trocarCriatura` recalcula
+  /// `maxHealth`/`shieldMax` a partir de `nova.stats` — sem guardar o bônus
+  /// separado não há como recompor o total, e o upgrade sumia na troca.
+  double bonusHpItens = 0.0;
+  double bonusShieldItens = 0.0;
   double shieldRegenAmount = 1.0;
   double shieldRegenInterval = 5.0;
   double _shieldRegenTimer = 0.0;
@@ -126,6 +136,11 @@ class Player extends PositionComponent
   /// porque os botões da tela são indexados (ver ConsumableSlotButton).
   final List<ConsumableType?> slots = [null, null];
 
+  /// Itens com gatilho pegos nesta run (ver [ItemEfeito]). Pertencem ao
+  /// JOGADOR: `trocarCriatura` não mexe nesta lista, ao contrário do estado de
+  /// combate da criatura ativa.
+  final List<ItemEfeito> itens = [];
+
   // --- Multiplicadores de upgrade da run ---
   // Ficam aqui, e não em BaseStats, porque BaseStats é `const` (compartilhado
   // entre todas as instâncias da criatura). Mesmo padrão do `lentidaoFator`
@@ -133,9 +148,12 @@ class Player extends PositionComponent
   double velMult = 1.0;
 
   /// Multiplicador de cadência das duas habilidades — upgrade de run
-  /// (`fireRateUp`). Reseta pra 1.0 em `trocarCriatura`: é a criatura ativa
-  /// que atira, então o upgrade não atravessa a troca (mesma regra que
-  /// sempre valeu enquanto isto vivia no `Companion`).
+  /// (`fireRateUp`). ATRAVESSA a troca de criatura, igual a `velMult`,
+  /// `danoMult` e os de crítico: é upgrade do jogador, não estado de combate
+  /// da criatura ativa. Já foi resetado em `trocarCriatura` citando
+  /// `PIVOT_CONTROLE_DIRETO.md §2.3`, mas aquela regra fala em zerar ESTADO DE
+  /// COMBATE (cooldown, knockback, esquiva, bolha) — um upgrade permanente
+  /// caiu na lista por engano, e era o único dos sete que sumia na troca.
   double cdMult = 1.0;
 
   /// Dano do jogador. É `static` porque quem multiplica é o próprio projétil /
@@ -154,7 +172,7 @@ class Player extends PositionComponent
       creatureData.stats.speed *
       lentidaoFator *
       velMult *
-      (_dentroGramaAlta ? gramaAltaFator : 1.0);
+      ((_dentroGramaAlta || speedLocked )? gramaAltaFator : 1.0);
 
   /// Lentidão e cegueira são as únicas condições que atingem o jogador — DoT
   /// fica só do lado dos inimigos, que têm os ícones de condição pra mostrar.
@@ -197,15 +215,18 @@ class Player extends PositionComponent
   Vector2 lockedAb1Direction = Vector2(0, 1);
   Vector2 lockedAb2Direction = Vector2(0, 1);
 
-  // --- Cooldown e input das duas habilidades ---
+  // --- Cooldown das duas habilidades — a 1 tem TAMBÉM energia por cima
+  // disso agora (ver `energia` em `AbilityUser` e `dispararAbility1`): as
+  // duas travas precisam liberar pra disparar, cooldown segura o ritmo entre
+  // tiros e energia limita quantos tiros seguidos (rajada) antes de encher
+  // de novo.
   double _cooldown1 = 0.0;
   double _cooldownMax1 = 1.0;
   double _cooldown2 = 0.0;
   double _cooldownMax2 = 1.0;
 
-  /// Fração restante de cooldown (0 = pronto) — lida pela Hud.
-  double get ability1CooldownFraction =>
-      (_cooldown1 / _cooldownMax1).clamp(0.0, 1.0);
+  /// Fração de energia restante (0 = vazia, 1 = cheia) — lida pela Hud.
+  double get energiaFracao => (energia / energiaMax).clamp(0.0, 1.0);
   double get ability2CooldownFraction =>
       (_cooldown2 / _cooldownMax2).clamp(0.0, 1.0);
 
@@ -219,7 +240,7 @@ class Player extends PositionComponent
 
   /// Quanto de XP falta pra evoluir. Só uma constante por enquanto — todas
   /// as criaturas evoluem no mesmo ritmo.
-  static const double xpParaEvoluir = 35.0;
+  static const double xpParaEvoluir = 50.0;
 
   double get xpFracao => evoluida ? 1.0 : (xp / xpParaEvoluir).clamp(0.0, 1.0);
 
@@ -237,10 +258,11 @@ class Player extends PositionComponent
   /// `_evoluir()` de verdade um frame depois, fora da varredura.
   bool _evoluirPendente = false;
 
-  void ganharXp(double quantidade) {
-    if (evoluida || creatureData.evoluir == null) return;
+  bool ganharXp(double quantidade) {
+    if (evoluida || creatureData.evoluir == null) return false;
     xp += quantidade;
     if (xp >= xpParaEvoluir) _evoluirPendente = true;
+    return true;
   }
 
   /// Troca o sprite e a `ability2` pra forma evoluída — DIFERENTE de
@@ -499,8 +521,7 @@ class Player extends PositionComponent
   /// Anéis de cooldown das duas habilidades, guardados aqui só pra poder
   /// remover o antigo antes de recriar a cada remontagem — sem isso, cada
   /// troca de criatura ou evolução deixava um par órfão pra trás.
-  CooldownRingIndicator? _ringAbility1;
-  CooldownRingIndicator? _ringAbility2;
+   //CooldownRingIndicator? _ringAbility1;
   /*
   void _renderBarraEsquiva(Canvas canvas) {
     final pronto = 1 - dodgeCooldownFraction;
@@ -602,8 +623,7 @@ class Player extends PositionComponent
         physicsHitbox.removeFromParent();
         shadow.removeFromParent();
         conditionIcons.removeFromParent();
-        _ringAbility1?.removeFromParent();
-        _ringAbility2?.removeFromParent();
+        //_ringAbility1?.removeFromParent();
       }
 
       await _montarVisualEHitboxInterno();
@@ -624,10 +644,18 @@ class Player extends PositionComponent
 
     visual = SpriteComponent(
       sprite: Sprite(spriteImage),
-      // `spriteSize` (ver CreatureData) deixa a arte evoluída em 24x24 sem
-      // mexer no hitbox — `size` (o `Vector2(16,16)` fixo do Player) continua
-      // sendo a referência de tudo mais (hitbox, sombra, posição da UI).
-      size: creatureData.spriteSize ?? size,
+      // Tamanho vem do próprio PNG (16x16 base, 24x24 evoluída), não de um
+      // campo declarado à mão: três evoluções já haviam esquecido de declarar
+      // e apareceram espremidas em 16x16, sem nada avisando. `PaletteSwapper`
+      // preserva as dimensões do original, então isto é a arte de verdade.
+      //
+      // Não confundir com `size`, o `Vector2(16,16)` fixo do `Player`, que
+      // segue sendo a referência de hitbox, sombra e posição da UI — só o
+      // visual cresce.
+      size: Vector2(
+        spriteImage.width.toDouble(),
+        spriteImage.height.toDouble(),
+      ),
       anchor: Anchor.bottomCenter,
       position: _visualBasePosition.clone(),
       paint: Paint()..filterQuality = FilterQuality.none,
@@ -649,22 +677,17 @@ class Player extends PositionComponent
       isAirborne = false;
     }
 
-    _ringAbility1 = CooldownRingIndicator(
+    /*_ringAbility1 = CooldownRingIndicator(
       tipo: () => creatureData.ability1.tipo,
-      cooldownFraction: () => ability1CooldownFraction,
+      // Virou indicador de ENERGIA: cinza cobre o que falta encher, em vez
+      // do que falta pra zerar cooldown — mesma leitura visual (cinza some
+      // quando "pronto"/cheio), só a fonte mudou.
+      cooldownFraction: () => 1 - energiaFracao,
       raio: 4,
       position: Vector2(4, -4 + floatOffset.y + evoOff.y),
     )..priority = 2;
     add(_ringAbility1!);
-
-    _ringAbility2 = CooldownRingIndicator(
-      tipo: () => creatureData.ability2.tipo,
-      cooldownFraction: () => ability2CooldownFraction,
-      raio: 4,
-      position: Vector2(12, -4 + floatOffset.y + evoOff.y),
-    )..priority = 2;
-    add(_ringAbility2!);
-
+  */
     final ui.Image shieldImage = await PaletteSwapper.createSwappedImage(
       imagePath: 'projeteis/bolha.png',
       lightGrayReplacement: creatureData.corClara,
@@ -732,15 +755,21 @@ class Player extends PositionComponent
     double xpSalvo = 0.0,
     bool evoluidaSalva = false,
   }) {
+    final sai = creatureData;
+    // Antes de qualquer gancho de item: o estado de combate da criatura que
+    // sai morre com ela (mesma regra do resto deste bloco), mas os efeitos do
+    // JOGADOR ficam. Limpar tudo aqui varreria o buff que o próprio
+    // `aoTrocarCriatura` cria logo abaixo.
+    limparEfeitos(dono: EfeitoDono.criatura);
+
     creatureData = nova;
-    maxHealth = nova.stats.maxHp;
+    maxHealth = nova.stats.maxHp + bonusHpItens;
     currentHealth = vidaSalva.clamp(0.0, maxHealth);
     xp = xpSalvo;
     evoluida = evoluidaSalva;
-    shieldMax = nova.stats.shieldMax;
+    shieldMax = nova.stats.shieldMax + bonusShieldItens;
     shield = shieldMax;
-    shieldHits = 0;
-    shieldVisualActive = false;
+    limparEscudos();
     damageReduction = 0.0;
     speedLocked = false;
     refleteProjetil = false;
@@ -748,9 +777,9 @@ class Player extends PositionComponent
     retaliaDano = 0.0;
     retaliaStunDuration = 0.0;
     knockbackVelocity = Vector2.zero();
+    energia = energiaMax;
     _cooldown1 = 0.0;
     _cooldown2 = 0.0;
-    cdMult = 1.0;
     _dodgeCooldown = 0.0;
     velocity.setZero();
 
@@ -758,6 +787,10 @@ class Player extends PositionComponent
     // chave que `_preloadCombatSprites` monta pra toda criatura do
     // registro), então o resultado chega praticamente no frame seguinte.
     _montarVisualEHitbox();
+
+    for (final item in itens) {
+      item.aoTrocarCriatura(this, sai, nova);
+    }
   }
 
   @override
@@ -778,6 +811,10 @@ class Player extends PositionComponent
 
     if (_dodgeCooldown > 0) _dodgeCooldown -= dt;
     _tempoSemApanhar += dt;
+    atualizarEfeitos(dt);
+    for (final item in itens) {
+      item.aoAtualizar(this, dt);
+    }
     // for (final p in passivasAtivas) {
     //   p.aoAtualizar(this, dt);
     // }
@@ -895,11 +932,16 @@ class Player extends PositionComponent
         : Vector2(0, bruto.y.sign);
   }
 
-  /// Dispara `ability1`/`ability2` se o cooldown já zerou.
+  /// Dispara `ability1` se o cooldown já zerou E der energia — as duas
+  /// travas valem (ver comentário de `_cooldown1` acima). `ability2`
+  /// continua só no cooldown de sempre.
   void dispararAbility1() {
     if (_cooldown1 > 0) return;
+    final custo = creatureData.ability1.custoEnergia;
+    if (energia < custo) return;
     if (!creatureData.ability1.canExecute(this)) return;
     creatureData.ability1.execute(this, lockedAb1Direction);
+    energia -= custo;
     _cooldownMax1 = creatureData.ability1.cooldown * cdMult;
     _cooldown1 = _cooldownMax1;
   }
@@ -917,6 +959,7 @@ class Player extends PositionComponent
   /// morta. Habilidade 2: continua um botão/tecla "segurada", mesmo padrão
   /// que a IA autônoma do companion já usava (ver PIVOT_TREINADOR.md).
   void _updateAbilities(double dt) {
+    energia = (energia + energiaRegen * dt).clamp(0.0, energiaMax);
     if (_cooldown1 > 0) _cooldown1 -= dt;
     if (_cooldown2 > 0) _cooldown2 -= dt;
 
@@ -950,20 +993,9 @@ class Player extends PositionComponent
     final room = currentRoom;
     if (room == null) return d * distancia;
 
-    // Mesma regra sólida do `onCollision`: GramaAlta/Cogumelos são andáveis
-    // (nunca sólidos), Hole só bloqueia fora do ar. Pro resto dos `Obstacle`
-    // (Rock, Door, Pedestal...) usa o `collisionType` AO VIVO do hitbox —
-    // Grama/ChaoCave são decoração de chão (`CollisionType.inactive`, nunca
-    // colidem de verdade) e Door alterna passive/inactive ao abrir/fechar, e
-    // seu campo `collisionType` (fixo, só reflete o valor da construção) não
-    // acompanha isso — só o `hitbox.collisionType` está sempre atualizado.
-    final solidos = room.children.whereType<PositionComponent>().where((c) {
-      if (c is WallBarrier) return true;
-      if (c is GramaAlta || c is Cogumelos) return false;
-      if (c is Hole) return !isAirborne;
-      if (c is Obstacle) return c.hitbox.collisionType != CollisionType.inactive;
-      return false;
-    });
+    final solidos = room.children.whereType<PositionComponent>().where(
+      (c) => barraMovimento(c, isAirborne: isAirborne),
+    );
 
     // Anda em passos de 4px (bem menor que os 16px de um tile) simulando o
     // `physicsHitbox`, pra achar o ponto mais longe livre antes da parede —
@@ -1006,7 +1038,7 @@ class Player extends PositionComponent
       return;
     }
 
-    if (naoMove || speedLocked) {
+    if (naoMove /* || speedLocked */) {
       velocity.setZero();
       return;
     }
@@ -1169,9 +1201,24 @@ class Player extends PositionComponent
       ),
     );
 
-    if (shieldHits > 0) {
-      shieldHits--;
-      if (shieldHits <= 0) shieldVisualActive = false; // a bolha estourou
+    if (consumirEscudo()) {
+      // Escudo de Espinhos: o golpe absorvido vira explosão. Fica aqui, e não
+      // na habilidade, porque só este ponto sabe que um golpe FOI absorvido —
+      // a habilidade termina de executar muito antes de alguém bater no
+      // jogador. Os três campos `retalia*` eram escritos pela habilidade e
+      // não tinham leitor nenhum desde que as passivas saíram no pivô, então
+      // a habilidade absorvia sem revidar, ao contrário do que a descrição diz.
+      if (retaliaEspinhos) {
+        parent?.add(
+          ExplosionHitbox(
+            position: position.clone(),
+            dmg: retaliaDano,
+            stunDuration: retaliaStunDuration,
+            tipo: creatureData.tipo,
+            cor2: Palette.amarelo,
+          ),
+        );
+      }
       return;
     }
 
@@ -1186,6 +1233,14 @@ class Player extends PositionComponent
       shield -= 1;
       //amountFinal -= absorvido;
       if (shield < 0) shield = 0;
+      // Transição >0 para 0, não `== 0`: o escudo regenera sozinho a cada
+      // `shieldRegenInterval`, então testar só o valor faria o gancho disparar
+      // de novo a cada golpe enquanto a barra estivesse vazia.
+      if (shield == 0) {
+        for (final item in itens) {
+          item.aoQuebrarEscudo(this);
+        }
+      }
       return; // o golpe foi absorvido pelo escudo, não chega no HP
       // Sem arredondar o resto pra cima: com 0.5 de escudo sobrando, um
       // arredondamento faria o golpe de 1 (contato de inimigo) chegar inteiro
@@ -1196,6 +1251,11 @@ class Player extends PositionComponent
     }
 
     currentHealth -= amountFinal;
+
+    // Só aqui: o golpe passou do escudo e chegou no HP de verdade.
+    for (final item in itens) {
+      item.aoTomarDano(this, amountFinal, tipoAtacante);
+    }
 
     if (currentHealth <= 0) {
       final jogo = game;

@@ -12,7 +12,7 @@ class BolaDaguaEvo extends Ability {
   final double velocidade;
 
   const BolaDaguaEvo({this.coef = 1.5, this.velocidade = 220})
-    : super(nome: "Bola d'Água+", cooldown: 0.6);
+    : super(nome: "Bola d'Água+", cooldown: 0.3, custoEnergia: 2.5);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

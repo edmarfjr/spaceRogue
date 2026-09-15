@@ -20,6 +20,7 @@ class Arranhao extends Ability {
          nome: 'Arranhão',
          descricao: 'Golpe rápido de curto alcance, cadência altíssima.',
          cooldown: 0.35,
+         custoEnergia: 1.0,
        );
 
   @override

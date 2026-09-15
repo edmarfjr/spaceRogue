@@ -21,6 +21,7 @@ class MordidaCerteira extends Ability {
          nome: 'Mordida Certeira',
          descricao: 'Investida que mira sozinha no inimigo mais próximo.',
          cooldown: 0.9,
+         custoEnergia: 2.5,
        );
 
   @override
