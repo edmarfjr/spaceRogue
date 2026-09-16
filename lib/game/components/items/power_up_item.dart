@@ -15,13 +15,13 @@ extension PowerUpTypeData on PowerUpType {
   String get spritePath => switch (this) {
         PowerUpType.hpUp => 'items/garrafa.png',
         PowerUpType.speedUp => 'items/garrafa.png',
-        PowerUpType.damageUp => 'items/garrafa.png',
-        PowerUpType.fireRateUp => 'items/garrafa.png',
+        PowerUpType.damageUp => 'items/dmgUp.png',
+        PowerUpType.fireRateUp => 'items/firerateUp.png',
         PowerUpType.shieldUp => 'items/garrafa.png',
-        PowerUpType.critChanceUp => 'items/capsula.png',
-        PowerUpType.critDamageUp => 'items/capsula.png',
-        PowerUpType.energyUp => 'items/garrafa.png',
-        PowerUpType.energyRegenUp => 'items/capsula.png',
+        PowerUpType.critChanceUp => 'items/critChance.png',
+        PowerUpType.critDamageUp => 'items/critDmg.png',
+        PowerUpType.energyUp => 'items/energyUp.png',
+        PowerUpType.energyRegenUp => 'items/energyRegen.png',
       };
 
   Color get cor1 => switch (this) {

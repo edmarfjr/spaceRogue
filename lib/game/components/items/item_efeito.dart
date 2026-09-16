@@ -128,11 +128,11 @@ class CascaInstavel extends ItemEfeito {
   @override
   String get id => 'cascaInstavel';
   @override
-  String get spritePath => 'items/shell.png';
+  String get spritePath => 'items/casco.png';
   @override
   Color get cor1 => Palette.laranja;
   @override
-  Color get cor2 => Palette.marromEsc;
+  Color get cor2 => Palette.verdeEsc;
   @override
   String nome(BuildContext context) => context.l10n.item_cascaInstavel;
   @override
@@ -163,7 +163,7 @@ class Estilhaco extends ItemEfeito {
   @override
   String get id => 'estilhaco';
   @override
-  String get spritePath => 'items/gelo.png';
+  String get spritePath => 'items/escudoQuebr.png';
   @override
   Color get cor1 => Palette.azul;
   @override
@@ -208,11 +208,11 @@ class PeleDeCinzas extends ItemEfeito {
   @override
   String get id => 'peleDeCinzas';
   @override
-  String get spritePath => 'items/potion.png';
+  String get spritePath => 'items/casco.png';
   @override
-  Color get cor1 => Palette.vermelho;
+  Color get cor1 => Palette.laranja;
   @override
-  Color get cor2 => Palette.cinzaEsc;
+  Color get cor2 => Palette.vermelho;
   @override
   String nome(BuildContext context) => context.l10n.item_peleDeCinzas;
   @override
@@ -247,7 +247,7 @@ class Couraca extends ItemEfeito {
   @override
   String get id => 'couraca';
   @override
-  String get spritePath => 'items/shell.png';
+  String get spritePath => 'items/armor.png';
   @override
   Color get cor1 => Palette.indigo;
   @override
@@ -281,7 +281,7 @@ class Desesperado extends ItemEfeito {
   @override
   String get id => 'desesperado';
   @override
-  String get spritePath => 'items/fruta.png';
+  String get spritePath => 'items/desespero.png';
   @override
   Color get cor1 => Palette.verde;
   @override

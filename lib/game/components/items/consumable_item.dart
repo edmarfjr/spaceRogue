@@ -18,7 +18,7 @@ enum ConsumableType { pocao, escudo, congelar, mapa, doce }
 extension ConsumableTypeData on ConsumableType {
   String get spritePath => switch (this) {
         ConsumableType.pocao => 'items/potion.png',
-        ConsumableType.escudo => 'items/shell.png',
+        ConsumableType.escudo => 'items/escudo.png',
         ConsumableType.congelar => 'items/gelo.png',
         ConsumableType.mapa => 'items/mapa.png',
         ConsumableType.doce => 'items/doce.png',
