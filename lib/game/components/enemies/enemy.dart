@@ -84,6 +84,15 @@ abstract class Enemy extends PositionComponent
   // pra campo declarado na própria classe.
 
   late final SpriteComponent shieldVisual;
+  /// Inerte por causa de uma cena (ver `BossCutscene`): não pensa, não anda e
+  /// não ataca.
+  ///
+  /// Campo próprio em vez de reaproveitar `paralisedTimer`/`stunTimer`: os dois
+  /// acendem ícone de condição em cima do inimigo, e aqui não há condição
+  /// nenhuma — é a luta que ainda não começou. `stunTimer` além disso ainda
+  /// chama `updateWanderMovement`, ou seja, o inimigo continuaria vagando.
+  bool emCutscene = false;
+
   bool shieldVisualActive = false;
 
   late final ConditionIcons conditionIcons;
@@ -301,6 +310,8 @@ abstract class Enemy extends PositionComponent
       }
       return; // Pula o método de movimento, o inimigo não "pensa" enquanto voa pra trás
     }
+
+    if (emCutscene) return;
 
     if (paralisedTimer > 0) {
       paralisedTimer -= dt;

@@ -50,7 +50,7 @@ class BossOption {
 /// criatura sem boss ficaria sem via de desbloqueio.
 class BossRegistry {
   static final List<List<BossOption>> all = [
-    [
+    /*[
       BossOption(
         creatureId: 'bomba_fogo',
         builder: (pos, plr) =>
@@ -60,46 +60,6 @@ class BossRegistry {
         creatureId: 'slime_planta',
         builder: (pos, plr) =>
             SlimePlantaBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'tartaruga_planta',
-        builder: (pos, plr) =>
-            TartarugaPlantaBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'cobra_agua',
-        builder: (pos, plr) =>
-            CobraAguaBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'tornado_fogo',
-        builder: (pos, plr) =>
-            TornadoFogoBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'urso_planta',
-        builder: (pos, plr) =>
-            UrsoPlantaBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'ave_eletrica',
-        builder: (pos, plr) =>
-            AveEletricaBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'roedor_fogo',
-        builder: (pos, plr) =>
-            RoedorFogoBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'grilo_eletrico',
-        builder: (pos, plr) =>
-            GriloEletricoBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'sapo_agua',
-        builder: (pos, plr) =>
-            SapoAguaBossEnemy(position: pos, playerTarget: plr),
       ),
       BossOption(
         creatureId: 'ourico_eletrico',
@@ -151,7 +111,7 @@ class BossRegistry {
         builder: (pos, plr) =>
             PeixeNeutroBossEnemy(position: pos, playerTarget: plr),
       ),
-    ],
+    ],*/
     [
       BossOption(
         creatureId: 'tartaruga_planta',

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'package:creatures_rogue/game/components/items/item_efeito.dart';
 import 'dart:ui' as ui;
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
@@ -24,6 +25,10 @@ class Hud extends PositionComponent with HasGameRef {
   /// 0 = ativa (ou vida cheia no banco), 1 = acabou de entrar no banco com a
   /// vida zerada — ver `CreaturesRogueGame.companionPocketFraction`.
   final double Function(int slot) companionPocketFractionAt;
+
+  /// Cooldown de troca de criatura (1 = acabou de trocar, 0 = pronto), o mesmo
+  /// pra todos os retratos — ver `CreaturesRogueGame.trocaCooldownFraction`.
+  final double Function() trocaFraction;
 
   /// Qual slot é a criatura ativa agora — o retrato dela ganha o destaque
   /// visual.
@@ -54,6 +59,11 @@ class Hud extends PositionComponent with HasGameRef {
   /// (`ui/ataque.png` e `ui/defesa.png`), então a escala fica 1:1 e o pixel art
   /// não ganha artefato de reamostragem.
   static const double _iconeCooldownLado = 16;
+
+  /// Deslocamento vertical entre um retrato e o de baixo. Menor que
+  /// [_iconeCooldownLado] de propósito: eles se SOBREPÕEM, e só a faixa que
+  /// sobra de cada um aparece — é o que comunica "tem mais criatura embaixo".
+  static const double _retratoEmpilhamento = 5;
 
   //static final Vector2 _shieldBarSize = Vector2(3, 3);
 
@@ -110,6 +120,7 @@ class Hud extends PositionComponent with HasGameRef {
     required this.player,
     required this.companionCreatureAt,
     required this.companionPocketFractionAt,
+    required this.trocaFraction,
     required this.isCompanionAtivo,
     required this.onTapCompanionSlot,
   }) : super(position: Vector2(0, 0));
@@ -193,10 +204,11 @@ class Hud extends PositionComponent with HasGameRef {
         CompanionPortraitIndicator(
           creatureData: () => companionCreatureAt(slot),
           pocketFraction: () => companionPocketFractionAt(slot),
+          trocaFraction: trocaFraction,
           isAtiva: () => isCompanionAtivo(slot),
           onTap: () => onTapCompanionSlot(slot),
           lado: _iconeCooldownLado,
-          position: Vector2(1, 17 + (_iconeCooldownLado + 2) * slot),
+          position: Vector2(1, 17 + _retratoEmpilhamento * slot),
         ),
     ]);
 
@@ -244,7 +256,12 @@ class Hud extends PositionComponent with HasGameRef {
       Rect.fromLTWH(0, 0, 192, 16),
       Paint()..color = Palette.branco,
     );
-    if (player.creatureData.evoluir != null) {
+    // Antes o guard era so `evoluir != null`, e a forma EVOLUIDA nao tem
+    // `evoluir` — a barra sumia justo quando passou a medir a aposentadoria.
+    final naAposentadoria =
+        player.evoluida &&
+        PassivasAposentadoria.de(player.creatureData.id) != null;
+    if (player.creatureData.evoluir != null || naAposentadoria) {
       textPaint.render(canvas, 'XP:', Vector2(2, _evoBarY - 6));
       canvas.drawRect(
         Rect.fromLTWH(25, _evoBarY-1, _evoBarWidth+1, _evoBarHeight+2),
@@ -298,6 +315,7 @@ class Hud extends PositionComponent with HasGameRef {
     );
     textPaint.render(canvas, ':${player.coins}', Vector2(136, 1));
 
+    /*
     // --- LÓGICA DO MEIO-CORAÇÃO ---
     // Quantos corações INICIAIS (capacidade total) o jogador tem na tela?
     // Como a escala do player é dobrada (maxHealth = 6), dividimos por 2 (3 corações na tela).
@@ -328,6 +346,33 @@ class Hud extends PositionComponent with HasGameRef {
       spriteToDraw.render(
         canvas,
         position: Vector2(xPosition, -2),
+        size: heartSize,
+        overridePaint: paint,
+      );
+    }
+
+    */
+    //barra de vida com logica sem meia vida
+
+    for (int i = 0; i < player.maxHealth; i++) {
+      double shieldX = (i * (heartSize.x + spacing) - ((heartSize.x + spacing) + 2)) + 3;
+      final double shieldY = -2; //heartSize.y + 1;
+
+      heartEmptySprite.render(
+        canvas,
+        position: Vector2(shieldX, shieldY),
+        size: heartSize,
+        overridePaint: paint,
+      );
+    }
+
+    for (int i = 0; i < player.currentHealth; i++) {
+      double shieldX = (i * (heartSize.x + spacing) - ((heartSize.x + spacing) + 2)) + 3;
+      final double shieldY = -2; //heartSize.y + 1;
+
+      heartSprite.render(
+        canvas,
+        position: Vector2(shieldX, shieldY),
         size: heartSize,
         overridePaint: paint,
       );

@@ -20,7 +20,8 @@ import 'package:creatures_rogue/game/components/UI/consumable_slot_button.dart';
 /// `JoystickComponent` original do Flame — só o "centro" deixou de ser fixo
 /// no `onMount` (campo privado da lib do Flame, inacessível por herança) pra
 /// ser recalculado a cada toque em `onDragStart`.
-class DynamicJoystickComponent extends PositionComponent with DragCallbacks {
+class DynamicJoystickComponent extends PositionComponent
+    with DragCallbacks, TapCallbacks {
   final PositionComponent? knob;
   final PositionComponent? background;
   final double knobRadius;
@@ -29,6 +30,42 @@ class DynamicJoystickComponent extends PositionComponent with DragCallbacks {
   /// `true` = metade DIREITA (mira/ataque). Cada instância cobre só a
   /// metade que lhe cabe, senão um toque do lado errado ativaria as duas.
   final bool ladoDireito;
+
+  /// Chamado quando um toque nesta metade da tela terminou SEM virar arrasto.
+  /// `null` = ninguém escutando, que é o caso no esquema de BOTÕES.
+  ///
+  /// Quem separa toque de arrasto é a arena de gestos do Flutter, não conta
+  /// de tempo nem de distância feita aqui. `DragCallbacks` roda sobre
+  /// `ImmediateMultiDragGestureRecognizer`, que só aceita o gesto quando o
+  /// dedo passa do `kTouchSlop` (~18px, ver `_ImmediatePointerState.
+  /// checkForResolutionAfterMove` no SDK) — um toque parado NUNCA gera
+  /// `onDragStart`. Então:
+  ///
+  /// - dedo entra e sai sem andar: só o reconhecedor de toque se interessa,
+  ///   e [onTapUp] dispara;
+  /// - dedo anda mais de 18px: o arrasto vence a arena, o toque é cancelado
+  ///   (`onTapCancel`) e o joystick mira como sempre.
+  ///
+  /// Sem limite de duração de propósito: segurar o dedo parado não faz mais
+  /// nada neste jogo, então soltar depois de um tempão ainda é um toque.
+  void Function()? onToqueRapido;
+
+  /// Dois toques rápidos seguidos nesta metade da tela.
+  ///
+  /// Dois toques rápidos seguidos nesta metade da tela.
+  ///
+  /// [onToqueRapido] dispara nos DOIS toques, sem esperar pra ver se vem o
+  /// segundo. Já tentamos o contrário — segurar o simples em suspenso até a
+  /// janela do duplo fechar — e a latência de 200ms em TODO disparo se sentia
+  /// como travamento, então foi revertido. O custo aceito é o oposto: um
+  /// toque duplo também dispara a ação de toque simples.
+  void Function()? onToqueDuplo;
+
+  /// Janela entre um toque e o seguinte pra contarem como duplo. 300ms é o
+  /// mesmo tempo que o Flutter usa no `DoubleTapGestureRecognizer`.
+  static const int _intervaloToqueDuplo = 300;
+
+  int _ultimoToqueMs = 0;
 
   final Vector2 delta = Vector2.zero();
   final Vector2 _unscaledDelta = Vector2.zero();
@@ -154,6 +191,23 @@ class DynamicJoystickComponent extends PositionComponent with DragCallbacks {
     super.onDragEnd(event);
     _hide();
     return false;
+  }
+
+  /// Chegar aqui já é a prova de que não houve arrasto — ver [onToqueRapido].
+  @override
+  void onTapUp(TapUpEvent event) {
+    super.onTapUp(event);
+    onToqueRapido?.call();
+
+    final agora = DateTime.now().millisecondsSinceEpoch;
+    if (agora - _ultimoToqueMs <= _intervaloToqueDuplo) {
+      // Zera pra que um terceiro toque comece um par novo, em vez de formar
+      // um segundo duplo com o mesmo toque do meio.
+      _ultimoToqueMs = 0;
+      onToqueDuplo?.call();
+    } else {
+      _ultimoToqueMs = agora;
+    }
   }
 
   @override

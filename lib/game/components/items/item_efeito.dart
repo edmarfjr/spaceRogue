@@ -13,6 +13,7 @@ import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart'
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
 import 'package:creatures_rogue/game/components/items/collectible.dart';
+import 'package:creatures_rogue/game/components/items/item_descritor.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'package:flame/components.dart';
 
@@ -27,17 +28,41 @@ import 'package:flame/components.dart';
 ///
 /// Instâncias são `const` e vivem em [ItemEfeitoRegistry.todos], igual a
 /// `Ability`: o item não guarda estado nenhum, quem guarda é o `Player`.
-abstract class ItemEfeito {
+abstract class ItemEfeito implements ItemDescritor {
   const ItemEfeito();
 
   /// Chave estável do save. NUNCA renomear depois de publicado.
+  @override
   String get id;
 
+  @override
   String get spritePath;
+  @override
   Color get cor1;
+  @override
   Color get cor2;
+  @override
   String nome(BuildContext context);
+  @override
   String descricao(BuildContext context);
+
+  /// Este efeito pode aparecer em pedestal e loja? `false` = só se ganha por
+  /// outra via (as passivas de aposentadoria), mas continua registrado em
+  /// [ItemEfeitoRegistry.todos] — é `porId` que reconstrói `player.itens` no
+  /// carregamento do save, e um registro separado faria eles desaparecerem ao
+  /// recarregar.
+  bool get sorteavel => true;
+
+  /// ANTES de qualquer escudo: dispara sempre que o jogador TENTA tomar dano,
+  /// mesmo que o golpe seja inteiramente absorvido.
+  ///
+  /// Separado de [aoTomarDano] de propósito — aquele só roda quando o dano
+  /// chega no HP de verdade. Efeito de retaliação quer o primeiro; efeito que
+  /// reage a ferimento quer o segundo.
+  void aoTentarTomarDano(Player player, double amount) {}
+
+  /// Toda esquiva, com a direção já resolvida.
+  void aoEsquivar(Player player, Vector2 direcao) {}
 
   /// Depois do dano ser resolvido (tipo, redução e escudo já aplicados), e só
   /// se ele realmente passou do escudo e chegou no HP.
@@ -56,6 +81,16 @@ abstract class ItemEfeito {
 
 class ItemEfeitoRegistry {
   static const List<ItemEfeito> todos = [
+    // --- Passivas de aposentadoria: `sorteavel` false, ver `ItemEfeito`. ---
+    RastroFlamejante(),
+    CascoReflexivo(),
+    BolhaAutonoma(),
+    CorrenteReflexa(),
+    TornadoResidual(),
+    BombaNaEsquiva(),
+    SaltoAquatico(),
+    BradoReflexo(),
+    ReflexoEletrico(),
     Revezamento(),
     CascaInstavel(),
     Estilhaco(),
@@ -128,7 +163,7 @@ class CascaInstavel extends ItemEfeito {
   @override
   String get id => 'cascaInstavel';
   @override
-  String get spritePath => 'items/casco.png';
+  String get spritePath => 'items/cascoQuebrado.png';
   @override
   Color get cor1 => Palette.laranja;
   @override
@@ -158,7 +193,7 @@ class Estilhaco extends ItemEfeito {
   const Estilhaco();
 
   static const int qtdProjeteis = 8;
-  static const double coefDano = 0.8;
+  static const double coefDano = 1.5;
 
   @override
   String get id => 'estilhaco';
@@ -183,8 +218,8 @@ class Estilhaco extends ItemEfeito {
           owner: player,
           position: player.position.clone(),
           direction: Vector2(cos(ang), sin(ang)),
-          speed: 70,
-          lifeTime: 1.2,
+          //speed: 70,
+          lifeTime: 1.0,
           dmg: dano,
           sprPath: 'projeteis/proj2.png',
           cor1: Palette.azul,
@@ -315,7 +350,7 @@ class Desesperado extends ItemEfeito {
 class Legado extends ItemEfeito {
   const Legado();
 
-  static const double coefDano = 0.6;
+  static const double coefDano = 1.6;
   static const double duracao = 4.0;
 
   @override
@@ -341,25 +376,402 @@ class Legado extends ItemEfeito {
       CreatureType.neutro => ('projeteis/nuvem.png', null),
     };
 
+    
+    for(var i=-1;i<=1;i++){
+      for(var j=-1;j<=1;j++){
+      player.parent?.add(
+        Projectile(
+          owner: player,
+          position: player.position.clone() + Vector2(i*16,j*16),
+          direction: Vector2.zero(),
+          speed: 0,
+          lifeTime: duracao,
+          dmg: sai.stats.ataque * coefDano,
+          sprPath: sprite,
+          cor1: sai.corClara,
+          cor2: sai.corEscura,
+          tipo: sai.tipo,
+          radius: 8,
+          atravessa: 100,
+          dotKind: dot,
+          dotTicks: 4,
+        ),
+      );
+    }
+    }
+    
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Passivas de aposentadoria (ver [PassivasAposentadoria]). Vêm das classes em
+// `creatures/passives/`, que nasceram como `Passive` — ligadas ao
+// `CreatureData` e portanto mortas na troca de criatura. Aqui elas são do
+// JOGADOR e permanentes, que é o que a aposentadoria exige: a criatura vai
+// embora e o bônus fica.
+//
+// `sorteavel => false` nas seis: não aparecem em pedestal nem em loja.
+//
+// `spritePath` e cores existem só pra satisfazer a interface — nenhuma delas
+// chega a ser instanciada como coletável.
+// ---------------------------------------------------------------------------
+
+/// Roedor de Fogo. Toda esquiva termina numa explosão de fogo no ponto de
+/// chegada.
+class RastroFlamejante extends ItemEfeito {
+  const RastroFlamejante({this.coef = 0.5});
+
+  final double coef;
+
+  @override
+  bool get sorteavel => false;
+  @override
+  String get id => 'rastroFlamejante';
+  @override
+  String get spritePath => 'items/capsula.png';
+  @override
+  Color get cor1 => Palette.vermelho;
+  @override
+  Color get cor2 => Palette.laranja;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_rastroFlamejante;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_rastroFlamejanteDesc;
+
+  @override
+  void aoEsquivar(Player player, Vector2 direcao) {
+    final dano = player.creatureData.stats.ataque * coef;
+    // No FIM da esquiva, não no início: a explosão marca onde ele chegou.
+    // Efeito temporário em vez do `Future.delayed` que a `Passive` usava —
+    // este respeita pausa e é limpo na troca de criatura.
+    player.aplicarEfeito(
+      #rastroFlamejante,
+      player.dodgeIframeDuration,
+      aoTerminar: () => player.parent?.add(
+        ExplosionHitbox(
+          position: player.position.clone(),
+          dmg: dano,
+          cor2: Palette.laranja,
+          tipo: player.creatureData.tipo,
+          dotKind: DotKind.queimadura,
+          dotTicks: 5,
+        ),
+      ),
+    );
+  }
+}
+
+/// Tartaruga de Planta. Durante os i-frames da esquiva, reflete projéteis.
+class CascoReflexivo extends ItemEfeito {
+  const CascoReflexivo();
+
+  @override
+  bool get sorteavel => false;
+  @override
+  String get id => 'cascoReflexivo';
+  @override
+  String get spritePath => 'items/casco.png';
+  @override
+  Color get cor1 => Palette.verde;
+  @override
+  Color get cor2 => Palette.verdeEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_cascoReflexivo;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_cascoReflexivoDesc;
+
+  @override
+  void aoEsquivar(Player player, Vector2 direcao) {
+    player.aplicarEfeito(
+      #cascoReflexivo,
+      player.dodgeIframeDuration,
+      aoIniciar: () => player.refleteProjetil = true,
+      aoTerminar: () => player.refleteProjetil = false,
+    );
+  }
+}
+
+/// Sapo de Água. Sem apanhar por um tempo, forma sozinho um escudo de um
+/// golpe.
+class BolhaAutonoma extends ItemEfeito {
+  const BolhaAutonoma({this.tempoParaFormar = 5.0});
+
+  final double tempoParaFormar;
+
+  @override
+  bool get sorteavel => false;
+  @override
+  String get id => 'bolhaAutonoma';
+  @override
+  String get spritePath => 'items/escudo.png';
+  @override
+  Color get cor1 => Palette.indigo;
+  @override
+  Color get cor2 => Palette.royal;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_bolhaAutonoma;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_bolhaAutonomaDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    if (player.shieldHits > 0) return;
+    if (player.tempoSemApanhar < tempoParaFormar) return;
+    player.adicionarEscudoPermanente(1);
+  }
+}
+
+/// Ave Elétrica. Todo golpe que o jogador TENTA tomar solta uma descarga
+/// atordoante em volta — inclusive os que o escudo come.
+class CorrenteReflexa extends ItemEfeito {
+  const CorrenteReflexa({this.coef = 1.0, this.duracaoStun = 1.5});
+
+  final double coef;
+  final double duracaoStun;
+
+  @override
+  bool get sorteavel => false;
+  @override
+  String get id => 'correnteReflexa';
+  @override
+  String get spritePath => 'items/capsula.png';
+  @override
+  Color get cor1 => Palette.amarelo;
+  @override
+  Color get cor2 => Palette.laranja;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_correnteReflexa;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_correnteReflexaDesc;
+
+  @override
+  void aoTentarTomarDano(Player player, double amount) {
+    player.parent?.add(
+      ExplosionHitbox(
+        position: player.position.clone(),
+        dmg: player.creatureData.stats.ataque * coef,
+        stunDuration: duracaoStun,
+        cor1: Palette.amarelo,
+        cor2: Palette.laranja,
+      ),
+    );
+  }
+}
+
+/// Tornado de Fogo. Toda esquiva deixa um tornado no ponto de partida.
+class TornadoResidual extends ItemEfeito {
+  const TornadoResidual({this.coef = 0.5});
+
+  final double coef;
+
+  @override
+  bool get sorteavel => false;
+  @override
+  String get id => 'tornadoResidual';
+  @override
+  String get spritePath => 'items/capsula.png';
+  @override
+  Color get cor1 => Palette.vermelho;
+  @override
+  Color get cor2 => Palette.laranja;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_tornadoResidual;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_tornadoResidualDesc;
+
+  @override
+  void aoEsquivar(Player player, Vector2 direcao) {
     player.parent?.add(
       Projectile(
         owner: player,
         position: player.position.clone(),
-        direction: Vector2.zero(),
-        speed: 0,
-        lifeTime: duracao,
-        dmg: sai.stats.ataque * coefDano,
-        sprPath: sprite,
-        cor1: sai.corClara,
-        cor2: sai.corEscura,
-        tipo: sai.tipo,
+        direction: direcao,
+        movimento: ProjetilMovimento.espiral,
+        speed: 10,
+        velAngular: 4.0,
+        lifeTime: 3,
+        dmg: player.creatureData.stats.ataque * coef,
+        sprPath: 'projeteis/tornado.png',
+        cor1: Palette.vermelho,
+        cor2: Palette.laranja,
+        tipo: player.creatureData.tipo,
         radius: 8,
-        atravessa: 100,
-        dotKind: dot,
-        dotTicks: 4,
+        atravessa: 10,
       ),
     );
   }
+}
+
+/// Bomba de Fogo. Toda esquiva larga uma bomba pra trás, se houver estoque.
+class BombaNaEsquiva extends ItemEfeito {
+  const BombaNaEsquiva();
+
+  @override
+  bool get sorteavel => false;
+  @override
+  String get id => 'bombaNaEsquiva';
+  @override
+  String get spritePath => 'items/bomb.png';
+  @override
+  Color get cor1 => Palette.cinza;
+  @override
+  Color get cor2 => Palette.cinzaEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_bombaNaEsquiva;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_bombaNaEsquivaDesc;
+
+  @override
+  void aoEsquivar(Player player, Vector2 direcao) {
+    player.placeBomb(-direcao);
+  }
+}
+
+/// Cobra de Água. A esquiva termina num respingo que empurra quem está perto.
+class SaltoAquatico extends ItemEfeito {
+  const SaltoAquatico({this.coef = 0.4});
+
+  final double coef;
+
+  @override
+  bool get sorteavel => false;
+  @override
+  String get id => 'saltoAquatico';
+  @override
+  String get spritePath => 'items/gelo.png';
+  @override
+  Color get cor1 => Palette.azul;
+  @override
+  Color get cor2 => Palette.royal;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_saltoAquatico;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_saltoAquaticoDesc;
+
+  @override
+  void aoEsquivar(Player player, Vector2 direcao) {
+    final dano = player.creatureData.stats.ataque * coef;
+    player.aplicarEfeito(
+      #saltoAquatico,
+      player.dodgeIframeDuration,
+      aoTerminar: () => player.parent?.add(
+        ExplosionHitbox(
+          position: player.position.clone(),
+          dmg: dano,
+          knockback: 30,
+          size: Vector2(28, 28),
+          cor1: Palette.azul,
+          cor2: Palette.royal,
+          tipo: player.creatureData.tipo,
+        ),
+      ),
+    );
+  }
+}
+
+/// Urso de Planta. Todo golpe que o jogador TENTA tomar empurra tudo em volta
+/// pra longe — o eco da habilidade `Brado` dele.
+class BradoReflexo extends ItemEfeito {
+  const BradoReflexo({this.coef = 0.25, this.empurrao = 100});
+
+  final double coef;
+  final double empurrao;
+
+  @override
+  bool get sorteavel => false;
+  @override
+  String get id => 'bradoReflexo';
+  @override
+  String get spritePath => 'items/fruta.png';
+  @override
+  Color get cor1 => Palette.verde;
+  @override
+  Color get cor2 => Palette.marromEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_bradoReflexo;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_bradoReflexoDesc;
+
+  @override
+  void aoTentarTomarDano(Player player, double amount) {
+    player.parent?.add(
+      ExplosionHitbox(
+        position: player.position.clone(),
+        dmg: player.creatureData.stats.ataque * coef,
+        knockback: empurrao,
+        size: Vector2(48, 48),
+        tipo: player.creatureData.tipo,
+      ),
+    );
+  }
+}
+
+/// Grilo Elétrico. A esquiva recarrega bem mais rápido, mas percorre menos
+/// distância.
+///
+/// Única das passivas que não é gancho de evento: são dois multiplicadores
+/// permanentes. Reafirmados todo quadro em [aoAtualizar], por ATRIBUIÇÃO e não
+/// multiplicação — assim não há par de aplicar/desfazer pra manter, o efeito
+/// volta sozinho depois de um `trocarCriatura` (que zera estado de combate) e
+/// sobrevive ao carregamento do save sem precisar de um gancho "ao ganhar".
+class ReflexoEletrico extends ItemEfeito {
+  const ReflexoEletrico({this.multCooldown = 0.6, this.multDistancia = 0.8});
+
+  final double multCooldown;
+  final double multDistancia;
+
+  @override
+  bool get sorteavel => false;
+  @override
+  String get id => 'reflexoEletrico';
+  @override
+  String get spritePath => 'items/capsula.png';
+  @override
+  Color get cor1 => Palette.amarelo;
+  @override
+  Color get cor2 => Palette.marromEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_reflexoEletrico;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_reflexoEletricoDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    player.dodgeCdMult = multCooldown;
+    player.dodgeDistMult = multDistancia;
+  }
+}
+
+/// Qual passiva cada criatura entrega ao se aposentar.
+///
+/// Este mapa É a pool de aposentadoria: criatura fora dele não acumula a
+/// segunda contagem de XP nem se aposenta, porque não haveria o que entregar.
+/// Cresce sozinho conforme novas passivas forem escritas — não existe uma
+/// segunda lista pra manter em sincronia.
+///
+class PassivasAposentadoria {
+  static const Map<String, ItemEfeito> porCriatura = {
+    'roedor_fogo': RastroFlamejante(),
+    'tartaruga_planta': CascoReflexivo(),
+    'sapo_agua': BolhaAutonoma(),
+    'ave_eletrica': CorrenteReflexa(),
+    'tornado_fogo': TornadoResidual(),
+    'bomba_fogo': BombaNaEsquiva(),
+    'cobra_agua': SaltoAquatico(),
+    'urso_planta': BradoReflexo(),
+    'grilo_eletrico': ReflexoEletrico(),
+  };
+
+  static ItemEfeito? de(String creatureId) => porCriatura[creatureId];
 }
 
 /// Coletável do pedestal que entrega um [ItemEfeito]. Não pega duas vezes o
@@ -376,12 +788,18 @@ class ItemEfeitoPickup extends Collectible {
       );
 
   @override
+  String? nomeExibido(BuildContext context) => item.nome(context);
+
+  @override
   bool onCollect(Player player) {
     if (player.itens.any((i) => i.id == item.id)) return false;
     player.itens.add(item);
     player.parent?.add(
       TextEffect(
-        text: item.nome(player.game.buildContext!),
+        // Descrição, não nome: o nome já está escrito acima do sprite no chão
+        // (ver `Collectible.nomeExibido`), então repeti-lo na coleta não
+        // informa nada. O que o jogador ainda não sabe é o que o item FAZ.
+        text: item.descricao(player.game.buildContext!),
         position: player.position.clone() + Vector2(0, -player.size.y / 2 - 4),
         color: Palette.amarelo,
       ),

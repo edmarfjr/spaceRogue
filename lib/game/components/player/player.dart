@@ -112,7 +112,7 @@ class Player extends PositionComponent
   double bonusHpItens = 0.0;
   double bonusShieldItens = 0.0;
   double shieldRegenAmount = 1.0;
-  double shieldRegenInterval = 5.0;
+  double shieldRegenInterval = 10.0;
   double _shieldRegenTimer = 0.0;
 
   /// Quanto falta pro escudo passivo ganhar a próxima carga (0 = acabou de
@@ -146,6 +146,17 @@ class Player extends PositionComponent
   // entre todas as instâncias da criatura). Mesmo padrão do `lentidaoFator`
   // logo abaixo: o valor base nunca muda, quem multiplica é o getter.
   double velMult = 1.0;
+
+  /// Multiplicadores da esquiva, lidos em [dodge]. Ficam no jogador porque
+  /// quem os altera e um ItemEfeito (passiva de aposentadoria), que persiste
+  /// na troca de criatura.
+  ///
+  /// Quem escreve aqui deve ATRIBUIR, nao multiplicar: a passiva reafirma o
+  /// valor todo quadro no aoAtualizar, o que a faz sobreviver ao save e ao
+  /// reset da troca de criatura sem par de soma/subtracao pra manter. Se um
+  /// dia dois efeitos quiserem mexer nisso, o ultimo a escrever vence.
+  double dodgeCdMult = 1.0;
+  double dodgeDistMult = 1.0;
 
   /// Multiplicador de cadência das duas habilidades — upgrade de run
   /// (`fireRateUp`). ATRAVESSA a troca de criatura, igual a `velMult`,
@@ -240,9 +251,21 @@ class Player extends PositionComponent
 
   /// Quanto de XP falta pra evoluir. Só uma constante por enquanto — todas
   /// as criaturas evoluem no mesmo ritmo.
-  static const double xpParaEvoluir = 50.0;
+  static const double xpParaEvoluir = 30.0;
 
-  double get xpFracao => evoluida ? 1.0 : (xp / xpParaEvoluir).clamp(0.0, 1.0);
+  /// XP da SEGUNDA contagem, que a criatura já evoluída acumula rumo à
+  /// aposentadoria (ver `CreaturesRogueGame.aposentarSlotAtivo`). Maior que
+  /// [xpParaEvoluir] porque é o fim da linha daquela criatura, não um meio.
+  static const double xpParaAposentar = 30.0;
+
+  /// Três estados, não dois: antes de evoluir mede rumo à evolução; depois de
+  /// evoluir mede rumo à aposentadoria; e criatura evoluída SEM passiva
+  /// mapeada fica cheia, porque pra ela não há terceira etapa.
+  double get xpFracao {
+    if (!evoluida) return (xp / xpParaEvoluir).clamp(0.0, 1.0);
+    if (PassivasAposentadoria.de(creatureData.id) == null) return 1.0;
+    return (xp / xpParaAposentar).clamp(0.0, 1.0);
+  }
 
   /// Chamado por `Enemy.death()` quando a criatura ativa dá o golpe fatal.
   /// Sem efeito se esta criatura não tem forma evoluída desenhada
@@ -258,10 +281,26 @@ class Player extends PositionComponent
   /// `_evoluir()` de verdade um frame depois, fora da varredura.
   bool _evoluirPendente = false;
 
+  /// Mesmo diferimento do `_evoluirPendente`, e pelo mesmo motivo: `ganharXp`
+  /// é chamado de dentro de `Enemy.death()`, e aposentar libera um slot de
+  /// companheiro, troca a criatura ativa e pode disparar Game Over — nada
+  /// disso pode acontecer no meio da varredura de inimigos da sala.
+  bool _aposentarPendente = false;
+
   bool ganharXp(double quantidade) {
-    if (evoluida || creatureData.evoluir == null) return false;
+    if (!evoluida) {
+      if (creatureData.evoluir == null) return false;
+      xp += quantidade;
+      if (xp >= xpParaEvoluir) _evoluirPendente = true;
+      return true;
+    }
+
+    // Já evoluída: a mesma barra passa a medir a aposentadoria. Só acumula
+    // pra quem tem passiva mapeada — sem recompensa pra entregar, acumular
+    // seria uma barra que nunca completa.
+    if (PassivasAposentadoria.de(creatureData.id) == null) return false;
     xp += quantidade;
-    if (xp >= xpParaEvoluir) _evoluirPendente = true;
+    if (xp >= xpParaAposentar) _aposentarPendente = true;
     return true;
   }
 
@@ -275,7 +314,10 @@ class Player extends PositionComponent
     final proxima = creatureData.evoluir!();
     creatureData = proxima;
     evoluida = true;
-    xp = xpParaEvoluir;
+    // Zera, e NAO fixa em xpParaEvoluir: a segunda contagem (rumo a
+    // aposentadoria) comeca do zero. Fixado no teto, a criatura se
+    // aposentaria no mesmo instante em que evoluisse.
+    xp = 0.0;
 
     final jogo = game;
     if (jogo is CreaturesRogueGame) {
@@ -307,6 +349,17 @@ class Player extends PositionComponent
   bool _keyboardHoldAbility2 = false;
 
   bool naoMove = false;
+
+  /// Cutscene rodando: o jogador não anda NEM dispara.
+  ///
+  /// Campo separado de [naoMove] de propósito — `naoMove` é da transição de
+  /// sala, e o `onComplete` do efeito de câmera o devolve pra `false`
+  /// (`CreaturesRogueGame._checkCameraTransition`). Uma cena que durasse mais
+  /// que a panorâmica perderia a trava no meio.
+  ///
+  /// E não basta travar o movimento: sem cortar as habilidades, o jogador
+  /// atira durante a cena e pode até matar o boss antes de a briga começar.
+  bool emCutscene = false;
 
   // Ganchos usados pelas habilidades das criaturas (shieldVisualActive,
   // speedLocked, shieldHits, damageReduction, refleteProjetil, retalia*)
@@ -459,13 +512,8 @@ class Player extends PositionComponent
     GameAudio.instance.play(Sfx.dash);
     //final passivas = passivasAtivas;
 
-    double cooldownMult = 1.0;
-    double distanciaMult = 1.0;
-    /* for (final p in passivas) {
-      cooldownMult *= p.dodgeCooldownMult;
-      distanciaMult *= p.dodgeDistanceMult;
-    }
-    */
+    double cooldownMult = dodgeCdMult;
+    final double distanciaMult = dodgeDistMult;
     cooldownMult = cooldownMult < _dodgeCooldownMultFloor
         ? _dodgeCooldownMultFloor
         : cooldownMult;
@@ -489,11 +537,9 @@ class Player extends PositionComponent
         EffectController(duration: _dodgeDuration),
       ),
     );
-    /*
-    for (final p in passivas) {
-      p.aoEsquivar(this, dir);
+    for (final item in itens) {
+      item.aoEsquivar(this, dir);
     }
-    */
   }
 
   /// Fração restante do cooldown da esquiva (0 = pronta) — pra HUD desenhar
@@ -689,14 +735,14 @@ class Player extends PositionComponent
     add(_ringAbility1!);
   */
     final ui.Image shieldImage = await PaletteSwapper.createSwappedImage(
-      imagePath: 'projeteis/bolha.png',
+      imagePath: evoluida? 'projeteis/bolhaG.png' : 'projeteis/bolha.png',
       lightGrayReplacement: creatureData.corClara,
       darkGrayReplacement: creatureData.corEscura,
       whiteReplacement: Palette.branco,
     );
     shieldVisual = SpriteComponent(
       sprite: Sprite(shieldImage),
-      size: Vector2.all(24),
+      size: Vector2.all(shieldImage.height.toDouble()),
       anchor: Anchor.center,
       position: size / 2 + floatOffset,
       paint: Paint()..filterQuality = FilterQuality.none,
@@ -778,6 +824,7 @@ class Player extends PositionComponent
     retaliaStunDuration = 0.0;
     knockbackVelocity = Vector2.zero();
     energia = energiaMax;
+    energiaRegenPausa = 0.0;
     _cooldown1 = 0.0;
     _cooldown2 = 0.0;
     _dodgeCooldown = 0.0;
@@ -802,6 +849,12 @@ class Player extends PositionComponent
     if (_evoluirPendente) {
       _evoluirPendente = false;
       _evoluir();
+    }
+
+    if (_aposentarPendente) {
+      _aposentarPendente = false;
+      final jogo = game;
+      if (jogo is CreaturesRogueGame) jogo.aposentarSlotAtivo();
     }
 
     // Anchor.center: o "chão" (pés) fica meio size.y abaixo do centro.
@@ -942,15 +995,42 @@ class Player extends PositionComponent
     if (!creatureData.ability1.canExecute(this)) return;
     creatureData.ability1.execute(this, lockedAb1Direction);
     energia -= custo;
+    energiaRegenPausa = energiaRegenAtraso;
     _cooldownMax1 = creatureData.ability1.cooldown * cdMult;
     _cooldown1 = _cooldownMax1;
   }
 
+  /// Habilidade 2 marcada como [AbilityTipo.esquiva] É o dash do jogo hoje —
+  /// o `dodge()` embutido no Player está desligado (chamadas comentadas em
+  /// `CreaturesRogueGame`). É daqui, então, que as passivas de esquiva
+  /// disparam; ligá-las só ao `dodge()` as deixava mortas.
+  ///
+  /// Nenhuma habilidade 1 é do tipo esquiva (conferido no registro inteiro),
+  /// por isso o gancho vive só neste método.
   void dispararAbility2() {
+    // Guarda AQUI, e não só no `_updateAbilities`: o esquema de gestos chama
+    // este método direto pelo `onToqueRapido` do analógico direito, sem
+    // passar pelo polling por quadro.
+    if (emCutscene) return;
     if (_cooldown2 > 0) return;
     if (!creatureData.ability2.canExecute(this)) return;
     creatureData.ability2.execute(this, lockedAb2Direction);
-    _cooldownMax2 = creatureData.ability2.cooldown * cdMult;
+
+    var mult = cdMult;
+    if (creatureData.ability2.tipo == AbilityTipo.esquiva) {
+      // Piso pro multiplicador de esquiva pelo mesmo motivo do `dodge()`:
+      // cooldown zerado travaria o indicador da Hud.
+      final dodgeMult = dodgeCdMult < _dodgeCooldownMultFloor
+          ? _dodgeCooldownMultFloor
+          : dodgeCdMult;
+      mult *= dodgeMult;
+
+      for (final item in itens) {
+        item.aoEsquivar(this, lockedAb2Direction);
+      }
+    }
+
+    _cooldownMax2 = creatureData.ability2.cooldown * mult;
     _cooldown2 = _cooldownMax2;
   }
 
@@ -959,9 +1039,19 @@ class Player extends PositionComponent
   /// morta. Habilidade 2: continua um botão/tecla "segurada", mesmo padrão
   /// que a IA autônoma do companion já usava (ver PIVOT_TREINADOR.md).
   void _updateAbilities(double dt) {
-    energia = (energia + energiaRegen * dt).clamp(0.0, energiaMax);
+    // Energia e cooldown seguem correndo durante a cena; só o disparo para.
+    //
+    // A pausa é descontada sempre, mesmo enquanto ela própria segura a
+    // regeneração — senão o tempo só andaria depois de já ter andado.
+    if (energiaRegenPausa > 0) {
+      energiaRegenPausa -= dt;
+    } else {
+      energia = (energia + energiaRegen * dt).clamp(0.0, energiaMax);
+    }
     if (_cooldown1 > 0) _cooldown1 -= dt;
     if (_cooldown2 > 0) _cooldown2 -= dt;
+
+    if (emCutscene) return;
 
     _atualizarMira();
 
@@ -986,8 +1076,12 @@ class Player extends PositionComponent
   }
 
   @override
-  Vector2 dashOffsetLivre(Vector2 dir, double distancia) {
+  Vector2 dashOffsetLivre(Vector2 dir, double distanciaBase) {
     final d = dir.normalized();
+    // Multiplicador de alcance da esquiva (ver `dodgeDistMult`) aplicado aqui,
+    // e não em cada habilidade: as 13 que dão dash passam todas por este
+    // método, e a distância delas é `const` na própria classe.
+    final distancia = distanciaBase * dodgeDistMult;
     if (d.isZero() || distancia <= 0) return Vector2.zero();
 
     final room = currentRoom;
@@ -1038,7 +1132,7 @@ class Player extends PositionComponent
       return;
     }
 
-    if (naoMove /* || speedLocked */) {
+    if (naoMove || emCutscene /* || speedLocked */) {
       velocity.setZero();
       return;
     }
@@ -1131,7 +1225,11 @@ class Player extends PositionComponent
       if (other.enemyHitbox.toAbsoluteRect().overlaps(
         playerHitbox.toAbsoluteRect(),
       )) {
-        takeDamage(1, other.creature!.tipo);
+        var tipo = CreatureType.neutro;
+        if(other.creature!=null){
+          tipo = other.creature!.tipo;
+        }
+        takeDamage(1, tipo);
       }
     }
 
@@ -1166,6 +1264,9 @@ class Player extends PositionComponent
   void takeDamage(double amount, CreatureType tipoAtacante) {
     if (_invulnerabilityTimer > 0) return;
 
+    //só regenera escudo se ficar o tempo sem levar dano
+    _shieldRegenTimer = 0.0;
+    
     final mult = typeMultiplier(tipoAtacante, creatureData.tipo);
     Color corTxt = Palette.amarelo;
     if (mult > 1.0) {
@@ -1189,9 +1290,9 @@ class Player extends PositionComponent
     // logo abaixo. Se o grupo tiver mais de uma criatura com retaliação,
     // todas executam — decisão travada com o usuário, não é "a mais forte
     // vence" (ver PIVOT_TREINADOR.md).
-    //for (final p in passivasAtivas) {
-    //  p.aoTentarTomarDano(this, amountFinal);
-    //}
+    for (final item in itens) {
+      item.aoTentarTomarDano(this, amountFinal);
+    }
 
     parent?.add(
       TextEffect.dano(
@@ -1200,6 +1301,10 @@ class Player extends PositionComponent
         color: corTxt,
       ),
     );
+
+    for (final item in itens) {
+      item.aoTomarDano(this, amountFinal, tipoAtacante);
+    }
 
     if (consumirEscudo()) {
       // Escudo de Espinhos: o golpe absorvido vira explosão. Fica aqui, e não
@@ -1251,11 +1356,6 @@ class Player extends PositionComponent
     }
 
     currentHealth -= amountFinal;
-
-    // Só aqui: o golpe passou do escudo e chegou no HP de verdade.
-    for (final item in itens) {
-      item.aoTomarDano(this, amountFinal, tipoAtacante);
-    }
 
     if (currentHealth <= 0) {
       final jogo = game;

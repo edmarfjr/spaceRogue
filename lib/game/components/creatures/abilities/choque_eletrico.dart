@@ -12,8 +12,8 @@ class ChoqueEletrico extends Ability {
   final double kbForce;
   final double alcanceSegundos;
 
-  const ChoqueEletrico({this.coef = 0.25, this.velocidade = 90, this.kbForce = 10, this.alcanceSegundos = 0.5})
-      : super(nome: 'Choque Eletrico', descricao: 'Projétil que se divide em fragmentos.', cooldown: 0.4, custoEnergia: 1.0);
+  const ChoqueEletrico({this.coef = 0.25, this.velocidade = 120, this.kbForce = 10, this.alcanceSegundos = 0.5})
+      : super(nome: 'Choque Eletrico', descricao: 'Projétil que se divide em fragmentos.', cooldown: 0.2, custoEnergia: 2.5);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
@@ -22,7 +22,7 @@ class ChoqueEletrico extends Ability {
       owner: user,
       position: user.position.clone(),
       direction: dir,
-      speed: velocidade,
+      //speed: velocidade,
       dmg: dano,
       kbForce: kbForce,
       lifeTime: alcanceSegundos,

@@ -98,15 +98,13 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
     if (confirmou == true) await _resetar();
   }
 
-  // APOSENTADO — comentado, não apagado (o jogador pode querer reativar o
-  // seletor de esquema de controle depois). Só sobra um jeito de jogar
-  // agora (analógico direito = habilidade 1, botão = habilidade 2), então
-  // não há mais nada pra escolher aqui — ver `CreaturesRogueGame._setupAbilityControls`.
-  // Future<void> _escolher(ControlScheme scheme) async {
-  //   widget.game.controlScheme = scheme;
-  //   await GameSettings.instance.setControlScheme(scheme);
-  //   if (mounted) setState(() {});
-  // }
+  /// O setter de `controlScheme` no jogo remonta os controles na hora, então
+  /// a troca vale já na run em andamento; `GameSettings` só cuida do disco.
+  Future<void> _escolher(ControlScheme scheme) async {
+    widget.game.controlScheme = scheme;
+    await GameSettings.instance.setControlScheme(scheme);
+    if (mounted) setState(() {});
+  }
 
   // Sem `setState` aqui: `GameSettings.setLocale` já muda `localeNotifier`,
   // que reconstrói o `MaterialApp` inteiro (ver `main.dart`) — esta tela é
@@ -132,6 +130,8 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    final atual = widget.game.controlScheme;
+
     return ResponsiveOverlayScaffold(
       background: Palette.branco,
       child: Column(
@@ -146,71 +146,65 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          // APOSENTADO — comentado, não apagado. Seletor de esquema de
-          // controle (BOTÕES/GESTOS): só sobrava uma forma real de jogar
-          // depois que a habilidade 1 virou o analógico direito, então não
-          // há mais nada pra escolher aqui.
-          //
-          // const SizedBox(height: 4),
-          // Text(
-          //   context.l10n.settings_controle,
-          //   style: const TextStyle(
-          //     color: Palette.preto,
-          //     fontSize: 14,
-          //     letterSpacing: 3,
-          //   ),
-          // ),
-          // const SizedBox(height: 4),
-          // // `Wrap`, não `Row`: numa janela estreita, dois botões de
-          // // controle (cada um com padding horizontal de 24px + o rótulo)
-          // // não cabem lado a lado — `Wrap` quebra pra segunda linha em vez
-          // // de estourar a largura.
-          // Wrap(
-          //   alignment: WrapAlignment.center,
-          //   spacing: 8,
-          //   runSpacing: 8,
-          //   children: [
-          //     for (final scheme in ControlScheme.values)
-          //       Padding(
-          //         padding: const EdgeInsets.symmetric(horizontal: 4),
-          //         child: OutlinedButton(
-          //           style: OutlinedButton.styleFrom(
-          //             padding: const EdgeInsets.symmetric(
-          //               horizontal: 24,
-          //               vertical: 10,
-          //             ),
-          //             backgroundColor: scheme == atual
-          //                 ? Palette.preto
-          //                 : Palette.branco,
-          //             side: BorderSide(color: Palette.preto),
-          //             shape: const RoundedRectangleBorder(
-          //               borderRadius: BorderRadius.zero,
-          //               side: BorderSide(color: Palette.preto, width: 5),
-          //             ),
-          //           ),
-          //           onPressed: withBtnSfx(
-          //             scheme == atual ? null : () => _escolher(scheme),
-          //           ),
-          //           child: Text(
-          //             scheme.rotulo(context),
-          //             style: TextStyle(
-          //               fontSize: 16,
-          //               color: scheme == atual ? Palette.branco : Palette.preto,
-          //             ),
-          //           ),
-          //         ),
-          //       ),
-          //   ],
-          // ),
-          // const SizedBox(height: 5),
-          // SizedBox(
-          //   width: Responsive.largura(context, 420),
-          //   child: Text(
-          //     atual.descricao(context),
-          //     textAlign: TextAlign.center,
-          //     style: const TextStyle(color: Palette.preto, fontSize: 13),
-          //   ),
-          // ),
+          const SizedBox(height: 4),
+          Text(
+            context.l10n.settings_controle,
+            style: const TextStyle(
+              color: Palette.preto,
+              fontSize: 14,
+              letterSpacing: 3,
+            ),
+          ),
+          const SizedBox(height: 4),
+          // `Wrap`, não `Row`: numa janela estreita, dois botões de controle
+          // (cada um com padding horizontal de 24px + o rótulo) não cabem lado
+          // a lado — `Wrap` quebra pra segunda linha em vez de estourar.
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final scheme in ControlScheme.values)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 10,
+                      ),
+                      backgroundColor: scheme == atual
+                          ? Palette.preto
+                          : Palette.branco,
+                      side: const BorderSide(color: Palette.preto),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero,
+                        side: BorderSide(color: Palette.preto, width: 5),
+                      ),
+                    ),
+                    onPressed: withBtnSfx(
+                      scheme == atual ? null : () => _escolher(scheme),
+                    ),
+                    child: Text(
+                      scheme.rotulo(context),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: scheme == atual ? Palette.branco : Palette.preto,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 5),
+          SizedBox(
+            width: Responsive.largura(context, 420),
+            child: Text(
+              atual.descricao(context),
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Palette.preto, fontSize: 13),
+            ),
+          ),
           const SizedBox(height: 4),
           Text(
             context.l10n.settings_idioma,

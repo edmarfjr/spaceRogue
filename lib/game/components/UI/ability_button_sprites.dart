@@ -20,6 +20,12 @@ class AbilityButtonSprites {
     AbilityTipo.esquiva: 'ui/btnEsquiva.png',
   };
 
+  /// Botão de TROCA de criatura: não é habilidade, então fica fora do mapa
+  /// por [AbilityTipo]. Mesmo formato de tira (48x24, dois quadros de 24x24)
+  /// e mesmo tratamento de paleta.
+  static const String _caminhoTroca = 'ui/btnTroca.png';
+  static late final List<Sprite> _quadrosTroca;
+
   static final Map<AbilityTipo, List<Sprite>> _quadros = {};
 
   /// Chamada uma vez no `onLoad` do jogo, antes de montar os controles.
@@ -34,13 +40,30 @@ class AbilityButtonSprites {
         2,
         (i) => Sprite(
           imagem,
-          srcPosition: Vector2(i * 24.0, 0),
-          srcSize: Vector2(24, 24),
+          srcPosition: Vector2(i * imagem.height.toDouble(), 0),
+          srcSize: Vector2(imagem.height.toDouble(), imagem.height.toDouble()),
         ),
       );
     }
+
+    final ui.Image troca = await PaletteSwapper.createSwappedImage(
+      imagePath: _caminhoTroca,
+      lightGrayReplacement: UiTheme.actionButtonCor1,
+      darkGrayReplacement: UiTheme.actionButtonCor2,
+    );
+    _quadrosTroca = List.generate(
+      2,
+      (i) => Sprite(
+        troca,
+        srcPosition: Vector2(i *troca.height.toDouble(), 0),
+        srcSize: Vector2(troca.height.toDouble(), troca.height.toDouble()),
+      ),
+    );
   }
 
   static Sprite neutro(AbilityTipo tipo) => _quadros[tipo]![0];
   static Sprite pressionado(AbilityTipo tipo) => _quadros[tipo]![1];
+
+  static Sprite get trocaNeutro => _quadrosTroca[0];
+  static Sprite get trocaPressionado => _quadrosTroca[1];
 }

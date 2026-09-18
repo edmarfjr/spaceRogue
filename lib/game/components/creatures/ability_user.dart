@@ -14,8 +14,16 @@ import 'creature_data.dart';
 /// Energia máxima de partida de toda criatura — ver `AbilityUser.energiaMax`.
 const double energiaMaxPadrao = 10.0;
 
-/// Quanto de energia regenera por segundo, sempre (ver `Player._updateAbilities`).
-const double energiaRegenPorSegundo = 2.0;
+/// Quanto de energia regenera por segundo (ver `Player._updateAbilities`).
+const double energiaRegenPorSegundo = 5.0;
+
+/// Quanto tempo a regeneração fica parada depois de cada uso da habilidade 1.
+///
+/// Sem isso a energia voltava DURANTE a rajada, então segurar o ataque rendia
+/// mais tiros do que o custo por tiro sugere — a barra só limitava rajadas
+/// muito longas. Com a pausa, o custo de cada tiro é pago de verdade antes de
+/// qualquer recuperação.
+const double energiaRegenAtraso = 0.3;
 
 /// Uma carga da bolha, com a fonte que a pôs lá.
 class _CargaEscudo {
@@ -80,6 +88,10 @@ mixin AbilityUser on PositionComponent, EfeitosTemporarios {
   /// criatura nova (ao contrário de `maxHealth`/`shieldMax`), os dois upgrades
   /// atravessam a troca sem precisar de campo de bônus à parte.
   double energiaRegen = energiaRegenPorSegundo;
+
+  /// Segundos que faltam pra regeneração voltar a correr. Reiniciado a cada
+  /// disparo da habilidade 1 (ver `Player.dispararAbility1`).
+  double energiaRegenPausa = 0.0;
 
   // --- Ganchos usados pelas habilidades das criaturas ---
   // Neutros por padrão: nada muda enquanto nenhuma habilidade os usa.

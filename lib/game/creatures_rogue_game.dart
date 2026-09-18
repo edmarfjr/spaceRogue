@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'package:creatures_rogue/l10n/creature_i18n.dart';
 import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
+import 'package:creatures_rogue/game/components/effects/text_effect.dart';
 import 'dart:math';
 import 'dart:ui' as ui;
 
@@ -11,7 +13,8 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 //import 'package:flutter/painting.dart';
-import 'package:flutter/services.dart' show LogicalKeyboardKey, KeyDownEvent;
+import 'package:flutter/services.dart'
+    show LogicalKeyboardKey, KeyDownEvent, HapticFeedback;
 import 'package:flame/input.dart';
 import 'package:creatures_rogue/game/audio/game_audio.dart';
 import 'package:creatures_rogue/game/components/core/ui_theme.dart';
@@ -24,7 +27,6 @@ import 'package:creatures_rogue/game/components/UI/pause_button_sprite.dart';
 import 'package:creatures_rogue/game/components/effects/companion_recall_effect.dart';
 import 'package:creatures_rogue/game/components/effects/companion_revive_effect.dart';
 import 'package:creatures_rogue/game/components/UI/consumable_slot_button.dart';
-import 'package:creatures_rogue/game/components/UI/gesture_action_area.dart';
 import 'package:creatures_rogue/game/components/UI/pointer_tracker.dart';
 import 'package:creatures_rogue/game/components/UI/blind_overlay.dart';
 import 'package:creatures_rogue/game/components/UI/boss_health_bar.dart';
@@ -57,8 +59,11 @@ enum ControlScheme {
   /// Dois botões A/B no canto inferior direito. Ver [AbilityButton].
   botoes,
 
-  /// Metade direita da tela vira área de gesto: toque parado = habilidade 1,
-  /// arrastar o dedo = habilidade 2. Ver [GestureActionArea].
+  /// Sem botão de habilidade 2: um toque rápido e parado na metade direita da
+  /// tela dispara ela. Arrastar essa mesma metade continua mirando, como
+  /// sempre — quem separa os dois é o `onToqueRapido` do
+  /// `DynamicJoystickComponent`, que só chama de volta se o dedo saiu em até
+  /// 250ms sem passar do `kTouchSlop`.
   gestos;
 
   /// Nome curto pro seletor.
@@ -217,6 +222,13 @@ class CreaturesRogueGame extends FlameGame
   /// dois Estilhaço dispararia o mesmo gancho duas vezes.
   final List<ItemEfeito> poolItens = [];
 
+  /// Criaturas que ainda podem se aposentar nesta run. Sai da lista quando uma
+  /// se aposenta — a mesma criatura não entrega a passiva duas vezes.
+  ///
+  /// Semeada das chaves de [PassivasAposentadoria.porCriatura], que é a única
+  /// fonte de "quem tem passiva": criatura sem passiva mapeada nunca entra.
+  final List<String> poolAposentadoria = [];
+
   /// Tira um item da pool e devolve, ou `null` se a run já viu todos — nesse
   /// caso o pedestal cai de volta em consumível/power-up. Usado por quem
   /// ENTREGA o item na hora (pedestal): a oferta e a retirada são o mesmo ato.
@@ -252,6 +264,26 @@ class CreaturesRogueGame extends FlameGame
   double get trocaCooldownFraction =>
       (trocaCooldown / trocaCooldownMax).clamp(0.0, 1.0);
 
+  /// Vai pra próxima criatura VIVA da lista, em laço. Usada pelo botão de
+  /// troca e pelo toque duplo — o toque num retrato específico continua sendo
+  /// [onTapCompanionSlot].
+  ///
+  /// `slotDisponivel` já exclui a criatura ativa (ela não está "no bolso"),
+  /// então o laço nunca escolhe quem já está em campo.
+  void trocarParaProximaCriatura() {
+    if (!_runStarted) return;
+    if (trocaCooldown > 0) return;
+
+    for (int i = 1; i < maxCompanions; i++) {
+      final slot = (companionAtivoIndex + i) % maxCompanions;
+      if (slotDisponivel(slot)) {
+        trocaCooldown = trocaCooldownMax;
+        _trocarParaSlot(slot);
+        return;
+      }
+    }
+  }
+
   void onTapCompanionSlot(int slot) {
     if (slot == companionAtivoIndex) return;
     if (trocaCooldown > 0) return;
@@ -265,6 +297,30 @@ class CreaturesRogueGame extends FlameGame
   /// vai pro banco com vida 0 e o jogo troca sozinho pro primeiro slot
   /// disponível. Sem ninguém disponível, é Game Over — mesmo grupo esgotado
   /// que o modelo antigo tratava como "a criatura morreu".
+  /// A criatura ativa encheu a SEGUNDA barra de XP: ela deixa o grupo de vez e
+  /// o jogador fica com a passiva dela (ver [PassivasAposentadoria]).
+  ///
+  /// Abre a cerimônia () e para aí — ver
+  /// [dismissAposentadoria] pra o que acontece quando ela fecha.
+  void aposentarSlotAtivo() {
+    final passiva = PassivasAposentadoria.de(player.creatureData.id);
+    // Sem passiva mapeada não há aposentadoria — `Player.ganharXp` já nem
+    // acumula nesse caso, então isto é rede de segurança contra um mapa
+    // editado no meio da run.
+    if (passiva == null) {
+      return;
+    }
+
+    // Só abre a cerimônia. Nada de estado muda aqui: entregar o prêmio e
+    // tirar a criatura do grupo é papel de `dismissAposentadoria`, no toque de
+    // continuar, pra que o texto do prêmio e a eventual tela de fim venham
+    // DEPOIS da animação.
+    aposentadoriaCriatura = player.creatureData;
+    aposentadoriaPassiva = passiva;
+    pauseEngine();
+    overlays.add('Retirement');
+  }
+
   /// A ativa bateu 0 de vida: SAI do grupo, não fica "estacionada" com vida 0
   /// no banco — o slot fica livre de novo, do mesmo jeito que antes de
   /// alguém entrar nele (o item MAPA ou a sala da escada podem preencher com
@@ -371,6 +427,18 @@ class CreaturesRogueGame extends FlameGame
   int numFloors = 5;
   int currentFloor = 1;
 
+  /// Salas geradas no PRIMEIRO andar de uma dungeon.
+  static const int salasNoPrimeiroAndar = 7;
+
+  /// Quantas salas o andar atual tem: [salasNoPrimeiroAndar] no primeiro,
+  /// mais uma por andar avançado.
+  ///
+  /// Não existe reset por dungeon aqui porque não precisa: `currentFloor` já
+  /// volta a 1 quando uma dungeon nova começa (ver `_avancarAndar`), então a
+  /// contagem reinicia em 7 sozinha. Um reset separado seria uma segunda
+  /// fonte de verdade pra mesma coisa.
+  int get salasDoAndar => salasNoPrimeiroAndar + (currentFloor - 1);
+
   /// De quantos em quantos andares aparece um boss. 5 combina com os 5 temas
   /// de `DungeonTheme.levelThemes` (um por andar do ciclo). **Baixe pra 2
   /// enquanto estiver ajustando um boss** — senão cada teste custa uma run
@@ -389,6 +457,11 @@ class CreaturesRogueGame extends FlameGame
   CreatureData? evolucaoBase;
   CreatureData? evolucaoNova;
 
+  /// Criatura e prêmio da aposentadoria em andamento — só pra
+  /// `RetirementOverlay` desenhar. `null` quando não há cerimônia aberta.
+  CreatureData? aposentadoriaCriatura;
+  ItemEfeito? aposentadoriaPassiva;
+
   /// Chamado por `Player._evoluir()` assim que a troca de dados já
   /// aconteceu (o jogador já É a forma evoluída por baixo) — esta tela é só
   /// a cerimônia visual por cima, pausando o jogo até o toque de continuar.
@@ -397,6 +470,49 @@ class CreaturesRogueGame extends FlameGame
     evolucaoNova = nova;
     pauseEngine();
     overlays.add('Evolution');
+  }
+
+  /// Toque de continuar da `RetirementOverlay`. É AQUI que o estado muda, não
+  /// na abertura da cerimônia: o prêmio é entregue, a criatura sai do grupo e,
+  /// se ela era a última viva, o Game Over dispara — tudo depois da animação,
+  /// como a cena pede.
+  void dismissAposentadoria() {
+    final criatura = aposentadoriaCriatura;
+    final passiva = aposentadoriaPassiva;
+    aposentadoriaCriatura = null;
+    aposentadoriaPassiva = null;
+    overlays.remove('Retirement');
+    resumeEngine();
+
+    if (criatura == null || passiva == null) {
+      return;
+    }
+
+    // Duplicata não empilha, mas a criatura sai do grupo de qualquer jeito: a
+    // barra encheu, a despedida acontece. Só não há prêmio novo.
+    if (!player.itens.any((i) => i.id == passiva.id)) {
+      player.itens.add(passiva);
+    }
+    poolAposentadoria.remove(criatura.id);
+
+    final contexto = buildContext;
+    if (contexto != null) {
+      player.parent?.add(
+        TextEffect(
+          text: contexto.l10n.effect_aposentou(
+            creatureName(contexto, criatura.id).toUpperCase(),
+            passiva.nome(contexto),
+          ),
+          position: player.position.clone() + Vector2(0, -14),
+          color: Palette.amarelo,
+          duration: 2.5,
+        ),
+      );
+    }
+
+    // Libera o slot, troca pra próxima viva e chama Game Over se não houver
+    // nenhuma — comportamento aceito pra aposentar a última criatura.
+    pocketarSlotAtivo();
   }
 
   /// Chamado pelo botão "CONTINUAR" da `EvolutionOverlay`.
@@ -515,7 +631,13 @@ class CreaturesRogueGame extends FlameGame
     companionAtivoIndex = 0;
     poolItens
       ..clear()
-      ..addAll(ItemEfeitoRegistry.todos);
+      //  filtra as passivas de aposentadoria: elas moram no mesmo
+      // registro (pra  reconstruir o save), mas não podem cair num
+      // pedestal.
+      ..addAll(ItemEfeitoRegistry.todos.where((i) => i.sorteavel));
+    poolAposentadoria
+      ..clear()
+      ..addAll(PassivasAposentadoria.porCriatura.keys);
     trocaCooldown = 0.0;
     dungeonWorld.children.whereType<Player>().toList().forEach(
       (p) => p.removeFromParent(),
@@ -551,9 +673,9 @@ class CreaturesRogueGame extends FlameGame
       runBoss = BossRegistry.sortear(_bossRandom, currentLevel);
     }
 
-    final generator = DungeonGenerator(
-      maxRooms: 12,
-    ); // Gera uma dungeon com 12 salas
+    // Depois do save ser aplicado / do andar ser zerado acima: `salasDoAndar`
+    // lê `currentFloor`, então a ordem importa.
+    final generator = DungeonGenerator(maxRooms: salasDoAndar);
     mapData = generator.generate();
 
     // Percorre todos os dados de salas criados pelo algoritmo
@@ -598,6 +720,7 @@ class CreaturesRogueGame extends FlameGame
       player: player,
       companionCreatureAt: (slot) => companionCreatures[slot],
       companionPocketFractionAt: (slot) => companionPocketFraction(slot),
+      trocaFraction: () => trocaCooldownFraction,
       isCompanionAtivo: (slot) => slot == companionAtivoIndex,
       onTapCompanionSlot: onTapCompanionSlot,
     );
@@ -715,6 +838,17 @@ class CreaturesRogueGame extends FlameGame
     // continua valendo, só não se recompõe na próxima troca daquela run.
     player.bonusHpItens = (j['bonusHp'] as num?)?.toDouble() ?? 0.0;
     player.bonusShieldItens = (j['bonusShield'] as num?)?.toDouble() ?? 0.0;
+    // Save anterior a esta pool: assume que nenhuma criatura se aposentou
+    // ainda, que e o unico palpite possivel.
+    final aposentadoriaSalva = dados['poolAposentadoria'] as List?;
+    poolAposentadoria
+      ..clear()
+      ..addAll(
+        aposentadoriaSalva == null
+            ? PassivasAposentadoria.porCriatura.keys
+            : aposentadoriaSalva.cast<String>(),
+      );
+
     final poolSalva = dados['poolItens'] as List?;
     poolItens
       ..clear()
@@ -776,6 +910,7 @@ class CreaturesRogueGame extends FlameGame
       'dungeon': currentLevel,
       'andar': currentFloor,
       'poolItens': poolItens.map((i) => i.id).toList(),
+      'poolAposentadoria': List<String>.from(poolAposentadoria),
       'bossId': runBoss?.creatureId,
       'ativo': companionAtivoIndex,
       'grupo': [
@@ -944,6 +1079,17 @@ class CreaturesRogueGame extends FlameGame
           canvasSize.x - margemBorda - botao.size.x,
           (canvasSize.y - alturaBanda) + (alturaBanda - botao.size.y) / 3,
         );
+
+        // O de troca acompanha, logo acima — em RETRATO o `margin` sofre o
+        // mesmo problema do de habilidade 2 (ver acima), então também precisa
+        // de posição própria.
+        final troca = _trocaButton;
+        if (troca != null) {
+          troca.position = Vector2(
+            botao.position.x,
+            botao.position.y - troca.size.y - 8,
+          );
+        }
       }
     }
 
@@ -1305,30 +1451,62 @@ class CreaturesRogueGame extends FlameGame
   /// RETRATO sem precisar de `whereType` a cada frame.
   AbilityButton? _ability2Button;
 
+  /// Botão de troca de criatura, montado só no esquema de BOTÕES — em GESTOS
+  /// quem troca é o toque duplo.
+  AbilityButton? _trocaButton;
+
   /// (Re)monta o esquema de controle escolhido. Idempotente: derruba o que o
   /// esquema anterior tinha posto antes de montar o novo, então serve tanto pro
   /// onLoad quanto pra troca em runtime.
   ///
-  /// O seletor BOTÕES/GESTOS foi comentado na tela de Configurações (a pedido
-  /// do usuário — "posso usar depois", não apagar): a habilidade 1 virou o
-  /// analógico direito (`aimJoystick`, montado sempre em `_setupJoysticks`,
-  /// fora do esquema), então só sobra a habilidade 2 por botão pra montar
-  /// aqui. Os dois `case` fazem a mesma coisa de propósito — cobre quem
-  /// ainda tiver "gestos" salvo de uma sessão anterior à mudança.
-  /// `_setupGestureControls` continua definida abaixo (corpo comentado),
-  /// só não é mais chamada.
+  /// A habilidade 1 fica fora dos dois esquemas: ela é o analógico direito
+  /// (`aimJoystick`), montado sempre em `_setupJoysticks`. O que muda entre
+  /// BOTÕES e GESTOS é só como a habilidade 2 é disparada.
+  ///
+  /// GESTOS não monta componente nenhum — só pendura um callback no analógico
+  /// direito, que já recebe todo ponteiro daquela metade da tela. Arrastar
+  /// segue mirando; um toque curto e parado vira a habilidade 2.
+  ///
+  /// Roda depois de `_setupJoysticks` (ver `onLoad`), então `aimJoystick`
+  /// sempre existe aqui.
   void _setupAbilityControls() {
     for (final control in _abilityControls) {
       control.removeFromParent();
     }
     _abilityControls.clear();
     _ability2Button = null;
+    _trocaButton = null;
+    aimJoystick.onToqueRapido = null;
+    aimJoystick.onToqueDuplo = null;
 
     switch (_controlScheme) {
       case ControlScheme.botoes:
         _setupActionButtons();
       case ControlScheme.gestos:
-        _setupActionButtons();
+        // `dispararAbility2()` direto, e não a flag `touchHoldAbility2`: a
+        // flag é lida uma vez por frame pra sustentar o botão segurado, e um
+        // toque não tem duração pra sustentar nada — ligar e desligar dentro
+        // do mesmo frame poderia nunca ser visto pelo `update`.
+        //
+        // A vibração vem ANTES e fora do `if`, igual ao botão
+        // (`AbilityButton._refreshPressed`): lá ela responde ao toque, não ao
+        // disparo, então acontece mesmo em cooldown ou sem energia. Manter o
+        // mesmo critério é o que faz os dois esquemas darem o mesmo retorno
+        // ao dedo — senão o modo gestos ficaria mudo justo quando o jogador
+        // aperta repetido esperando a habilidade voltar.
+        aimJoystick.onToqueRapido = () {
+          HapticFeedback.lightImpact();
+          if (_runStarted) player.dispararAbility2();
+        };
+        // O toque duplo NÃO cancela a habilidade 2 do primeiro toque: esperar
+        // pra ver se vem um segundo atrasaria todo disparo em ~250ms, o que
+        // num jogo de ação se sente como travamento. O custo é que trocar de
+        // criatura também gasta uma habilidade 2 — barato perto de deixar o
+        // ataque lento.
+        aimJoystick.onToqueDuplo = () {
+          HapticFeedback.lightImpact();
+          trocarParaProximaCriatura();
+        };
     }
 
     addAll(_abilityControls);
@@ -1403,9 +1581,14 @@ class CreaturesRogueGame extends FlameGame
     // mesmo padrão do teclado (`Player._keyboardHoldAbility2`, tecla espaço).
     _ability2Button = AbilityButton(
       radius: buttonRadius,
-      tipo: () => _runStarted
-          ? player.creatureData.ability2.tipo
-          : AbilityTipo.ataque,
+      quadro: (pressionado) {
+        final tipo = _runStarted
+            ? player.creatureData.ability2.tipo
+            : AbilityTipo.ataque;
+        return pressionado
+            ? AbilityButtonSprites.pressionado(tipo)
+            : AbilityButtonSprites.neutro(tipo);
+      },
       pointerTracker: pointerTracker,
       margin: EdgeInsets.only(right: edgeMarginX, bottom: edgeMarginY),
       onPressedChanged: (pressed) {
@@ -1413,6 +1596,28 @@ class CreaturesRogueGame extends FlameGame
       },
     );
     _abilityControls.add(_ability2Button!);
+
+    // Acima do botão de habilidade 2, com uma folga — mesmo canto, pra não
+    // disputar espaço com o analógico direito do outro lado.
+    const double folga = 8;
+    _trocaButton = AbilityButton(
+      radius: buttonRadius*0.75,
+      quadro: (pressionado) => pressionado
+          ? AbilityButtonSprites.trocaPressionado
+          : AbilityButtonSprites.trocaNeutro,
+      pointerTracker: pointerTracker,
+      margin: EdgeInsets.only(
+        right: edgeMarginX,
+        bottom: edgeMarginY + buttonRadius * 2 + folga,
+      ),
+      // Botão de ação instantânea: age na borda de descida (ao soltar) e
+      // ignora o segurar, senão manter o dedo trocaria a criatura a cada
+      // quadro. `_trocarParaProximaCriatura` ainda respeita o cooldown.
+      onPressedChanged: (pressed) {
+        if (pressed) trocarParaProximaCriatura();
+      },
+    );
+    _abilityControls.add(_trocaButton!);
 
     // APOSENTADO — comentado, não apagado. Habilidade A por botão: virou o
     // analógico direito (`aimJoystick`). `marginRightB`/`marginRightA`
@@ -1534,7 +1739,7 @@ class CreaturesRogueGame extends FlameGame
     }
 
     // 3. GERAÇÃO DE NOVO MAPA
-    final generator = DungeonGenerator(maxRooms: 12);
+    final generator = DungeonGenerator(maxRooms: salasDoAndar);
     mapData = generator.generate();
 
     for (var roomData in mapData.values) {
@@ -1724,6 +1929,21 @@ class CreaturesRogueGame extends FlameGame
       // (`isLocked` nunca liga) o bug ficava visível.
       const double margem = 4.0;
 
+      // Por onde o jogador ENTRA na sala nova é o lado oposto ao sentido em
+      // que ele andou: indo pra direita, ele surge na porta ESQUERDA da sala
+      // seguinte. Calculado aqui porque `currentRoomIndex` é sobrescrito
+      // logo abaixo e a informação se perde.
+      final LadoSala ladoEntrada;
+      if (newRoomX > currentRoomIndex.x) {
+        ladoEntrada = LadoSala.esquerda;
+      } else if (newRoomX < currentRoomIndex.x) {
+        ladoEntrada = LadoSala.direita;
+      } else if (newRoomY > currentRoomIndex.y) {
+        ladoEntrada = LadoSala.topo;
+      } else {
+        ladoEntrada = LadoSala.baixo;
+      }
+
       if (newRoomX > currentRoomIndex.x) {
         player.position.x += (roomRight + threshold + margem) - pes.left;
       } else if (newRoomX < currentRoomIndex.x) {
@@ -1747,7 +1967,7 @@ class CreaturesRogueGame extends FlameGame
 
       int logicalX = newRoomX + dungeonGridOrigin;
       int logicalY = newRoomY + dungeonGridOrigin;
-      loadedRooms['$logicalX,$logicalY']?.onPlayerEnter();
+      loadedRooms['$logicalX,$logicalY']?.onPlayerEnter(ladoEntrada);
 
       Vector2 newCameraPosition = Vector2(
         (newRoomX * roomWidth) + (roomWidth / 2),

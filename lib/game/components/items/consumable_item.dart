@@ -6,6 +6,7 @@ import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'collectible.dart';
+import 'item_descritor.dart';
 import '../player/player.dart';
 
 /// Itens de uso único que ocupam os dois slots do inventário.
@@ -13,35 +14,54 @@ import '../player/player.dart';
 /// Nenhum deles pede mira: os dois polegares já estão ocupados (joystick de um
 /// lado, habilidades do outro), então clicar num slot no meio da briga já custa
 /// movimento — pedir alvo em cima disso seria injogável.
-enum ConsumableType { pocao, escudo, congelar, mapa, doce }
+///
+/// Sprite e cores são campos do próprio valor, não `switch`: criar um
+/// consumível novo é UMA linha na lista abaixo mais um `case` em [nome],
+/// [descricao] e [aplicar].
+///
+/// CUIDADO: o `name` de cada valor é a chave que o save grava em `'slots'`.
+/// Renomear um valor invalida saves existentes.
+///
+/// Corpo dentro do enum, e não numa extension: método de extension NÃO conta
+/// pra satisfazer [ItemDescritor].
+enum ConsumableType implements ItemDescritor {
+  pocao('items/potion.png', Palette.indigo, Palette.cinzaEsc),
+  escudo('items/escudo.png', Palette.indigo, Palette.royal),
+  congelar('items/gelo.png', Palette.azul, Palette.royal),
+  mapa('items/mapa.png', Palette.bege, Palette.marromEsc),
+  doce('items/doce.png', Palette.azul, Palette.royal);
 
-extension ConsumableTypeData on ConsumableType {
-  String get spritePath => switch (this) {
-        ConsumableType.pocao => 'items/potion.png',
-        ConsumableType.escudo => 'items/escudo.png',
-        ConsumableType.congelar => 'items/gelo.png',
-        ConsumableType.mapa => 'items/mapa.png',
-        ConsumableType.doce => 'items/doce.png',
-      };
+  const ConsumableType(this.spritePath, this.cor1, this.cor2);
 
-  Color get cor1 => switch (this) {
-        ConsumableType.pocao => Palette.indigo,
-        ConsumableType.escudo => Palette.indigo,
-        ConsumableType.congelar => Palette.azul,
-        ConsumableType.mapa => Palette.bege,
-        ConsumableType.doce => Palette.azul,
-      };
+  @override
+  final String spritePath;
+  @override
+  final Color cor1;
+  @override
+  final Color cor2;
 
-  Color get cor2 => switch (this) {
-        ConsumableType.pocao => Palette.cinzaEsc,
-        ConsumableType.escudo => Palette.royal,
-        ConsumableType.congelar => Palette.royal,
-        ConsumableType.mapa => Palette.marromEsc,
-        ConsumableType.doce => Palette.royal,
-      };
+  @override
+  String get id => name;
+
 
   /// Texto mostrado acima do jogador quando o item faz efeito de verdade
   /// (ver `aplicar` — nunca aparece se o efeito não teve serventia).
+  /// Nome do item. Diferente de [descricao], que conta o EFEITO ("INIMIGOS
+  /// CONGELADOS") e só faz sentido depois de usar — no chão o jogador precisa
+  /// saber o que é, não o que vai acontecer.
+  @override
+  String nome(BuildContext context) {
+    final l = context.l10n;
+    return switch (this) {
+      ConsumableType.pocao => l.item_pocao,
+      ConsumableType.escudo => l.item_escudo,
+      ConsumableType.congelar => l.item_congelar,
+      ConsumableType.mapa => l.item_mapa,
+      ConsumableType.doce => l.item_doce,
+    };
+  }
+
+  @override
   String descricao(BuildContext context) {
     final l = context.l10n;
     return switch (this) {
@@ -67,7 +87,7 @@ extension ConsumableTypeData on ConsumableType {
     final bool sucesso;
     switch (this) {
       case ConsumableType.pocao:
-        sucesso = player.heal(4);
+        sucesso = player.heal(1);
       case ConsumableType.escudo:
         // Escudo sem prazo: empilha com a bolha de habilidade em vez de
         // sobrescrevê-la, e é o ÚLTIMO a ser gasto — golpe leva primeiro o
@@ -107,6 +127,9 @@ class ConsumablePickup extends Collectible {
           cor1: tipo.cor1,
           cor2: tipo.cor2,
         );
+
+  @override
+  String? nomeExibido(BuildContext context) => type.nome(context);
 
   @override
   bool onCollect(Player player) {

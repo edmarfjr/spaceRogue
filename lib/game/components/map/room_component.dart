@@ -1,4 +1,7 @@
 import 'dart:math';
+import 'package:creatures_rogue/game/components/map/floor_text.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
+import 'package:creatures_rogue/game/components/effects/boss_cutscene.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'dart:math' as math;
 import 'package:creatures_rogue/game/components/map/spike_trap.dart';
@@ -26,11 +29,50 @@ import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'dungeon_generator.dart';
 import 'obstacle.dart';
 
+/// Um dos quatro lados de uma sala. Usado pra descrever por onde alguém
+/// entrou ou saiu, sem espalhar comparações de coordenada pelo código.
+enum LadoSala {
+  topo,
+  direita,
+  baixo,
+  esquerda;
+
+  LadoSala get oposto => switch (this) {
+    LadoSala.topo => LadoSala.baixo,
+    LadoSala.baixo => LadoSala.topo,
+    LadoSala.esquerda => LadoSala.direita,
+    LadoSala.direita => LadoSala.esquerda,
+  };
+
+  /// Gira 90° no sentido do relógio: topo → direita → baixo → esquerda.
+  ///
+  /// Sentido fixo em vez de sorteado: a cena do boss usa isto pra escolher por
+  /// onde o treinador sai, e um sorteio ali deixaria a cena diferente a cada
+  /// entrada sem o jogador entender por quê.
+  LadoSala get perpendicular => switch (this) {
+    LadoSala.topo => LadoSala.direita,
+    LadoSala.direita => LadoSala.baixo,
+    LadoSala.baixo => LadoSala.esquerda,
+    LadoSala.esquerda => LadoSala.topo,
+  };
+}
+
 class RoomComponent extends PositionComponent with HasGameRef {
   final RoomData data;
   final Player player;
 
   bool isLocked = false;
+
+  /// Cena de abertura do boss rodando agora. Enquanto isso for true, a
+  /// checagem de "sala limpa" fica suspensa — o boss só nasce no meio da cena,
+  /// e sem essa guarda a sala se destrancaria no primeiro quadro (ver
+  /// [update]), abrindo a porta e nascendo escada e recompensa antes de
+  /// existir adversário.
+  bool cutsceneAtiva = false;
+
+  /// Uma vez por visita: sair e voltar não repete a cena. Morrer é run nova,
+  /// com sala nova, então lá ela toca de novo — que é o desejado.
+  bool _cutsceneBossJaRodou = false;
   List<Door> roomDoors = [];
   List activeEnemies = [];
 
@@ -140,17 +182,65 @@ class RoomComponent extends PositionComponent with HasGameRef {
       _spawnTreasure();
     } else if (data.type == RoomType.shop) {
       _spawnShop();
-    } //else if (data.type == RoomType.start) {
-    //  Enemy enemy = DummyEnemy(
-    //    position: Vector2(width / 2, height / 2 - 32),
-    //    playerTarget: player,
-    //  );
-    //  parent?.add(enemy);
-    //}
+    } else if (data.type == RoomType.start) {
+      if (dungeon == 1 && floor ==1) {
+        _spawnTutorial();
+      //  _spawnSalaDeTeste();
+      }
+     /*
+      _spawnTreasure(offsetX:16,offsetY:-16);
+      Enemy enemy = DummyEnemy(
+        position: Vector2(width / 2, height / 2 - 32),
+        playerTarget: player,
+      );
+      parent?.add(enemy);
+      */
+    }
   }
 
-  void _spawnTreasure() {
-    Vector2 centerPos = position + Vector2(width / 2, centerY);
+  /// Tutorial no chão da sala inicial. Filho DESTA sala de propósito: é o que
+  /// coloca o texto acima do piso e abaixo dos atores sem escolher prioridade
+  /// na mão (ver [FloorText]).
+  void _spawnTutorial() {
+    final contexto = game.buildContext;
+    if (contexto == null) return;
+
+    add(
+      FloorText(
+        texto: contexto.l10n.tutorial_controles,
+        position: Vector2(width / 2, centerY + 44),
+        
+      ),
+    );
+  }
+
+  void _spawnSalaDeTeste() {
+    final candidatas = CreatureRegistry.all
+        .where((c) => c.evoluir != null && c.id != player.creatureData.id)
+        .take(2)
+        .toList();
+
+    for (var i = 0; i < candidatas.length; i++) {
+      parent?.add(
+        WildCreatureNpc(
+          position: position + Vector2(width / 2 - 24 + i * 48, centerY - 32),
+          creatureData: candidatas[i],
+        ),
+      );
+    }
+
+    for (var i = 0; i < 4; i++) {
+      parent?.add(
+        ConsumablePickup(
+          position: position + Vector2(width / 2 - 24 + i * 16, centerY + 24),
+          tipo: ConsumableType.doce,
+        ),
+      );
+    }
+  }
+
+  void _spawnTreasure({double offsetX = 0,double offsetY = 0}) {
+    Vector2 centerPos = position + Vector2(width / 2, centerY) + Vector2(offsetX,offsetY);
 
     // O pedestal sorteia sozinho entre UPGRADE, CONSUMÍVEL e ITEM_EFEITO —
     // ver `PedestalComponent.onLoad`, que é onde a pool da run fica acessível.
@@ -274,7 +364,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
       for (double x = 16.0; x < width - 16.0; x += 16.0) {
         int roll = _random.nextInt(100);
 
-        if (dungeon == 2) {
+        if (dungeon == 2 || dungeon == 4) {
           add(
             ChaoCave(
               position: Vector2(x, y),
@@ -343,7 +433,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
           );
           _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
         } else if (roll >= 8 && roll < 15) {
-          if(dungeon == 2){
+          if(dungeon == 2 || dungeon == 4){
             add(
             Cogumelos(
               position: Vector2(x, y),
@@ -374,7 +464,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
         data.isCleared || data.type == RoomType.start || !data.isVisited;
     void addDoorHalf(Vector2 pos, double rot, {bool flipX = false}) {
       var spritePath = 'tileset/arvore2.png';
-      if (dungeon == 2) spritePath = 'tileset/pedraCave2.png';
+      if (dungeon == 2 || dungeon == 4) spritePath = 'tileset/pedraCave2.png';
       var d = Door(
         position: pos,
         angleVal: 0, //rot,
@@ -420,11 +510,13 @@ class RoomComponent extends PositionComponent with HasGameRef {
     }
   }
 
-  void onPlayerEnter() {
+  /// [ladoEntrada] é a porta POR ONDE o jogador entrou nesta sala — usada pela
+  /// cena do boss pra montar a coreografia em relação a ele.
+  void onPlayerEnter(LadoSala ladoEntrada) {
     data.isVisited = true;
     if (!data.isCleared && (data.type == RoomType.normal || data.type == RoomType.boss)) {
       _lockRoom();
-      _spawnEnemies();
+      _spawnEnemies(ladoEntrada);
     }
   }
 
@@ -460,27 +552,94 @@ class RoomComponent extends PositionComponent with HasGameRef {
     _spawnRecompensa();
   }
 
-  void _spawnBoss() {
+  /// Ponto logo DENTRO da parede de [lado], em coordenadas locais. A parede
+  /// tem 16px, e o topo perde outros 16 pra HUD (ver [topoHud]).
+  Vector2 _pontoNaBorda(LadoSala lado) => switch (lado) {
+    LadoSala.topo => Vector2(width / 2, topoHud + 16 + 8),
+    LadoSala.baixo => Vector2(width / 2, height - 16 - 8),
+    LadoSala.esquerda => Vector2(16 + 8, centerY),
+    LadoSala.direita => Vector2(width - 16 - 8, centerY),
+  };
+
+  static const double _afastamentoBoss = 24.0;
+
+  Vector2 _afastamento(LadoSala lado) => switch (lado) {
+    LadoSala.topo => Vector2(0, -_afastamentoBoss),
+    LadoSala.baixo => Vector2(0, _afastamentoBoss),
+    LadoSala.esquerda => Vector2(-_afastamentoBoss, 0),
+    LadoSala.direita => Vector2(_afastamentoBoss, 0),
+  };
+
+  /// A cena segura o controle do jogador e a checagem de sala limpa; o boss
+  /// nasce no meio dela, pelas mãos do treinador.
+  ///
+  /// A coreografia é toda relativa a [ladoJogador], a porta por onde o jogador
+  /// entrou: o treinador vem pelo lado OPOSTO (encara o jogador em vez de
+  /// nascer às costas dele), o boss nasce ainda mais além, do mesmo lado de
+  /// onde o treinador veio (ou seja, oposto ao jogador), e a saída é
+  /// PERPENDICULAR à entrada — sair de volta pela porta de onde veio leria
+  /// como desistência, e sair pela porta do jogador o faria atravessá-lo.
+  void _iniciarCutsceneBoss(LadoSala ladoJogador) {
+    cutsceneAtiva = true;
+    player.emCutscene = true;
+
+    final ladoTreinador = ladoJogador.oposto;
+    final centro = Vector2(width / 2, centerY);
+    final posBoss = centro + _afastamento(ladoTreinador);
+
+    add(
+      BossCutscene(
+        entrada: _pontoNaBorda(ladoTreinador),
+        centro: centro,
+        saida: _pontoNaBorda(ladoTreinador.perpendicular),
+        posBoss: posBoss,
+        aoInvocar: () => _spawnBoss(posBoss),
+        aoTerminar: () {
+          cutsceneAtiva = false;
+          player.emCutscene = false;
+          for (final inimigo in activeEnemies) {
+            if (inimigo is Enemy) inimigo.emCutscene = false;
+          }
+        },
+      ),
+    );
+  }
+
+  /// [posLocal] nulo = posição padrão (acima do centro), usada quando não há
+  /// cena de abertura pra escolher o lado.
+  void _spawnBoss([Vector2? posLocal]) {
     final construirBoss = bossBuilder;
     if (construirBoss != null) {
       final boss = construirBoss(
-        position + Vector2(width / 2, centerY - 24),
+        position + (posLocal ?? Vector2(width / 2, centerY - _afastamentoBoss)),
       );
       if (boss != null) {
+        // Nasce inerte se a cena ainda está rodando: ele aparece na invocação
+        // mas só age quando o treinador sai. Derivado de `cutsceneAtiva` em
+        // vez de um parâmetro — quem chama fora da cena não precisa saber
+        // que isso existe.
+        boss.emCutscene = cutsceneAtiva;
         activeEnemies.add(boss);
         parent?.add(boss);
       }
     }
   }
 
-  void _spawnEnemies() {
+  void _spawnEnemies(LadoSala ladoEntrada) {
     // Sala final (RoomType.boss, onde a escada nasce): nunca turma comum. Só
     // spawna adversário de verdade no andar de boss (`bossBuilder` não nulo);
     // nos outros andares essa sala fica vazia e destranca na hora, sem briga.
     // Sem esse desvio por tipo de sala, o `floor % 5 == 0` de baixo valia pra
     // QUALQUER sala do andar — no andar de boss, até a loja spawnava boss.
     if (data.type == RoomType.boss) {
-      _spawnBoss();
+      if (bossBuilder != null && !_cutsceneBossJaRodou) {
+        _cutsceneBossJaRodou = true;
+        _iniciarCutsceneBoss(ladoEntrada);
+      } else {
+        // Sem boss neste andar (`bossBuilder` nulo) a sala destranca na hora,
+        // e aí não há cena nenhuma pra abrir.
+        _spawnBoss();
+      }
       return;
     }
 
@@ -517,7 +676,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
   void update(double dt) {
     super.update(dt);
 
-    if (isLocked) {
+    if (isLocked && !cutsceneAtiva) {
       activeEnemies.removeWhere((enemy) => enemy.isRemoved);
 
       if (activeEnemies.isEmpty) {
@@ -533,7 +692,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
 
     String pathWall = 'tileset/arvore1.png'; //'tileset/wall.png';
     //final String pathCorner = 'tileset/arvore1.png';//'tileset/wallQuina.png';
-    if (dungeon == 2) {
+    if (dungeon == 2 || dungeon == 4) {
       pathWall = 'tileset/pedraCave.png';
     }
 

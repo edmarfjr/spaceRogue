@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:creatures_rogue/game/overlays/retirement_overlay.dart';
 import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
@@ -81,6 +82,7 @@ void main() async {
         'GameOver': (context, game) =>
             GameOverMenu(game: game), // <--- REGISTRO NOVO
         'Evolution': (context, game) => EvolutionOverlay(game: game),
+        'Retirement': (context, game) => RetirementOverlay(game: game),
       },
       initialActiveOverlays: const ['MainMenu'], // Começa no Menu
     ),

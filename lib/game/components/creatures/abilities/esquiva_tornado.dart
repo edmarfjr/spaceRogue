@@ -35,8 +35,13 @@ class EsquivaTornado extends Ability {
       Projectile(
         owner: user,
         position: user.position.clone(),
-        direction: Vector2.zero(),
-        speed: 0,
+        // Direção do dash: é ela que dá o ângulo inicial da espiral, então o
+        // tornado abre pro lado pra onde a criatura se jogou.
+        direction: dir,
+        movimento: ProjetilMovimento.espiral,
+        // Em espiral, `speed` é a taxa de ABERTURA do raio, não avanço.
+        speed: 12.0,
+        velAngular: 4.0,
         lifeTime: 5,
         dmg: danoRastro,
         sprPath: 'projeteis/tornado.png',

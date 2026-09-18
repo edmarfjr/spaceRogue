@@ -36,7 +36,7 @@ class DungeonTheme {
     DungeonTheme(
       corClara: Palette.azul, 
       corEscura: Palette.azulEsc,
-      corChao: Palette.azulEsc,
+      corChao: Palette.branco,
     ),
     DungeonTheme(
       corClara: Palette.vermelho, 

@@ -4,51 +4,49 @@ import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'collectible.dart';
+import 'item_descritor.dart';
 import '../player/player.dart';
 
-enum PowerUpType { speedUp, fireRateUp, damageUp, hpUp, shieldUp, critChanceUp, critDamageUp, energyUp, energyRegenUp }
+/// Upgrade permanente de stat.
+///
+/// Sprite e cores são campos do próprio valor do enum, não `switch`: criar um
+/// upgrade novo é acrescentar UMA linha na lista abaixo mais um `case` em
+/// [descricao] e outro em [aplicar]. Antes eram cinco `switch` separados pra
+/// manter em sincronia, e esquecer um passava batido no compilador.
+///
+/// Corpo dentro do enum, e não numa extension: método de extension NÃO conta
+/// pra satisfazer [ItemDescritor].
+enum PowerUpType implements ItemDescritor {
+  speedUp('items/speedUp.png', Palette.verde, Palette.verdeEsc),
+  fireRateUp('items/firerateUp.png', Palette.vermelho, Palette.royal),
+  damageUp('items/dmgUp.png', Palette.vermelho, Palette.marromEsc),
+  hpUp('items/hpUp.png', Palette.vermelho, Palette.roxoEsc),
+  shieldUp('items/escudoUp.png', Palette.indigo, Palette.azulEsc),
+  critChanceUp('items/critChance.png', Palette.vermelho, Palette.laranja),
+  critDamageUp('items/critDmg.png', Palette.vermelho, Palette.laranja),
+  energyUp('items/energyUp.png', Palette.laranja, Palette.marromEsc),
+  energyRegenUp('items/energyRegen.png', Palette.laranja, Palette.marromEsc);
 
-/// Sprite, cor e efeito de cada upgrade. Fica numa extension, e não dentro do
-/// [PowerUpItem], porque a loja também vende upgrades e precisa exatamente
-/// desses três dados sem instanciar o coletável do pedestal.
-extension PowerUpTypeData on PowerUpType {
-  String get spritePath => switch (this) {
-        PowerUpType.hpUp => 'items/garrafa.png',
-        PowerUpType.speedUp => 'items/garrafa.png',
-        PowerUpType.damageUp => 'items/dmgUp.png',
-        PowerUpType.fireRateUp => 'items/firerateUp.png',
-        PowerUpType.shieldUp => 'items/garrafa.png',
-        PowerUpType.critChanceUp => 'items/critChance.png',
-        PowerUpType.critDamageUp => 'items/critDmg.png',
-        PowerUpType.energyUp => 'items/energyUp.png',
-        PowerUpType.energyRegenUp => 'items/energyRegen.png',
-      };
+  const PowerUpType(this.spritePath, this.cor1, this.cor2);
 
-  Color get cor1 => switch (this) {
-        PowerUpType.hpUp => Palette.vermelho,
-        PowerUpType.speedUp => Palette.verde,
-        PowerUpType.damageUp => Palette.laranja,
-        PowerUpType.fireRateUp => Palette.azul,
-        PowerUpType.shieldUp => Palette.indigo,
-        PowerUpType.critChanceUp => Palette.laranja,
-        PowerUpType.critDamageUp => Palette.vermelho,
-        PowerUpType.energyUp => Palette.amarelo,
-        PowerUpType.energyRegenUp => Palette.laranja,
-      };
+  @override
+  final String spritePath;
+  @override
+  final Color cor1;
+  @override
+  final Color cor2;
 
-  Color get cor2 => switch (this) {
-        PowerUpType.hpUp => Palette.roxoEsc,
-        PowerUpType.speedUp => Palette.verdeEsc,
-        PowerUpType.damageUp => Palette.marromEsc,
-        PowerUpType.fireRateUp => Palette.royal,
-        PowerUpType.shieldUp => Palette.azulEsc,
-        PowerUpType.critChanceUp => Palette.laranja,
-        PowerUpType.critDamageUp => Palette.vermelho,
-        PowerUpType.energyUp => Palette.laranja,
-        PowerUpType.energyRegenUp => Palette.marromEsc,
-      };
+  @override
+  String get id => name;
+
+  /// Upgrade de stat não tem nome separado do efeito: "+DANO" já É o nome.
+  /// Alias em vez de um texto novo, de propósito — o rótulo no chão continua
+  /// exatamente o que era antes desta interface existir.
+  @override
+  String nome(BuildContext context) => descricao(context);
 
   /// Texto mostrado acima do jogador ao pegar o upgrade.
+  @override
   String descricao(BuildContext context) {
     final l = context.l10n;
     return switch (this) {
@@ -79,9 +77,9 @@ extension PowerUpTypeData on PowerUpType {
       case PowerUpType.hpUp:
         // O bônus vai pro campo que sobrevive à troca E pro total de agora:
         // `trocarCriatura` recompõe `maxHealth` como `stats.maxHp + bônus`.
-        player.bonusHpItens += 2;
-        player.maxHealth += 2;
-        player.currentHealth += 2;
+        player.bonusHpItens += 1;
+        player.maxHealth += 1;
+        player.currentHealth += 1;
       case PowerUpType.shieldUp:
         player.bonusShieldItens += 1;
         player.shieldMax += 1;
@@ -109,14 +107,16 @@ extension PowerUpTypeData on PowerUpType {
 class PowerUpItem extends Collectible {
   final PowerUpType type;
 
-  PowerUpItem({required Vector2 position, required PowerUpType tipo})
+  PowerUpItem({required super.position, required PowerUpType tipo})
       : type = tipo,
         super(
-          position: position,
           spritePath: tipo.spritePath,
           cor1: tipo.cor1,
           cor2: tipo.cor2,
         );
+
+  @override
+  String? nomeExibido(BuildContext context) => type.descricao(context);
 
   @override
   bool onCollect(Player player) {

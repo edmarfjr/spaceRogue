@@ -14,6 +14,18 @@ class TextEffect extends PositionComponent {
   double fontSize;
   double _elapsed = 0.0;
 
+  /// Largura máxima da linha, em pixels de jogo, antes de quebrar. A tela tem
+  /// 192 de largura; 110 deixa folga pro texto nascer colado numa parede sem
+  /// vazar pela borda. Números de dano (o uso mais comum) nunca chegam perto
+  /// disso, então pra eles a quebra nunca acontece.
+  final double larguraMax;
+
+  /// `TextPaint` e linhas são calculados uma vez e guardados: antes o
+  /// `TextPaint` era reconstruído a cada quadro, e agora a quebra de linha
+  /// precisa MEDIR o texto, o que seria pior ainda por frame.
+  TextPaint? _paintCache;
+  List<String>? _linhasCache;
+
   TextEffect({
     required this.text,
     required Vector2 position,
@@ -22,6 +34,7 @@ class TextEffect extends PositionComponent {
     this.duration = 0.8,
     this.color = Palette.branco,
     this.fontSize = 6.0,
+    this.larguraMax = 110.0,
   })  : direction = (direction ?? Vector2(0, -1)).normalized(),
         super(position: position.clone(), anchor: Anchor.center, priority: 200);
 
@@ -55,7 +68,7 @@ class TextEffect extends PositionComponent {
     //final t = (_elapsed / duration).clamp(0.0, 1.0);
     final alpha = 255;//((1 - t) * 255).round().clamp(0, 255);
 
-    final paint = TextPaint(
+    final paint = _paintCache ??= TextPaint(
       style: TextStyle(
         color: color.withAlpha(alpha),
         fontSize: fontSize,
@@ -86,6 +99,41 @@ class TextEffect extends PositionComponent {
       paintBorda.render(canvas, text, off, anchor: Anchor.center);
     }
     */
-    paint.render(canvas, text, Vector2.zero(), anchor: Anchor.center);
+    final linhas = _linhasCache ??= _quebrar(paint);
+
+    // Bloco centrado no ponto do efeito: com duas linhas, uma sobe metade da
+    // altura de linha e a outra desce a mesma coisa, então o conjunto fica no
+    // mesmo lugar que uma linha só ficaria.
+    final alturaLinha = fontSize + 1;
+    final topo = -(linhas.length - 1) * alturaLinha / 2;
+    for (var i = 0; i < linhas.length; i++) {
+      paint.render(
+        canvas,
+        linhas[i],
+        Vector2(0, topo + i * alturaLinha),
+        anchor: Anchor.center,
+      );
+    }
+  }
+
+  /// Quebra por palavra, medindo de verdade em vez de contar caracteres — a
+  /// `pixelFont` não é monoespaçada. Palavra sozinha mais larga que
+  /// [larguraMax] não é cortada no meio: fica numa linha estourando, que é
+  /// melhor que partir a palavra.
+  List<String> _quebrar(TextPaint paint) {
+    final linhas = <String>[];
+    var atual = '';
+    for (final palavra in text.split(' ')) {
+      final tentativa = atual.isEmpty ? palavra : '$atual $palavra';
+      if (atual.isNotEmpty &&
+          paint.getLineMetrics(tentativa).width > larguraMax) {
+        linhas.add(atual);
+        atual = palavra;
+      } else {
+        atual = tentativa;
+      }
+    }
+    if (atual.isNotEmpty) linhas.add(atual);
+    return linhas;
   }
 }

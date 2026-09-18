@@ -2,9 +2,7 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:creatures_rogue/game/components/UI/ability_button_sprites.dart';
 import 'package:creatures_rogue/game/components/UI/pointer_tracker.dart';
-import 'package:creatures_rogue/game/components/creatures/ability.dart';
 
 /// Botão de habilidade: sprite de dois quadros (`ui/btn<Tipo>.png`, ver
 /// `AbilityButtonSprites`) — neutro e pressionado, sem círculo/ícone
@@ -29,10 +27,11 @@ import 'package:creatures_rogue/game/components/creatures/ability.dart';
 /// ponteiro já está sendo rastreado — não sobra buraco entre as duas fontes.
 class AbilityButton extends PositionComponent
     with HasGameReference, ComponentViewportMargin, TapCallbacks {
-  /// Papel da habilidade, que decide o sprite — o mesmo que o indicador de
-  /// cooldown da HUD usa pro ícone. Lido a cada frame: o botão é montado no
-  /// onLoad do jogo, antes de existir jogador, e a criatura muda a cada run.
-  final AbilityTipo Function() tipo;
+  /// Qual quadro desenhar, dado o estado pressionado. Um callback, e não um
+  /// par de `Sprite` fixo, porque o botão da habilidade 2 troca de arte
+  /// conforme a criatura da run — ele é montado no `onLoad` do jogo, antes de
+  /// existir jogador. O botão de troca devolve sempre o mesmo par.
+  final Sprite Function(bool pressionado) quadro;
 
   final PointerTracker pointerTracker;
   final void Function(bool pressed) onPressedChanged;
@@ -46,7 +45,7 @@ class AbilityButton extends PositionComponent
 
   AbilityButton({
     required double radius,
-    required this.tipo,
+    required this.quadro,
     required this.pointerTracker,
     required this.onPressedChanged,
     EdgeInsets? margin,
@@ -90,9 +89,6 @@ class AbilityButton extends PositionComponent
 
   @override
   void render(Canvas canvas) {
-    final sprite = _pressed
-        ? AbilityButtonSprites.pressionado(tipo())
-        : AbilityButtonSprites.neutro(tipo());
-    sprite.render(canvas, size: size, overridePaint: _spritePaint);
+    quadro(_pressed).render(canvas, size: size, overridePaint: _spritePaint);
   }
 }

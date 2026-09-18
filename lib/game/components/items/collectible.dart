@@ -20,6 +20,39 @@ abstract class Collectible extends PositionComponent
   late final Sprite _sprite;
   final Paint _paint = Paint()..filterQuality = FilterQuality.none;
 
+  /// Nome resolvido uma vez no [onLoad]: traduzir a cada quadro custaria uma
+  /// busca de l10n por item por frame, e o texto nunca muda enquanto o item
+  /// está no chão.
+  String? _nome;
+
+  /// Rótulo mostrado acima do sprite. `null` (padrão) = sem rótulo — é o caso
+  /// de moeda, coração, bomba e XP, que aparecem aos montes e viram poluição
+  /// visual etiquetados. Sobrescrito por quem nasce no pedestal ou na loja,
+  /// onde saber o que se está pegando é a decisão do jogador.
+  String? nomeExibido(BuildContext context) => null;
+
+  /// Mesmo desenho do texto de dano (ver `TextEffect`): `pixelFont` 6px com
+  /// contorno preto nas 8 direções, que é o que mantém o texto legível em
+  /// cima de qualquer tile.
+  static final TextPaint _nomePaint = TextPaint(
+    style: const TextStyle(
+      color: Palette.branco,
+      fontSize: 6.0,
+      fontFamily: 'pixelFont',
+      fontWeight: FontWeight.bold,
+      shadows: [
+        Shadow(color: Palette.preto, offset: Offset(1, 1)),
+        Shadow(color: Palette.preto, offset: Offset(-1, -1)),
+        Shadow(color: Palette.preto, offset: Offset(1, -1)),
+        Shadow(color: Palette.preto, offset: Offset(-1, 1)),
+        Shadow(color: Palette.preto, offset: Offset(0, 1)),
+        Shadow(color: Palette.preto, offset: Offset(0, -1)),
+        Shadow(color: Palette.preto, offset: Offset(1, 0)),
+        Shadow(color: Palette.preto, offset: Offset(-1, 0)),
+      ],
+    ),
+  );
+
   /// `removeFromParent()` só tira o componente no FIM do frame — até lá,
   /// `Player.playerHitbox` e `Player.physicsHitbox` (dois hitboxes ativos
   /// distintos) podem cada um disparar `onCollisionStart` contra este hitbox
@@ -51,6 +84,7 @@ abstract class Collectible extends PositionComponent
     );
 
     _sprite = Sprite(img);
+    _nome = nomeExibido(game.buildContext!);
 
     add(
       RectangleHitbox(
@@ -65,6 +99,15 @@ abstract class Collectible extends PositionComponent
   @override
   void render(Canvas canvas) {
     _sprite.render(canvas, size: size, overridePaint: _paint);
+
+    final nome = _nome;
+    if (nome == null) return;
+    _nomePaint.render(
+      canvas,
+      nome,
+      Vector2(size.x / 2, -2),
+      anchor: Anchor.bottomCenter,
+    );
   }
 
   @override

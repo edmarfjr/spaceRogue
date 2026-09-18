@@ -48,6 +48,7 @@ class DisparadaFlamejanteEvo extends Ability {
         tipo: user.creatureData.tipo,
         dotKind: DotKind.queimadura,
         dotTicks: 5,
+        size: Vector2(24, 24)
       ),
     );
 
@@ -95,7 +96,7 @@ class DisparadaFlamejanteEvo extends Ability {
               tipo: user.creatureData.tipo,
               dotKind: DotKind.queimadura,
               dotTicks: 5,
-              size: Vector2(40, 40),
+              size: Vector2(24, 24),
             ),
           );
         },

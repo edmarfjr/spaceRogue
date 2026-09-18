@@ -17,6 +17,22 @@ import 'package:creatures_rogue/game/components/player/player.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 
+/// Como o projétil se desloca a cada quadro.
+enum ProjetilMovimento {
+  /// Linha reta na [Projectile.direction], a [Projectile.speed] px/s.
+  reto,
+
+  /// Espiral que abre a partir do ponto onde nasceu: gira a
+  /// [Projectile.velAngular] rad/s enquanto o raio cresce a
+  /// [Projectile.speed] px/s.
+  ///
+  /// `speed` muda de sentido aqui — deixa de ser avanço e vira taxa de
+  /// ABERTURA. É de propósito: as duas leituras são "quão rápido ele se
+  /// afasta", e um segundo campo só pra isso ficaria nulo em todo projétil
+  /// reto do jogo.
+  espiral,
+}
+
 class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGameRef {
   final Vector2 direction;
   double speed;
@@ -46,6 +62,19 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   final double? lifeTime;
   double lifeTimeIni = 10;
   double _age = 0;
+
+  final ProjetilMovimento movimento;
+
+  /// Só para [ProjetilMovimento.espiral]: rad/s. Positivo gira no sentido do
+  /// relógio (o eixo Y da tela aponta pra baixo).
+  final double velAngular;
+
+  /// Centro e estado da espiral. O centro é o ponto de nascimento, capturado
+  /// no [onLoad] — depois disso `position` já começou a girar e não serviria
+  /// mais de referência.
+  late final Vector2 _centroEspiral;
+  late double _anguloEspiral;
+  double _raioEspiral = 0.0;
 
   final bool estilhaca;
   final bool playSfx;
@@ -77,6 +106,8 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     this.cegoDuracao = 0,
     this.paralizDuracao = 0,
     this.atravessaObstaculos = false,
+    this.movimento = ProjetilMovimento.reto,
+    this.velAngular = 3.0,
     this.estilhaca = false,
     this.playSfx = true,
     this.noChao = false,
@@ -95,6 +126,12 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     if (sfx != null && playSfx) GameAudio.instance.play(sfx);
 
     lifeTimeIni = lifeTime ?? 10;
+
+    _centroEspiral = position.clone();
+    // Começa apontando pra `direction`, então a espiral abre no sentido em que
+    // o projétil foi lançado em vez de sempre pra direita. `Vector2.zero()`
+    // cai em ângulo 0, que é o comportamento certo pra quem não tem direção.
+    _anguloEspiral = atan2(direction.y, direction.x);
 
     final ui.Image img = await PaletteSwapper.createSwappedImage(
       imagePath: sprPath,
@@ -174,7 +211,16 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   @override
   void update(double dt) {
     super.update(dt);
-    position += direction * speed * dt;
+
+    switch (movimento) {
+      case ProjetilMovimento.reto:
+        position += direction * speed * dt;
+      case ProjetilMovimento.espiral:
+        _anguloEspiral += velAngular * dt;
+        _raioEspiral += speed * dt;
+        position = _centroEspiral +
+            Vector2(cos(_anguloEspiral), sin(_anguloEspiral)) * _raioEspiral;
+    }
 
     if (hits.isNotEmpty) {
       hits.updateAll((enemy, timeRestante) => timeRestante - dt);
