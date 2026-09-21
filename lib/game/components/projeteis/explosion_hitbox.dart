@@ -128,7 +128,10 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
     } else if (other is Enemy && !isEnemy) {
       // Mesma razão do Projectile: os upgrades de dano da run entram no ponto
       // de acerto, não nas habilidades.
-      other.takeDamage(dmg * Player.danoMult, tipoAtacante: tipo);
+      other.takeDamage(
+        dmg * Player.danoMult * Player.danoMultDerivado,
+        tipoAtacante: tipo,
+      );
       if (stunDuration>0){
         other.applyStun(stunDuration);
       }

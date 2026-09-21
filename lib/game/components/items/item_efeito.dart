@@ -4,9 +4,11 @@ import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
 import 'package:creatures_rogue/game/components/effects/efeitos_temporarios.dart';
 import 'package:creatures_rogue/game/components/player/player.dart';
+import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'dart:math';
 
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/effects/aura_pulse_effect.dart';
 import 'package:creatures_rogue/game/components/effects/dot.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
@@ -76,6 +78,15 @@ abstract class ItemEfeito implements ItemDescritor {
   /// Depois da troca, com o `Player` já mutado: [entra] é `player.creatureData`.
   void aoTrocarCriatura(Player player, CreatureData sai, CreatureData entra) {}
 
+  /// Uma criatura entrou no grupo pela PRIMEIRA vez nesta run — trocar de
+  /// volta pra uma que já passou por lá não dispara de novo.
+  ///
+  /// Diferente de [aoTrocarCriatura], que fala de quem está no comando agora:
+  /// este é sobre o elenco. Quem chama é
+  /// `CreaturesRogueGame._registrarCriaturaUsada`, o único lugar que sabe o
+  /// que é novidade.
+  void aoUsarCriaturaNova(Player player, CreatureData criatura) {}
+
   void aoAtualizar(Player player, double dt) {}
 }
 
@@ -102,6 +113,9 @@ class ItemEfeitoRegistry {
     Couraca(),
     Desesperado(),
     Legado(),
+    DiarioDeCampo(),
+    EloDoGrupo(),
+    Imposto(),
   ];
 
   static ItemEfeito? porId(String id) {
@@ -158,20 +172,29 @@ class Revezamento extends ItemEfeito {
 }
 
 /// Levar dano no HP causa uma explosão em volta do jogador. Escala com
-/// `defesa`, o stat que fora disso só alimenta o escudo passivo.
+/// `defesa`, o stat que fora disso só alimenta o escudo passivo, E com o
+/// tamanho do golpe levado.
+///
+/// O golpe entra na conta pra separar este item da [PeleDeCinzas], que dispara
+/// no mesmo gancho e no mesmo raio: aqui o troco é proporcional — arranhão de
+/// contato devolve pouco, pancada de boss devolve muito. Com o dano fixo de
+/// antes, os dois eram a mesma jogada com dano de tipo diferente.
 class CascaInstavel extends ItemEfeito {
   const CascaInstavel();
 
-  static const double coefDano = 1.5;
+  /// Multiplica `danoFinal * defesa`. Mantido em 1,5 de propósito: com a
+  /// `defesa` 1 de quase todo o elenco e um golpe comum de 1, o estouro sai
+  /// exatamente no valor fixo de antes — o que muda é o topo, não a média.
+  static const double coefDano = 5.0;
 
   @override
   String get id => 'cascaInstavel';
   @override
   String get spritePath => 'items/cascoQuebrado.png';
   @override
-  Color get cor1 => Palette.laranja;
+  Color get cor1 => Palette.pumpkin;
   @override
-  Color get cor2 => Palette.verdeEsc;
+  Color get cor2 => Palette.burgundy;
   @override
   String nome(BuildContext context) => context.l10n.item_cascaInstavel;
   @override
@@ -183,7 +206,7 @@ class CascaInstavel extends ItemEfeito {
     player.parent?.add(
       ExplosionHitbox(
         position: player.position.clone(),
-        dmg: player.creatureData.stats.defesa * coefDano,
+        dmg: danoFinal * player.creatureData.stats.defesa * coefDano,
         tipo: player.creatureData.tipo,
         cor2: Palette.laranja,
       ),
@@ -236,18 +259,45 @@ class Estilhaco extends ItemEfeito {
   }
 }
 
-/// Levar dano queima quem estiver perto. Premia jogar no aperto, o oposto do
-/// que o resto do kit defensivo pede.
+/// Queima continuamente quem estiver perto. Premia jogar no aperto, o oposto
+/// do que o resto do kit defensivo pede.
+///
+/// AURA, e não contra-ataque: antes disparava em `aoTomarDano`, o MESMO gancho
+/// e o MESMO raio da [CascaInstavel], e as duas eram a mesma jogada. Mais que
+/// isso, "premia jogar no aperto" não era o que ela fazia — ela premiava levar
+/// dano, que é outra coisa. Agora o gatilho é a proximidade, então ficar no
+/// meio do bolo basta.
+///
+/// A cadência sai de um efeito temporário com `EfeitoStack.ignora`, mesmo
+/// truque da passiva `RodaDeFogoEvo`: reaplicar não faz nada enquanto vale, o
+/// `aoIniciar` queima na hora de armar e o quadro seguinte rearma quando
+/// expira. É o jeito de ter tique periódico sem guardar cronômetro, que um
+/// [ItemEfeito] `const` não pode.
+///
+/// O tique roda SEM checar se há inimigo por perto, de propósito: o pulso do
+/// anel (ver `AuraPulseEffect`) é o que mostra o alcance, e ele precisa
+/// aparecer antes de o inimigo chegar pra o jogador poder se posicionar. O
+/// custo é varrer a lista de inimigos uma vez a cada [intervalo] em sala
+/// vazia, o que não aparece em lugar nenhum.
 class PeleDeCinzas extends ItemEfeito {
   const PeleDeCinzas();
 
-  static const double alcance = 32.0;
-  static const int ticks = 4;
+  static const double alcance = 24.0;
+
+  /// Segundos entre uma queimada e a próxima.
+  ///
+  /// Folgado porque a queimadura NÃO acumula (`Dot.criar`: `acumula: false`,
+  /// teto de 3 tiques de 2 de dano a cada 0,67s). Reaplicar só recarrega o que
+  /// falta, então um intervalo curto manteria o inimigo encostado queimando
+  /// sem parar — com 2 tiques a cada 2s o teto é 2 de dano por segundo, e
+  /// esse é o número pra mexer se ficar fraco ou forte demais.
+  static const double intervalo = 1.0;
+  static const int ticks = 1;
 
   @override
   String get id => 'peleDeCinzas';
   @override
-  String get spritePath => 'items/casco.png';
+  String get spritePath => 'items/peleFogo.png';
   @override
   Color get cor1 => Palette.laranja;
   @override
@@ -258,7 +308,30 @@ class PeleDeCinzas extends ItemEfeito {
   String descricao(BuildContext context) => context.l10n.item_peleDeCinzasDesc;
 
   @override
-  void aoTomarDano(Player player, double danoFinal, CreatureType tipoAtacante) {
+  void aoAtualizar(Player player, double dt) {
+    player.aplicarEfeito(
+      #peleDeCinzasAura,
+      intervalo,
+      stack: EfeitoStack.ignora,
+      // `aoIniciar`, não `aoTerminar`: pulsa e queima no instante em que o
+      // efeito arma. No `aoTerminar` o primeiro pulso só sairia [intervalo]
+      // depois, e a aura leria como desligada até lá.
+      aoIniciar: () => _queimarPerto(player),
+    );
+  }
+
+  void _queimarPerto(Player player) {
+    // Anel com o [alcance] de verdade, não um número visual escolhido à parte:
+    // a aura acertava sem dizer onde começava e onde acabava.
+    player.parent?.add(
+      AuraPulseEffect(
+        position: player.position.clone(),
+        raio: alcance,
+        cor1: Palette.pumpkin,
+        cor2: Palette.vermelho,
+      ),
+    );
+
     final inimigos =
         player.parent?.children.whereType<Enemy>() ?? const <Enemy>[];
     for (final inimigo in inimigos) {
@@ -962,6 +1035,134 @@ class RastroCongelante extends ItemEfeito {
 /// Cresce sozinho conforme novas passivas forem escritas — não existe uma
 /// segunda lista pra manter em sincronia.
 ///
+/// Cada criatura NOVA que passa pelo grupo nesta run deixa dano permanente.
+///
+/// Paga por ROTAÇÃO, e é o único item que faz isso: o resto do acervo premia
+/// ficar bom no que você já tem, e este premia experimentar. Combina com a
+/// sala da escada (`recrutarCriaturaSelvagem`) e com o consumível MAPA, as
+/// duas vias de entrar gente no grupo no meio da run.
+///
+/// O bônus é concedido UMA vez, no momento em que a criatura entra, e não
+/// recalculado por quadro. Isso importa: `Player.danoMult` é estático e vai
+/// pro save, então somar aqui é um ganho permanente de verdade, gravado como
+/// tal — o oposto das janelas de [Couraca]/[Desesperado], que o
+/// `_salvarProgresso` tem que derrubar antes da foto justamente porque NÃO
+/// são permanentes.
+///
+/// A primeira criatura da run não paga: `startRun` registra ela antes de os
+/// itens existirem. Na prática o item conta da segunda em diante, o que é o
+/// que ele promete.
+class DiarioDeCampo extends ItemEfeito {
+  const DiarioDeCampo();
+
+  /// Quanto cada criatura nova acrescenta em `Player.danoMult`. Mesma ordem
+  /// de grandeza do upgrade de dano do pedestal (0,15), um pouco abaixo
+  /// porque este pode repetir até o limite do elenco.
+  static const double bonusPorCriatura = 0.10;
+
+  @override
+  String get id => 'diarioDeCampo';
+  @override
+  String get spritePath => 'items/diario.png';
+  @override
+  Color get cor1 => Palette.bege;
+  @override
+  Color get cor2 => Palette.marromEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.item_diarioDeCampo;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.item_diarioDeCampoDesc;
+
+  @override
+  void aoUsarCriaturaNova(Player player, CreatureData criatura) {
+    Player.danoMult += bonusPorCriatura;
+  }
+}
+
+/// Cada companheira viva além da que está no comando dá dano.
+///
+/// Recompensa NÃO perder ninguém — hoje uma criatura caída só tira opções, e
+/// nenhum item falava disso. Perder a segunda companheira derruba o bônus na
+/// hora, então o item transforma o grupo num número pra proteger.
+///
+/// Derivado, não permanente: escreve em `Player.danoMultDerivado`, que é
+/// reconstruído a cada quadro. Por isso o valor sobe quando alguém é
+/// recrutado e desce quando alguém cai, sem nada pra desfazer.
+class EloDoGrupo extends ItemEfeito {
+  const EloDoGrupo();
+
+  /// Por companheira viva fora da ativa. Com os 3 slots do grupo, o teto é
+  /// duas companheiras — ou seja, +0,30 no máximo.
+  static const double bonusPorCompanheira = 0.15;
+
+  @override
+  String get id => 'eloDoGrupo';
+  @override
+  String get spritePath => 'items/capsula.png';
+  @override
+  Color get cor1 => Palette.jade;
+  @override
+  Color get cor2 => Palette.verdeEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.item_eloDoGrupo;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_eloDoGrupoDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    final jogo = player.game;
+    if (jogo is! CreaturesRogueGame) return;
+
+    // Conta os slots ocupados: `pocketarSlotAtivo` esvazia o slot de quem cai
+    // (nada neste jogo revive), então "slot ocupado" já é "criatura viva".
+    final vivas = jogo.companionCreatures.where((c) => c != null).length;
+    if (vivas <= 1) return;
+
+    Player.danoMultDerivado += (vivas - 1) * bonusPorCompanheira;
+  }
+}
+
+/// Moeda no bolso dá dano. Gastar na loja enfraquece.
+///
+/// Põe a loja em tensão com o combate: até agora guardar moeda era só esperar
+/// pelo balcão certo, e o custo de comprar era zero. Com este item, cada
+/// compra é uma troca de força imediata por um item.
+///
+/// Derivado a cada quadro em `Player.danoMultDerivado`, então o bônus cai no
+/// mesmo instante em que o balcão cobra.
+class Imposto extends ItemEfeito {
+  const Imposto();
+
+  static const double bonusPorMoeda = 0.02;
+
+  /// Teto de propósito: moeda não tem limite de acúmulo (ver `CoinPickup`,
+  /// "não tem teto útil"), e sem travar aqui uma run de acúmulo viraria dano
+  /// infinito. 25 moedas batem no teto, e os balcões mais caros da loja
+  /// custam 20 — então o teto fica logo acima do que o jogador de fato
+  /// carrega.
+  static const double bonusMaximo = 0.50;
+
+  @override
+  String get id => 'imposto';
+  @override
+  String get spritePath => 'items/saco.png';
+  @override
+  Color get cor1 => Palette.amarelo;
+  @override
+  Color get cor2 => Palette.marromEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.item_imposto;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_impostoDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    Player.danoMultDerivado +=
+        (player.coins * bonusPorMoeda).clamp(0.0, bonusMaximo);
+  }
+}
+
 class PassivasAposentadoria {
   static const Map<String, ItemEfeito> porCriatura = {
     'roedor_fogo': RastroFlamejante(),

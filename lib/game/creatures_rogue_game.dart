@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:creatures_rogue/l10n/creature_i18n.dart';
 import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
+import 'package:creatures_rogue/game/components/effects/efeitos_temporarios.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
 import 'dart:math';
 import 'dart:ui' as ui;
@@ -465,8 +466,16 @@ class CreaturesRogueGame extends FlameGame
   final List<String> criaturasUsadas = [];
 
   void _registrarCriaturaUsada(CreatureData criatura) {
-    if (!criaturasUsadas.contains(criatura.id)) {
-      criaturasUsadas.add(criatura.id);
+    if (criaturasUsadas.contains(criatura.id)) return;
+    criaturasUsadas.add(criatura.id);
+
+    // Único lugar do jogo que sabe "esta criatura é nova nesta run", então é
+    // daqui que sai o gancho. Ordem importa no carregamento: `startRun`
+    // registra a criatura ANTES de `_aplicarSave` repor `player.itens`, então
+    // a lista está vazia aqui e um save carregado não paga o bônus de novo em
+    // cima do que já está gravado no `danoMult`.
+    for (final item in player.itens) {
+      item.aoUsarCriaturaNova(player, criatura);
     }
   }
 
@@ -1009,7 +1018,24 @@ class CreaturesRogueGame extends FlameGame
 
   /// Chamado a cada andar novo (ver `startRun`/`nextLevel`) — fire-and-forget
   /// de propósito: nada na run trava esperando o disco gravar.
-  Future<void> _salvarProgresso() => RunSave.instance.salvar(_serializarRun());
+  ///
+  /// Derruba os efeitos do JOGADOR antes de tirar a foto, e isso não é
+  /// faxina: `_serializarRun` grava `danoMult`, `velMult` e `cdMult`, e
+  /// [Couraca]/[Desesperado] somam neles por janelas reafirmadas a cada
+  /// quadro. Salvar com uma janela aberta gravava o bônus como se fosse
+  /// permanente — e como isso acontece a cada andar, o valor COMPOUNDAVA a
+  /// cada transição feita com escudo cheio (ou vazio, no caso do
+  /// [Desesperado]).
+  ///
+  /// `limparEfeitos` roda o `aoTerminar` de cada um (ver o CONTRATO de
+  /// `EfeitosTemporarios`), então os valores-base vão pro disco e os itens
+  /// rearmam no quadro seguinte se a condição deles ainda valer. O preço é o
+  /// [Revezamento] perder o resto da janela dele quando a foto cai no meio
+  /// dela — janela de segundos, contra um bônus que ficava pra sempre.
+  Future<void> _salvarProgresso() {
+    player.limparEfeitos(dono: EfeitoDono.jogador);
+    return RunSave.instance.salvar(_serializarRun());
+  }
 
   /// Chamado pelo botão "ENTRAR" do `BossRevealOverlay`.
   void dismissBossReveal() {

@@ -178,6 +178,26 @@ class Player extends PositionComponent
   /// simultâneas disputando o multiplicador).
   static double danoMult = 1.0;
 
+  /// Multiplicador de dano DERIVADO do estado da run — quantas criaturas
+  /// estão vivas, quantas moedas o jogador carrega, o que mais vier.
+  ///
+  /// Separado do [danoMult] por causa do save. `danoMult` é acumulativo
+  /// (`+=`) e vai pro disco, então serve pra ganho permanente e nada mais:
+  /// escrever um valor derivado nele apagaria os upgrades de pedestal, e
+  /// gravá-lo congelaria no save um número que deveria mudar junto com o
+  /// estado.
+  ///
+  /// Este aqui é RECONSTRUÍDO a cada quadro: `update` devolve ele pra 1.0
+  /// imediatamente antes de rodar os itens, e quem contribui soma a sua parte
+  /// de novo. Duas consequências que importam pra quem for escrever nele:
+  ///
+  /// 1. Quem contribui TEM que reafirmar todo quadro — um `+=` de uma vez
+  ///    desaparece no quadro seguinte. É o contrário do [danoMult].
+  /// 2. Não existe par de aplicar/desfazer pra manter em sincronia, nem
+  ///    janela que possa ser fotografada pelo save. Por isso este campo NÃO
+  ///    entra em `_serializarRun`.
+  static double danoMultDerivado = 1.0;
+
   Vector2 velocity = Vector2.zero();
   Vector2 knockbackVelocity = Vector2.zero();
   Vector2 plrDir = Vector2(0, 1);
@@ -403,12 +423,12 @@ class Player extends PositionComponent
 
   /// Tempo de voo: sobe e cai no mesmo arco do salto normal, só mais alto e
   /// mais devagar.
-  static const double _morteVoo = 0.55;
-  static const double _morteAltura = 34.0;
+  static const double _morteVoo = 0.75;
+  static const double _morteAltura = 24.0;
 
   /// Quanto o corpo fica parado de cabeça pra baixo antes de [_morteAoTerminar]
   /// disparar. Junto com [_morteVoo], são os dois números de ajuste da cena.
-  static const double _morteParado = 0.9;
+  static const double _morteParado = 1.2;
 
   /// A criatura ativa zerou a vida e não há outra pra entrar: lança o corpo no
   /// ar, deixa ele cair de cabeça pra baixo e chama [aoTerminar] depois de uns
@@ -435,6 +455,13 @@ class Player extends PositionComponent
     _puloAoAterrissar = null;
     final flip = visual.scale.x.isNegative ? -1.0 : 1.0;
     visual.scale = Vector2(flip, 1.0);
+
+    // O corte no `update` também para de reconstruir o multiplicador
+    // derivado, e ele ficaria congelado no valor do quadro da morte enquanto
+    // a cena roda — o motor continua vivo, e projétil já no ar ainda resolve
+    // dano. Devolve pra 1.0 na mão, que é o que a reconstrução daria com o
+    // grupo inteiro caído.
+    danoMultDerivado = 1.0;
 
     // O pisca-pisca de invulnerabilidade não roda mais depois daqui — sem
     // isto, morrer durante os quadros de imunidade congelava o corpo
@@ -760,6 +787,10 @@ class Player extends PositionComponent
     // o lugar certo pra zerar o multiplicador estático de dano — senão os
     // upgrades da run anterior valeriam na próxima.
     danoMult = 1.0;
+    // O derivado se reconstrói sozinho no primeiro `update`, mas até lá ele
+    // guardaria o valor da run passada. Zera junto pra não existir quadro
+    // nenhum com o número de outra partida.
+    danoMultDerivado = 1.0;
   }
 
   @override
@@ -1024,6 +1055,11 @@ class Player extends PositionComponent
     if (_dodgeCooldown > 0) _dodgeCooldown -= dt;
     _tempoSemApanhar += dt;
     atualizarEfeitos(dt);
+
+    // Reconstrói o multiplicador derivado do zero (ver `danoMultDerivado`):
+    // os itens somam a parte deles de novo logo abaixo, então nada aqui
+    // precisa ser desfeito depois. Hoje só item escreve nesse campo.
+    danoMultDerivado = 1.0;
     for (final item in itens) {
       item.aoAtualizar(this, dt);
     }
@@ -1283,7 +1319,7 @@ class Player extends PositionComponent
     if (_contatoCooldown.containsKey(inimigo)) return;
     _contatoCooldown[inimigo] = _contatoCooldownMax;
     inimigo.takeDamage(
-      danoDeContato * danoMult,
+      danoDeContato * danoMult * danoMultDerivado,
       tipoAtacante: creatureData.tipo,
     );
   }

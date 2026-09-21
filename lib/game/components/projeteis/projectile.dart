@@ -293,7 +293,10 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
           other.applyStun(stunDuration);
         }
         
-        other.takeDamage(dmg * Player.danoMult, tipoAtacante: tipo);
+        other.takeDamage(
+          dmg * Player.danoMult * Player.danoMultDerivado,
+          tipoAtacante: tipo,
+        );
         other.applyKnockback(absolutePosition, kbForce);
         atravessa--;
         if (atravessa <= 0) onDestroy();

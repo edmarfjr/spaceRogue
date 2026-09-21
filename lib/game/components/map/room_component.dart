@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:creatures_rogue/game/components/items/item_efeito.dart';
 import 'package:creatures_rogue/game/components/map/floor_text.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/components/effects/boss_cutscene.dart';
@@ -188,13 +189,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
       //  _spawnSalaDeTeste();
       }
      
-     /* _spawnTreasure(offsetX:16,offsetY:-16);
-      Enemy enemy = DummyEnemy(
-        position: Vector2(width / 2, height / 2 - 32),
-        playerTarget: player,
-      );
-      parent?.add(enemy);
-      */
+     
     }
   }
 
@@ -215,7 +210,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
   }
 
   void _spawnSalaDeTeste() {
-    final candidatas = CreatureRegistry.all
+  /*  final candidatas = CreatureRegistry.all
         .where((c) => c.evoluir != null && c.id != player.creatureData.id)
         .take(2)
         .toList();
@@ -237,6 +232,15 @@ class RoomComponent extends PositionComponent with HasGameRef {
         ),
       );
     }
+    */
+    parent?.add(ItemEfeitoPickup(position: Vector2(width / 2 - 24, centerY + 24), item: PeleDeCinzas()));
+    parent?.add(ItemEfeitoPickup(position: Vector2(width / 2 + 24, centerY + 24), item: CascaInstavel()));
+      Enemy enemy = DummyEnemy(
+        position: Vector2(width / 2, height / 2 - 32),
+        playerTarget: player,
+      );
+      parent?.add(enemy);
+      
   }
 
   void _spawnTreasure({double offsetX = 0,double offsetY = 0}) {
