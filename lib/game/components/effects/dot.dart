@@ -53,7 +53,7 @@ class Dot {
           kind: kind,
           tipo: CreatureType.fogo,
           dano: 2.0,
-          intervalo: 0.35,
+          intervalo: 0.67,
           cor: Palette.laranja,
           tetoTicks: 3,
           acumula: false,

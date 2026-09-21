@@ -12,7 +12,7 @@ class CuspeVenenoso extends Ability {
   final double velocidade;
 
   const CuspeVenenoso({this.coef = 1.0, this.velocidade = 90})
-      : super(nome: 'Cuspe Venenoso', descricao: 'Projétil lento que envenena ao acertar.', cooldown: 1.4, custoEnergia: 3.5);
+      : super(nome: 'Cuspe Venenoso', descricao: 'Projétil lento que envenena ao acertar.', cooldown: 0.4, custoEnergia: 3.5);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

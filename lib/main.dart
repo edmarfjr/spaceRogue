@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:creatures_rogue/game/overlays/victory_overlay.dart';
 import 'package:creatures_rogue/game/overlays/retirement_overlay.dart';
 import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:flame/flame.dart';
@@ -14,6 +15,7 @@ import 'package:creatures_rogue/game/overlays/creature_select_overlay.dart';
 import 'package:creatures_rogue/game/overlays/evolution_overlay.dart';
 import 'package:creatures_rogue/game/overlays/game_over_overlay.dart';
 import 'package:creatures_rogue/game/overlays/intro_overlay.dart';
+import 'package:creatures_rogue/game/overlays/loading_screen.dart';
 import 'package:creatures_rogue/game/overlays/main_menu_overlay.dart';
 import 'package:creatures_rogue/game/overlays/pause_overlay.dart';
 import 'package:creatures_rogue/game/overlays/settings_overlay.dart';
@@ -83,7 +85,11 @@ void main() async {
             GameOverMenu(game: game), // <--- REGISTRO NOVO
         'Evolution': (context, game) => EvolutionOverlay(game: game),
         'Retirement': (context, game) => RetirementOverlay(game: game),
+        'Victory': (context, game) => VictoryOverlay(game: game),
       },
+      // O GameWidget só empilha os overlays (inclusive o MainMenu) depois
+      // que o onLoad do jogo resolve; até lá quem pinta a tela é isto.
+      loadingBuilder: (context) => const LoadingScreen(),
       initialActiveOverlays: const ['MainMenu'], // Começa no Menu
     ),
   );

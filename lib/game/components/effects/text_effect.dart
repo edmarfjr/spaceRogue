@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/utils/y_sort.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
@@ -50,6 +51,11 @@ class TextEffect extends PositionComponent {
       color: color,
       fontSize: fontSize,
     );
+  }
+
+  @override
+  void onLoad(){
+    priority = ySortPriority(position.y + size.y / 2);
   }
 
   @override

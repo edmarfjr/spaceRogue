@@ -1,4 +1,5 @@
 import 'package:creatures_rogue/game/components/creatures/abilities/brado_evo.dart';
+import 'package:creatures_rogue/game/components/enemies/creatures/roda_fogo_enemy.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/choque_eletrico_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/deixar_bomba_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/disparada_congelante.dart';
@@ -15,6 +16,13 @@ import 'package:creatures_rogue/game/components/creatures/abilities/choque_eletr
 import 'package:creatures_rogue/game/components/creatures/abilities/cuspe_venenoso.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/deixar_bomba.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/disparada_veloz.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/tiro_de_gelo_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/disparada_congelante_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/cuspe_venenoso_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/explosao_venenosa_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/ericar_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/escudo_de_espinhos_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/passives/roda_de_fogo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/esquiva_bomba.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/esquiva_tornado.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/explosao_venenosa.dart';
@@ -145,7 +153,7 @@ class CreatureRegistry {
     tipo: CreatureType.planta,
     corClara: Palette.verde,
     corEscura: Palette.marromEsc,
-    stats: BaseStats(maxHp: 3, speed: 35, defesa: 1, ataque: 3),
+    stats: BaseStats(maxHp: 3, speed: 50, defesa: 1, ataque: 3),
     ability1: CuspeDeSemente(),
     ability2: CascoFechado(),
     moveAnim: MovementAnimation.arrastar,
@@ -163,7 +171,7 @@ class CreatureRegistry {
     tipo: CreatureType.planta,
     corClara: Palette.verde,
     corEscura: Palette.marromEsc,
-    stats: BaseStats(maxHp: 3, speed: 35, defesa: 1, ataque: 3),
+    stats: BaseStats(maxHp: 3, speed: 50, defesa: 1, ataque: 3),
     ability1: CuspeDeSementeEvo(),
     ability2: CascoFechadoEvo(),
     moveAnim: MovementAnimation.arrastar,
@@ -179,7 +187,7 @@ class CreatureRegistry {
     tipo: CreatureType.agua,
     corClara: Palette.azul,
     corEscura: Palette.indigo,
-    stats: BaseStats(maxHp: 3, speed: 50, defesa: 1, ataque: 2),
+    stats: BaseStats(maxHp: 3, speed: 60, defesa: 1, ataque: 2),
     ability1: BolaDagua(),
     ability2: BolhaProtetora(),
     moveAnim: MovementAnimation.saltitar,
@@ -211,7 +219,7 @@ class CreatureRegistry {
     tipo: CreatureType.eletrico,
     corClara: Palette.amarelo,
     corEscura: Palette.pumpkin,
-    stats: BaseStats(maxHp: 3, speed: 80, defesa: 1, ataque: 1, critBonus: 5),
+    stats: BaseStats(maxHp: 3, speed: 80, defesa: 1, ataque: 1, critBonus: 5, tempoAteMaxima: 0.4, tempoAteParar: 0.5),
     ability1: BicoEletrico(),
     ability2: CorrenteEstatica(),
     moveAnim: MovementAnimation.flutuar,
@@ -421,9 +429,65 @@ class CreatureRegistry {
     enemyBuilder: (pos, plr) =>
         SlimePlantaEnemy(position: pos, playerTarget: plr),
     //passive: PecoenhaReflexiva(),
+    evoluir: () => slimePlantaEvo,
   );
 
-  static final CreatureData ouricoEletrico = CreatureData(
+  /// Evolução do Slime de Planta. O veneno dele deixa de ser um golpe e passa
+  /// a ser terreno: o cuspe se divide e a explosão vira poça duradoura.
+  static final CreatureData slimePlantaEvo = CreatureData(
+    id: 'slime_planta',
+    nome: 'Slimepeste',
+    spritePath: 'actors/slimePlantaEvo.png',
+    tipo: CreatureType.planta,
+    corClara: Palette.verde,
+    corEscura: Palette.verdeEsc,
+    stats: BaseStats(maxHp: 4, speed: 75, defesa: 1, ataque: 5),
+    ability1: CuspeVenenosoEvo(),
+    ability2: ExplosaoVenenosaEvo(),
+    moveAnim: MovementAnimation.arrastar,
+    hitboxSize: Vector2(8, 10),
+    enemyBuilder: (pos, plr) =>
+        SlimePlantaEnemy(position: pos, playerTarget: plr),
+  );
+
+ 
+  static final CreatureData pinguimAgua = CreatureData(
+    id: 'pinguim_agua',
+    nome: 'Penpin',
+    spritePath: 'actors/pinguimAgua.png',
+    tipo: CreatureType.agua,
+    corClara: Palette.azul,
+    corEscura: Palette.azulEsc,
+    stats: BaseStats(maxHp: 3, speed: 40, defesa: 1, ataque: 4),
+    ability1: TiroDeGelo(),
+    ability2: DisparadaCongelante(),
+    moveAnim: MovementAnimation.caminhada,
+    hitboxSize: Vector2(8, 14),
+    enemyBuilder: (pos, plr) =>
+        PinguimAguaEnemy(position: pos, playerTarget: plr),
+    //passive: RastroCongelante(),
+    evoluir: () => pinguimAguaEvo,
+  );
+
+   /// Evolução do Pinguim de Água. Troca alcance por controle: leque de gelo em
+  /// vez de um tiro, e o dash congela o caminho inteiro.
+  static final CreatureData pinguimAguaEvo = CreatureData(
+    id: 'pinguim_agua',
+    nome: 'Glacinguim',
+    spritePath: 'actors/pinguimAguaEvo.png',
+    tipo: CreatureType.agua,
+    corClara: Palette.azul,
+    corEscura: Palette.royal,
+    stats: BaseStats(maxHp: 4, speed: 48, defesa: 1, ataque: 5),
+    ability1: TiroDeGeloEvo(),
+    ability2: DisparadaCongelanteEvo(),
+    moveAnim: MovementAnimation.caminhada,
+    hitboxSize: Vector2(8, 14),
+    enemyBuilder: (pos, plr) =>
+        PinguimAguaEnemy(position: pos, playerTarget: plr),
+  );
+
+   static final CreatureData ouricoEletrico = CreatureData(
     id: 'ourico_eletrico',
     nome: 'Jolthog',
     spritePath: 'actors/ouricoEletric.png',
@@ -438,6 +502,26 @@ class CreatureRegistry {
     enemyBuilder: (pos, plr) =>
         OuricoEletricoEnemy(position: pos, playerTarget: plr),
     //passive: RetaliacaoEletrica(),
+    evoluir: () => ouricoEletricoEvo,
+  );
+
+/// Evolução do Ouriço Elétrico. Continua o mais lento do elenco de
+  /// propósito: o que ele ganha é imobilizar (espinhos que perfuram e
+  /// paralisam) e revidar mais forte, não fugir.
+  static final CreatureData ouricoEletricoEvo = CreatureData(
+    id: 'ourico_eletrico',
+    nome: 'Voltari',
+    spritePath: 'actors/ouricoEletricEvo.png',
+    tipo: CreatureType.eletrico,
+    corClara: Palette.amarelo,
+    corEscura: Palette.marromEsc,
+    stats: BaseStats(maxHp: 5, speed: 32, defesa: 2, ataque: 4),
+    ability1: EricarEvo(),
+    ability2: EscudoDeEspinhosEvo(),
+    moveAnim: MovementAnimation.caminhada,
+    hitboxSize: Vector2(12, 12),
+    enemyBuilder: (pos, plr) =>
+        OuricoEletricoEnemy(position: pos, playerTarget: plr),
   );
 
   static final CreatureData caranguejoErmitao = CreatureData(
@@ -455,23 +539,6 @@ class CreatureRegistry {
     enemyBuilder: (pos, plr) =>
         CaranguejoErmitaoEnemy(position: pos, playerTarget: plr),
     //passive: FumacaAoLacar(),
-  );
-
-  static final CreatureData pinguimAgua = CreatureData(
-    id: 'pinguim_agua',
-    nome: 'Penpin',
-    spritePath: 'actors/pinguimAgua.png',
-    tipo: CreatureType.agua,
-    corClara: Palette.azul,
-    corEscura: Palette.azulEsc,
-    stats: BaseStats(maxHp: 3, speed: 40, defesa: 1, ataque: 4),
-    ability1: TiroDeGelo(),
-    ability2: DisparadaCongelante(),
-    moveAnim: MovementAnimation.caminhada,
-    hitboxSize: Vector2(8, 14),
-    enemyBuilder: (pos, plr) =>
-        PinguimAguaEnemy(position: pos, playerTarget: plr),
-    //passive: RastroCongelante(),
   );
 
   static final CreatureData tocoPlanta = CreatureData(
@@ -589,6 +656,64 @@ class CreatureRegistry {
         PeixeNeutroEnemy(position: pos, playerTarget: plr),
   );
 
+  /// Sem habilidade 1 de proposito: a passiva [RodaDeFogo] ocupa o lugar dela
+  /// (ver `CreatureData.ability1`). `acceleration` e `friction` baixos porque
+  /// o jogo dela e ganhar embalo e manter — acelerar rapido tornaria a
+  /// invulnerabilidade trivial de ligar.
+  static final CreatureData rodaFogo = CreatureData(
+    id: 'roda_fogo',
+    nome: 'Pyrowheel',
+    spritePath: 'actors/rodaFogo.png',
+    tipo: CreatureType.fogo,
+    corClara: Palette.vermelho,
+    corEscura: Palette.roxoEsc,
+    stats: BaseStats(
+      maxHp: 3,
+      speed: 95,
+      // Rampa longa de proposito: a passiva `RodaDeFogo` so liga na
+      // velocidade maxima, e com os 0,3s padrao ligar seria trivial. Freia
+      // devagar pelo mesmo motivo tematico — e uma roda, ela carrega inercia.
+      tempoAteMaxima: 0.6,
+      tempoAteParar: 0.8,
+      defesa: 1,
+      ataque: 4,
+    ),
+    ability2: DisparadaVeloz(),
+    passive: RodaDeFogo(),
+    moveAnim: MovementAnimation.saltitar,
+    hitboxSize: Vector2(10, 10),
+    evoluir: () => rodaFogoEvo,
+    enemyBuilder: (pos, plr) =>
+        RodaFogoEnemy(position: pos, playerTarget: plr),
+  );
+
+  /// Evolucao da Roda de Fogo. Segue sem habilidade 1 — a passiva evoluida
+  /// ([RodaDeFogoEvo]) e que cresce, ganhando o rastro de fogo.
+  static final CreatureData rodaFogoEvo = CreatureData(
+    id: 'roda_fogo',
+    nome: 'Pyrowheel',
+    spritePath: 'actors/rodaFogoEvo.png',
+    tipo: CreatureType.fogo,
+    corClara: Palette.laranja,
+    corEscura: Palette.vermelho,
+    stats: BaseStats(
+      maxHp: 4,
+      speed: 110,
+      // Mesmo tempo da forma base: a evolucao ganha no rastro de fogo, nao
+      // em ficar mais facil de acelerar.
+      tempoAteMaxima: 0.6,
+      tempoAteParar: 0.8,
+      defesa: 1,
+      ataque: 5,
+    ),
+    ability2: DisparadaVelozEvo(),
+    passive: RodaDeFogoEvo(),
+    moveAnim: MovementAnimation.saltitar,
+    hitboxSize: Vector2(10, 10),
+    enemyBuilder: (pos, plr) =>
+        RodaFogoEnemy(position: pos, playerTarget: plr),
+  );
+
   static final List<CreatureData> all = [
     roedorFogo,
     tartarugaPlanta,
@@ -598,6 +723,7 @@ class CreatureRegistry {
     cobraAgua,
     ursoPlanta,
     griloEletrico,
+    rodaFogo,
     bombaFogo,
     slimePlanta,
     pinguimAgua,

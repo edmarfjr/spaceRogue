@@ -37,7 +37,7 @@ class DisparadaFlamejante extends Ability {
   void execute(AbilityUser user, Vector2 dir) {
     final danoRastro = user.creatureData.stats.ataque * coefRastro;
     user.grantInvulnerability(duracao);
-    final ataque = user.creatureData.stats.ataque;
+  /* final ataque = user.creatureData.stats.ataque;
     
     final origem = user.position.clone();
     user.parent?.add(
@@ -51,7 +51,7 @@ class DisparadaFlamejante extends Ability {
         size: Vector2(24, 24)
       ),
     );
-
+  */
     GhostEffect.spawnTrail(
       visual: user.visual,
       add: (g) => user.parent?.add(g),

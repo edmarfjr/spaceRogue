@@ -230,8 +230,6 @@ class Hud extends PositionComponent with HasGameRef {
         ],
       ),
     );
-
-   
   }
 
   @override
@@ -264,14 +262,14 @@ class Hud extends PositionComponent with HasGameRef {
     if (player.creatureData.evoluir != null || naAposentadoria) {
       textPaint.render(canvas, 'XP:', Vector2(2, _evoBarY - 6));
       canvas.drawRect(
-        Rect.fromLTWH(25, _evoBarY-1, _evoBarWidth+1, _evoBarHeight+2),
+        Rect.fromLTWH(25, _evoBarY - 1, _evoBarWidth + 1, _evoBarHeight + 2),
         _evoTrackPaint,
       );
       canvas.drawRect(
-        Rect.fromLTWH(25, _evoBarY-1, _evoBarWidth, _evoBarHeight+1),
+        Rect.fromLTWH(25, _evoBarY - 1, _evoBarWidth, _evoBarHeight + 1),
         _evoFundoPaint,
       );
-      
+
       canvas.drawRect(
         Rect.fromLTWH(
           25,
@@ -284,28 +282,37 @@ class Hud extends PositionComponent with HasGameRef {
     }
 
     // --- BARRA DE ENERGIA (habilidade 1) ---
-    canvas.drawRect(
-      Rect.fromLTWH(
-        1,
-        _energiaBarY - 1,
-        _energiaBarWidth + 1,
-        _energiaBarHeight + 2,
-      ),
-      _energiaTrackPaint,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(1, _energiaBarY - 1, _energiaBarWidth, _energiaBarHeight + 1),
-      _energiaFundoPaint,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(
-        1,
-        _energiaBarY,
-        _energiaBarWidth * player.energiaFracao,
-        _energiaBarHeight,
-      ),
-      _energiaFillPaint,
-    );
+    // Criatura sem habilidade 1 (passiva no lugar, ver `CreatureData`) nunca
+    // gasta energia: a barra ficaria cheia pra sempre, decorando.
+    if (player.creatureData.ability1 != null) {
+      canvas.drawRect(
+        Rect.fromLTWH(
+          1,
+          _energiaBarY - 1,
+          _energiaBarWidth + 1,
+          _energiaBarHeight + 2,
+        ),
+        _energiaTrackPaint,
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(
+          1,
+          _energiaBarY - 1,
+          _energiaBarWidth,
+          _energiaBarHeight + 1,
+        ),
+        _energiaFundoPaint,
+      );
+      canvas.drawRect(
+        Rect.fromLTWH(
+          1,
+          _energiaBarY,
+          _energiaBarWidth * player.energiaFracao,
+          _energiaBarHeight,
+        ),
+        _energiaFillPaint,
+      );
+    }
 
     moedaSprite.render(
       canvas,
@@ -355,7 +362,8 @@ class Hud extends PositionComponent with HasGameRef {
     //barra de vida com logica sem meia vida
 
     for (int i = 0; i < player.maxHealth; i++) {
-      double shieldX = (i * (heartSize.x + spacing) - ((heartSize.x + spacing) + 2)) + 3;
+      double shieldX =
+          (i * (heartSize.x + spacing) - ((heartSize.x + spacing) + 2)) + 3;
       final double shieldY = -2; //heartSize.y + 1;
 
       heartEmptySprite.render(
@@ -367,7 +375,8 @@ class Hud extends PositionComponent with HasGameRef {
     }
 
     for (int i = 0; i < player.currentHealth; i++) {
-      double shieldX = (i * (heartSize.x + spacing) - ((heartSize.x + spacing) + 2)) + 3;
+      double shieldX =
+          (i * (heartSize.x + spacing) - ((heartSize.x + spacing) + 2)) + 3;
       final double shieldY = -2; //heartSize.y + 1;
 
       heartSprite.render(
@@ -380,11 +389,12 @@ class Hud extends PositionComponent with HasGameRef {
 
     // --- BARRA DE ESCUDO PASSIVO (defesa) ---
     for (int i = 0; i < player.shield; i++) {
-      double shieldX = (i * (heartSize.x + spacing) - ((heartSize.x + spacing) + 2)) + 3;
-          //3 +
-          //player.maxHealth / 2 * (heartSize.x + spacing) +
-          //(i * (heartSize.x + spacing)) -
-          //((heartSize.x + spacing) + 2); // Posição X após os corações
+      double shieldX =
+          (i * (heartSize.x + spacing) - ((heartSize.x + spacing) + 2)) + 3;
+      //3 +
+      //player.maxHealth / 2 * (heartSize.x + spacing) +
+      //(i * (heartSize.x + spacing)) -
+      //((heartSize.x + spacing) + 2); // Posição X após os corações
       final double shieldY = -2; //heartSize.y + 1;
       //final fracao = (player.shield / player.shieldMax).clamp(0.0, 1.0);
 
@@ -435,6 +445,10 @@ class Hud extends PositionComponent with HasGameRef {
 
     //double bombY = heartSize.y + 2;
     //bombSprite.render(canvas, position: Vector2(0, bombY), size: bombIconSize, overridePaint: paint);
-    textPaint.render(canvas, '${game.currentFloor.toString()} - ${game.currentLevel.toString()}', Vector2(83, 1));
+    textPaint.render(
+      canvas,
+      '${game.currentFloor.toString()} - ${game.currentLevel.toString()}',
+      Vector2(83, 1),
+    );
   }
 }

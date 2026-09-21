@@ -85,8 +85,6 @@ class CreaturesRogueGame extends FlameGame
   // O Mundo onde o mapa, inimigos e jogador existirão
   late final World dungeonWorld;
 
-  bool godMode = true;
-
   // A câmera que vai renderizar o mundo na resolução do Game Boy
   late final CameraComponent gameCamera;
 
@@ -325,13 +323,30 @@ class CreaturesRogueGame extends FlameGame
   /// no banco — o slot fica livre de novo, do mesmo jeito que antes de
   /// alguém entrar nele (o item MAPA ou a sala da escada podem preencher com
   /// outra criatura). Derrotada é derrotada; nada neste jogo revive.
-  void pocketarSlotAtivo() {
+  ///
+  /// [porMorte] separa quem zerou a vida de quem foi APOSENTADO
+  /// (`aposentarSlotAtivo`), porque na ponta em que o grupo acaba os dois
+  /// terminam aqui e a cena precisa ser diferente: quem morre é lançado no ar
+  /// (ver `Player.iniciarMorte`), quem se aposenta continua sendo recolhido.
+  void pocketarSlotAtivo({bool porMorte = true}) {
     final slotAtual = companionAtivoIndex;
     companionCreatures[slotAtual] = null;
     companionSavedHealth[slotAtual] = 0.0;
     companionPocketed[slotAtual] = false;
     companionXp[slotAtual] = 0.0;
     companionEvoluida[slotAtual] = false;
+
+    final proximo = _primeiroSlotDisponivel();
+
+    if (proximo == null && porMorte) {
+      // Última criatura caída: sem cerimônia de recolher, que leria como
+      // "voltou pro grupo" justo quando não há mais grupo. `Sfx.die` estava
+      // declarado e com o .wav no disco desde sempre, sem nenhum tocador.
+      GameAudio.instance.play(Sfx.die);
+      _handleGameOver(comAnimacaoDeMorte: true);
+      return;
+    }
+
     GameAudio.instance.play(Sfx.retorno);
     dungeonWorld.add(
       CompanionRecallEffect(
@@ -340,7 +355,6 @@ class CreaturesRogueGame extends FlameGame
       ),
     );
 
-    final proximo = _primeiroSlotDisponivel();
     if (proximo == null) {
       _handleGameOver();
       return;
@@ -390,6 +404,7 @@ class CreaturesRogueGame extends FlameGame
     if (slotVazio == -1) return false;
 
     companionCreatures[slotVazio] = creature;
+    _registrarCriaturaUsada(creature);
     companionSavedHealth[slotVazio] = creature.stats.maxHp;
     companionPocketed[slotVazio] = true;
     companionXp[slotVazio] = 0.0;
@@ -398,6 +413,10 @@ class CreaturesRogueGame extends FlameGame
   }
 
   bool _runStarted = false;
+
+  /// Trava de reentrada do Game Over — zerada em `startRun`, que é o único
+  /// caminho de volta pro jogo.
+  bool _gameOverEmCurso = false;
   Vector2 currentRoomIndex = Vector2.zero();
 
   final VoidCallback? onGameOver;
@@ -426,6 +445,35 @@ class CreaturesRogueGame extends FlameGame
   int currentLevel = 1;
   int numFloors = 5;
   int currentFloor = 1;
+
+  /// Segundos de jogo desta run. Cresce no [update], que nao roda com o motor
+  /// pausado — logo tempo de menu, de cerimonia e de tela de boss nao conta.
+  double tempoDeRun = 0.0;
+
+  /// MM:SS, pro menu de pausa e pra tela de vitoria. Minutos nao estouram em
+  /// 60: uma run de 75 minutos mostra 75:00, nao 15:00.
+  String get tempoDeRunFormatado {
+    final total = tempoDeRun.floor();
+    final mm = (total ~/ 60).toString().padLeft(2, '0');
+    final ss = (total % 60).toString().padLeft(2, '0');
+    return '$mm:$ss';
+  }
+
+  /// Ids de toda criatura que passou pelo grupo nesta run, na ordem em que
+  /// entraram. Nao e o mesmo que [companionCreatures]: aquele perde a criatura
+  /// que morreu ou se aposentou, e a tela de vitoria quer o elenco inteiro.
+  final List<String> criaturasUsadas = [];
+
+  void _registrarCriaturaUsada(CreatureData criatura) {
+    if (!criaturasUsadas.contains(criatura.id)) {
+      criaturasUsadas.add(criatura.id);
+    }
+  }
+
+  /// A dungeon atual e a ultima? Criterio: nao existe pool de boss para a
+  /// proxima (ver [BossRegistry.all]). Assim, acrescentar uma pool nova ao
+  /// registro estende o jogo sem tocar em mais nada.
+  bool get ehUltimaDungeon => currentLevel >= BossRegistry.all.length;
 
   /// Salas geradas no PRIMEIRO andar de uma dungeon.
   static const int salasNoPrimeiroAndar = 7;
@@ -512,7 +560,9 @@ class CreaturesRogueGame extends FlameGame
 
     // Libera o slot, troca pra próxima viva e chama Game Over se não houver
     // nenhuma — comportamento aceito pra aposentar a última criatura.
-    pocketarSlotAtivo();
+    // `porMorte: false`: aposentar a última encerra a run, mas não é morte, e
+    // a animação de morte não deve tocar.
+    pocketarSlotAtivo(porMorte: false);
   }
 
   /// Chamado pelo botão "CONTINUAR" da `EvolutionOverlay`.
@@ -629,6 +679,8 @@ class CreaturesRogueGame extends FlameGame
       companionEvoluida[i] = false;
     }
     companionAtivoIndex = 0;
+    tempoDeRun = 0.0;
+    criaturasUsadas.clear();
     poolItens
       ..clear()
       //  filtra as passivas de aposentadoria: elas moram no mesmo
@@ -654,6 +706,7 @@ class CreaturesRogueGame extends FlameGame
       creatureData: creature,
     );
     _runStarted = true;
+    _gameOverEmCurso = false;
     player.position = Vector2(
       RoomComponent.roomWidth / 2,
       RoomComponent.centerY,
@@ -662,6 +715,7 @@ class CreaturesRogueGame extends FlameGame
 
     companionCreatures[0] = creature;
     companionPocketed[0] = false;
+    _registrarCriaturaUsada(creature);
 
     if (save != null) {
       _aplicarSave(save);
@@ -804,6 +858,12 @@ class CreaturesRogueGame extends FlameGame
   void _aplicarSave(Map<String, dynamic> dados) {
     currentLevel = dados['dungeon'] as int;
     currentFloor = dados['andar'] as int;
+    // Save anterior a estes dois campos: cronometro volta do zero e o elenco
+    // fica vazio. Nada quebra, so a tela de vitoria mostraria menos.
+    tempoDeRun = (dados['tempoDeRun'] as num?)?.toDouble() ?? 0.0;
+    criaturasUsadas
+      ..clear()
+      ..addAll(((dados['criaturasUsadas'] as List?) ?? const []).cast<String>());
 
     final bossId = dados['bossId'] as String?;
     runBoss = bossId == null ? null : _acharBoss(bossId, currentLevel);
@@ -910,6 +970,8 @@ class CreaturesRogueGame extends FlameGame
       'dungeon': currentLevel,
       'andar': currentFloor,
       'poolItens': poolItens.map((i) => i.id).toList(),
+      'tempoDeRun': tempoDeRun,
+      'criaturasUsadas': List<String>.from(criaturasUsadas),
       'poolAposentadoria': List<String>.from(poolAposentadoria),
       'bossId': runBoss?.creatureId,
       'ativo': companionAtivoIndex,
@@ -1669,6 +1731,7 @@ class CreaturesRogueGame extends FlameGame
       return;
     }
     super.update(dt);
+    if (_runStarted) tempoDeRun += dt;
     if (trocaCooldown > 0) trocaCooldown -= dt;
     _checkCameraTransition();
     // Rede de segurança pro layout RETRATO x PAISAGEM (ver doc de
@@ -1733,6 +1796,15 @@ class CreaturesRogueGame extends FlameGame
     // até o andar final dela.
     final novaDungeon = currentFloor > numFloors;
     if (novaDungeon) {
+      // Sem pool de boss pra proxima dungeon: acabou o jogo. Checado ANTES do
+      // `currentLevel++` de propósito — depois de incrementar, `sortear`
+      // daria a volta no `%` e reusaria a primeira pool, e o jogador jogaria
+      // a dungeon 1 de novo achando que era nova.
+      if (ehUltimaDungeon) {
+        _handleVitoria();
+        return;
+      }
+
       currentLevel++;
       currentFloor = 1;
       runBoss = BossRegistry.sortear(_bossRandom, currentLevel);
@@ -1794,11 +1866,40 @@ class CreaturesRogueGame extends FlameGame
   /// Apaga o save aqui: roguelike é permadeath, e morrer é o único jeito de
   /// zerar a run em si (RESTART logo em seguida começa uma run NOVA, que já
   /// grava o save dela própria).
-  void _handleGameOver() {
+  /// Zerou o jogo: passou do andar final da ULTIMA dungeon (ver
+  /// [ehUltimaDungeon]). Mesma mecanica do Game Over — tira a Hud, pausa e
+  /// apaga o save —, porque em ambos a run terminou e nao ha pra onde
+  /// continuar.
+  void _handleVitoria() {
     overlays.remove('Hud');
-    overlays.add('GameOver');
+    overlays.add('Victory');
     pauseEngine();
     unawaited(RunSave.instance.apagar());
+  }
+
+  /// Com [comAnimacaoDeMorte], a tela de Game Over espera a cena de morte do
+  /// jogador terminar (ver `Player.iniciarMorte`) — o motor NÃO pode ser
+  /// pausado antes, senão a animação não recebe quadro nenhum.
+  void _handleGameOver({bool comAnimacaoDeMorte = false}) {
+    // O corpo em cena continua no mundo e com o motor rodando; sem esta
+    // guarda, um segundo caminho de Game Over no meio da animação empilharia
+    // outra tela.
+    if (_gameOverEmCurso) return;
+    _gameOverEmCurso = true;
+
+    overlays.remove('Hud');
+    unawaited(RunSave.instance.apagar());
+
+    if (!comAnimacaoDeMorte) {
+      _mostrarGameOver();
+      return;
+    }
+    player.iniciarMorte(aoTerminar: _mostrarGameOver);
+  }
+
+  void _mostrarGameOver() {
+    overlays.add('GameOver');
+    pauseEngine();
     onGameOver?.call();
   }
 

@@ -17,22 +17,8 @@ import 'package:creatures_rogue/game/components/creatures/abilities/mordida.dart
 import 'package:creatures_rogue/game/components/creatures/abilities/estocada_relampago.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/bola_dagua.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/jato_aquatico.dart';
-import 'package:creatures_rogue/game/components/creatures/passives/brado_reflexo.dart';
-import 'package:creatures_rogue/game/components/creatures/passives/investida_predatoria.dart';
-import 'package:creatures_rogue/game/components/creatures/passives/fumaca_ao_lacar.dart';
-import 'package:creatures_rogue/game/components/creatures/passives/tornado_residual.dart';
-import 'package:creatures_rogue/game/components/creatures/passives/golpe_de_lanca.dart';
-import 'package:creatures_rogue/game/components/creatures/passives/bomba_na_esquiva.dart';
-import 'package:creatures_rogue/game/components/creatures/passives/corrente_reflexa.dart';
-import 'package:creatures_rogue/game/components/creatures/passives/salto_aquatico.dart';
-import 'package:creatures_rogue/game/components/creatures/passives/rastro_congelante.dart';
-import 'package:creatures_rogue/game/components/creatures/passives/bolha_autonoma.dart';
-import 'package:creatures_rogue/game/components/creatures/passives/casco_reflexivo.dart';
-import 'package:creatures_rogue/game/components/creatures/passives/raizes_do_laco.dart';
-import 'package:creatures_rogue/game/components/creatures/passives/retaliacao_eletrica.dart';
-import 'package:creatures_rogue/game/components/creatures/passives/pecoenha_reflexiva.dart';
-import 'package:creatures_rogue/game/components/creatures/passives/rastro_flamejante.dart';
-import 'package:creatures_rogue/game/components/creatures/passives/reflexo_eletrico.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
+import 'package:creatures_rogue/game/components/creatures/passives/roda_de_fogo.dart';
 import 'l10n_extensions.dart';
 
 /// Nome/descrição exibidos de uma `Ability`/`Passive`, pelo tipo concreto —
@@ -90,22 +76,10 @@ String abilityDescription(BuildContext context, Ability a) {
 String passiveName(BuildContext context, Passive p) {
   final l = context.l10n;
   return switch (p) {
-    BradoReflexo() => l.passiveName_BradoReflexo,
-    InvestidaPredatoria() => l.passiveName_InvestidaPredatoria,
-    FumacaAoLacar() => l.passiveName_FumacaAoLacar,
-    TornadoResidual() => l.passiveName_TornadoResidual,
-    GolpeDeLanca() => l.passiveName_GolpeDeLanca,
-    BombaNaEsquiva() => l.passiveName_BombaNaEsquiva,
-    CorrenteReflexa() => l.passiveName_CorrenteReflexa,
-    SaltoAquatico() => l.passiveName_SaltoAquatico,
-    RastroCongelante() => l.passiveName_RastroCongelante,
-    BolhaAutonoma() => l.passiveName_BolhaAutonoma,
-    CascoReflexivo() => l.passiveName_CascoReflexivo,
-    RaizesDoLaco() => l.passiveName_RaizesDoLaco,
-    RetaliacaoEletrica() => l.passiveName_RetaliacaoEletrica,
-    PecoenhaReflexiva() => l.passiveName_PecoenhaReflexiva,
-    RastroFlamejante() => l.passiveName_RastroFlamejante,
-    ReflexoEletrico() => l.passiveName_ReflexoEletrico,
+    // `RodaDeFogoEvo` ANTES da base: ela E uma `RodaDeFogo`, e o switch casa
+    // no primeiro padrao — invertido, a evoluida mostraria o texto da base.
+    RodaDeFogoEvo() => l.passiveName_RodaDeFogoEvo,
+    RodaDeFogo() => l.passiveName_RodaDeFogo,
     _ => p.nome,
   };
 }
@@ -113,22 +87,35 @@ String passiveName(BuildContext context, Passive p) {
 String passiveDescription(BuildContext context, Passive p) {
   final l = context.l10n;
   return switch (p) {
-    BradoReflexo() => l.passiveDesc_BradoReflexo,
-    InvestidaPredatoria() => l.passiveDesc_InvestidaPredatoria,
-    FumacaAoLacar() => l.passiveDesc_FumacaAoLacar,
-    TornadoResidual() => l.passiveDesc_TornadoResidual,
-    GolpeDeLanca() => l.passiveDesc_GolpeDeLanca,
-    BombaNaEsquiva() => l.passiveDesc_BombaNaEsquiva,
-    CorrenteReflexa() => l.passiveDesc_CorrenteReflexa,
-    SaltoAquatico() => l.passiveDesc_SaltoAquatico,
-    RastroCongelante() => l.passiveDesc_RastroCongelante,
-    BolhaAutonoma() => l.passiveDesc_BolhaAutonoma,
-    CascoReflexivo() => l.passiveDesc_CascoReflexivo,
-    RaizesDoLaco() => l.passiveDesc_RaizesDoLaco,
-    RetaliacaoEletrica() => l.passiveDesc_RetaliacaoEletrica,
-    PecoenhaReflexiva() => l.passiveDesc_PecoenhaReflexiva,
-    RastroFlamejante() => l.passiveDesc_RastroFlamejante,
-    ReflexoEletrico() => l.passiveDesc_ReflexoEletrico,
-    _ => p.descricao,
+    RodaDeFogoEvo() => l.passiveDesc_RodaDeFogoEvo,
+    RodaDeFogo() => l.passiveDesc_RodaDeFogo,
+    _ => p.nome,
   };
+}
+
+/// Nome e descrição do que ocupa o lugar da habilidade 1 de [criatura]: a
+/// própria habilidade, ou a PASSIVA quando ela não tem habilidade 1 (ver
+/// `CreatureData.ability1`). Existe pra que as três telas de criatura
+/// (seleção, intro e pausa) não repitam esse `if` cada uma à sua moda.
+({String nome, String descricao}) slotUmDaCriatura(
+  BuildContext context,
+  CreatureData criatura,
+) {
+  final ability = criatura.ability1;
+  if (ability != null) {
+    return (
+      nome: abilityName(context, ability),
+      descricao: abilityDescription(context, ability),
+    );
+  }
+
+  final passive = criatura.passive;
+  if (passive != null) {
+    return (
+      nome: passiveName(context, passive),
+      descricao: passiveDescription(context, passive),
+    );
+  }
+
+  return (nome: '-', descricao: '-');
 }

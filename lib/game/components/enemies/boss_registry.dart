@@ -156,6 +156,34 @@ class BossRegistry {
             GriloEletricoBossEnemy(position: pos, playerTarget: plr),
       ),
     ],
+    // Dungeon 3 — as criaturas que ganharam evolucao por ultimo. A Roda de
+    // Fogo ficou de fora: ela nao tem forma inimiga nem de boss (sem
+    // `enemyBuilder` no registro), e criar uma e trabalho de IA propria, nao
+    // uma linha de pool.
+    [
+      BossOption(
+        creatureId: 'slime_planta',
+        builder: (pos, plr) =>
+            SlimePlantaBossEnemy(position: pos, playerTarget: plr),
+      ),
+      BossOption(
+        creatureId: 'ourico_eletrico',
+        builder: (pos, plr) =>
+            OuricoEletricoBossEnemy(position: pos, playerTarget: plr),
+      ),
+      BossOption(
+        creatureId: 'pinguim_agua',
+        builder: (pos, plr) =>
+            PinguimAguaBossEnemy(position: pos, playerTarget: plr),
+      ),
+      // A vaga de FOGO da dungeon 3 e da Bomba de Fogo, nao da Roda. A Roda
+      // tem forma de boss (`RodaFogoBossEnemy`), mas fica fora desta pool.
+      BossOption(
+        creatureId: 'bomba_fogo',
+        builder: (pos, plr) =>
+            BombaFogoBossEnemy(position: pos, playerTarget: plr),
+      ),
+    ],
   ];
 
   /// Sorteia um boss pra dungeon `dungeon` (1 = primeira lista de [all], 2 =

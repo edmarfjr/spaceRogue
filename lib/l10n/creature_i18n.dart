@@ -27,6 +27,7 @@ String creatureName(BuildContext context, String creatureId) {
     'gato_neutro' => l.creatureName_gato_neutro,
     'ave_neutro' => l.creatureName_ave_neutro,
     'peixe_neutro' => l.creatureName_peixe_neutro,
+    'roda_fogo' => l.creatureName_roda_fogo,
     _ => creatureId,
   };
 }

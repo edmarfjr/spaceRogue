@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
 import 'package:creatures_rogue/game/components/effects/condition_icons.dart';
@@ -27,8 +28,10 @@ import 'package:creatures_rogue/game/components/projeteis/bomb.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:creatures_rogue/game/components/utils/y_sort.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
+import 'package:creatures_rogue/game/game_settings.dart';
 import 'package:flutter/services.dart';
 import '../map/obstacle.dart';
+import 'package:creatures_rogue/game/components/effects/chamas_effect.dart';
 import 'package:creatures_rogue/game/components/effects/efeitos_temporarios.dart';
 import 'package:creatures_rogue/game/components/items/item_efeito.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
@@ -192,8 +195,14 @@ class Player extends PositionComponent
   double lentidaoFator = 1.0;
   double cegoTimer = 0.0;
   double cegoDuracaoInicial = 0.0;
-  final double acceleration = 100.0;
-  final double friction = 500.0;
+  /// Aceleracao e atrito em px/s2, derivados do TEMPO que a criatura declara
+  /// (ver `BaseStats.tempoAteMaxima`) e da `maxSpeed` DO MOMENTO.
+  ///
+  /// Derivar de `maxSpeed` e o que mantem a rampa constante: sob lentidao ou
+  /// grama alta a velocidade maxima cai e a aceleracao cai junto, entao a
+  /// criatura continua levando os mesmos 0,3s pra chegar no (novo) topo.
+  double get acceleration => maxSpeed / creatureData.stats.tempoAteMaxima;
+  double get friction => maxSpeed / creatureData.stats.tempoAteParar;
 
   /// Metade da velocidade dentro de `GramaAlta` — terreno, não condição
   /// temporária, sem timer. `Player` tem dois hitboxes ativos
@@ -361,11 +370,116 @@ class Player extends PositionComponent
   /// atira durante a cena e pode até matar o boss antes de a briga começar.
   bool emCutscene = false;
 
+  /// Ignora dano de CONTATO de inimigo (o corpo dele batendo no seu). Escrito
+  /// por passiva de criatura (ver `RodaDeFogo`), nunca por habilidade.
+  ///
+  /// Campo proprio, e nao `grantInvulnerability`: aquele bloqueia TODO dano,
+  /// projetil incluido. Aqui a criatura atravessa inimigo mas continua
+  /// levando tiro, que e o ponto.
+  bool imuneAContato = false;
+
+  /// Dano que o proprio corpo causa ao encostar num inimigo. 0 = nenhum.
+  double danoDeContato = 0.0;
+
+  /// Trava de reacerto por inimigo. Sobreposicao de corpos dispara colisao
+  /// todo quadro — sem isto o dano de contato sairia a 60fps. Mesmo padrao do
+  /// mapa `hits` do `Projectile`.
+  final Map<Enemy, double> _contatoCooldown = {};
+  static const double _contatoCooldownMax = 0.3;
+
   // Ganchos usados pelas habilidades das criaturas (shieldVisualActive,
   // speedLocked, shieldHits, damageReduction, refleteProjetil, retalia*)
   // vêm de AbilityUser.
 
   bool isAirborne = false;
+
+  // --- Animação de morte. Terceiro escritor exclusivo de
+  // `visual.position`/`scale`/`angle` — os outros dois são o `_updateJump` e o
+  // `MovementAnimator` —, e por isso o `update` corta tudo o resto enquanto
+  // ela roda.
+  bool _morrendo = false;
+  double _morteTimer = 0.0;
+  VoidCallback? _morteAoTerminar;
+
+  /// Tempo de voo: sobe e cai no mesmo arco do salto normal, só mais alto e
+  /// mais devagar.
+  static const double _morteVoo = 0.55;
+  static const double _morteAltura = 34.0;
+
+  /// Quanto o corpo fica parado de cabeça pra baixo antes de [_morteAoTerminar]
+  /// disparar. Junto com [_morteVoo], são os dois números de ajuste da cena.
+  static const double _morteParado = 0.9;
+
+  /// A criatura ativa zerou a vida e não há outra pra entrar: lança o corpo no
+  /// ar, deixa ele cair de cabeça pra baixo e chama [aoTerminar] depois de uns
+  /// instantes parado. Quem liga isso ao Game Over é
+  /// `CreaturesRogueGame._handleGameOver`.
+  void iniciarMorte({VoidCallback? aoTerminar}) {
+    if (_morrendo) return;
+    _morrendo = true;
+    _morteTimer = 0.0;
+    _morteAoTerminar = aoTerminar;
+
+    // `emCutscene` além do corte no `update`: `dispararAbility2` é chamado
+    // direto pelo toque rápido do analógico direito, sem passar pelo polling
+    // por quadro, e só essa guarda pega esse caminho.
+    emCutscene = true;
+    naoMove = true;
+    velocity.setZero();
+
+    // Morrer no meio de um salto: o salto escreve o mesmo canal e ficaria
+    // ligado pra sempre. Encerra sem chamar o `onLand` (não há aterrissagem
+    // pra celebrar) e desfaz o esticado do ar, preservando o lado que a
+    // criatura estava olhando.
+    _pulando = false;
+    _puloAoAterrissar = null;
+    final flip = visual.scale.x.isNegative ? -1.0 : 1.0;
+    visual.scale = Vector2(flip, 1.0);
+
+    // O pisca-pisca de invulnerabilidade não roda mais depois daqui — sem
+    // isto, morrer durante os quadros de imunidade congelava o corpo
+    // translúcido.
+    visual.setOpacity(1.0);
+
+    // Mesma razão: os ícones de condição param de ser atualizados e ficariam
+    // pairando no ar, soltos, enquanto o corpo gira embaixo deles. Tira de
+    // vez — morta envenenada segue morta.
+    conditionIcons.removeFromParent();
+  }
+
+  void _updateMorte(double dt) {
+    _morteTimer += dt;
+
+    final progresso = (_morteTimer / _morteVoo).clamp(0.0, 1.0);
+    final zOffset = 4 * _morteAltura * progresso * (1 - progresso);
+    // Meia volta exata no instante em que toca o chão.
+    final angulo = math.pi * progresso;
+
+    // O `visual` tem âncora nos PÉS (`Anchor.bottomCenter`), então girar
+    // direto afundaria o corpo no chão. Estas duas contas são a rotação em
+    // volta do CENTRO do sprite reescrita em cima da âncora dos pés: com meia
+    // volta completa a âncora sobe a altura inteira e o corpo ocupa o mesmo
+    // retângulo de antes, invertido.
+    //
+    // `visual.size.y`, não `size.y`: o sprite é 16 ou 24 conforme a evolução,
+    // enquanto o `Player` é sempre 16.
+    final alturaSprite = visual.size.y;
+    visual.angle = angulo;
+    visual.position = Vector2(
+      _visualBasePosition.x - (alturaSprite / 2) * math.sin(angulo),
+      _visualBasePosition.y +
+          (alturaSprite / 2) * (math.cos(angulo) - 1) -
+          zOffset,
+    );
+
+    if (_morteTimer >= _morteVoo + _morteParado) {
+      // Zera antes de chamar: o motor só pausa dentro do callback, então este
+      // método ainda roda no quadro seguinte se algo der errado lá.
+      final aoTerminar = _morteAoTerminar;
+      _morteAoTerminar = null;
+      aoTerminar?.call();
+    }
+  }
 
   // --- Salto genérico (ex.: Jogada de Corpo) — mesma curva visual do
   // JumpMovement dos inimigos: sobe em arco e estica no ar. Enquanto
@@ -590,6 +704,27 @@ class Player extends PositionComponent
   @override
   void render(Canvas canvas) {
     super.render(canvas);
+   /* TextPaint textPaint= TextPaint(
+      style: const TextStyle(
+        fontFamily: 'pixelFont',
+        color: Palette.branco,
+        fontSize: 8,
+        fontWeight: FontWeight.bold,
+        shadows: [
+          Shadow(color: Palette.preto, offset: Offset(1, 1)),
+          Shadow(color: Palette.preto, offset: Offset(-1, -1)),
+          Shadow(color: Palette.preto, offset: Offset(1, -1)),
+          Shadow(color: Palette.preto, offset: Offset(-1, 1)),
+          Shadow(color: Palette.preto, offset: Offset(0, 1)),
+          Shadow(color: Palette.preto, offset: Offset(0, -1)),
+          Shadow(color: Palette.preto, offset: Offset(1, 0)),
+          Shadow(color: Palette.preto, offset: Offset(-1, 0)),
+        ],
+      ),
+    );
+
+    textPaint.render(canvas, '${position.x.toInt()}/${position.y.toInt()}', -Vector2(0,8));
+*/
     if (shieldVisualActive) {
       for (var i = 0; i < shieldHits; i++) {
         canvas.drawCircle(
@@ -631,6 +766,17 @@ class Player extends PositionComponent
   Future<void> onLoad() async {
     super.onLoad();
     await _montarVisualEHitbox();
+
+    // Uma vez por Player (ou seja, uma por run), no MUNDO e não como filho:
+    // as partículas precisam ficar onde nasceram. Fica inerte enquanto
+    // `danoDeContato` for zero — ver `ChamasEffect`.
+    parent?.add(
+      ChamasEffect(
+        origem: () => position,
+        ativo: () => danoDeContato > 0,
+        alturaDoPe: () => position.y + size.y / 2,
+      ),
+    );
 
     final ui.Image circDirImg = await Flame.images.load('actors/circDir.png');
     circDir = SpriteComponent(
@@ -816,6 +962,9 @@ class Player extends PositionComponent
     shieldMax = nova.stats.shieldMax + bonusShieldItens;
     shield = shieldMax;
     limparEscudos();
+    imuneAContato = false;
+    danoDeContato = 0.0;
+    _contatoCooldown.clear();
     damageReduction = 0.0;
     speedLocked = false;
     refleteProjetil = false;
@@ -844,6 +993,16 @@ class Player extends PositionComponent
   void update(double dt) {
     super.update(dt);
 
+    // Antes de tudo, inclusive da evolução pendente: `_evoluir` remonta o
+    // `visual` e recalcula `_visualBasePosition`, o que destruiria a cena no
+    // meio dela. É alcançável — o XP de um abate cai fora da varredura de
+    // colisão, então a última criatura pode subir de nível no mesmo quadro em
+    // que morre.
+    if (_morrendo) {
+      _updateMorte(dt);
+      return;
+    }
+
     // Fora da varredura de colisão de propósito — ver comentário de
     // `ganharXp`/`_evoluirPendente`.
     if (_evoluirPendente) {
@@ -867,6 +1026,12 @@ class Player extends PositionComponent
     atualizarEfeitos(dt);
     for (final item in itens) {
       item.aoAtualizar(this, dt);
+    }
+    creatureData.passive?.aoAtualizar(this, dt);
+
+    if (_contatoCooldown.isNotEmpty) {
+      _contatoCooldown.updateAll((inimigo, resta) => resta - dt);
+      _contatoCooldown.removeWhere((inimigo, resta) => resta <= 0);
     }
     // for (final p in passivasAtivas) {
     //   p.aoAtualizar(this, dt);
@@ -989,14 +1154,19 @@ class Player extends PositionComponent
   /// travas valem (ver comentário de `_cooldown1` acima). `ability2`
   /// continua só no cooldown de sempre.
   void dispararAbility1() {
+    // Criatura sem habilidade 1 (ver `CreatureData.ability1`): tem passiva no
+    // lugar, e o analógico direito não dispara nada.
+    final ability = creatureData.ability1;
+    if (ability == null) return;
+
     if (_cooldown1 > 0) return;
-    final custo = creatureData.ability1.custoEnergia;
+    final custo = ability.custoEnergia;
     if (energia < custo) return;
-    if (!creatureData.ability1.canExecute(this)) return;
-    creatureData.ability1.execute(this, lockedAb1Direction);
+    if (!ability.canExecute(this)) return;
+    ability.execute(this, lockedAb1Direction);
     energia -= custo;
     energiaRegenPausa = energiaRegenAtraso;
-    _cooldownMax1 = creatureData.ability1.cooldown * cdMult;
+    _cooldownMax1 = ability.cooldown * cdMult;
     _cooldown1 = _cooldownMax1;
   }
 
@@ -1028,6 +1198,7 @@ class Player extends PositionComponent
       for (final item in itens) {
         item.aoEsquivar(this, lockedAb2Direction);
       }
+      creatureData.passive?.aoEsquivar(this, lockedAb2Direction);
     }
 
     _cooldownMax2 = creatureData.ability2.cooldown * mult;
@@ -1107,6 +1278,16 @@ class Player extends PositionComponent
     return d * livre;
   }
 
+  /// Machuca [inimigo] com o próprio corpo, respeitando a trava de reacerto.
+  void _baterEmContato(Enemy inimigo) {
+    if (_contatoCooldown.containsKey(inimigo)) return;
+    _contatoCooldown[inimigo] = _contatoCooldownMax;
+    inimigo.takeDamage(
+      danoDeContato * danoMult,
+      tipoAtacante: creatureData.tipo,
+    );
+  }
+
   /// Empurra o jogador para longe de [sourcePosition]. Usado por explosões
   /// de inimigos que repelem (Brado, bote da Cobra).
   void applyKnockback(Vector2 sourcePosition, double force) {
@@ -1137,13 +1318,13 @@ class Player extends PositionComponent
       return;
     }
     if (!moveDelta.isZero()) {
-      //velocity += moveDelta * acceleration * dt;
+      velocity += moveDelta * acceleration * dt;
       plrDir = moveDelta;
       circDir.angle = plrDir.screenAngle();
-      velocity = moveDelta * maxSpeed;
-      //if (velocity.length > maxSpeed) {
-      //  velocity = velocity.normalized() * maxSpeed;
-      //}
+      //velocity = moveDelta * maxSpeed;
+      if (velocity.length > maxSpeed) {
+        velocity = velocity.normalized() * maxSpeed;
+      }
     } else {
       if (!velocity.isZero()) {
         double drop = friction * dt;
@@ -1225,6 +1406,12 @@ class Player extends PositionComponent
       if (other.enemyHitbox.toAbsoluteRect().overlaps(
         playerHitbox.toAbsoluteRect(),
       )) {
+        // Dano de contato ANTES da imunidade: as duas coisas são
+        // independentes, e uma criatura pode ter só uma delas.
+        if (danoDeContato > 0) _baterEmContato(other);
+
+        if (imuneAContato) return;
+
         var tipo = CreatureType.neutro;
         if(other.creature!=null){
           tipo = other.creature!.tipo;
@@ -1262,6 +1449,17 @@ class Player extends PositionComponent
   }
 
   void takeDamage(double amount, CreatureType tipoAtacante) {
+    // Corpo em animação de morte não apanha mais: sem isto, um tiro que já
+    // estava no ar chamaria `pocketarSlotAtivo` de novo com a vida negativa e
+    // o Game Over sairia duas vezes.
+    if (_morrendo) return;
+
+    // Cheat de teste (ver `GameSettings.godMode`): a outra metade dele vive
+    // em `Enemy.takeDamage`, onde qualquer golpe mata o inimigo na hora. Sem
+    // esta metade aqui o godmode matava rapido mas o jogador continuava
+    // morrendo, e uma run de teste terminava do mesmo jeito.
+    if (GameSettings.instance.godMode) return;
+
     if (_invulnerabilityTimer > 0) return;
 
     //só regenera escudo se ficar o tempo sem levar dano
@@ -1293,6 +1491,7 @@ class Player extends PositionComponent
     for (final item in itens) {
       item.aoTentarTomarDano(this, amountFinal);
     }
+    creatureData.passive?.aoTentarTomarDano(this, amountFinal);
 
     parent?.add(
       TextEffect.dano(

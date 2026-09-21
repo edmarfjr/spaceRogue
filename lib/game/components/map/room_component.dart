@@ -187,8 +187,8 @@ class RoomComponent extends PositionComponent with HasGameRef {
         _spawnTutorial();
       //  _spawnSalaDeTeste();
       }
-     /*
-      _spawnTreasure(offsetX:16,offsetY:-16);
+     
+     /* _spawnTreasure(offsetX:16,offsetY:-16);
       Enemy enemy = DummyEnemy(
         position: Vector2(width / 2, height / 2 - 32),
         playerTarget: player,
@@ -653,7 +653,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
       int attempts = 0;
 
       while (!validPosition && attempts < 30) {
-        px = 48 + _random.nextInt(6) * 16.0;
+        px = 64 + _random.nextInt(5) * 16.0;
         py = 48 + _random.nextInt(6) * 16.0;
 
         Rect enemyRect = Rect.fromLTWH(px, py, 16, 16);

@@ -420,26 +420,26 @@ class _CreatureDetailPanel extends StatelessWidget {
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              abilityName(
+                                              slotUmDaCriatura(
                                                 context,
-                                                creature.ability1,
-                                              ),
+                                                creature,
+                                              ).nome,
                                               style: const TextStyle(
                                                 color: Palette.preto,
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.bold,
                                               ),
                                             ),
-                                            if (creature
-                                                .ability1
-                                                .descricao
-                                                .isNotEmpty) ...[
+                                            if (slotUmDaCriatura(
+                                              context,
+                                              creature,
+                                            ).descricao.isNotEmpty) ...[
                                               const SizedBox(height: 2),
                                               Text(
-                                                abilityDescription(
+                                                slotUmDaCriatura(
                                                   context,
-                                                  creature.ability1,
-                                                ),
+                                                  creature,
+                                                ).descricao,
                                                 style: const TextStyle(
                                                   color: Palette.preto,
                                                   fontSize: 12,

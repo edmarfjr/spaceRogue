@@ -46,6 +46,7 @@ const List<String> _idsIniciais = [
   'tartaruga_planta',
   'sapo_agua',
   'ave_eletrica',
+  //'roda_fogo',
   //'cao_neutro',
   //'gato_neutro',
   //'ave_neutro',
@@ -534,9 +535,11 @@ class _FaixaDetalhe extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   _Rotulo(context.l10n.intro_habilidades),
+                  // Passiva no lugar da habilidade 1 quando a criatura nao
+                  // tem uma (ver `slotUmDaCriatura`).
                   _Rotulo(
-                    abilityName(context, criatura.ability1),
-                    textoD: abilityDescription(context, criatura.ability1),
+                    slotUmDaCriatura(context, criatura).nome,
+                    textoD: slotUmDaCriatura(context, criatura).descricao,
                   ),
                   _Rotulo(
                     abilityName(context, criatura.ability2),

@@ -35,6 +35,13 @@ class PauseMenuOverlay extends StatelessWidget {
               context.l10n.pause_jogoPausado,
               style: const TextStyle(color: Palette.preto, fontSize: 32),
             ),
+            // Tempo de run. Lido no build e nao animado de proposito: o motor
+            // esta pausado aqui, entao o valor nao muda enquanto a tela esta
+            // aberta — nao ha o que atualizar.
+            Text(
+              game.tempoDeRunFormatado,
+              style: const TextStyle(color: Palette.cinzaEsc, fontSize: 18),
+            ),
             const SizedBox(height: 5),
             _EquipeRow(game: game),
             const SizedBox(height: 5),
@@ -195,8 +202,8 @@ class _EquipeCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             context.l10n.pause_habilidade(
-              abilityName(context, creature.ability1),
-              abilityDescription(context, creature.ability1),
+              slotUmDaCriatura(context, creature).nome,
+              slotUmDaCriatura(context, creature).descricao,
             ),
             textAlign: TextAlign.center,
             style: const TextStyle(color: Palette.preto, fontSize: 9),

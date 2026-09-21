@@ -91,6 +91,10 @@ class ItemEfeitoRegistry {
     SaltoAquatico(),
     BradoReflexo(),
     ReflexoEletrico(),
+    ImpetoArdente(),
+    PeconhaReflexiva(),
+    RetaliacaoEletrica(),
+    RastroCongelante(),
     Revezamento(),
     CascaInstavel(),
     Estilhaco(),
@@ -751,6 +755,206 @@ class ReflexoEletrico extends ItemEfeito {
   }
 }
 
+/// Roda de Fogo. Na velocidade máxima, o corpo do jogador machuca quem
+/// encostar — a assinatura da criatura virando permanente, sem a imunidade a
+/// contato que ela tinha (essa fica só com quem está pilotando a Roda).
+///
+/// Escreve em `Player.danoDeContato`, o mesmo campo que a passiva de criatura
+/// [RodaDeFogo] usa. Os dois convivem: os itens rodam ANTES de
+/// `creatureData.passive` no `Player.update`, então jogando DE Roda de Fogo o
+/// valor da criatura vence (é maior). Com qualquer outra criatura, vale este.
+class ImpetoArdente extends ItemEfeito {
+  const ImpetoArdente({this.limiarVelocidade = 0.9, this.coefDano = 0.6});
+
+  /// Fração de `Player.maxSpeed` a partir da qual conta como máxima. Mais
+  /// exigente que o da criatura (0,75): aqui não há o freio de ter que jogar
+  /// sem habilidade 1 pra compensar.
+  final double limiarVelocidade;
+
+  final double coefDano;
+
+  @override
+  bool get sorteavel => false;
+  @override
+  String get id => 'impetoArdente';
+  @override
+  String get spritePath => 'items/capsula.png';
+  @override
+  Color get cor1 => Palette.laranja;
+  @override
+  Color get cor2 => Palette.vermelho;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_impetoArdente;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_impetoArdenteDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    final maxima = player.maxSpeed;
+    final naMaxima =
+        maxima > 0 && player.velocity.length >= maxima * limiarVelocidade;
+
+    // Atribui nos DOIS casos. Zerar é obrigatório: com uma criatura que não
+    // tem passiva, ninguém mais escreve neste campo, e sem o `else` o dano de
+    // contato ficaria ligado pra sempre depois da primeira vez que o jogador
+    // encostasse na velocidade máxima.
+    //
+    // Não atropela a Roda de Fogo porque a passiva da criatura roda DEPOIS
+    // dos itens no `Player.update` e reescreve o campo com a palavra final.
+    player.danoDeContato = naMaxima
+        ? player.creatureData.stats.ataque * coefDano
+        : 0.0;
+  }
+}
+
+/// Slime de Planta. Levar dano solta uma nuvem de veneno em volta — quem te
+/// encostou sai envenenado.
+///
+/// `aoTentarTomarDano` não recebe QUEM atacou, então o veneno sai como área em
+/// volta do jogador em vez de ir no agressor. Na prática dá no mesmo: quem
+/// acabou de te acertar está encostado em você.
+class PeconhaReflexiva extends ItemEfeito {
+  const PeconhaReflexiva({this.coef = 0.3, this.dotTicks = 4});
+
+  final double coef;
+  final int dotTicks;
+
+  @override
+  bool get sorteavel => false;
+  @override
+  String get id => 'peconhaReflexiva';
+  @override
+  String get spritePath => 'items/fruta.png';
+  @override
+  Color get cor1 => Palette.verde;
+  @override
+  Color get cor2 => Palette.verdeEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_peconhaReflexiva;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_peconhaReflexivaDesc;
+
+  @override
+  void aoTentarTomarDano(Player player, double amount) {
+    player.parent?.add(
+      ExplosionHitbox(
+        position: player.position.clone(),
+        dmg: player.creatureData.stats.ataque * coef,
+        size: Vector2(32, 32),
+        cor1: Palette.verde,
+        cor2: Palette.verdeEsc,
+        tipo: player.creatureData.tipo,
+        dotKind: DotKind.veneno,
+        dotTicks: dotTicks,
+      ),
+    );
+  }
+}
+
+/// Ouriço Elétrico. Levar dano solta uma descarga que atordoa em volta.
+///
+/// Primo da `CorrenteReflexa` (Ave Elétrica), e de propósito: a diferença é
+/// que esta troca alcance por atordoamento mais longo, que é o jogo do Ouriço
+/// — ele é lento e precisa que o inimigo pare, não que se afaste.
+class RetaliacaoEletrica extends ItemEfeito {
+  const RetaliacaoEletrica({this.coef = 0.5, this.duracaoStun = 2.0});
+
+  final double coef;
+  final double duracaoStun;
+
+  @override
+  bool get sorteavel => false;
+  @override
+  String get id => 'retaliacaoEletrica';
+  @override
+  String get spritePath => 'items/capsula.png';
+  @override
+  Color get cor1 => Palette.amarelo;
+  @override
+  Color get cor2 => Palette.cinzaEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_retaliacaoEletrica;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_retaliacaoEletricaDesc;
+
+  @override
+  void aoTentarTomarDano(Player player, double amount) {
+    player.parent?.add(
+      ExplosionHitbox(
+        position: player.position.clone(),
+        dmg: player.creatureData.stats.ataque * coef,
+        stunDuration: duracaoStun,
+        size: Vector2(24, 24),
+        cor1: Palette.amarelo,
+        cor2: Palette.laranja,
+        tipo: player.creatureData.tipo,
+      ),
+    );
+  }
+}
+
+/// Pinguim de Água. Toda esquiva deixa uma poça de gelo no ponto de partida,
+/// que lentifica quem passar.
+///
+/// No ponto de PARTIDA, não no de chegada (ao contrário do `RastroFlamejante`
+/// e do `SaltoAquatico`): a poça serve pra atrasar quem está te perseguindo, e
+/// pra isso ela tem que ficar atrás.
+class RastroCongelante extends ItemEfeito {
+  const RastroCongelante({
+    this.lentidaoDuracao = 2.5,
+    this.lentidaoFator = 0.5,
+    this.duracaoPoca = 3.0,
+  });
+
+  final double lentidaoDuracao;
+  final double lentidaoFator;
+  final double duracaoPoca;
+
+  @override
+  bool get sorteavel => false;
+  @override
+  String get id => 'rastroCongelante';
+  @override
+  String get spritePath => 'items/gelo.png';
+  @override
+  Color get cor1 => Palette.azul;
+  @override
+  Color get cor2 => Palette.royal;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_rastroCongelante;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_rastroCongelanteDesc;
+
+  @override
+  void aoEsquivar(Player player, Vector2 direcao) {
+    player.parent?.add(
+      Projectile(
+        owner: player,
+        position: player.position.clone(),
+        direction: Vector2.zero(),
+        speed: 0,
+        dmg: 0,
+        kbForce: 0,
+        sprPath: 'projeteis/bolaGrande.png',
+        cor1: Palette.royal,
+        cor2: Palette.azul,
+        tipo: player.creatureData.tipo,
+        lentidaoDuracao: lentidaoDuracao,
+        lentidaoFator: lentidaoFator,
+        atravessa: 100,
+        size: Vector2(24, 24),
+        lifeTime: duracaoPoca,
+        radius: 12,
+        playSfx: false,
+      ),
+    );
+  }
+}
+
 /// Qual passiva cada criatura entrega ao se aposentar.
 ///
 /// Este mapa É a pool de aposentadoria: criatura fora dele não acumula a
@@ -769,6 +973,10 @@ class PassivasAposentadoria {
     'cobra_agua': SaltoAquatico(),
     'urso_planta': BradoReflexo(),
     'grilo_eletrico': ReflexoEletrico(),
+    'roda_fogo': ImpetoArdente(),
+    'slime_planta': PeconhaReflexiva(),
+    'ourico_eletrico': RetaliacaoEletrica(),
+    'pinguim_agua': RastroCongelante(),
   };
 
   static ItemEfeito? de(String creatureId) => porCriatura[creatureId];

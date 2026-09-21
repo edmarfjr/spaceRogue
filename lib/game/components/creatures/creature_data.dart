@@ -18,7 +18,11 @@ class CreatureData {
   final Color corClara;
   final Color corEscura;
   final BaseStats stats;
-  final Ability ability1;
+  /// `null` = esta criatura NAO tem habilidade 1; no lugar dela vem [passive].
+  /// A Roda de Fogo e o primeiro caso. Quem le isto precisa tratar o nulo: a
+  /// Hud esconde barra de energia e anel de cooldown, e as telas de criatura
+  /// mostram a passiva em vez do card de habilidade.
+  final Ability? ability1;
 
   /// Habilidade B original — sem execução própria desde que o companion
   /// passou a disparar só `ability1` autonomamente (ver PIVOT_TREINADOR.md).
@@ -30,7 +34,7 @@ class CreatureData {
   /// Habilidade passiva desta criatura (substitui `ability2` como algo que
   /// de fato acontece) — vale enquanto ela estiver no grupo do treinador,
   /// capturada ou não, no bolso ou fora dele. Ver `Passive`.
-  //final Passive passive;
+  final Passive? passive;
 
   /// Estilo de animação do sprite enquanto anda (ver MovementAnimator).
   final MovementAnimation moveAnim;
@@ -60,7 +64,8 @@ class CreatureData {
     required this.corClara,
     required this.corEscura,
     required this.stats,
-    required this.ability1,
+    this.ability1,
+    this.passive,
     required this.ability2,
     //required this.passive,
     required this.moveAnim,

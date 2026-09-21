@@ -12,14 +12,15 @@ class RajadaDeBrasa extends Ability {
   final double anguloLequeGraus;
   final double alcanceSegundos;
 
-  const RajadaDeBrasa({this.coef = 0.67, this.anguloLequeGraus = 20, this.alcanceSegundos = 0.5})
+  const RajadaDeBrasa({this.coef = 0.67, this.anguloLequeGraus = 10, this.alcanceSegundos = 0.5})
       : super(nome: 'Rajada de Brasa', descricao: 'Três projéteis em leque, dano alto e curto alcance.', cooldown: 0.3, custoEnergia: 3.0);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
     final anguloRad = anguloLequeGraus * pi / 180;
-    List<double> offsets = [-anguloRad, 0.0, anguloRad];
+    //List<double> offsets = [-anguloRad, 0.0, anguloRad];
+    List<double> offsets = [-anguloRad, anguloRad];
     //if(user.parent?.) offsets = [-anguloRad*2,-anguloRad, 0.0, anguloRad,anguloRad*2];
     for (final offset in offsets) {
       final rotated = dir.clone()..rotate(offset);

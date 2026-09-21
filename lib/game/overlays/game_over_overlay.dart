@@ -47,13 +47,17 @@ class GameOverMenu extends StatelessWidget {
                 ),
               ),
               onPressed: withBtnSfx(() {
-                // 1. Remove a tela de Game Over
                 game.overlays.remove('GameOver');
-                // 2. Chama a função de limpar e resetar variáveis
+                // `resetGame` (→ `startRun`) é quem decide se a Hud entra
+                // agora ou depois: numa run nova ele abre o `BossReveal`
+                // primeiro, com o motor PAUSADO, e deixa a Hud e o
+                // `resumeEngine` pro `dismissBossReveal`.
+                //
+                // Antes daqui saíam um `overlays.add('Hud')` e um
+                // `resumeEngine()` fixos, que atropelavam essa decisão: o
+                // botão de pausa aparecia funcional em cima da tela de VS, e
+                // o jogo já rodava atrás dela.
                 game.resetGame();
-                // 3. Volta o botão de Pause e descongela o jogo
-                game.overlays.add('Hud');
-                game.resumeEngine();
               }),
               child: Text(
                 context.l10n.gameOver_restart,
