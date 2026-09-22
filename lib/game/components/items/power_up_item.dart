@@ -25,7 +25,8 @@ enum PowerUpType implements ItemDescritor {
   critChanceUp('items/critChance.png', Palette.vermelho, Palette.laranja),
   critDamageUp('items/critDmg.png', Palette.vermelho, Palette.laranja),
   energyUp('items/energyUp.png', Palette.laranja, Palette.marromEsc),
-  energyRegenUp('items/energyRegen.png', Palette.laranja, Palette.marromEsc);
+  energyRegenUp('items/energyRegen.png', Palette.laranja, Palette.marromEsc),
+  shieldRegenUp('items/escudoRegen.png', Palette.indigo, Palette.azulEsc);
 
   const PowerUpType(this.spritePath, this.cor1, this.cor2);
 
@@ -59,6 +60,7 @@ enum PowerUpType implements ItemDescritor {
       PowerUpType.critDamageUp => l.effect_maisDanoCrit,
       PowerUpType.energyUp => l.effect_maisEnergia,
       PowerUpType.energyRegenUp => l.effect_maisRegenEnergia,
+      PowerUpType.shieldRegenUp => l.effect_maisRegenEscudo,
     };
   }
 
@@ -96,6 +98,11 @@ enum PowerUpType implements ItemDescritor {
         player.energiaRegen *= 1.25;
       case PowerUpType.critDamageUp:
         player.critMult += 0.50;
+      case PowerUpType.shieldRegenUp:
+        // Multiplica em vez de subtrair, mesmo motivo do `fireRateUp`:
+        // nenhuma quantidade de upgrades leva o intervalo a zero (ou a
+        // negativo, que quebraria o `shieldRegenFraction` que a Hud lê).
+        player.shieldRegenInterval *= 0.85;
     }
   }
 }

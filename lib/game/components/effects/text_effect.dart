@@ -39,6 +39,23 @@ class TextEffect extends PositionComponent {
   })  : direction = (direction ?? Vector2(0, -1)).normalized(),
         super(position: position.clone(), anchor: Anchor.center, priority: 200);
 
+  /// Formata o número de dano: até duas casas decimais, e no mínimo uma.
+  ///
+  /// O dano é fracionado em quase todo golpe — a cadeia é multiplicativa
+  /// (`danoMult`, `danoMultDerivado`, vantagem de tipo em 2 ou 0,5, redução
+  /// de dano, crítico em 1,5), então valores como 1,725 são o normal, não a
+  /// exceção. Antes isto mostrava `toStringAsFixed(0)`, e com isso um golpe
+  /// abaixo de 0,5 aparecia como "0" (lendo como "errei") e a soma do que a
+  /// tela mostrava nunca fechava com a barra de vida do inimigo.
+  ///
+  /// Corta UM zero à direita, nunca dois: é o que dá "3.0" em vez de "3.00" e
+  /// "1.2" em vez de "1.20", mantendo sempre pelo menos uma casa. A casa fixa
+  /// existe pra deixar claro, de relance, que o número é contínuo.
+  static String formatarDano(num valor) {
+    final texto = valor.toStringAsFixed(2);
+    return texto.endsWith('0') ? texto.substring(0, texto.length - 1) : texto;
+  }
+
   /// Atalho pro uso mais comum: número de dano subindo.
   factory TextEffect.dano(
     num valor, {
@@ -46,7 +63,7 @@ class TextEffect extends PositionComponent {
     Color color = Palette.branco,  double fontSize = 6.0,
   }) {
     return TextEffect(
-      text: valor is int ? '$valor' : valor.toStringAsFixed(0),
+      text: formatarDano(valor),
       position: position,
       color: color,
       fontSize: fontSize,

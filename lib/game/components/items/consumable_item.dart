@@ -29,9 +29,13 @@ enum ConsumableType implements ItemDescritor {
   escudo('items/escudo.png', Palette.indigo, Palette.royal),
   congelar('items/gelo.png', Palette.azul, Palette.royal),
   mapa('items/mapa.png', Palette.bege, Palette.marromEsc),
-  doce('items/doce.png', Palette.azul, Palette.royal);
+  doce('items/doce.png', Palette.azul, Palette.royal),
+  espelho('items/espelho.png', Palette.cinza, Palette.azulEsc);
 
   const ConsumableType(this.spritePath, this.cor1, this.cor2);
+
+  /// Segundos de reflexão do ESPELHO.
+  static const double duracaoEspelho = 5.0;
 
   @override
   final String spritePath;
@@ -58,6 +62,7 @@ enum ConsumableType implements ItemDescritor {
       ConsumableType.congelar => l.item_congelar,
       ConsumableType.mapa => l.item_mapa,
       ConsumableType.doce => l.item_doce,
+      ConsumableType.espelho => l.item_espelho,
     };
   }
 
@@ -70,6 +75,7 @@ enum ConsumableType implements ItemDescritor {
       ConsumableType.congelar => l.effect_inimigosCongelados,
       ConsumableType.mapa => l.effect_mapaRevelado,
       ConsumableType.doce => '15 XP',//l.effect_doce,
+      ConsumableType.espelho => l.effect_espelho,
     };
   }
 
@@ -100,6 +106,29 @@ enum ConsumableType implements ItemDescritor {
         sucesso = player.revelarMapa();
       case ConsumableType.doce:
         sucesso = player.ganharXp(15);
+      case ConsumableType.espelho:
+        // Recusa se já está de pé: reaplicar só renovaria a duração, e o
+        // jogador veria um item sumir por quase nada. Mesma regra da poção
+        // com vida cheia.
+        if (player.temEfeito(#espelho)) {
+          sucesso = false;
+        } else {
+          // `refleteProjetil` é o mesmo campo que a habilidade Casco Fechado
+          // usa; quem resolve a reflexão é o `Projectile`. Aqui só se liga e
+          // desliga o interruptor.
+          //
+          // Dono padrão (criatura): o espelho é estado de combate e cai junto
+          // com o resto numa troca de criatura. É o mesmo tratamento que
+          // qualquer buff de combate recebe, e o contrário disso seria o
+          // efeito sobreviver a uma criatura que nem estava em campo.
+          player.aplicarEfeito(
+            #espelho,
+            duracaoEspelho,
+            aoIniciar: () => player.refleteProjetil = true,
+            aoTerminar: () => player.refleteProjetil = false,
+          );
+          sucesso = true;
+        }
     }
 
     if (sucesso) {

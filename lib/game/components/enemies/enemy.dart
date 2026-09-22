@@ -489,11 +489,22 @@ abstract class Enemy extends PositionComponent
     // if (amountFinal > 0)
     GameAudio.instance.play(Sfx.hit);
 
-    var critChance = Random().nextDouble() * 100;
-    if ((playerTarget.critChance + playerTarget.creatureData.stats.critBonus) >= critChance) {
+    // `rolagem` era chamada de `critChance` e sombreava o stat de mesmo nome,
+    // o que fazia a linha de baixo ler ao contrário do que faz.
+    final rolagem = Random().nextDouble() * 100;
+    final chanceTotal =
+        playerTarget.critChance +
+        playerTarget.creatureData.stats.critBonus +
+        playerTarget.critChanceDerivada;
+    if (chanceTotal >= rolagem) {
       amountFinal *= playerTarget.critMult;
       corTxt = Palette.vermelho;
-      //print('crit $critChance');
+      playerTarget.golpesSemCrit = 0;
+      for (final item in playerTarget.itens) {
+        item.aoCritar(playerTarget, this);
+      }
+    } else {
+      playerTarget.golpesSemCrit++;
     }
 
     // Cheat (ver GameSettings.godMode): qualquer golpe que passe da redução

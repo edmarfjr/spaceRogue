@@ -115,7 +115,12 @@ class Player extends PositionComponent
   double bonusHpItens = 0.0;
   double bonusShieldItens = 0.0;
   double shieldRegenAmount = 1.0;
-  double shieldRegenInterval = 10.0;
+
+  /// Segundos entre uma carga de escudo passivo e a próxima. Constante à
+  /// parte porque o carregamento do save precisa dela como padrão pra saves
+  /// gravados antes do upgrade de regeneração existir.
+  static const double shieldRegenIntervalPadrao = 10.0;
+  double shieldRegenInterval = shieldRegenIntervalPadrao;
   double _shieldRegenTimer = 0.0;
 
   /// Quanto falta pro escudo passivo ganhar a próxima carga (0 = acabou de
@@ -129,6 +134,22 @@ class Player extends PositionComponent
 
   double critChance = 5;
   double critMult = 1.5;
+
+  /// Pontos percentuais de chance de crítico somados por item, ACIMA de
+  /// [critChance] e do `critBonus` da criatura. Mesmo espírito do
+  /// `danoMultDerivado`: reconstruído do zero a cada quadro em `update`, nunca
+  /// gravado no save, e quem contribui reafirma sempre.
+  ///
+  /// Campo de instância, e não estático como o `danoMultDerivado`, porque o
+  /// sorteio de crítico acontece em `Enemy.takeDamage`, que já tem o
+  /// `playerTarget` na mão — só o dano de projétil é que não tinha referência
+  /// nenhuma pro jogador.
+  double critChanceDerivada = 0.0;
+
+  /// Golpes seguidos que NÃO critaram. Zera no crítico. Mantido no mesmo
+  /// lugar onde o sorteio acontece (`Enemy.takeDamage`), e é daqui que o item
+  /// [SangueFrio] lê pra compensar azar.
+  int golpesSemCrit = 0;
 
   /// Moedas da run, gastas nos balcões da loja (ver ShopStand). Zeram junto
   /// com o Player, ou seja, a cada run nova.
@@ -462,6 +483,7 @@ class Player extends PositionComponent
     // dano. Devolve pra 1.0 na mão, que é o que a reconstrução daria com o
     // grupo inteiro caído.
     danoMultDerivado = 1.0;
+    critChanceDerivada = 0.0;
 
     // O pisca-pisca de invulnerabilidade não roda mais depois daqui — sem
     // isto, morrer durante os quadros de imunidade congelava o corpo
@@ -1060,6 +1082,7 @@ class Player extends PositionComponent
     // os itens somam a parte deles de novo logo abaixo, então nada aqui
     // precisa ser desfeito depois. Hoje só item escreve nesse campo.
     danoMultDerivado = 1.0;
+    critChanceDerivada = 0.0;
     for (final item in itens) {
       item.aoAtualizar(this, dt);
     }

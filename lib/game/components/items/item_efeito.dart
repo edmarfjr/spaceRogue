@@ -11,6 +11,7 @@ import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/effects/aura_pulse_effect.dart';
 import 'package:creatures_rogue/game/components/effects/dot.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart';
+import 'package:creatures_rogue/game/components/map/dungeon_generator.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
@@ -87,6 +88,10 @@ abstract class ItemEfeito implements ItemDescritor {
   /// que é novidade.
   void aoUsarCriaturaNova(Player player, CreatureData criatura) {}
 
+  /// O golpe saiu crítico. [alvo] é quem levou — o único gancho que recebe o
+  /// inimigo, porque é o único disparado de dentro do `Enemy.takeDamage`.
+  void aoCritar(Player player, Enemy alvo) {}
+
   void aoAtualizar(Player player, double dt) {}
 }
 
@@ -116,6 +121,10 @@ class ItemEfeitoRegistry {
     DiarioDeCampo(),
     EloDoGrupo(),
     Imposto(),
+    Esgotamento(),
+    GatilhoFrio(),
+    SangueFrio(),
+    Bussola(),
   ];
 
   static ItemEfeito? porId(String id) {
@@ -1099,7 +1108,7 @@ class EloDoGrupo extends ItemEfeito {
   @override
   String get id => 'eloDoGrupo';
   @override
-  String get spritePath => 'items/capsula.png';
+  String get spritePath => 'items/elos.png';
   @override
   Color get cor1 => Palette.jade;
   @override
@@ -1160,6 +1169,159 @@ class Imposto extends ItemEfeito {
   void aoAtualizar(Player player, double dt) {
     Player.danoMultDerivado +=
         (player.coins * bonusPorMoeda).clamp(0.0, bonusMaximo);
+  }
+}
+
+/// Dano cresce conforme a energia esvazia — os últimos tiros da rajada são os
+/// que doem.
+///
+/// O caminho INVERSO do que parece natural, e de propósito. Energia é o
+/// tamanho da rajada (teto 10, regenera 5/s e pausa 0,3s depois de cada tiro,
+/// ver `AbilityUser`), então "energia cheia" quer dizer "você ainda não
+/// atirou". Um bônus atrelado à energia cheia valeria só no primeiro tiro e
+/// sumiria no segundo — premiaria não atirar.
+///
+/// Atrelado ao esvaziamento, vira decisão: a pausa de regeneração pune quem só
+/// martela o botão, então ou você para cedo e mantém a cadência, ou desce até o
+/// fundo do pente atrás do dano e engole a espera.
+class Esgotamento extends ItemEfeito {
+  const Esgotamento();
+
+  /// Dano extra com a energia no zero. No meio do pente rende metade disso —
+  /// a escala é linear em cima de `energiaFracao`.
+  static const double bonusMaximo = 0.60;
+
+  @override
+  String get id => 'esgotamento';
+  @override
+  String get spritePath => 'items/esgotamento.png';
+  @override
+  Color get cor1 => Palette.laranja;
+  @override
+  Color get cor2 => Palette.marromEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.item_esgotamento;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_esgotamentoDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    Player.danoMultDerivado += (1 - player.energiaFracao) * bonusMaximo;
+  }
+}
+
+/// Crítico atordoa o alvo.
+///
+/// Transforma crítico de "número maior" em controle: com 5% de chance base ele
+/// é raro o bastante pra o atordoamento não trivializar a sala, e a sinergia
+/// com o [SangueFrio] — que sobe a chance quando o azar se acumula — é
+/// intencional.
+class GatilhoFrio extends ItemEfeito {
+  const GatilhoFrio();
+
+  static const double duracaoStun = 0.8;
+
+  @override
+  String get id => 'gatilhoFrio';
+  @override
+  String get spritePath => 'items/gatilhoFrio.png';
+  @override
+  Color get cor1 => Palette.azul;
+  @override
+  Color get cor2 => Palette.royal;
+  @override
+  String nome(BuildContext context) => context.l10n.item_gatilhoFrio;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_gatilhoFrioDesc;
+
+  @override
+  void aoCritar(Player player, Enemy alvo) {
+    alvo.applyStun(duracaoStun);
+  }
+}
+
+/// Cada golpe sem crítico aumenta a chance do próximo. O crítico zera a
+/// conta.
+///
+/// Mata a variância, que é o problema real de apostar em crítico numa run
+/// curta: com 5% de base, uma sequência de azar significa que o investimento
+/// inteiro não rendeu nada. Aqui o azar vira a própria garantia.
+///
+/// A contagem (`Player.golpesSemCrit`) é mantida onde o sorteio acontece, em
+/// `Enemy.takeDamage` — este item só lê. E o bônus sai por
+/// `Player.critChanceDerivada`, reconstruído a cada quadro, então ele nunca é
+/// gravado no save nem se soma em cima de si mesmo.
+class SangueFrio extends ItemEfeito {
+  const SangueFrio();
+
+  /// Pontos percentuais por golpe sem crítico.
+  static const double porGolpe = 4.0;
+
+  /// Teto do acúmulo. Com a base de 5%, dez golpes sem crítico levam a chance
+  /// pra perto de 45% — alto, mas só depois de um azar que valha compensar.
+  static const double teto = 40.0;
+
+  @override
+  String get id => 'sangueFrio';
+  @override
+  String get spritePath => 'items/sangueFrio.png';
+  @override
+  Color get cor1 => Palette.royal;
+  @override
+  Color get cor2 => Palette.azulEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.item_sangueFrio;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_sangueFrioDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    player.critChanceDerivada += (player.golpesSemCrit * porGolpe).clamp(
+      0.0,
+      teto,
+    );
+  }
+}
+
+/// Sala de tesouro e loja aparecem no minimapa desde a chegada no andar.
+///
+/// Item permanente, e não consumível como o MAPA: aquele revela uma vez e
+/// acaba, este muda o roteiro de toda a run — você escolhe o caminho sabendo
+/// onde estão as duas salas que interessam.
+///
+/// A sala do BOSS fica de fora de propósito: saber onde ele está tira a única
+/// tensão que sobra em explorar um andar já limpo.
+///
+/// Reafirma a cada quadro em vez de marcar uma vez porque a dungeon é gerada
+/// de novo a cada andar. São poucas dezenas de escritas de bool por quadro, e
+/// um gancho de "entrou num andar novo" só se pagaria com um segundo item
+/// desse tipo.
+class Bussola extends ItemEfeito {
+  const Bussola();
+
+  @override
+  String get id => 'bussola';
+  @override
+  String get spritePath => 'items/bussola.png';
+  @override
+  Color get cor1 => Palette.laranja;
+  @override
+  Color get cor2 => Palette.roxoEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.item_bussola;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_bussolaDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    final jogo = player.game;
+    if (jogo is! CreaturesRogueGame) return;
+
+    for (final sala in jogo.mapData.values) {
+      if (sala.type == RoomType.item || sala.type == RoomType.shop) {
+        sala.isRevealed = true;
+      }
+    }
   }
 }
 

@@ -128,10 +128,17 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
     } else if (other is Enemy && !isEnemy) {
       // Mesma razão do Projectile: os upgrades de dano da run entram no ponto
       // de acerto, não nas habilidades.
-      other.takeDamage(
-        dmg * Player.danoMult * Player.danoMultDerivado,
-        tipoAtacante: tipo,
-      );
+      //
+      // `dmg > 0` porque existe explosão de dano ZERO, que serve só pra
+      // empurrar (a Bolha Protetora ao estourar). Sem a guarda, cada inimigo
+      // pego ganhava um "0.0" flutuando na cabeça, um `Sfx.hit` e uma rolagem
+      // de crítico — tudo por um golpe que não existiu.
+      if (dmg > 0) {
+        other.takeDamage(
+          dmg * Player.danoMult * Player.danoMultDerivado,
+          tipoAtacante: tipo,
+        );
+      }
       if (stunDuration>0){
         other.applyStun(stunDuration);
       }

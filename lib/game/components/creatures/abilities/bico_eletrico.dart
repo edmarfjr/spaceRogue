@@ -15,13 +15,13 @@ class BicoEletrico extends Ability {
   final double alcanceSegundos;
   final double kbForce;
 
-  const BicoEletrico({this.coef = 1.0, this.velocidade = 260, this.alcanceSegundos = 0.25, this.kbForce = 5})
-      : super(nome: 'Bico Elétrico', descricao: 'bicadas elétricas velozes.', cooldown: 0.2, custoEnergia: 1.5);
+  const BicoEletrico({this.coef = 1.5, this.velocidade = 260, this.alcanceSegundos = 0.25, this.kbForce = 5})
+      : super(nome: 'Bico Elétrico', descricao: 'bicadas elétricas velozes.', cooldown: 0.2, custoEnergia: 1.0);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
     final dano = user.creatureData.stats.ataque * coef;
-    final anguloGraus = Random().nextDouble() * 30 - 15; // Random angle between -15 and 15 degrees
+    final anguloGraus = Random().nextDouble() * 20 - 10; // Random angle between -10 and 10 degrees
     final anguloRad = anguloGraus * pi / 180;
     final rotated = dir.clone()..rotate(anguloRad);
     user.parent?.add(Projectile(

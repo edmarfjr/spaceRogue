@@ -12,7 +12,7 @@ class BolaDagua extends Ability {
   final double velocidade;
 
   const BolaDagua({this.coef = 1.5, this.velocidade = 220})
-      : super(nome: "Bola d'Água", descricao: "Dispara uma bola de água.", cooldown: 0.3, custoEnergia: 2.5);
+      : super(nome: "Bola d'Água", descricao: "Dispara uma bola de água.", cooldown: 0.3, custoEnergia: 2.0);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
@@ -27,6 +27,8 @@ class BolaDagua extends Ability {
       cor1: Palette.azul,
       cor2: Palette.azulEsc,
       tipo: user.creatureData.tipo,
+      radius: 8,
+      size: Vector2(24, 24),
     ));
   }
 }

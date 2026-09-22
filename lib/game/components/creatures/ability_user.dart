@@ -27,12 +27,20 @@ const double energiaRegenAtraso = 0.3;
 
 /// Uma carga da bolha, com a fonte que a pôs lá.
 class _CargaEscudo {
-  _CargaEscudo(this.chave, this.golpes);
+  _CargaEscudo(this.chave, this.golpes, [this.aoEstourar]);
 
   /// `null` = escudo sem prazo (o item consumível ESCUDO). Nunca expira
   /// sozinho e é sempre o ÚLTIMO a ser gasto.
   final Object? chave;
   int golpes;
+
+  /// Roda quando o ÚLTIMO golpe desta carga é absorvido — ou seja, quando ela
+  /// estoura de verdade.
+  ///
+  /// Só no estouro, nunca na expiração por tempo: a bolha que acaba sozinha
+  /// murcha, não arrebenta, e disparar um efeito de repulsão sem ninguém ter
+  /// encostado leria como bug.
+  final void Function()? aoEstourar;
 }
 
 mixin AbilityUser on PositionComponent, EfeitosTemporarios {
@@ -124,12 +132,22 @@ mixin AbilityUser on PositionComponent, EfeitosTemporarios {
 
   /// Escudo COM prazo. Some sozinho depois de [duracao], levando embora só as
   /// cargas que ele mesmo pôs.
-  void adicionarEscudoTemporario(Object chave, int golpes, double duracao) {
+  ///
+  /// [aoEstourar] é o efeito de arrebentamento: roda uma vez, quando o último
+  /// golpe desta carga for absorvido. Quem passa é a habilidade, e não o
+  /// `Player.takeDamage`, porque o efeito é da habilidade — o `takeDamage` só
+  /// sabe que ALGUM escudo comeu o golpe, não de quem ele era.
+  void adicionarEscudoTemporario(
+    Object chave,
+    int golpes,
+    double duracao, {
+    void Function()? aoEstourar,
+  }) {
     aplicarEfeito(
       chave,
       duracao,
       aoIniciar: () {
-        _cargasEscudo.add(_CargaEscudo(chave, golpes));
+        _cargasEscudo.add(_CargaEscudo(chave, golpes, aoEstourar));
         shieldVisualActive = true;
       },
       aoTerminar: () {
@@ -166,6 +184,8 @@ mixin AbilityUser on PositionComponent, EfeitosTemporarios {
       // Cancela o prazo junto: sem carga nenhuma ele não teria mais o que
       // devolver, e deixá-lo correndo só adiaria a limpeza.
       if (carga.chave != null) removerEfeito(carga.chave!);
+      // Depois de remover, pra quem escutar já ver a bolha sem esta carga.
+      carga.aoEstourar?.call();
     }
     if (shieldHits <= 0) shieldVisualActive = false;
     return true;

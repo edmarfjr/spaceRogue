@@ -946,6 +946,10 @@ class CreaturesRogueGame extends FlameGame
         (j['energiaMax'] as num?)?.toDouble() ?? energiaMaxPadrao;
     player.energiaRegen =
         (j['energiaRegen'] as num?)?.toDouble() ?? energiaRegenPorSegundo;
+    // Idem pro upgrade de regeneração de escudo.
+    player.shieldRegenInterval =
+        (j['shieldRegenInterval'] as num?)?.toDouble() ??
+        Player.shieldRegenIntervalPadrao;
     player.critChance = (j['critChance'] as num).toDouble();
     player.critMult = (j['critMult'] as num).toDouble();
     player.bombsAmount = j['bombs'] as int;
@@ -1007,6 +1011,7 @@ class CreaturesRogueGame extends FlameGame
         'danoMult': Player.danoMult,
         'energiaMax': player.energiaMax,
         'energiaRegen': player.energiaRegen,
+        'shieldRegenInterval': player.shieldRegenInterval,
         'critChance': player.critChance,
         'critMult': player.critMult,
         'bombs': player.bombsAmount,

@@ -188,8 +188,6 @@ class RoomComponent extends PositionComponent with HasGameRef {
         _spawnTutorial();
       //  _spawnSalaDeTeste();
       }
-     
-     
     }
   }
 
@@ -210,7 +208,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
   }
 
   void _spawnSalaDeTeste() {
-  /*  final candidatas = CreatureRegistry.all
+    final candidatas = CreatureRegistry.all
         .where((c) => c.evoluir != null && c.id != player.creatureData.id)
         .take(2)
         .toList();
@@ -223,7 +221,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
         ),
       );
     }
-
+    /*
     for (var i = 0; i < 4; i++) {
       parent?.add(
         ConsumablePickup(
@@ -233,8 +231,8 @@ class RoomComponent extends PositionComponent with HasGameRef {
       );
     }
     */
-    parent?.add(ItemEfeitoPickup(position: Vector2(width / 2 - 24, centerY + 24), item: PeleDeCinzas()));
-    parent?.add(ItemEfeitoPickup(position: Vector2(width / 2 + 24, centerY + 24), item: CascaInstavel()));
+    parent?.add(ItemEfeitoPickup(position: Vector2(width / 2 - 24, centerY + 24), item: Bussola()));
+    parent?.add(ItemEfeitoPickup(position: Vector2(width / 2 + 24, centerY + 24), item: EloDoGrupo()));
       Enemy enemy = DummyEnemy(
         position: Vector2(width / 2, height / 2 - 32),
         playerTarget: player,
@@ -657,8 +655,8 @@ class RoomComponent extends PositionComponent with HasGameRef {
       int attempts = 0;
 
       while (!validPosition && attempts < 30) {
-        px = 64 + _random.nextInt(5) * 16.0;
-        py = 48 + _random.nextInt(6) * 16.0;
+        px = 64 + _random.nextInt(4) * 16.0;
+        py = 64 + _random.nextInt(5) * 16.0;
 
         Rect enemyRect = Rect.fromLTWH(px, py, 16, 16);
         // `_obstacleRects` (não `children`) porque a Rock foi reparentada pro

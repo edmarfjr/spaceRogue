@@ -21,7 +21,7 @@ class RoedorFogoEnemy extends Enemy with ShooterAttack {
          speed: 45.0,   // stats.speed 70 → rápido, mas jogável de encarar
          health: 10,
          dmg: 1,
-         bltSpeed: 120,
+         bltSpeed: 80,
          bltImg: 'projeteis/fogo2.png',
          bltCor1: CreatureRegistry.roedorFogo.corClara,
          bltCor2: CreatureRegistry.roedorFogo.corEscura,
