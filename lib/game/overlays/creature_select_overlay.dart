@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'dart:ui' as ui;
 
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
@@ -274,7 +275,7 @@ class _CreatureDetailPanel extends StatelessWidget {
             decoration: BoxDecoration(
               color: Palette.branco,
               borderRadius: BorderRadius.circular(0),
-              border: Border.all(color: Palette.preto, width: 2),
+              border: const BordaDupla(cor: Palette.preto, espessura: 2),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -334,7 +335,7 @@ class _CreatureDetailPanel extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Palette.preto, width: 2),
+                            border: const BordaDupla(cor: Palette.preto, espessura: 2),
                             borderRadius: BorderRadius.circular(0),
                           ),
                           child: Column(

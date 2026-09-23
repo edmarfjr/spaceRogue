@@ -52,6 +52,7 @@ import 'package:creatures_rogue/game/run_save.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'components/player/player.dart';
 import 'package:creatures_rogue/game/components/items/item_efeito.dart';
+import 'package:creatures_rogue/game/components/items/power_up_item.dart';
 
 /// Como o jogador aciona as duas habilidades. Os dois caminhos convivem no
 /// código; quem escolhe é `CreaturesRogueGame.controlScheme`, ajustado pelo
@@ -485,14 +486,14 @@ class CreaturesRogueGame extends FlameGame
   bool get ehUltimaDungeon => currentLevel >= BossRegistry.all.length;
 
   /// Salas geradas no PRIMEIRO andar de uma dungeon.
-  static const int salasNoPrimeiroAndar = 7;
+  static const int salasNoPrimeiroAndar = 10;
 
   /// Quantas salas o andar atual tem: [salasNoPrimeiroAndar] no primeiro,
   /// mais uma por andar avançado.
   ///
   /// Não existe reset por dungeon aqui porque não precisa: `currentFloor` já
   /// volta a 1 quando uma dungeon nova começa (ver `_avancarAndar`), então a
-  /// contagem reinicia em 7 sozinha. Um reset separado seria uma segunda
+  /// contagem reinicia em 10 sozinha. Um reset separado seria uma segunda
   /// fonte de verdade pra mesma coisa.
   int get salasDoAndar => salasNoPrimeiroAndar + (currentFloor - 1);
 
@@ -950,6 +951,16 @@ class CreaturesRogueGame extends FlameGame
     player.shieldRegenInterval =
         (j['shieldRegenInterval'] as num?)?.toDouble() ??
         Player.shieldRegenIntervalPadrao;
+    // Save anterior ao historico de upgrades: a lista fica vazia. Os stats
+    // ja estao aplicados (vieram gravados um a um logo acima), so nao ha como
+    // saber retroativamente QUAIS upgrades produziram eles.
+    player.upgradesPegos
+      ..clear()
+      ..addAll(
+        ((j['upgrades'] as List?) ?? const [])
+            .cast<String>()
+            .map((n) => PowerUpType.values.byName(n)),
+      );
     player.critChance = (j['critChance'] as num).toDouble();
     player.critMult = (j['critMult'] as num).toDouble();
     player.bombsAmount = j['bombs'] as int;
@@ -1006,6 +1017,7 @@ class CreaturesRogueGame extends FlameGame
         'bonusHp': player.bonusHpItens,
         'bonusShield': player.bonusShieldItens,
         'itens': player.itens.map((i) => i.id).toList(),
+        'upgrades': player.upgradesPegos.map((u) => u.name).toList(),
         'velMult': player.velMult,
         'cdMult': player.cdMult,
         'danoMult': Player.danoMult,
@@ -1138,6 +1150,8 @@ class CreaturesRogueGame extends FlameGame
     final retrato = DynamicJoystickComponent.retrato(canvasSize);
     double slotsTop = 10;
 
+    _reposicionarCentrosFixos(canvasSize, retrato);
+
     if (retrato) {
       final alturaBanda = DynamicJoystickComponent.alturaBanda(canvasSize);
       final ladoVidro = min(canvasSize.x, canvasSize.y - alturaBanda);
@@ -1196,6 +1210,81 @@ class CreaturesRogueGame extends FlameGame
       );
     }
   }
+
+  /// Onde o joystick FIXO (ver `GameSettings.joysticksFixos`) fica em cada
+  /// orientação.
+  ///
+  /// RETRATO devolve pra regra do próprio componente: ali a área de captura já
+  /// É a banda do rodapé, livre de sobreposição, e o meio dela serve.
+  ///
+  /// PAISAGEM precisa deste cálculo. A área de captura de cada joystick é
+  /// METADE DA TELA, e o meio dela cai embaixo do vidro da câmera — que em
+  /// paisagem é centralizado e ocupa a altura inteira, sobrando só duas
+  /// tarjas nas laterais. O centro então vai pro meio da TARJA, não da
+  /// metade da tela.
+  ///
+  /// A largura do vidro é recalculada aqui com a mesma conta do
+  /// `withFixedResolution` (escala pelo eixo mais apertado) em vez de lida do
+  /// `gameCamera.viewport`: aquele objeto mistura dois referenciais
+  /// diferentes de posição (ver o comentário do `viewport.onGameResize` logo
+  /// acima), e depender dele aqui só reintroduziria aquela confusão.
+  void _reposicionarCentrosFixos(Vector2 canvasSize, bool retrato) {
+    if (retrato) {
+      moveJoystick.centroFixoExterno = null;
+      aimJoystick.centroFixoExterno = null;
+      return;
+    }
+
+    final escala = min(
+      canvasSize.x / RoomComponent.roomWidth,
+      canvasSize.y / RoomComponent.roomHeight,
+    );
+    final larguraVidro = RoomComponent.roomWidth * escala;
+    final tarja = (canvasSize.x - larguraVidro) / 2;
+
+    // Tarja estreita demais pra caber o indicador: melhor deixar a regra
+    // padrão agir do que empurrar o controle pra um canto onde ele fica
+    // cortado pela borda da tela.
+    if (tarja < _tarjaMinimaParaCentroFixo) {
+      moveJoystick.centroFixoExterno = null;
+      aimJoystick.centroFixoExterno = null;
+      return;
+    }
+
+    final alturaCentro = moveJoystick.size.y * _fracaoAlturaCentroPaisagem;
+
+    // Esquerdo: área começa em x=0 e a tarja esquerda está livre, então o
+    // meio dela serve.
+    moveJoystick.centroFixoExterno = Vector2(tarja / 2, alturaCentro);
+
+    // Direito: NÃO no meio da tarja. Os botões de habilidade 2 e de troca
+    // moram colados na borda DIREITA da tela (posicionados por `margin`, ver
+    // `_setupActionButtons`), e o indicador centralizado encostava por baixo
+    // deles. Empurrando o centro pra dentro — na direção da área de jogo — o
+    // controle continua na tarja, continua baixo (que é onde o polegar
+    // descansa) e larga o canto pros botões.
+    //
+    // A conta sai da borda direita da TELA: `canvasSize.x - tarja * fração`
+    // é o centro em coordenadas de tela, e o `- canvasSize.x / 2` vira
+    // coordenada local, já que a área deste joystick começa na metade.
+    aimJoystick.centroFixoExterno = Vector2(
+      canvasSize.x - tarja * _fracaoCentroDireitoNaTarja - canvasSize.x / 2,
+      alturaCentro,
+    );
+  }
+
+  /// Largura mínima de tarja lateral pra valer a pena prender o joystick nela
+  /// — o indicador tem 168px de lado (ver `_setupJoysticks`).
+  static const double _tarjaMinimaParaCentroFixo = 180.0;
+
+  /// Mesma fração que o componente usa em paisagem; repetida aqui porque o
+  /// centro externo substitui a regra dele por inteiro.
+  static const double _fracaoAlturaCentroPaisagem = 0.72;
+
+  /// Quão fundo na tarja direita o analógico de mira fica, medido a partir da
+  /// borda direita da tela. 0,5 seria o meio; mais que isso o empurra pra
+  /// dentro, longe dos botões de ação que ocupam o canto.
+  static const double _fracaoCentroDireitoNaTarja = 0.7;
 
   /// Pré-processa toda combinação caminho+cores que o jogo pode desenhar em
   /// pleno jogo, pra que a PRIMEIRA vez que ela aparecer (primeiro inimigo
@@ -1513,7 +1602,7 @@ class CreaturesRogueGame extends FlameGame
     // que solta.
     add(
       DPadIndicator(
-        posicao: () => moveJoystick.ultimoToqueAbsoluto,
+        posicao: () => moveJoystick.centroIndicador,
         direcao: () => moveJoystick.relativeDelta,
         spritePath: 'ui/dpad.png',
         cor1: UiTheme.dpadCor1,
@@ -1523,7 +1612,7 @@ class CreaturesRogueGame extends FlameGame
     );
     add(
       DPadIndicator(
-        posicao: () => aimJoystick.ultimoToqueAbsoluto,
+        posicao: () => aimJoystick.centroIndicador,
         direcao: () => aimJoystick.relativeDelta,
         spritePath: 'ui/apad.png',
         cor1: UiTheme.apadCor1,

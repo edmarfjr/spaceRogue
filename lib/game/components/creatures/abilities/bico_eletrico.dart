@@ -16,7 +16,7 @@ class BicoEletrico extends Ability {
   final double kbForce;
 
   const BicoEletrico({this.coef = 1.5, this.velocidade = 260, this.alcanceSegundos = 0.25, this.kbForce = 5})
-      : super(nome: 'Bico Elétrico', descricao: 'bicadas elétricas velozes.', cooldown: 0.2, custoEnergia: 1.0);
+      : super(nome: 'Bico Elétrico', descricao: 'velozes bicadas elétricas.', cooldown: 0.2, custoEnergia: 1.0);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {

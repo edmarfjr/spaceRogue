@@ -128,6 +128,11 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _alternarJoysticksFixos(bool valor) async {
+    await GameSettings.instance.setJoysticksFixos(valor);
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final atual = widget.game.controlScheme;
@@ -304,6 +309,16 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                 value: GameSettings.instance.godMode,
                 activeThumbColor: Palette.preto,
                 onChanged: (valor) => _alternarGodMode(valor),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                context.l10n.settings_joysticksFixos,
+                style: const TextStyle(color: Palette.preto, fontSize: 14),
+              ),
+              Switch(
+                value: GameSettings.instance.joysticksFixos,
+                activeThumbColor: Palette.preto,
+                onChanged: (valor) => _alternarJoysticksFixos(valor),
               ),
             ],
           ),

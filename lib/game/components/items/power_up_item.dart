@@ -67,6 +67,11 @@ enum PowerUpType implements ItemDescritor {
   /// Multiplicadores, não soma direta nos stats: `BaseStats` é `const` e
   /// compartilhado por todas as instâncias da criatura (ver Player.velMult).
   void aplicar(Player player) {
+    // Registrado AQUI, e não nos dois chamadores (pedestal e balcão da loja),
+    // porque este é o funil por onde todo upgrade passa — inclusive os que
+    // vierem de uma fonte nova depois.
+    player.upgradesPegos.add(this);
+
     switch (this) {
       case PowerUpType.speedUp:
         player.velMult += 0.10;

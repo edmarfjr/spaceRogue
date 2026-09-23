@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
@@ -111,7 +112,7 @@ class _RetirementOverlayState extends State<RetirementOverlay>
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: Palette.preto,
-            border: Border.all(color: Palette.branco, width: 3),
+            border: const BordaDupla(cor: Palette.branco, espessura: 3),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

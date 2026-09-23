@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/core/responsive.dart';
@@ -20,7 +21,7 @@ class GameOverMenu extends StatelessWidget {
         padding: const EdgeInsets.all(30),
         decoration: BoxDecoration(
           color: Palette.branco,
-          border: Border.all(color: Palette.preto, width: 4),
+          border: const BordaDupla(cor: Palette.preto, espessura: 4),
           borderRadius: BorderRadius.circular(0),
         ),
         child: Column(

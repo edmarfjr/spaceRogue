@@ -21,6 +21,7 @@ import 'package:creatures_rogue/game/components/effects/movement_animator.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/items/consumable_item.dart';
+import 'package:creatures_rogue/game/components/items/power_up_item.dart';
 import 'package:creatures_rogue/game/components/map/dungeon_generator.dart';
 import 'package:creatures_rogue/game/components/map/room_component.dart';
 import 'package:creatures_rogue/game/components/map/wall_barrier.dart';
@@ -164,6 +165,18 @@ class Player extends PositionComponent
   /// JOGADOR: `trocarCriatura` não mexe nesta lista, ao contrário do estado de
   /// combate da criatura ativa.
   final List<ItemEfeito> itens = [];
+
+  /// Todo upgrade de stat pego nesta run, na ordem em que foram pegos.
+  ///
+  /// Existe só pra o histórico do menu de pause: `PowerUpType.aplicar` mexe no
+  /// stat e some, então sem esta lista não havia como saber depois o que a run
+  /// pegou — ao contrário de [itens], que os itens de gatilho já precisavam
+  /// manter pra funcionar.
+  ///
+  /// Guarda repetições: pegar três `+DANO` gera três entradas. A tela é que
+  /// agrupa pra mostrar "x3"; agrupar aqui jogaria fora a ordem, que é o que
+  /// faz disto um histórico e não um inventário.
+  final List<PowerUpType> upgradesPegos = [];
 
   // --- Multiplicadores de upgrade da run ---
   // Ficam aqui, e não em BaseStats, porque BaseStats é `const` (compartilhado

@@ -3,6 +3,7 @@ import 'dart:math' show max;
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:creatures_rogue/game/components/UI/consumable_slot_button.dart';
+import 'package:creatures_rogue/game/game_settings.dart';
 
 /// Joystick "flutuante": ao contrário do `JoystickComponent` fixo do Flame,
 /// não tem posição própria na tela. Ele cobre uma área (metade esquerda ou
@@ -84,6 +85,47 @@ class DynamicJoystickComponent extends PositionComponent
   /// Percentual (0..1 por eixo) e direção que o manípulo está puxado a
   /// partir do centro onde o dedo pousou. Zero quando não há toque ativo.
   Vector2 get relativeDelta => _active ? delta / knobRadius : Vector2.zero();
+
+  /// Fração da ALTURA da área de captura onde o centro fixo fica.
+  ///
+  /// Em RETRATO a área já é a banda do rodapé, então o meio dela é o lugar
+  /// certo. Em PAISAGEM a área é meia tela inteira, e o meio dela cairia na
+  /// altura dos olhos — o polegar descansa bem mais embaixo.
+  static const double _fracaoCentroRetrato = 0.65;
+  static const double _fracaoCentroPaisagem = 0.72;
+
+  /// Centro fixo escolhido de fora, em coordenadas LOCAIS. `null` = usa a
+  /// regra própria deste componente (ver [_centroFixo]).
+  ///
+  /// Existe porque em PAISAGEM o centro certo depende de onde a área de jogo
+  /// está desenhada, e só o jogo sabe disso — o meio da metade da tela cai
+  /// EMBAIXO do vidro da câmera, que é centralizado e ocupa a altura toda.
+  /// Quem preenche é `CreaturesRogueGame._reflowControles`, no mesmo lugar
+  /// onde os botões de ação já são posicionados por orientação.
+  Vector2? centroFixoExterno;
+
+  /// Centro do joystick quando [GameSettings.joysticksFixos] está ligado, em
+  /// coordenadas LOCAIS. Derivado de [size] a cada leitura, e não guardado:
+  /// `onGameResize` muda a área de captura ao girar o aparelho, e um valor
+  /// guardado ficaria no lugar antigo.
+  Vector2 get _centroFixo {
+    final externo = centroFixoExterno;
+    if (externo != null) return externo;
+
+    final fracao = size.y > size.x
+        ? _fracaoCentroRetrato
+        : _fracaoCentroPaisagem;
+    return Vector2(size.x / 2, size.y * fracao);
+  }
+
+  /// Onde o indicador (ver `DPadIndicator`) deve se desenhar.
+  ///
+  /// No modo fixo devolve o centro desde o começo, sem esperar toque nenhum —
+  /// um joystick fixo invisível até o jogador adivinhar onde ele está não
+  /// seria fixo, seria escondido.
+  Vector2? get centroIndicador => GameSettings.instance.joysticksFixos
+      ? position + _centroFixo
+      : ultimoToqueAbsoluto;
 
   DynamicJoystickComponent({
     this.knob,
@@ -168,7 +210,20 @@ class DynamicJoystickComponent extends PositionComponent
     _unscaledDelta.setZero();
     delta.setZero();
 
-    _baseKnobPosition = event.localPosition.clone();
+    if (GameSettings.instance.joysticksFixos) {
+      // Centro preso: o dedo não define mais onde o joystick está, e sim o
+      // quanto ele está puxado. Encostar longe do centro já entrega inclinação
+      // cheia, que é o comportamento esperado de um direcional fixo.
+      //
+      // Semear `_unscaledDelta` com essa distância é o que faz o resto do
+      // componente continuar valendo sem mudança: `onDragUpdate` soma
+      // incrementos, e somar a partir do valor certo mantém a conta igual a
+      // "dedo menos centro" o tempo todo.
+      _baseKnobPosition = _centroFixo;
+      _unscaledDelta.setFrom(event.localPosition - _baseKnobPosition);
+    } else {
+      _baseKnobPosition = event.localPosition.clone();
+    }
     ultimoToqueAbsoluto = position + _baseKnobPosition;
     background?.position = _baseKnobPosition.clone();
     knob?.position = _baseKnobPosition.clone();

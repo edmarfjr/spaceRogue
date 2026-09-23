@@ -103,7 +103,7 @@ class GameAudio {
   };
   static const int _defaultVoiceCount = 2;
 
-  static const int _throttleMs = 60;
+  static const int _throttleMs = 50;
 
   /// Piso entre QUAISQUER dois toques, não importa o som — sem isso, sons
   /// diferentes tocando ao mesmo tempo (cada um dentro do próprio throttle)

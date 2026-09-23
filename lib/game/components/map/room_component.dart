@@ -242,7 +242,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
   }
 
   void _spawnTreasure({double offsetX = 0,double offsetY = 0}) {
-    Vector2 centerPos = position + Vector2(width / 2, centerY) + Vector2(offsetX,offsetY);
+    Vector2 centerPos = position + Vector2(width / 2 - 16, centerY) + Vector2(offsetX,offsetY);
 
     // O pedestal sorteia sozinho entre UPGRADE, CONSUMÍVEL e ITEM_EFEITO —
     // ver `PedestalComponent.onLoad`, que é onde a pool da run fica acessível.
@@ -278,14 +278,14 @@ class RoomComponent extends PositionComponent with HasGameRef {
       ShopStand(
         position: centro + Vector2(-32, -8),
         preco: 4,
-        spritePath: 'items/heart.png',
-        cor1: Palette.vermelho,
-        cor2: Palette.roxoEsc,
+        spritePath: 'items/fruta.png',
+        cor1: Palette.laranja,
+        cor2: Palette.verdeEsc,
         // `heal` devolve false com a vida cheia — e é isso que evita cobrar por
         // uma cura que não curou.
-        entregar: (p) => p.heal(4),
+        entregar: (p) => p.heal(1),
         msgFalha: game.buildContext!.l10n.effect_vidaCheia,
-        descricao: (context) => context.l10n.effect_maisVida(4),
+        descricao: (context) => context.l10n.effect_maisVida(1),
       ),
     );
 
@@ -340,21 +340,14 @@ class RoomComponent extends PositionComponent with HasGameRef {
     );
   }
 
-  /// Recompensa por limpar a sala: quase sempre uma moeda, raramente um
-  /// coração. Nasce 28px abaixo do centro porque o centro já é ocupado — pelo
-  /// pedestal na sala de tesouro e pela escada na sala de boss (a moeda em cima
-  /// da escada seria coletada junto com a troca de andar, e sumiria).
   void _spawnRecompensa() {
-    final pos = position + Vector2(width / 2, centerY + 28);
+    final pos = position + Vector2(width / 2, centerY + 24);
 
-    // A chance de cura só é rolada com HP faltando: `heal()` devolve false com
-    // a vida cheia, e aí o coração ficaria plantado no chão pra sempre no lugar
-    // da moeda que o jogador teria levado.
-    final podeCurar = player.currentHealth < player.maxHealth;
-
-    if (podeCurar && _random.nextInt(100) < 12) {
+    //final podeCurar = player.currentHealth < player.maxHealth;
+    final recompensaChance = _random.nextInt(100);
+    if (recompensaChance < 12) {
       parent?.add(HeartPickup(position: pos));
-    } else {
+    } else if (recompensaChance >= 12 && recompensaChance < 40){
       parent?.add(CoinPickup(position: pos));
     }
   }
@@ -549,6 +542,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
         );
         if (npc != null) parent?.add(npc);
       }
+      return;
     }
 
     _spawnRecompensa();
@@ -656,7 +650,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
 
       while (!validPosition && attempts < 30) {
         px = 64 + _random.nextInt(4) * 16.0;
-        py = 64 + _random.nextInt(5) * 16.0;
+        py = 64 + _random.nextInt(4) * 16.0;
 
         Rect enemyRect = Rect.fromLTWH(px, py, 16, 16);
         // `_obstacleRects` (não `children`) porque a Rock foi reparentada pro
@@ -871,6 +865,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
   @override
   void render(Canvas canvas) {
     canvas.drawRect(_roomBackgroundRect, Paint()..color = theme.corChao);
+    //canvas.drawRect(Rect.fromLTWH(64, 64, 16*4, 16*4), Paint()..color = Palette.vermelho..style = PaintingStyle.stroke);
 
     super.render(canvas);
   }

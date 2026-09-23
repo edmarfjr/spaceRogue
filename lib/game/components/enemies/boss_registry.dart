@@ -184,6 +184,36 @@ class BossRegistry {
             BombaFogoBossEnemy(position: pos, playerTarget: plr),
       ),
     ],
+    // Dungeon 4 — as quatro ultimas criaturas a ganhar evolucao. Mesma regra
+    // das pools anteriores: um boss de cada tipo elemental, pra que nenhuma
+    // dungeon possa sortear dois do mesmo e deixar um elemento sem via de
+    // desbloqueio.
+    //
+    // Acrescentar esta lista ESTENDE o jogo: `ehUltimaDungeon` compara o andar
+    // atual com `BossRegistry.all.length`, entao a vitoria agora exige quatro
+    // dungeons em vez de tres.
+    [
+      BossOption(
+        creatureId: 'toco_planta',
+        builder: (pos, plr) =>
+            TocoPlantaBossEnemy(position: pos, playerTarget: plr),
+      ),
+      BossOption(
+        creatureId: 'leao_eletrico',
+        builder: (pos, plr) =>
+            LeaoEletricoBossEnemy(position: pos, playerTarget: plr),
+      ),
+      BossOption(
+        creatureId: 'tubarao_agua',
+        builder: (pos, plr) =>
+            TubaraoAguaBossEnemy(position: pos, playerTarget: plr),
+      ),
+      BossOption(
+        creatureId: 'caranguejo_fogo',
+        builder: (pos, plr) =>
+            CaranguejoErmitaoBossEnemy(position: pos, playerTarget: plr),
+      ),
+    ],
   ];
 
   /// Sorteia um boss pra dungeon `dungeon` (1 = primeira lista de [all], 2 =

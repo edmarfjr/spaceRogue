@@ -20,6 +20,7 @@ class GameSettings {
   static const _soundEnabledKey = 'creatures_rogue.sound_enabled';
   static const _musicEnabledKey = 'creatures_rogue.music_enabled';
   static const _godModeKey = 'creatures_rogue.god_mode';
+  static const _joysticksFixosKey = 'creatures_rogue.joysticks_fixos';
 
   static const ControlScheme defaultControlScheme = ControlScheme.botoes;
 
@@ -27,6 +28,7 @@ class GameSettings {
   ControlScheme _controlScheme = defaultControlScheme;
   bool _loaded = false;
   bool _godMode = false;
+  bool _joysticksFixos = false;
 
   /// `null` = segue o idioma do sistema (padrão). Vive num `ValueNotifier`,
   /// não num campo simples como `_controlScheme`, porque trocar o idioma
@@ -47,6 +49,7 @@ class GameSettings {
     GameAudio.instance.enabled = _prefs.getBool(_soundEnabledKey) ?? true;
     GameMusic.instance.enabled = _prefs.getBool(_musicEnabledKey) ?? true;
     _godMode = _prefs.getBool(_godModeKey) ?? false;
+    _joysticksFixos = _prefs.getBool(_joysticksFixosKey) ?? false;
     _loaded = true;
   }
 
@@ -102,6 +105,19 @@ class GameSettings {
   Future<void> setGodMode(bool value) async {
     _godMode = value;
     await _prefs.setBool(_godModeKey, value);
+  }
+
+  /// Joystick preso a um ponto da tela em vez de nascer onde o dedo encosta.
+  ///
+  /// Lido a cada toque pelo `DynamicJoystickComponent`, e não copiado pra
+  /// dentro dele na criacao: assim virar a chave nas configuracoes vale no
+  /// toque seguinte, sem precisar reiniciar a run — e as configuracoes sao
+  /// alcancaveis pelo menu de pausa, no meio da partida.
+  bool get joysticksFixos => _joysticksFixos;
+
+  Future<void> setJoysticksFixos(bool value) async {
+    _joysticksFixos = value;
+    await _prefs.setBool(_joysticksFixosKey, value);
   }
 
   /// Volta ao padrão em vez de estourar quando o valor gravado não corresponde

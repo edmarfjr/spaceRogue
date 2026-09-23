@@ -17,6 +17,22 @@ class Responsive {
   static bool ehEstreita(BuildContext context) =>
       MediaQuery.sizeOf(context).width < larguraEstreita;
 
+  /// A tela está em pé? Mesma regra que o jogo usa pra decidir o layout dos
+  /// controles (`DynamicJoystickComponent.retrato`: `canvasSize.y >
+  /// canvasSize.x`), só que lida pelo `MediaQuery` em vez do canvas do Flame.
+  ///
+  /// Repetir a REGRA, e não importar aquela função, porque os dois lados
+  /// medem coisas diferentes: lá é o tamanho do canvas do jogo, aqui é o da
+  /// janela onde o overlay desenha. O que importa é virarem no mesmo
+  /// instante, e é isso que o critério idêntico garante.
+  ///
+  /// Diferente de [ehEstreita], que pergunta "cabe alguma coisa do lado da
+  /// outra?" — uma janela de desktop pode ser larga E estar em retrato.
+  static bool ehRetrato(BuildContext context) {
+    final tamanho = MediaQuery.sizeOf(context);
+    return tamanho.height > tamanho.width;
+  }
+
   /// Encolhe [desejada] pra caber na largura real da tela, nunca crescendo
   /// além do valor original — é pra containers com `width:` fixo hoje (ex.:
   /// a caixa de diálogo da intro), que foram desenhados pra uma largura de

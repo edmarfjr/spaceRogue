@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'dart:async';
 
 import 'package:flame/components.dart' show Vector2;
@@ -42,11 +43,11 @@ enum _Fase { dialogo, escolha }
 /// Candidatas da primeira escolha: uma por tipo elemental, pra escolha ser
 /// escolha de verdade e não só "a única opção".
 const List<String> _idsIniciais = [
-  'roedor_fogo',
+ // 'roedor_fogo',
   'tartaruga_planta',
   'sapo_agua',
   'ave_eletrica',
-  //'roda_fogo',
+  'tornado_fogo',
   //'cao_neutro',
   //'gato_neutro',
   //'ave_neutro',
@@ -347,9 +348,7 @@ class _CaixaDialogo extends StatelessWidget {
           decoration: const BoxDecoration(
             color: Palette.branco,
             borderRadius: BorderRadius.zero,
-            border: Border.fromBorderSide(
-              BorderSide(color: Palette.preto, width: 2),
-            ),
+            border: BordaDupla(cor: Palette.preto, espessura: 2),
           ),
           child: Stack(
             children: [
@@ -415,9 +414,9 @@ class _CartaoCandidata extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.zero,
-            border: Border.all(
-              color: Palette.preto,
-              width: selecionada ? 4 : 2,
+            border: BordaDupla(
+              cor: Palette.preto,
+              espessura: selecionada ? 4 : 2,
             ),
           ),
           // O cartão agora preenche o que o `Expanded` do chamador der —
@@ -499,9 +498,7 @@ class _FaixaDetalhe extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: const BoxDecoration(
         borderRadius: BorderRadius.zero,
-        border: Border.fromBorderSide(
-          BorderSide(color: Palette.preto, width: 4),
-        ),
+        border: BordaDupla(cor: Palette.preto, espessura: 4),
       ),
       child: Center(
         child: Row(

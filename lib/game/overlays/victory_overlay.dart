@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
@@ -68,7 +69,7 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Palette.branco,
-              border: Border.all(color: Palette.preto, width: 3),
+              border: const BordaDupla(cor: Palette.preto, espessura: 3),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,

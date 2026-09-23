@@ -28,6 +28,14 @@ import 'package:creatures_rogue/game/components/creatures/abilities/esquiva_torn
 import 'package:creatures_rogue/game/components/creatures/abilities/explosao_venenosa.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/soco_flamejante.dart';
 import 'abilities/arranhao.dart';
+import 'abilities/baforada_de_cinzas_evo.dart';
+import 'abilities/recolher_no_casco_evo.dart';
+import 'abilities/folhas_navalha_evo.dart';
+import 'abilities/enraizar_evo.dart';
+import 'abilities/mordida_evo.dart';
+import 'abilities/mergulho_e_estouro_evo.dart';
+import 'abilities/estocada_relampago_evo.dart';
+import 'abilities/investida_da_lanca_evo.dart';
 import 'abilities/baforada_de_cinzas.dart';
 import 'abilities/bicada_rapida.dart';
 import 'abilities/bico_eletrico.dart';
@@ -539,6 +547,7 @@ class CreatureRegistry {
     enemyBuilder: (pos, plr) =>
         CaranguejoErmitaoEnemy(position: pos, playerTarget: plr),
     //passive: FumacaAoLacar(),
+    evoluir: () => caranguejoErmitaoEvo,
   );
 
   static final CreatureData tocoPlanta = CreatureData(
@@ -556,6 +565,7 @@ class CreatureRegistry {
     enemyBuilder: (pos, plr) =>
         TocoPlantaEnemy(position: pos, playerTarget: plr),
     //passive: RaizesDoLaco(),
+    evoluir: () => tocoPlantaEvo,
   );
 
   static final CreatureData tubaraoAgua = CreatureData(
@@ -573,6 +583,7 @@ class CreatureRegistry {
     enemyBuilder: (pos, plr) =>
         TubaraoAguaEnemy(position: pos, playerTarget: plr),
     //passive: InvestidaPredatoria(),
+    evoluir: () => tubaraoAguaEvo,
   );
 
   static final CreatureData leaoEletrico = CreatureData(
@@ -590,6 +601,7 @@ class CreatureRegistry {
     enemyBuilder: (pos, plr) =>
         LeaoEletricoEnemy(position: pos, playerTarget: plr),
     //passive: GolpeDeLanca(),
+    evoluir: () => leaoEletricoEvo,
   );
 
   static final CreatureData caoNeutro = CreatureData(
@@ -712,6 +724,78 @@ class CreatureRegistry {
     hitboxSize: Vector2(10, 10),
     enemyBuilder: (pos, plr) =>
         RodaFogoEnemy(position: pos, playerTarget: plr),
+  );
+
+  /// Evolução do Caranguejo Ermitão. O sopro deixa de ser uma linha e vira
+  /// área suja; o casco deixa de só aguentar e passa a devolver tiro.
+  static final CreatureData caranguejoErmitaoEvo = CreatureData(
+    id: 'caranguejo_fogo',
+    nome: 'Brasiton',
+    spritePath: 'actors/caranguejoFogoEvo.png',
+    tipo: CreatureType.fogo,
+    corClara: Palette.vermelho,
+    corEscura: Palette.cinzaEsc,
+    stats: BaseStats(maxHp: 4, speed: 38, defesa: 2, ataque: 4),
+    ability1: BaforadaDeCinzasEvo(),
+    ability2: RecolherNoCascoEvo(),
+    moveAnim: MovementAnimation.arrastar,
+    hitboxSize: Vector2(14, 12),
+    enemyBuilder: (pos, plr) =>
+        CaranguejoErmitaoEnemy(position: pos, playerTarget: plr),
+  );
+
+  /// Evolução do Toco de Madeira. Continua sem sair do lugar — o que ele ganha
+  /// é fechar a brecha do anel de folhas e prender quem chega perto.
+  static final CreatureData tocoPlantaEvo = CreatureData(
+    id: 'toco_planta',
+    nome: 'Tronconte',
+    spritePath: 'actors/tocoPlantaEvo.png',
+    tipo: CreatureType.planta,
+    corClara: Palette.verdeEsc,
+    corEscura: Palette.chocolate,
+    stats: BaseStats(maxHp: 5, speed: 45, defesa: 2, ataque: 4),
+    ability1: FolhasNavalhaEvo(),
+    ability2: EnraizarEvo(),
+    moveAnim: MovementAnimation.saltitar,
+    hitboxSize: Vector2(10, 10),
+    enemyBuilder: (pos, plr) =>
+        TocoPlantaEnemy(position: pos, playerTarget: plr),
+  );
+
+  /// Evolução do Tubarão de Água. Ganha alcance na mordida e, no mergulho,
+  /// resolve o problema do depois: a poça segura quem o estouro empurrou.
+  static final CreatureData tubaraoAguaEvo = CreatureData(
+    id: 'tubarao_agua',
+    nome: 'Tubarrasco',
+    spritePath: 'actors/tubaAguaEvo.png',
+    tipo: CreatureType.agua,
+    corClara: Palette.azul,
+    corEscura: Palette.royal,
+    stats: BaseStats(maxHp: 4, speed: 46, defesa: 1, ataque: 6),
+    ability1: MordidaEvo(),
+    ability2: MergulhoEEstouroEvo(),
+    moveAnim: MovementAnimation.caminhada,
+    hitboxSize: Vector2(13, 15),
+    enemyBuilder: (pos, plr) =>
+        TubaraoAguaEnemy(position: pos, playerTarget: plr),
+  );
+
+  /// Evolução do Leão Elétrico. Segue sendo o de LONGE do elenco elétrico:
+  /// três linhas em vez de uma, e a investida agora prende onde termina.
+  static final CreatureData leaoEletricoEvo = CreatureData(
+    id: 'leao_eletrico',
+    nome: 'Leontrovão',
+    spritePath: 'actors/gatoEletricoEvo.png',
+    tipo: CreatureType.eletrico,
+    corClara: Palette.laranja,
+    corEscura: Palette.chocolate,
+    stats: BaseStats(maxHp: 4, speed: 62, defesa: 1, ataque: 5),
+    ability1: EstocadaRelampagoEvo(),
+    ability2: InvestidaDaLancaEvo(),
+    moveAnim: MovementAnimation.caminhada,
+    hitboxSize: Vector2(10, 15),
+    enemyBuilder: (pos, plr) =>
+        LeaoEletricoEnemy(position: pos, playerTarget: plr),
   );
 
   static final List<CreatureData> all = [

@@ -28,7 +28,7 @@ class DisparadaFlamejanteEvo extends Ability {
   }) : super(
          nome: 'Disparada Flamejante+',
          descricao:
-             'Esquiva maior ; o rastro queima mais e termina num estouro.',
+             'Esquiva maior; o rastro queima mais e termina num estouro.',
          cooldown: 1.3,
          target: AbilityTarget.plrDir,
          tipo: AbilityTipo.esquiva,

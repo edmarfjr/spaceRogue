@@ -27,7 +27,7 @@ class BaseStats {
     required this.maxHp,
     required this.speed,
     this.tempoAteMaxima = 0.3,
-    this.tempoAteParar = 0.3,
+    this.tempoAteParar = 0.2,
     required this.defesa,
     required this.ataque,
     this.critBonus = 0.0,
