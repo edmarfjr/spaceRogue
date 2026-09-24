@@ -23,6 +23,9 @@ class MinimapHud extends PositionComponent with HasGameRef {
   final Paint bossRoomPaint = Paint()..color = Palette.vermelho;
   final Paint itemRoomPaint = Paint()..color = Palette.amarelo;
   final Paint shopRoomPaint = Paint()..color = Palette.verde;
+  /// Sala de DESAFIO. Laranja porque é a cor livre entre as especiais —
+  /// vermelho já é boss, amarelo é tesouro e verde é loja.
+  final Paint desafioRoomPaint = Paint()..color = Palette.laranja;
   final Paint unvisitedPaint = Paint()..color = Palette.cinzaEsc; 
 
   final Paint backgroundPaint = Paint()..color = Palette.preto;
@@ -140,6 +143,8 @@ class MinimapHud extends PositionComponent with HasGameRef {
           roomPaint = itemRoomPaint;
         } else if (room.type == RoomType.shop) {
           roomPaint = shopRoomPaint;
+        } else if (room.type == RoomType.desafio) {
+          roomPaint = desafioRoomPaint;
         } else if (!room.isVisited) {
           // Sala comum que o jogador ainda não pisou (revelada pelo mapa, ou
           // apenas adjacente): cor apagada, pra separar do que já foi andado.

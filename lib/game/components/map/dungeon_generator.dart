@@ -1,6 +1,6 @@
 import 'dart:math';
 
-enum RoomType { start, normal, boss, item, shop }
+enum RoomType { start, normal, boss, item, shop, desafio }
 
 /// Origem do grid lógico de salas: a sala inicial nasce em (origem, origem),
 /// e todo lugar que converte entre índice relativo do jogador
@@ -142,6 +142,18 @@ class DungeonGenerator {
         final comuns =
             grid.values.where((r) => r.type == RoomType.normal).toList();
         if (comuns.isNotEmpty) shopRoom = comuns.last;
+      }
+
+      // Desafio: só se ainda sobrou beco sem-saída depois de boss, tesouro e
+      // loja. Sala opcional de verdade — andar apertado simplesmente não tem
+      // uma, e forçá-la numa sala de passagem faria o jogador cair na briga
+      // sem escolher.
+      if (deadEnds.isNotEmpty) {
+        final desafio = deadEnds.removeLast();
+        desafio.type = RoomType.desafio;
+        // Nasce limpa como a loja: a sala só tranca quando o jogador PEGA o
+        // item do pedestal, não ao entrar.
+        desafio.isCleared = true;
       }
 
       if (shopRoom != null) {

@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/items/collectible.dart';
 import 'package:creatures_rogue/game/game_settings.dart';
 import 'dart:math';
 import 'package:creatures_rogue/game/components/items/item_efeito.dart';
@@ -184,12 +185,73 @@ class RoomComponent extends PositionComponent with HasGameRef {
       _spawnTreasure();
     } else if (data.type == RoomType.shop) {
       _spawnShop();
+    } else if (data.type == RoomType.desafio) {
+      _spawnDesafio();
     } else if (data.type == RoomType.start) {
       if (dungeon == 1 && floor ==1) {
         _spawnTutorial();
       //  _spawnSalaDeTeste();
       }
     }
+  }
+
+  /// Pedestal da sala de DESAFIO. Guardado porque é ele que dispara a briga:
+  /// a sala fica vendo se o item ainda está ali.
+  PedestalComponent? _pedestalDesafio;
+
+  /// Passa a true assim que o pedestal REALMENTE mostra um item. Sem isso, a
+  /// sala veria "pedestal sem item" no primeiro quadro — o `onLoad` do
+  /// pedestal é assíncrono e o coletável só nasce um pouco depois — e
+  /// começaria o desafio sozinho, antes de o jogador encostar em nada.
+  bool _itemDesafioApareceu = false;
+
+  /// Quantas ondas já foram invocadas. Vai de 0 a [ondasDoDesafio].
+  int _ondaDesafio = 0;
+
+  static const int ondasDoDesafio = 3;
+
+  /// Sala de desafio: só o pedestal no centro. Nenhum inimigo nasce aqui na
+  /// entrada — quem decide começar é o jogador, pegando o item.
+  ///
+  /// O prêmio vem ANTES da briga, de propósito: é o que faz a sala ser uma
+  /// aposta ("levo isto e encaro três ondas?") em vez de mais uma sala
+  /// trancada. Quem não quiser, sai pela porta aberta sem levar nada.
+  void _spawnDesafio() {
+    final centro = position + Vector2(width / 2 - 8, centerY);
+    final pedestal = PedestalComponent(position: centro);
+    _pedestalDesafio = pedestal;
+    parent?.add(pedestal);
+  }
+
+  /// Vigia o pedestal e começa o desafio quando o item sai dele.
+  ///
+  /// Por observação e não por callback: o coletável é filho do PEDESTAL, que
+  /// por sua vez é filho do mundo (não desta sala), e ele mesmo nasce dentro
+  /// de um `onLoad` assíncrono. Um gancho teria que atravessar
+  /// `Collectible` -> `PedestalComponent` -> sala pra dizer algo que duas
+  /// linhas de leitura já dizem.
+  void _vigiarPedestalDesafio() {
+    final pedestal = _pedestalDesafio;
+    if (pedestal == null || _ondaDesafio > 0) return;
+
+    final temItem = pedestal.children.whereType<Collectible>().isNotEmpty;
+    if (temItem) {
+      _itemDesafioApareceu = true;
+      return;
+    }
+    if (!_itemDesafioApareceu) return;
+
+    // Item coletado: a sala vira sala de combate.
+    data.isCleared = false;
+    _lockRoom();
+    _proximaOndaDesafio();
+  }
+
+  void _proximaOndaDesafio() {
+    _ondaDesafio++;
+    // Onda maior a cada rodada: a primeira é do tamanho de uma sala comum do
+    // andar e as outras sobem em cima dela.
+    _spawnTurma(floor + _ondaDesafio);
   }
 
   /// Tutorial no chão da sala inicial. Filho DESTA sala de propósito: é o que
@@ -661,8 +723,18 @@ class RoomComponent extends PositionComponent with HasGameRef {
       return;
     }
 
-    int count = floor + _random.nextInt(3);
-    //int count = floor + 1;
+    _spawnTurma(floor + _random.nextInt(3));
+  }
+
+  /// Nasce [count] inimigos em posições livres da sala. Separado de
+  /// [_spawnEnemies] porque as ondas do desafio precisam exatamente disto, sem
+  /// a parte de boss/cutscene.
+  void _spawnTurma(int count) {
+
+    // Os inimigos são criados aqui e só montados no fim: entre uma coisa e
+    // outra um deles pode virar campeão, e isso precisa acontecer antes do
+    // `onLoad`.
+    final novos = <Enemy>[];
 
     for (int i = 0; i < count; i++) {
       double px = 0;
@@ -686,19 +758,50 @@ class RoomComponent extends PositionComponent with HasGameRef {
       Enemy enemy = EnemySpawner.getRandomEnemy(spawnPos, player, dungeon);
 
       activeEnemies.add(enemy);
+      novos.add(enemy);
+    }
+
+    // Sorteio POR SALA, e não por inimigo: 10% por inimigo pareceria 10% mas
+    // na prática dava de 10% a 27% de campeão por sala no andar 1 e mais de
+    // 40% no andar 5, porque a quantidade cresce com o andar. Por sala, os
+    // 10% são os 10% — e o campeão também lê melhor sendo um só.
+    if (novos.isNotEmpty && _random.nextDouble() < chanceCampeaoPorSala) {
+      // Promover ANTES do `add`: `Enemy.onLoad` monta sprite, hitbox e sombra
+      // a partir de `size`/`hitboxSize`, e depois de montado mexer neles não
+      // reconstrói nada.
+      // Tipo sorteado com peso igual entre os três: sem dado pra calibrar
+      // ainda, e um peso desigual agora seria chute em cima de chute.
+      final tipo =
+          CampeaoTipo.values[_random.nextInt(CampeaoTipo.values.length)];
+      novos[_random.nextInt(novos.length)].promoverACampeao(tipo);
+    }
+
+    for (final enemy in novos) {
       parent?.add(enemy);
     }
   }
+
+  /// Chance de uma sala de combate ter UM inimigo campeão (ver
+  /// `Enemy.promoverACampeao`).
+  double chanceCampeaoPorSala = 0.10;
 
   @override
   void update(double dt) {
     super.update(dt);
 
+    if (data.type == RoomType.desafio) _vigiarPedestalDesafio();
+
     if (isLocked && !cutsceneAtiva) {
       activeEnemies.removeWhere((enemy) => enemy.isRemoved);
 
       if (activeEnemies.isEmpty) {
-        _unlockRoom();
+        // Ainda tem onda pra vir: a sala continua trancada e chama a próxima
+        // em vez de destrancar.
+        if (data.type == RoomType.desafio && _ondaDesafio < ondasDoDesafio) {
+          _proximaOndaDesafio();
+        } else {
+          _unlockRoom();
+        }
       }
     }
   }

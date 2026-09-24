@@ -43,11 +43,11 @@ enum _Fase { dialogo, escolha }
 /// Candidatas da primeira escolha: uma por tipo elemental, pra escolha ser
 /// escolha de verdade e não só "a única opção".
 const List<String> _idsIniciais = [
- // 'roedor_fogo',
+  'roedor_fogo',
   'tartaruga_planta',
   'sapo_agua',
   'ave_eletrica',
-  'tornado_fogo',
+  //'tornado_fogo',
   //'cao_neutro',
   //'gato_neutro',
   //'ave_neutro',
@@ -303,7 +303,7 @@ class _IntroOverlayState extends State<IntroOverlay> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(child: Center(child: listaCandidatas)),
-              const SizedBox(width: 12),
+            //  const SizedBox(width: 12),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 360),
                 child: _FaixaDetalhe(criatura: _selecionada),
@@ -494,7 +494,7 @@ class _FaixaDetalhe extends StatelessWidget {
     // deixar tudo colado no topo com um vão embaixo.
     return Container(
       width: Responsive.largura(context, 520),
-      height: Responsive.largura(context, 520),
+      height: Responsive.largura(context, 260),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: const BoxDecoration(
         borderRadius: BorderRadius.zero,

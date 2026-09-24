@@ -147,6 +147,19 @@ class Player extends PositionComponent
   /// nenhuma pro jogador.
   double critChanceDerivada = 0.0;
 
+  /// Multiplicador de dano POR ELEMENTO, derivado dos itens (ver
+  /// `PedraElemental`). 1.0 = sem bônus.
+  ///
+  /// Separado do [danoMultDerivado] porque aquele não tem como saber de que
+  /// elemento é o golpe: ele é lido no ponto do acerto, onde só existe o
+  /// número do dano. O elemento só aparece em `Enemy.takeDamage`, que recebe
+  /// `tipoAtacante` — e é lá que este mapa é consultado.
+  ///
+  /// Reconstruído a cada quadro, igual aos outros derivados, e fora do save.
+  final Map<CreatureType, double> danoElementalDerivado = {
+    for (final tipo in CreatureType.values) tipo: 1.0,
+  };
+
   /// Golpes seguidos que NÃO critaram. Zera no crítico. Mantido no mesmo
   /// lugar onde o sorteio acontece (`Enemy.takeDamage`), e é daqui que o item
   /// [SangueFrio] lê pra compensar azar.
@@ -1096,6 +1109,9 @@ class Player extends PositionComponent
     // precisa ser desfeito depois. Hoje só item escreve nesse campo.
     danoMultDerivado = 1.0;
     critChanceDerivada = 0.0;
+    for (final tipo in CreatureType.values) {
+      danoElementalDerivado[tipo] = 1.0;
+    }
     for (final item in itens) {
       item.aoAtualizar(this, dt);
     }

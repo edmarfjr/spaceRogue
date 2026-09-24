@@ -121,6 +121,10 @@ class ItemEfeitoRegistry {
     DiarioDeCampo(),
     EloDoGrupo(),
     Imposto(),
+    PedraElemental(CreatureType.fogo),
+    PedraElemental(CreatureType.agua),
+    PedraElemental(CreatureType.planta),
+    PedraElemental(CreatureType.eletrico),
     Esgotamento(),
     GatilhoFrio(),
     SangueFrio(),
@@ -1322,6 +1326,99 @@ class Bussola extends ItemEfeito {
         sala.isRevealed = true;
       }
     }
+  }
+}
+
+/// Pedra elemental: aumenta o dano de UM elemento.
+///
+/// Uma classe só, parametrizada pelo [tipo], em vez de quatro quase idênticas:
+/// a diferença entre a Pedra de Fogo e a de Água é uma cor, um nome e uma
+/// chave de mapa. As quatro instâncias ficam em `ItemEfeitoRegistry.todos`.
+///
+/// Escreve em `Player.danoElementalDerivado`, e não no `danoMultDerivado`:
+/// aquele é global e é lido no ponto do acerto, onde não existe informação de
+/// elemento. Quem sabe o elemento do golpe é o `Enemy.takeDamage`, e é lá que
+/// o mapa é consultado.
+///
+/// O bônus pega TUDO daquele elemento, inclusive o dano por tempo: um tique de
+/// queimadura chega em `takeDamage` com `tipoAtacante: fogo`.
+///
+/// AVISO DE BALANCEAMENTO: o elemento dos seus golpes vem da criatura ativa
+/// (`creatureData.tipo`), que não muda no meio do combate. Então esta pedra é
+/// forte com a criatura certa e **peso morto** com as outras — é um item que
+/// premia quem monta o grupo em torno de um elemento. Se isso ficar frustrante
+/// demais no teste, o conserto é o bônus valer também pro elemento da criatura
+/// ATIVA, seja qual for a pedra; mas aí ela deixa de ser uma escolha.
+class PedraElemental extends ItemEfeito {
+  const PedraElemental(this.tipo);
+
+  final CreatureType tipo;
+
+  /// Quanto o dano daquele elemento sobe. Generoso de propósito: o item só
+  /// vale enquanto a criatura ativa for do elemento certo, então um bônus
+  /// tímido o deixaria pior que qualquer `+DANO` de pedestal, que vale sempre.
+  static const double bonus = 0.30;
+
+  @override
+  String get id => 'pedra_${tipo.name}';
+
+  /// Um desenho por elemento. O arquivo do elétrico é `pedraRaio`, e não
+  /// `pedraEletrico` como o resto do enum sugeriria — nome do asset, não do
+  /// código.
+  @override
+  String get spritePath => switch (tipo) {
+    CreatureType.fogo => 'items/pedraFogo.png',
+    CreatureType.agua => 'items/pedraAgua.png',
+    CreatureType.planta => 'items/pedraPlanta.png',
+    CreatureType.eletrico => 'items/pedraRaio.png',
+    CreatureType.neutro => 'items/pedraFogo.png',
+  };
+
+  @override
+  Color get cor1 => switch (tipo) {
+    CreatureType.fogo => Palette.vermelho,
+    CreatureType.agua => Palette.azul,
+    CreatureType.planta => Palette.verde,
+    CreatureType.eletrico => Palette.amarelo,
+    CreatureType.neutro => Palette.cinza,
+  };
+
+  @override
+  Color get cor2 => switch (tipo) {
+    CreatureType.fogo => Palette.laranja,
+    CreatureType.agua => Palette.royal,
+    CreatureType.planta => Palette.verdeEsc,
+    CreatureType.eletrico => Palette.marromEsc,
+    CreatureType.neutro => Palette.cinzaEsc,
+  };
+
+  /// Nome e descrição por elemento, e não um texto com lacuna: em português
+  /// "PEDRA DE FOGO" e "PEDRA ELÉTRICA" não cabem na mesma forma.
+  @override
+  String nome(BuildContext context) => switch (tipo) {
+    CreatureType.fogo => context.l10n.item_pedraFogo,
+    CreatureType.agua => context.l10n.item_pedraAgua,
+    CreatureType.planta => context.l10n.item_pedraPlanta,
+    CreatureType.eletrico => context.l10n.item_pedraEletrico,
+    CreatureType.neutro => context.l10n.item_pedraFogo,
+  };
+
+  @override
+  String descricao(BuildContext context) => switch (tipo) {
+    CreatureType.fogo => context.l10n.item_pedraFogoDesc,
+    CreatureType.agua => context.l10n.item_pedraAguaDesc,
+    CreatureType.planta => context.l10n.item_pedraPlantaDesc,
+    CreatureType.eletrico => context.l10n.item_pedraEletricoDesc,
+    CreatureType.neutro => context.l10n.item_pedraFogoDesc,
+  };
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    // Soma, não atribui: duas pedras do mesmo elemento (possível se um dia a
+    // pool deixar repetir) acumulam, e o mapa é zerado a cada quadro de
+    // qualquer jeito.
+    player.danoElementalDerivado[tipo] =
+        (player.danoElementalDerivado[tipo] ?? 1.0) + bonus;
   }
 }
 

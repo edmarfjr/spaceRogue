@@ -16,7 +16,7 @@ class CorrenteEstatica extends Ability {
         nome: 'Corrente Estática',
         descricao:
             'Descarga ao redor do corpo: dano baixo e atordoa quem está colado.',
-        cooldown: 5.0,
+        cooldown: 3.5,
         tipo: AbilityTipo.defesa,
       );
 

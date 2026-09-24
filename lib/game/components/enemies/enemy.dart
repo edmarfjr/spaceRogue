@@ -1,3 +1,5 @@
+import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
+import 'package:creatures_rogue/game/components/enemies/aura_campeao.dart';
 import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:creatures_rogue/game/components/enemies/enemy_mixins.dart';
@@ -28,6 +30,29 @@ import '../player/player.dart';
 import '../utils/palette_swapper.dart';
 import '../utils/y_sort.dart';
 
+/// Os três sabores de inimigo campeão. Cada um acrescenta UMA regra em cima do
+/// campeão base (maior, mais vida, mais XP) — e é a cor da aura no chão (ver
+/// `AuraCampeao`) que diz ao jogador qual é, antes de ele descobrir apanhando.
+enum CampeaoTipo {
+  /// Aguenta empurrão. Sem isto, todo campeão era empurrável igual e o "tanque"
+  /// não existia como papel.
+  couracado(Palette.indigo),
+
+  /// Bem mais rápido, sem vida extra além da do campeão base. O oposto do
+  /// couraçado: não é esponja, é ameaça.
+  veloz(Palette.amarelo),
+
+  /// Explode ao morrer. Pune matar de perto e muda o posicionamento sem
+  /// precisar de IA nova.
+  explosivo(Palette.pumpkin);
+
+  const CampeaoTipo(this.corAura);
+
+  /// Cor do anel no chão. NÃO é a cor do corpo: aquela pertence ao elemento da
+  /// criatura (ver a doc de `AuraCampeao`).
+  final Color corAura;
+}
+
 abstract class Enemy extends PositionComponent
     with
         CollisionCallbacks,
@@ -42,7 +67,9 @@ abstract class Enemy extends PositionComponent
 
   /// Vida com que este inimigo nasceu. Só serve pra calcular fração de vida
   /// (barra de boss) — nada no jogo cura inimigo, então nunca muda.
-  late final double maxHealth;
+  /// Não é `final`: a promoção a campeão (ver [promoverACampeao]) acontece
+  /// depois do construtor e precisa reescrever os dois valores de vida.
+  late double maxHealth;
 
   int dmg;
 
@@ -50,6 +77,67 @@ abstract class Enemy extends PositionComponent
   /// inimigo dar mais XP de evolução na morte — não muda nenhum outro
   /// comportamento (vida/dano de boss já vêm tunados por classe).
   bool ehBoss = false;
+
+  /// Inimigo campeão: versão reforçada de um inimigo comum, sorteada no
+  /// nascimento da sala (ver `RoomComponent._spawnEnemies`).
+  ///
+  /// Não é um tipo de inimigo à parte — é o MESMO inimigo com os números
+  /// mexidos depois de construído. Tinha que ser assim: cada criatura tem seu
+  /// `enemyBuilder` chamando o construtor com tamanho e vida já fixos, e são
+  /// 34 deles.
+  bool ehCampeao = false;
+
+  /// Quanto o campeão cresce, no visual e na hitbox. 1,5 em cima dos 16px
+  /// padrão dá 24 — grande o bastante pra notar, e longe dos 32 que os bosses
+  /// usam, pra não ler como boss.
+  static const double campeaoEscala = 1.3;
+
+  static const double campeaoVidaMult = 1.5;
+
+  /// Fração do empurrão que o campeão ainda sofre. Reduz em vez de anular
+  /// (o boss anula, ver [applyKnockback]): empurrão zero faria o campeão
+  /// parecer um boss pequeno.
+  static const double campeaoEmpurraoFator = 0.5;
+
+  /// Piso de XP do campeão. Inimigo comum solta `nextInt(3)`, que dá ZERO uma
+  /// vez em três — num campeão isso seria matar um bicho raro e reforçado pra
+  /// receber nada. O piso é o ponto todo da recompensa; o teto importa menos.
+  static const int campeaoXpMin = 3;
+
+  /// Transforma este inimigo num campeão. Chamar ANTES de montar na árvore:
+  /// `onLoad` lê `size`, `hitboxSize` e `shadowOffset` pra construir sprite,
+  /// hitbox e sombra, e depois disso mexer neles não reconstrói nada.
+  void promoverACampeao(CampeaoTipo tipo) {
+    if (ehCampeao || ehBoss) return;
+    ehCampeao = true;
+    campeaoTipo = tipo;
+
+    size.scale(campeaoEscala);
+    hitboxSize.scale(campeaoEscala);
+    shadowOffset.scale(campeaoEscala);
+
+    health *= campeaoVidaMult;
+    maxHealth = health;
+
+    if (tipo == CampeaoTipo.veloz) {
+      // Os dois campos: `speed` é a velocidade de agora e `speedBase` é pra
+      // onde a lentidão devolve quando passa. Mexer só num deixaria o campeão
+      // veloz lento pra sempre depois do primeiro efeito de lentidão.
+      speed *= campeaoVelocidadeMult;
+      speedBase = speed;
+    }
+  }
+
+  /// Qual campeão este inimigo é. `null` enquanto [ehCampeao] for falso.
+  CampeaoTipo? campeaoTipo;
+
+  static const double campeaoVelocidadeMult = 1.6;
+
+  /// Dano da explosão do campeão [CampeaoTipo.explosivo], em cima do `dmg` de
+  /// contato dele — não é um número solto: um inimigo que bate forte explode
+  /// forte.
+  static const double campeaoExplosaoCoef = 1.5;
+  static const double campeaoExplosaoRaio = 24.0;
 
   double bltSpeed;
   String bltImg;
@@ -260,6 +348,19 @@ abstract class Enemy extends PositionComponent
     )..scale = Vector2(1.0, 0.75);
 
     add(shadow);
+
+    final tipo = campeaoTipo;
+    if (tipo != null) {
+      add(
+        AuraCampeao(
+          cor: tipo.corAura,
+          // Um pouco maior que a sombra pra emoldurar o corpo em vez de
+          // ficar escondido embaixo dele.
+          raioBase: hitboxSize.x / 2 + 3,
+          position: _visualBasePosition + shadowOffset,
+        ),
+      );
+    }
   }
 
   @override
@@ -484,7 +585,14 @@ abstract class Enemy extends PositionComponent
       corTxt = Palette.cinza;
     }
     // Guarda defensiva ativa (casco fechado) reduz o dano recebido.
-    double amountFinal = amount * mult * (1 - damageReduction);
+    // Bônus elemental dos itens (ver `PedraElemental`). Aplicado AQUI e não
+    // no ponto do disparo porque este é o único lugar que sabe de que
+    // elemento é o golpe — inclusive nos tiques de veneno e queimadura, que
+    // chegam por `applyDot` com o tipo da fonte.
+    final bonusElemento =
+        playerTarget.danoElementalDerivado[tipoAtacante] ?? 1.0;
+    double amountFinal =
+        amount * mult * bonusElemento * (1 - damageReduction);
     if (amountFinal < 0) amountFinal = 0;
     // if (amountFinal > 0)
     GameAudio.instance.play(Sfx.hit);
@@ -530,6 +638,25 @@ abstract class Enemy extends PositionComponent
 
   void death() {
     GameAudio.instance.play(Sfx.enemy_die);
+
+    // Antes do `removeFromParent` lá embaixo, e antes do XP: a explosão nasce
+    // no mundo (`parent`), que deixa de existir pra este componente assim que
+    // ele sai da árvore.
+    if (campeaoTipo == CampeaoTipo.explosivo) {
+      parent?.add(
+        ExplosionHitbox(
+          position: position.clone(),
+          isEnemy: true,
+          dmg: dmg * campeaoExplosaoCoef,
+          knockback: 70,
+          size: Vector2.all(campeaoExplosaoRaio),
+          cor1: CampeaoTipo.explosivo.corAura,
+          cor2: Palette.vermelho,
+          tipo: creature?.tipo ?? CreatureType.neutro,
+        ),
+      );
+    }
+
     _dropXp();
     // Sem await de propósito: death() não é async (chamado de dentro de
     // takeDamage, síncrono), e a contagem não precisa bloquear a morte —
@@ -557,7 +684,15 @@ abstract class Enemy extends PositionComponent
   /// de um item.
   void _dropXp() {
     final random = Random();
-    final quantidade = ehBoss ? 10 : random.nextInt(3);
+    final int quantidade;
+    if (ehBoss) {
+      quantidade = 10;
+    } else if (ehCampeao) {
+      // Piso, não multiplicador: ver `campeaoXpMin`.
+      quantidade = campeaoXpMin + random.nextInt(2);
+    } else {
+      quantidade = random.nextInt(3);
+    }
     for (var i = 0; i < quantidade; i++) {
       parent?.add(
         XpPickup(
@@ -596,7 +731,12 @@ abstract class Enemy extends PositionComponent
   void applyKnockback(Vector2 sourcePosition, double force) {
     if (ehBoss) return;
     Vector2 direction = (absolutePosition - sourcePosition).normalized();
-    knockbackVelocity = direction * force;
+    // Só o COURAÇADO resiste. Se todo campeão resistisse, o couraçado não
+    // teria identidade nenhuma — seria "o campeão sem nada de especial".
+    final fator = campeaoTipo == CampeaoTipo.couracado
+        ? campeaoEmpurraoFator
+        : 1.0;
+    knockbackVelocity = direction * force * fator;
   }
 
   @override

@@ -20,7 +20,7 @@ class CorrenteEstaticaEvo extends Ability {
          nome: 'Tempestade Estática',
          descricao:
              'Descarga maior e mais forte, com um segundo pulso logo em seguida.',
-         cooldown: 5.0,
+         cooldown: 3.5,
          tipo: AbilityTipo.defesa,
        );
 
