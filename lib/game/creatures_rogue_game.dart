@@ -6,6 +6,7 @@ import 'package:creatures_rogue/game/components/effects/text_effect.dart';
 import 'dart:math';
 import 'dart:ui' as ui;
 
+import 'package:flame/camera.dart';
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/game.dart';
@@ -48,6 +49,7 @@ import 'package:creatures_rogue/game/components/map/dungeon_generator.dart';
 import 'package:creatures_rogue/game/components/map/room_component.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
+import 'package:creatures_rogue/game/game_settings.dart';
 import 'package:creatures_rogue/game/run_save.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'components/player/player.dart';
@@ -588,7 +590,12 @@ class CreaturesRogueGame extends FlameGame
   bool get isBossFloor => currentFloor % andaresPorBoss == 0;
 
   @override
-  Color backgroundColor() => UiTheme.screenBackground;
+  Color backgroundColor() => GameSettings.instance.controlesNaTela
+      ? UiTheme.screenBackground
+      // Sem controles na tela a faixa que sobra ao redor da área de jogo não
+      // é mais o "plástico" de um aparelho portátil — é só a moldura de uma
+      // janela. Preto some, cinza vira borda à toa.
+      : Palette.preto;
 
   Map loadedRooms = {};
 
@@ -625,7 +632,6 @@ class CreaturesRogueGame extends FlameGame
 
     _setupJoysticks();
     _setupAbilityControls();
-    _setupInventorySlots();
 
     // Pré-processa a paleta dos sprites que aparecem em pleno combate.
     // Sem isso, o PRIMEIRO tiro / explosão / morte de inimigo gerava uma
@@ -659,8 +665,13 @@ class CreaturesRogueGame extends FlameGame
     // corrigia).
     await add(gameCamera);
     add(GameboyBezel(camera: gameCamera));
+
+
     _camaraPronta = true;
     _reflowControles(size);
+    // Depois do `_reflowControles`: e ele quem decide o tipo de viewport, e no
+    // desktop os slots viram FILHOS do viewport (ver `_setupInventorySlots`).
+    _setupInventorySlots();
 
     pauseEngine();
   }
@@ -1147,10 +1158,17 @@ class CreaturesRogueGame extends FlameGame
   void _reflowControles(Vector2 canvasSize) {
     if (!_camaraPronta) return;
 
-    final retrato = DynamicJoystickComponent.retrato(canvasSize);
+    // Sem controles na tela não há banda pra reservar: a área de jogo usa a
+    // janela inteira, em pé ou deitada. O ramo de RETRATO abaixo encolhe o
+    // vidro da câmera pra abrir espaço pro rodapé de controles, e rodá-lo no
+    // desktop deixaria uma faixa vazia embaixo do jogo.
+    final semControles = !GameSettings.instance.controlesNaTela;
+    final retrato =
+        !semControles && DynamicJoystickComponent.retrato(canvasSize);
     double slotsTop = 10;
 
-    _reposicionarCentrosFixos(canvasSize, retrato);
+    _reposicionarCentrosFixos(canvasSize, retrato || semControles);
+    _ajustarVidro(canvasSize);
 
     if (retrato) {
       final alturaBanda = DynamicJoystickComponent.alturaBanda(canvasSize);
@@ -1200,15 +1218,58 @@ class CreaturesRogueGame extends FlameGame
       }
     }
 
-    const margemEsquerda = 8.0;
+    const margem = 8.0;
     const gap = 8.0;
     final raio = _isDesktop ? 32.0 : 32.0;
+    final larguraSlot = raio * 2;
+
+    // Sem controles na tela os slots mudam de canto. No celular eles ficam no
+    // topo, longe dos polegares, que e onde o resto dos controles mora. No
+    // desktop nao ha polegar nem banda de controle, e o canto inferior direito
+    // e o unico que fica vazio — o topo tem a Hud (vida, andar, moedas,
+    // minimapa) e o rodape esquerdo tem a barra de XP.
+    if (semControles) {
+      // Coordenadas de SALA, não de tela: aqui os slots são filhos do viewport
+      // (ver `_setupInventorySlots`), então quem escala eles é a mesma
+      // transformação que escala o jogo.
+      const margemSala = 4.0;
+      const gapSala = 3.0;
+      final ladoSala = _raioSlotNaSala * 2;
+      final quantidade = _slotButtons.length;
+      final larguraTotal =
+          quantidade * ladoSala + (quantidade - 1) * gapSala;
+      final esquerda =
+          RoomComponent.roomWidth - margemSala - larguraTotal;
+      final topo = RoomComponent.roomHeight - margemSala - ladoSala;
+      for (var i = 0; i < quantidade; i++) {
+        _slotButtons[i].position = Vector2(
+          esquerda + i * (ladoSala + gapSala),
+          topo,
+        );
+      }
+      return;
+    }
+
     for (var i = 0; i < _slotButtons.length; i++) {
       _slotButtons[i].position = Vector2(
-        margemEsquerda + i * (raio * 2 + gap),
+        margem + i * (larguraSlot + gap),
         slotsTop,
       );
     }
+  }
+
+  /// Garante que o vidro da câmera é o de RESOLUÇÃO FIXA.
+  ///
+  /// Existiu aqui uma versão esticada, que ocupava a janela inteira deformando
+  /// os pixels — foi testada e descartada: pixel art esticada fica ruim. A
+  /// proporção 160x144 volta a ser preservada, e a faixa que sobra é pintada
+  /// de preto no desktop (ver `backgroundColor`).
+  void _ajustarVidro(Vector2 canvasSize) {
+    if (gameCamera.viewport is FixedResolutionViewport) return;
+    gameCamera.viewport = FixedResolutionViewport(
+      resolution: Vector2(RoomComponent.roomWidth, RoomComponent.roomHeight),
+    );
+    gameCamera.viewport.onGameResize(canvasSize);
   }
 
   /// Onde o joystick FIXO (ver `GameSettings.joysticksFixos`) fica em cada
@@ -1563,6 +1624,33 @@ class CreaturesRogueGame extends FlameGame
       defaultTargetPlatform == TargetPlatform.macOS ||
       defaultTargetPlatform == TargetPlatform.linux;
 
+  /// Derruba e remonta TODO o aparato de controle — usado quando o jogador
+  /// liga ou desliga os controles de tela nas configuracoes, no meio da run.
+  ///
+  /// Os joysticks sao recriados, e nao so remontados, porque o `Player` guarda
+  /// a referencia dos dois: recriar exigiria mexer no jogador tambem. Por isso
+  /// aqui e remocao e (re)adicao das MESMAS instancias.
+  void remontarControles() {
+    final mostrar = GameSettings.instance.controlesNaTela;
+
+    moveJoystick.removeFromParent();
+    aimJoystick.removeFromParent();
+    for (final indicador in children.whereType<DPadIndicator>().toList()) {
+      indicador.removeFromParent();
+    }
+    if (mostrar) {
+      add(moveJoystick);
+      add(aimJoystick);
+      _adicionarIndicadores();
+    }
+
+    _setupAbilityControls();
+    _reflowControles(size);
+    // Depois do reflow: o viewport ja trocou de tipo, e e nele que os slots
+    // do desktop moram.
+    _setupInventorySlots();
+  }
+
   void _setupJoysticks() {
     final scale = _isDesktop ? 0.75 : 1.0;
 
@@ -1591,15 +1679,28 @@ class CreaturesRogueGame extends FlameGame
       ladoDireito: true,
     );
 
+    // No DESKTOP os dois são construídos mas NÃO montados. Construídos porque
+    // o `Player` recebe os dois no construtor e lê `relativeDelta` todo
+    // quadro; não montados porque isso já resolve tudo de uma vez —
+    // `relativeDelta` devolve zero enquanto não há arrasto ativo, e
+    // componente fora da árvore não recebe evento nenhum, então o jogador cai
+    // direto no teclado. De quebra somem as duas áreas de captura que cobrem
+    // meia tela cada e engoliriam o arrasto do mouse.
+    if (!GameSettings.instance.controlesNaTela) return;
+
     // Adicionamos os joysticks DIRETAMENTE ao jogo, e não ao World.
     // Isso garante que eles sejam tratados como HUD (Interface) e
     // não sofram o zoom/escala da resolução de 160x144.
     add(moveJoystick);
     add(aimJoystick);
 
-    // Indicadores dos dois D-pads (ver doc da classe): cada um nasce onde o
-    // dedo toca dentro da área do respectivo joystick, e fica ali depois
-    // que solta.
+    _adicionarIndicadores();
+  }
+
+  /// Indicadores dos dois D-pads (ver doc da classe): cada um nasce onde o
+  /// dedo toca dentro da área do respectivo joystick, e fica ali depois
+  /// que solta.
+  void _adicionarIndicadores() {
     add(
       DPadIndicator(
         posicao: () => moveJoystick.centroIndicador,
@@ -1660,6 +1761,11 @@ class CreaturesRogueGame extends FlameGame
     _trocaButton = null;
     aimJoystick.onToqueRapido = null;
     aimJoystick.onToqueDuplo = null;
+
+    // Desktop joga no teclado (ver `Player.onKeyEvent`): nenhum botão de ação
+    // é montado, e os ganchos de gesto ficam nulos — o analógico direito que
+    // os dispararia nem está na árvore.
+    if (!GameSettings.instance.controlesNaTela) return;
 
     switch (_controlScheme) {
       case ControlScheme.botoes:
@@ -1729,12 +1835,30 @@ class CreaturesRogueGame extends FlameGame
   ///
   /// Posição real fica por conta de `_reflowControles` (muda com a
   /// orientação da tela).
+  /// Raio do slot quando ele mora DENTRO da sala (desktop), em unidades de
+  /// sala. A sala tem 160x144, então 9 dá um quadrado de 18 — mesma ordem de
+  /// grandeza de um sprite de criatura.
+  static const double _raioSlotNaSala = 9.0;
+
+  /// (Re)monta os dois slots. Chamado de novo quando o jogador liga ou desliga
+  /// os controles de tela, porque o PAI e o TAMANHO deles mudam junto.
+  ///
+  /// No celular são filhos do jogo, em pixels de tela, fora da área jogável.
+  /// No desktop são filhos do VIEWPORT, em unidades de sala, desenhados por
+  /// cima do jogo — a única forma de aparecerem ali, já que o
+  /// `CameraComponent` nasce com `priority: 0x7fffffff` e cobre qualquer
+  /// componente de raiz.
   void _setupInventorySlots() {
-    final raio = _isDesktop ? 32.0 : 32.0;
+    for (final slot in _slotButtons) {
+      slot.removeFromParent();
+    }
+    _slotButtons.clear();
+
+    final naSala = !GameSettings.instance.controlesNaTela;
 
     for (int i = 0; i < 2; i++) {
       final slot = ConsumableSlotButton(
-        radius: raio,
+        radius: naSala ? _raioSlotNaSala : 32.0,
         // Índice capturado por valor no loop: cada slot lê o seu.
         conteudo: () => _runStarted ? player.slots[i] : null,
         onUsar: () {
@@ -1742,7 +1866,11 @@ class CreaturesRogueGame extends FlameGame
         },
       );
       _slotButtons.add(slot);
-      add(slot);
+      if (naSala) {
+        gameCamera.viewport.add(slot);
+      } else {
+        add(slot);
+      }
     }
   }
 

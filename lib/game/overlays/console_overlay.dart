@@ -4,6 +4,7 @@ import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/UI/dynamic_joystick_component.dart';
 import 'package:creatures_rogue/game/components/UI/pause_button_sprite.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
+import 'package:creatures_rogue/game/game_settings.dart';
 
 class HudOverlay extends StatelessWidget {
   final CreaturesRogueGame game;
@@ -11,6 +12,12 @@ class HudOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Desktop não desenha o botão: `Esc` já abre e fecha o menu de pausa (ver
+    // `CreaturesRogueGame.onKeyEvent`), então nada fica inacessível.
+    if (!GameSettings.instance.controlesNaTela) {
+      return const SizedBox.shrink();
+    }
+
     final botao = _PauseButton(
       onPressed: withBtnSfx(() {
         game.pauseEngine(); // Congela o jogo inteiro!

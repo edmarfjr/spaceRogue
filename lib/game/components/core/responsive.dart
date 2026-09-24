@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Helpers de responsividade compartilhados por todos os overlays
@@ -28,6 +29,22 @@ class Responsive {
   ///
   /// Diferente de [ehEstreita], que pergunta "cabe alguma coisa do lado da
   /// outra?" — uma janela de desktop pode ser larga E estar em retrato.
+  /// Estamos num computador (Windows/macOS/Linux), incluindo o navegador
+  /// rodando num desses? Em celular e tablet devolve false.
+  ///
+  /// Na web o `defaultTargetPlatform` responde pelo SISTEMA por tras do
+  /// navegador, nao por "web" — e o que permite servir a mesma build no
+  /// itch.io com interface diferente em cada aparelho.
+  ///
+  /// CUIDADO: o Safari do iPad manda user agent de desktop, entao ele cai
+  /// aqui como macOS. E por isso que quem decide de verdade se os controles
+  /// de toque aparecem e o `GameSettings.controlesNaTela`, que so USA este
+  /// valor como padrao e aceita ser contrariado pelo jogador.
+  static bool get ehDesktop =>
+      defaultTargetPlatform == TargetPlatform.windows ||
+      defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.linux;
+
   static bool ehRetrato(BuildContext context) {
     final tamanho = MediaQuery.sizeOf(context);
     return tamanho.height > tamanho.width;

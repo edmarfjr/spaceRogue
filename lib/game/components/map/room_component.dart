@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/game_settings.dart';
 import 'dart:math';
 import 'package:creatures_rogue/game/components/items/item_efeito.dart';
 import 'package:creatures_rogue/game/components/map/floor_text.dart';
@@ -200,7 +201,12 @@ class RoomComponent extends PositionComponent with HasGameRef {
 
     add(
       FloorText(
-        texto: contexto.l10n.tutorial_controles,
+        // Sem controle na tela o jogador esta no teclado (ver
+        // `Player.onKeyEvent`), e mandar ele arrastar o dedo seria instrucao
+        // pra um controle que nem esta montado.
+        texto: GameSettings.instance.controlesNaTela
+            ? contexto.l10n.tutorial_controles
+            : contexto.l10n.tutorial_controlesTeclado,
         position: Vector2(width / 2, centerY + 44),
         
       ),
@@ -242,7 +248,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
   }
 
   void _spawnTreasure({double offsetX = 0,double offsetY = 0}) {
-    Vector2 centerPos = position + Vector2(width / 2 - 16, centerY) + Vector2(offsetX,offsetY);
+    Vector2 centerPos = position + Vector2(width / 2 - 8, centerY) + Vector2(offsetX,offsetY);
 
     // O pedestal sorteia sozinho entre UPGRADE, CONSUMÍVEL e ITEM_EFEITO —
     // ver `PedestalComponent.onLoad`, que é onde a pool da run fica acessível.
@@ -531,6 +537,22 @@ class RoomComponent extends PositionComponent with HasGameRef {
     }
 
     if (data.type == RoomType.boss) {
+      final posList = [Vector2(-24,-24),Vector2(-8,-24),Vector2(8,-24),
+      Vector2(-24,-8),Vector2(8,-8)];
+
+      for (var pos in posList){
+        final rockPos = position + Vector2(width / 2, centerY) + pos;
+        final rock = Rock(
+          position: rockPos,
+          cor1: theme.corClara,
+          cor2: theme.corEscura,
+          cor3: theme.corBranca,
+        );
+        rock.priority = ySortPriority(rockPos.y + rock.size.y);
+        _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
+        parent?.add(rock);
+      }
+
       parent?.add(Stairs(position: position + Vector2(width / 2, centerY)));
 
       final construirCriatura = wildCreatureBuilder;
@@ -538,7 +560,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
         // Posição própria (centerY - 28), livre da escada (centerY) e da
         // recompensa (centerY + 28) — ver PIVOT_CONTROLE_DIRETO.md §5.2.
         final npc = construirCriatura(
-          position + Vector2(width / 2, centerY - 28),
+          position + Vector2(width / 2, centerY - 64),
         );
         if (npc != null) parent?.add(npc);
       }

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:creatures_rogue/game/overlays/victory_overlay.dart';
 import 'package:creatures_rogue/game/overlays/retirement_overlay.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:flame/flame.dart';
 import 'package:flame/game.dart';
@@ -70,7 +71,12 @@ void main() async {
   // andamento (era o bug: idioma trocava, mas o `MainMenu` aparecia encima da
   // Hud/tela ativa).
   final gameHome = Scaffold(
-    backgroundColor: UiTheme.screenBackground,
+    // Mesma cor que `CreaturesRogueGame.backgroundColor` escolhe: o Scaffold
+    // fica atrás do GameWidget e aparece em qualquer folga de layout, então
+    // duas cores diferentes aqui dariam uma emenda visível.
+    backgroundColor: GameSettings.instance.controlesNaTela
+        ? UiTheme.screenBackground
+        : Palette.preto,
     body: GameWidget<CreaturesRogueGame>(
       game: creaturesGame,
       overlayBuilderMap: {

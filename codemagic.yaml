@@ -92,44 +92,56 @@ workflows:
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
 
-  # Workflow web desativado por enquanto (só Android). Pra reativar,
-  # descomente o bloco abaixo — as anchors *flutter_env e *cache_config
-  # continuam definidas em definitions:.
-  # web:
-  #   name: Web
-  #   # mac_mini_m2 é a única instância do plano free (500 min/mês). linux_x2 e
-  #   # windows_x2 exigem billing habilitado — daí o erro "selected instance type
-  #   # is not available with the current billing plan". macOS builda Android e
-  #   # web normalmente.
-  #   instance_type: mac_mini_m2
-  #   max_build_duration: 30
-  #   environment:
-  #     <<: *flutter_env
-  #   cache:
-  #     <<: *cache_config
-  #   triggering:
-  #     events:
-  #       - push
-  #     branch_patterns:
-  #       - pattern: main
-  #         include: true
-  #   scripts:
-  #     - name: Baixar dependências
-  #       script: flutter pub get
-  #
-  #     - name: Analisar código
-  #       script: flutter analyze --no-fatal-infos --no-fatal-warnings
-  #
-  #     # base-href "/" serve pra itch.io e qualquer host que sirva na raiz.
-  #     # Pra GitHub Pages em subpasta, troque por --base-href /creaturesRogue/
-  #     - name: Build web release
-  #       script: flutter build web --release --base-href /
-  #
-  #     # itch.io e Netlify esperam um .zip com o index.html na raiz.
-  #     - name: Empacotar para upload
-  #       script: cd build/web && zip -r ../creatures_rogue_web.zip .
-  #   artifacts:
-  #     - build/creatures_rogue_web.zip
+  web:
+    name: Web
+    # mac_mini_m2 é a única instância do plano free (500 min/mês). linux_x2 e
+    # windows_x2 exigem billing habilitado — daí o erro "selected instance type
+    # is not available with the current billing plan". macOS builda Android e
+    # web normalmente.
+    instance_type: mac_mini_m2
+    max_build_duration: 30
+    environment:
+      <<: *flutter_env
+    cache:
+      <<: *cache_config
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+    scripts:
+      - name: Baixar dependências
+        script: flutter pub get
+
+      - name: Analisar código
+        script: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Build web release
+        script: flutter build web --release
+
+      # O itch.io serve o jogo de um SUBCAMINHO, não da raiz do domínio, então
+      # o `<base href="/">` que o Flutter grava faz o navegador procurar os
+      # assets no lugar errado e a página fica em branco. O caminho relativo
+      # resolve.
+      #
+      # Por que não `--base-href ./` no passo acima: o próprio Flutter recusa
+      # ("--base-href should start and end with /"), então a troca tem que ser
+      # feita no arquivo já gerado.
+      #
+      # `perl` em vez de `sed`: o `sed -i` do macOS (esta instância é mac)
+      # exige um argumento de sufixo que o `sed` do Linux não aceita, e o passo
+      # quebraria se a instância mudasse.
+      - name: Ajustar base href para itch.io
+        script: |
+          perl -pi -e 's{<base href="/">}{<base href="./">}' build/web/index.html
+          grep -q '<base href="./">' build/web/index.html
+
+      # itch.io e Netlify esperam um .zip com o index.html na raiz.
+      - name: Empacotar para upload
+        script: cd build/web && zip -r ../creatures_rogue_web.zip .
+    artifacts:
+      - build/creatures_rogue_web.zip
 
 # Notificação por e-mail ao terminar o build. Preencha o endereço e descomente
 # — deixei em branco pra não commitar e-mail em arquivo versionado.

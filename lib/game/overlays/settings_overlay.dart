@@ -133,6 +133,15 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
     if (mounted) setState(() {});
   }
 
+  /// Remonta os controles do jogo alem de gravar a preferencia: ligar ou
+  /// desligar isto muda o que esta montado na arvore do Flame, e sem o
+  /// `_setupControles` a troca so apareceria na proxima abertura do app.
+  Future<void> _alternarControlesNaTela(bool valor) async {
+    await GameSettings.instance.setControlesNaTela(valor);
+    widget.game.remontarControles();
+    if (mounted) setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final atual = widget.game.controlScheme;
@@ -319,6 +328,16 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                 value: GameSettings.instance.joysticksFixos,
                 activeThumbColor: Palette.preto,
                 onChanged: (valor) => _alternarJoysticksFixos(valor),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                context.l10n.settings_controlesNaTela,
+                style: const TextStyle(color: Palette.preto, fontSize: 14),
+              ),
+              Switch(
+                value: GameSettings.instance.controlesNaTela,
+                activeThumbColor: Palette.preto,
+                onChanged: (valor) => _alternarControlesNaTela(valor),
               ),
             ],
           ),

@@ -26,6 +26,7 @@
   "settings_audio": "AUDIO",
   "settings_som": "SOUND",
   "settings_musica": "MUSIC",
+  "settings_controlesNaTela": "ON-SCREEN CONTROLS",
   "settings_joysticksFixos": "FIXED CONTROLS",
   "settings_godMode": "GOD MODE",
 
@@ -158,6 +159,7 @@
   "victory_titulo": "YOU WIN!",
   "victory_tempo": "TIME: {tempo}",
   "victory_elenco": "RUN ROSTER",
+  "tutorial_controlesTeclado": "WASD TO MOVE\nARROW KEYS TO ATTACK",
   "tutorial_controles": "DRAG ON THE LEFT TO MOVE\nDRAG ON THE RIGHT TO ATTACK",
   "retirement_titulo": "RETIRING...",
   "passiva_impetoArdente": "BURNING MOMENTUM",

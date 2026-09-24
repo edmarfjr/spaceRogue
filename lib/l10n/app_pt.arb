@@ -26,6 +26,7 @@
   "settings_audio": "ÁUDIO",
   "settings_som": "SOM",
   "settings_musica": "MÚSICA",
+  "settings_controlesNaTela": "CONTROLES NA TELA",
   "settings_joysticksFixos": "CONTROLES FIXOS",
   "settings_godMode": "GOD MODE",
 
@@ -194,6 +195,7 @@
   "victory_titulo": "VOCE VENCEU!",
   "victory_tempo": "TEMPO: {tempo}",
   "victory_elenco": "CRIATURAS DA RUN",
+  "tutorial_controlesTeclado": "WASD PARA MOVER\nSETAS PARA ATACAR",
   "tutorial_controles": "ARRASTE À ESQUERDA PARA MOVER\nARRASTE À DIREITA PARA ATACAR",
   "retirement_titulo": "APOSENTANDO...",
   "passiva_impetoArdente": "IMPETO ARDENTE",

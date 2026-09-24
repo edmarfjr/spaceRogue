@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:creatures_rogue/game/audio/game_audio.dart';
 import 'package:creatures_rogue/game/audio/game_music.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
+import 'package:creatures_rogue/game/components/core/responsive.dart';
 
 /// Preferências do jogador que valem entre sessões — esquema de controle,
 /// idioma e volume, escolhidos na tela de configurações.
@@ -21,6 +22,7 @@ class GameSettings {
   static const _musicEnabledKey = 'creatures_rogue.music_enabled';
   static const _godModeKey = 'creatures_rogue.god_mode';
   static const _joysticksFixosKey = 'creatures_rogue.joysticks_fixos';
+  static const _controlesNaTelaKey = 'creatures_rogue.controles_na_tela';
 
   static const ControlScheme defaultControlScheme = ControlScheme.botoes;
 
@@ -29,6 +31,9 @@ class GameSettings {
   bool _loaded = false;
   bool _godMode = false;
   bool _joysticksFixos = false;
+
+  /// `null` = ninguem escolheu ainda, entao vale a deteccao automatica.
+  bool? _controlesNaTela;
 
   /// `null` = segue o idioma do sistema (padrão). Vive num `ValueNotifier`,
   /// não num campo simples como `_controlScheme`, porque trocar o idioma
@@ -50,6 +55,7 @@ class GameSettings {
     GameMusic.instance.enabled = _prefs.getBool(_musicEnabledKey) ?? true;
     _godMode = _prefs.getBool(_godModeKey) ?? false;
     _joysticksFixos = _prefs.getBool(_joysticksFixosKey) ?? false;
+    _controlesNaTela = _prefs.getBool(_controlesNaTelaKey);
     _loaded = true;
   }
 
@@ -118,6 +124,20 @@ class GameSettings {
   Future<void> setJoysticksFixos(bool value) async {
     _joysticksFixos = value;
     await _prefs.setBool(_joysticksFixosKey, value);
+  }
+
+  /// Desenhar os controles de toque (analogicos, botoes de acao, pausa)?
+  ///
+  /// Padrao detectado: computador joga no teclado e nao precisa deles; celular
+  /// e tablet precisam. Mas a deteccao erra num caso conhecido e comum — o
+  /// Safari do iPad se anuncia como desktop (ver `Responsive.ehDesktop`) —, e
+  /// um jogo sem controle nenhum num aparelho sem teclado nao tem conserto de
+  /// dentro do jogo. Por isso a escolha do jogador, quando existe, manda.
+  bool get controlesNaTela => _controlesNaTela ?? !Responsive.ehDesktop;
+
+  Future<void> setControlesNaTela(bool value) async {
+    _controlesNaTela = value;
+    await _prefs.setBool(_controlesNaTelaKey, value);
   }
 
   /// Volta ao padrão em vez de estourar quando o valor gravado não corresponde
