@@ -120,7 +120,7 @@ class Player extends PositionComponent
   /// Segundos entre uma carga de escudo passivo e a próxima. Constante à
   /// parte porque o carregamento do save precisa dela como padrão pra saves
   /// gravados antes do upgrade de regeneração existir.
-  static const double shieldRegenIntervalPadrao = 10.0;
+  static const double shieldRegenIntervalPadrao = 6.0;
   double shieldRegenInterval = shieldRegenIntervalPadrao;
   double _shieldRegenTimer = 0.0;
 
@@ -190,6 +190,44 @@ class Player extends PositionComponent
   /// agrupa pra mostrar "x3"; agrupar aqui jogaria fora a ordem, que é o que
   /// faz disto um histórico e não um inventário.
   final List<PowerUpType> upgradesPegos = [];
+
+  /// Cargas ganhas por entrar em salas INÉDITAS do andar. Moeda de itens cujo
+  /// uso precisa de um custo que o jogador não consiga fabricar parado.
+  ///
+  /// Tempo não serve pra isso: numa sala já limpa, esperar é de graça, então
+  /// "a cada X segundos" vira "sempre que eu quiser, basta ficar parado". Sala
+  /// nova é um recurso finito — o andar tem 15 (ver `DungeonGenerator`), e
+  /// andar de um lado pro outro não gera mais nenhuma.
+  ///
+  /// Quem incrementa é `RoomComponent.onPlayerEnter`, no primeiro pisão de
+  /// cada sala. Quem gasta são os itens.
+  ///
+  /// COMPARTILHADO: se um dia dois itens consumirem cargas, eles competem
+  /// pela mesma reserva. É de propósito — vira uma economia, não dois
+  /// contadores paralelos.
+  int cargasDeSala = 0;
+
+  /// Teto da reserva. Sem ele, achar um item de carga no quinto andar daria
+  /// todas as salas já andadas de uma vez; com ele, chegar tarde custa no
+  /// máximo o teto.
+  static const int cargasDeSalaMax = 6;
+
+  /// Algum item em mãos gasta carga? Se não, elas nem são acumuladas — e a
+  /// Hud não desenha o contador.
+  bool get usaCargasDeSala => itens.any((item) => item.usaCargasDeSala);
+
+  void ganharCargaDeSala() {
+    if (!usaCargasDeSala) return;
+    if (cargasDeSala < cargasDeSalaMax) cargasDeSala++;
+  }
+
+  /// Gasta [quantidade] cargas se houver. Devolve false sem gastar nada
+  /// quando não dá — quem chama decide o que fazer.
+  bool gastarCargasDeSala(int quantidade) {
+    if (cargasDeSala < quantidade) return false;
+    cargasDeSala -= quantidade;
+    return true;
+  }
 
   // --- Multiplicadores de upgrade da run ---
   // Ficam aqui, e não em BaseStats, porque BaseStats é `const` (compartilhado
@@ -1274,6 +1312,13 @@ class Player extends PositionComponent
     if (!creatureData.ability2.canExecute(this)) return;
     creatureData.ability2.execute(this, lockedAb2Direction);
 
+    // Antes dos ganchos por tipo, e sem condição nenhuma: vale pra esquiva,
+    // defesa e ataque. Quem só se interessa por um tipo usa `aoEsquivar` ou
+    // `aoUsarDefesa`, que disparam logo abaixo — os dois, não um ou outro.
+    for (final item in itens) {
+      item.aoUsarAbility2(this);
+    }
+
     var mult = cdMult;
     if (creatureData.ability2.tipo == AbilityTipo.esquiva) {
       // Piso pro multiplicador de esquiva pelo mesmo motivo do `dodge()`:
@@ -1287,6 +1332,10 @@ class Player extends PositionComponent
         item.aoEsquivar(this, lockedAb2Direction);
       }
       creatureData.passive?.aoEsquivar(this, lockedAb2Direction);
+    } else if (creatureData.ability2.tipo == AbilityTipo.defesa) {
+      for (final item in itens) {
+        item.aoUsarDefesa(this);
+      }
     }
 
     _cooldownMax2 = creatureData.ability2.cooldown * mult;
@@ -1490,6 +1539,7 @@ class Player extends PositionComponent
     super.onCollision(intersectionPoints, other);
 
     if (other is Enemy) {
+      if(other.summonTimer > 0) return;
       // O Inimigo só nos causa dano se o corpo dele bater no nosso corpo!
       if (other.enemyHitbox.toAbsoluteRect().overlaps(
         playerHitbox.toAbsoluteRect(),

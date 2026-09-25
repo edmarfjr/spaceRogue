@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/UI/carga_sala_indicator.dart';
 import 'dart:math' as math;
 import 'package:creatures_rogue/game/components/items/item_efeito.dart';
 import 'dart:ui' as ui;
@@ -194,6 +195,17 @@ class Hud extends PositionComponent with HasGameRef {
         cooldownFraction: () => player.ability2CooldownFraction,
         raio: 4,
         position: Vector2(40, 12),
+      ),
+
+      // Cargas de sala, logo à direita do anel da habilidade 2 (que é
+      // `Anchor.center` em x=40 com raio 4, então termina em x=44). Some
+      // sozinho quando nenhum item em mãos gasta carga.
+      CargaSalaIndicator(
+        cargas: () => player.cargasDeSala,
+        maximo: Player.cargasDeSalaMax,
+        custo: SegundoFolego.custoCargas,
+        deveAparecer: () => player.usaCargasDeSala,
+        position: Vector2(48, 10),
       ),
 
       // Três retratos, um por slot do grupo — mesmo cinza que o indicador de

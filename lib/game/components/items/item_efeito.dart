@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/effects/sprite_effect.dart';
 import 'package:flutter/material.dart';
 
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
@@ -92,6 +93,29 @@ abstract class ItemEfeito implements ItemDescritor {
   /// inimigo, porque é o único disparado de dentro do `Enemy.takeDamage`.
   void aoCritar(Player player, Enemy alvo) {}
 
+  /// Este item gasta `Player.cargasDeSala`?
+  ///
+  /// Serve pra duas coisas: a Hud só desenha o contador de cargas quando
+  /// alguém as usa, e o `Player` só as ACUMULA nesse caso — senão, achar um
+  /// item de carga no quinto andar viria com todas as salas já andadas de
+  /// presente.
+  bool get usaCargasDeSala => false;
+
+  /// O jogador usou a habilidade do botão B, QUALQUER que seja o tipo dela.
+  ///
+  /// Dispara junto com [aoEsquivar] e [aoUsarDefesa], não no lugar deles: uma
+  /// esquiva chama este E aquele. É o gancho pra efeito que não se importa com
+  /// o tipo da habilidade — e é o único que vale pra todas as 34 criaturas,
+  /// já que cada uma tem só um tipo de botão B.
+  void aoUsarAbility2(Player player) {}
+
+  /// O jogador usou a habilidade DEFENSIVA (`AbilityTipo.defesa`).
+  ///
+  /// Irmão do [aoEsquivar], que cobre `AbilityTipo.esquiva`: os dois saem do
+  /// mesmo `Player.dispararAbility2`, cada um no seu ramo de tipo. Não existe
+  /// gancho pra `AbilityTipo.ataque` porque ninguém precisou até agora.
+  void aoUsarDefesa(Player player) {}
+
   void aoAtualizar(Player player, double dt) {}
 }
 
@@ -125,6 +149,10 @@ class ItemEfeitoRegistry {
     PedraElemental(CreatureType.agua),
     PedraElemental(CreatureType.planta),
     PedraElemental(CreatureType.eletrico),
+    Sentinela(),
+    Recarga(),
+    Repulsao(),
+    SegundoFolego(),
     Esgotamento(),
     GatilhoFrio(),
     SangueFrio(),
@@ -1419,6 +1447,229 @@ class PedraElemental extends ItemEfeito {
     // qualquer jeito.
     player.danoElementalDerivado[tipo] =
         (player.danoElementalDerivado[tipo] ?? 1.0) + bonus;
+  }
+}
+
+/// Toda vez que o jogador usa a habilidade do botão B, há chance de algo
+/// invisível atacar um inimigo qualquer da sala.
+///
+/// Vale pra QUALQUER habilidade 2 — defesa, esquiva ou ataque —, e é por isso
+/// que o efeito é por CHANCE: amarrado só à defesa, o item seria peso morto
+/// nas criaturas cujo botão B é esquiva, que são a maioria.
+///
+/// Alvo sorteado e não o mais próximo: escolher o mais próximo faria o item
+/// premiar quem já estava perto, que é justamente quem menos precisa de ajuda
+/// ao se defender. Sorteio também dá pra alcançar quem está atirando de longe.
+///
+/// Dano do tipo NEUTRO de propósito: sem vantagem nem desvantagem elemental
+/// (ver `typeMultiplier`), o item rende igual com qualquer criatura e não vira
+/// refém da composição do grupo — o oposto da [PedraElemental], que é uma
+/// aposta declarada.
+class Sentinela extends ItemEfeito {
+  const Sentinela();
+
+  /// Chance por uso do botão B. Não é 100% porque a habilidade 2 tem cooldown
+  /// curto em várias criaturas; garantir o golpe transformaria o botão B num
+  /// ataque melhor que o A.
+  static const double chance = 0.35;
+
+  /// Dano = ataque da criatura x isto. Generoso porque não escala com nada e
+  /// só acontece em pouco mais de um a cada três usos.
+  static const double coefDano = 1.5;
+
+  @override
+  String get id => 'sentinela';
+  @override
+  String get spritePath => 'items/garrafa.png';
+  @override
+  Color get cor1 => Palette.indigo;
+  @override
+  Color get cor2 => Palette.azulEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.item_sentinela;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_sentinelaDesc;
+
+  @override
+  void aoUsarAbility2(Player player) {
+    if (Random().nextDouble() >= chance) return;
+
+    final alvo = _sortearInimigo(player);
+    if (alvo == null) return;
+
+    player.parent?.add(
+      SpriteEffect(
+        position: alvo.position.clone(),
+        spritePath: 'effects/summon.png',
+        size: Vector2.all(24),
+        textureSize: Vector2.all(24),
+        corClara: cor1,
+        corEscura: cor2,
+        corBranco: Palette.branco,
+      ),
+    );
+
+    alvo.takeDamage(
+      player.creatureData.stats.ataque * coefDano,
+      tipoAtacante: CreatureType.neutro,
+    );
+  }
+
+  /// Um inimigo qualquer da sala ATUAL.
+  ///
+  /// A restrição por sala é a mesma que a mira automática e o item CONGELAR
+  /// já usam: todos os inimigos da dungeon existem ao mesmo tempo, então sem
+  /// o filtro o golpe acertaria alguém a três salas de distância.
+  Enemy? _sortearInimigo(Player player) {
+    final sala = player.currentRoom;
+    final candidatos = <Enemy>[];
+
+    for (final inimigo in player.parent?.children.whereType<Enemy>() ??
+        const <Enemy>[]) {
+      if (sala != null &&
+          !sala.toAbsoluteRect().contains(
+            Offset(inimigo.absolutePosition.x, inimigo.absolutePosition.y),
+          )) {
+        continue;
+      }
+      candidatos.add(inimigo);
+    }
+
+    if (candidatos.isEmpty) return null;
+    return candidatos[Random().nextInt(candidatos.length)];
+  }
+}
+
+/// Levantar a guarda devolve energia.
+///
+/// Liga o botão B ao botão A, que hoje não se conversam: a energia é o
+/// tamanho da rajada da habilidade 1 (ver `AbilityUser`), e a defesa era tempo
+/// parado que não contribuía em nada pro ataque. Com isto, defender no momento
+/// certo vira parte do ciclo ofensivo em vez de uma pausa nele.
+///
+/// Só vale pra criatura de habilidade 2 DEFENSIVA — quem tem esquiva no botão
+/// B não tem o que fazer com este item. É o preço de um efeito forte e
+/// garantido, sem chance envolvida.
+class Recarga extends ItemEfeito {
+  const Recarga();
+
+  /// Fração da energia máxima devolvida por uso. Metade é o bastante pra
+  /// emendar uma rajada logo depois da defesa, sem tornar a energia irrelevante.
+  static const double fracao = 0.5;
+
+  @override
+  String get id => 'recarga';
+  @override
+  String get spritePath => 'items/energyRecover.png';
+  @override
+  Color get cor1 => Palette.laranja;
+  @override
+  Color get cor2 => Palette.royal;
+  @override
+  String nome(BuildContext context) => context.l10n.item_recarga;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_recargaDesc;
+
+  @override
+  void aoUsarDefesa(Player player) {
+    player.energia = (player.energia + player.energiaMax * fracao).clamp(
+      0.0,
+      player.energiaMax,
+    );
+  }
+}
+
+/// Levantar a guarda empurra pra longe quem estiver perto.
+///
+/// Dano ZERO: a defesa continua sendo defesa, o que muda é que ela passa a
+/// COMPRAR ESPAÇO. Resolve o problema de fechar o casco com dois inimigos
+/// colados e sair da defesa exatamente onde entrou.
+///
+/// Mesmo `ExplosionHitbox` de dano zero que o estouro da Bolha Protetora usa —
+/// e é por isso que aquele `if (dmg > 0)` do `ExplosionHitbox` importa: sem
+/// ele, cada inimigo empurrado ganharia um "0.0" flutuando na cabeça.
+class Repulsao extends ItemEfeito {
+  const Repulsao();
+
+  static const double empurrao = 110.0;
+  static const double raio = 44.0;
+
+  @override
+  String get id => 'repulsao';
+  @override
+  String get spritePath => 'items/repulsao.png';
+  @override
+  Color get cor1 => Palette.azul;
+  @override
+  Color get cor2 => Palette.branco;
+  @override
+  String nome(BuildContext context) => context.l10n.item_repulsao;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_repulsaoDesc;
+
+  @override
+  void aoUsarDefesa(Player player) {
+    player.parent?.add(
+      ExplosionHitbox(
+        position: player.position.clone(),
+        dmg: 0,
+        knockback: empurrao,
+        size: Vector2.all(raio),
+        cor1: cor1,
+        cor2: cor2,
+        tipo: player.creatureData.tipo,
+      ),
+    );
+  }
+}
+
+/// Usar a habilidade do botão B cura, gastando cargas ganhas ao explorar.
+///
+/// Vale pra QUALQUER habilidade 2 — defesa, esquiva ou ataque —, então não
+/// depende de a criatura ativa ter o tipo certo, ao contrário da [Recarga] e
+/// da [Repulsao].
+///
+/// O custo é o item inteiro. A primeira versão usava espera em SEGUNDOS, e
+/// isso não segurava nada: numa sala já limpa, tempo é de graça: bastava
+/// martelar o botão B entre uma sala e outra pra chegar no andar seguinte com
+/// a vida cheia, e poção, coração e escudo passivo perdiam a razão de existir.
+///
+/// Sala nova é um recurso que o jogador NÃO fabrica parado — o andar tem um
+/// número fixo delas, e voltar pra uma já andada não conta (ver
+/// `Player.cargasDeSala`). Curar passa a custar exploração de verdade.
+class SegundoFolego extends ItemEfeito {
+  const SegundoFolego();
+
+  /// Cargas por cura. Com uma carga por sala inédita, sai perto de uma cura a
+  /// cada três salas novas.
+  static const int custoCargas = 3;
+
+  @override
+  bool get usaCargasDeSala => true;
+
+  @override
+  String get id => 'segundoFolego';
+  @override
+  String get spritePath => 'items/segundoFolego.png';
+  @override
+  Color get cor1 => Palette.jade;
+  @override
+  Color get cor2 => Palette.vermelho;
+  @override
+  String nome(BuildContext context) => context.l10n.item_segundoFolego;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.item_segundoFolegoDesc;
+
+  @override
+  void aoUsarAbility2(Player player) {
+    if (player.cargasDeSala < custoCargas) return;
+
+    // Confere a cura ANTES de cobrar: com a vida cheia o `heal` devolve false,
+    // e gastar as cargas aí seria queimar exploração por nada.
+    if (!player.heal(1)) return;
+
+    player.gastarCargasDeSala(custoCargas);
   }
 }
 

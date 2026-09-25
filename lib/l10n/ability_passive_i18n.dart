@@ -1,6 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/creatures/passive.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/esporo_errante.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/casulo_de_esporos.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/casulo_de_esporos_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/bico_eletrico.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/bolha_protetora.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/bolha_protetora_evo.dart';
@@ -86,9 +89,12 @@ String abilityName(BuildContext context, Ability a) {
     EstocadaRelampago() => l.abilityName_EstocadaRelampago,
     BolaDagua() => l.abilityName_BolaDagua,
     JatoAquatico() => l.abilityName_JatoAquatico,
+    EsporoErrante() => l.abilityName_EsporoErrante,
 
     // --- Habilidades do botao B (ability2) ---
     BolhaProtetora() => l.abilityName_BolhaProtetora,
+    CasuloDeEsporos() => l.abilityName_CasuloDeEsporos,
+    CasuloDeEsporosEvo() => l.abilityName_CasuloDeEsporosEvo,
     BolhaProtetoraEvo() => l.abilityName_BolhaProtetoraEvo,
     Brado() => l.abilityName_Brado,
     BradoEvo() => l.abilityName_BradoEvo,
@@ -147,9 +153,12 @@ String abilityDescription(BuildContext context, Ability a) {
     EstocadaRelampago() => l.abilityDesc_EstocadaRelampago,
     BolaDagua() => l.abilityDesc_BolaDagua,
     JatoAquatico() => l.abilityDesc_JatoAquatico,
+    EsporoErrante() => l.abilityDesc_EsporoErrante,
 
     // --- Habilidades do botao B (ability2) ---
     BolhaProtetora() => l.abilityDesc_BolhaProtetora,
+    CasuloDeEsporos() => l.abilityDesc_CasuloDeEsporos,
+    CasuloDeEsporosEvo() => l.abilityDesc_CasuloDeEsporosEvo,
     BolhaProtetoraEvo() => l.abilityDesc_BolhaProtetoraEvo,
     Brado() => l.abilityDesc_Brado,
     BradoEvo() => l.abilityDesc_BradoEvo,

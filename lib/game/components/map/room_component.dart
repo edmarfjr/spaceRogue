@@ -299,8 +299,8 @@ class RoomComponent extends PositionComponent with HasGameRef {
       );
     }
     */
-    parent?.add(ItemEfeitoPickup(position: Vector2(width / 2 - 24, centerY + 24), item: Bussola()));
-    parent?.add(ItemEfeitoPickup(position: Vector2(width / 2 + 24, centerY + 24), item: EloDoGrupo()));
+    parent?.add(ItemEfeitoPickup(position: Vector2(width / 2 - 24, centerY + 24), item: SegundoFolego()));
+    parent?.add(ItemEfeitoPickup(position: Vector2(width / 2 + 24, centerY + 24), item: Recarga()));
       Enemy enemy = DummyEnemy(
         position: Vector2(width / 2, height / 2 - 32),
         playerTarget: player,
@@ -576,7 +576,23 @@ class RoomComponent extends PositionComponent with HasGameRef {
   /// [ladoEntrada] é a porta POR ONDE o jogador entrou nesta sala — usada pela
   /// cena do boss pra montar a coreografia em relação a ele.
   void onPlayerEnter(LadoSala ladoEntrada) {
+    // Antes de marcar como visitada: a carga é por sala INÉDITA, então voltar
+    // pra uma sala já andada não rende nada. É isso que impede o jogador de
+    // fabricar carga andando de um lado pro outro.
+    if (!data.isVisited) player.ganharCargaDeSala();
     data.isVisited = true;
+    // Sala de ESCADA: nunca tranca. Antes ela era uma sala de boss com
+    // `bossBuilder` nulo, então trancava, não invocava ninguém e destrancava
+    // no quadro seguinte — as portas piscavam fechadas por nada. Agora o tipo
+    // diz que não há luta, e a escada nasce direto.
+    if (data.type == RoomType.stairs) {
+      if (!data.isCleared) {
+        data.isCleared = true;
+        _spawnEscadaEArredores();
+      }
+      return;
+    }
+
     if (!data.isCleared && (data.type == RoomType.normal || data.type == RoomType.boss)) {
       _lockRoom();
       _spawnEnemies(ladoEntrada);
@@ -599,37 +615,52 @@ class RoomComponent extends PositionComponent with HasGameRef {
     }
 
     if (data.type == RoomType.boss) {
-      final posList = [Vector2(-24,-24),Vector2(-8,-24),Vector2(8,-24),
-      Vector2(-24,-8),Vector2(8,-8)];
-
-      for (var pos in posList){
-        final rockPos = position + Vector2(width / 2, centerY) + pos;
-        final rock = Rock(
-          position: rockPos,
-          cor1: theme.corClara,
-          cor2: theme.corEscura,
-          cor3: theme.corBranca,
-        );
-        rock.priority = ySortPriority(rockPos.y + rock.size.y);
-        _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
-        parent?.add(rock);
-      }
-
-      parent?.add(Stairs(position: position + Vector2(width / 2, centerY)));
-
-      final construirCriatura = wildCreatureBuilder;
-      if (construirCriatura != null) {
-        // Posição própria (centerY - 28), livre da escada (centerY) e da
-        // recompensa (centerY + 28) — ver PIVOT_CONTROLE_DIRETO.md §5.2.
-        final npc = construirCriatura(
-          position + Vector2(width / 2, centerY - 64),
-        );
-        if (npc != null) parent?.add(npc);
-      }
+      _spawnEscadaEArredores();
       return;
     }
 
     _spawnRecompensa();
+  }
+
+  /// Escada pro andar seguinte, as pedras em volta dela e a criatura selvagem
+  /// do andar — tudo o que a ÚLTIMA sala do andar precisa ter.
+  ///
+  /// Extraído do `_unlockRoom` porque agora há dois caminhos até aqui:
+  /// [RoomType.boss] chama depois de a luta acabar, e [RoomType.stairs] chama
+  /// assim que o jogador entra, já que ali não há luta nenhuma.
+  void _spawnEscadaEArredores() {
+    final posList = [
+      Vector2(-24, -24),
+      Vector2(-8, -24),
+      Vector2(8, -24),
+      Vector2(-24, -8),
+      Vector2(8, -8),
+    ];
+
+    for (var pos in posList){
+      final rockPos = position + Vector2(width / 2, centerY) + pos;
+      final rock = Rock(
+        position: rockPos,
+        cor1: theme.corClara,
+        cor2: theme.corEscura,
+        cor3: theme.corBranca,
+      );
+      rock.priority = ySortPriority(rockPos.y + rock.size.y);
+      _obstacleRects.add(Rect.fromLTWH(x, y, 16, 16));
+      parent?.add(rock);
+    }
+
+    parent?.add(Stairs(position: position + Vector2(width / 2, centerY)));
+
+    final construirCriatura = wildCreatureBuilder;
+    if (construirCriatura != null) {
+      // Posição própria (centerY - 28), livre da escada (centerY) e da
+      // recompensa (centerY + 28) — ver PIVOT_CONTROLE_DIRETO.md §5.2.
+      final npc = construirCriatura(
+        position + Vector2(width / 2, centerY - 64),
+      );
+      if (npc != null) parent?.add(npc);
+    }
   }
 
   /// Ponto logo DENTRO da parede de [lado], em coordenadas locais. A parede
@@ -706,18 +737,20 @@ class RoomComponent extends PositionComponent with HasGameRef {
   }
 
   void _spawnEnemies(LadoSala ladoEntrada) {
-    // Sala final (RoomType.boss, onde a escada nasce): nunca turma comum. Só
-    // spawna adversário de verdade no andar de boss (`bossBuilder` não nulo);
-    // nos outros andares essa sala fica vazia e destranca na hora, sem briga.
-    // Sem esse desvio por tipo de sala, o `floor % 5 == 0` de baixo valia pra
-    // QUALQUER sala do andar — no andar de boss, até a loja spawnava boss.
+    // Sala de BOSS: nunca turma comum. Sem esse desvio por tipo de sala, a
+    // conta de quantidade lá embaixo valia pra QUALQUER sala do andar — no
+    // andar de boss, até a loja spawnava boss.
+    //
+    // Andar SEM boss não cai mais aqui: a sala final dele nasce como
+    // `RoomType.stairs` e é tratada no `onPlayerEnter`, sem trancar. O
+    // `bossBuilder` nulo abaixo virou caminho de segurança, não o caso comum
+    // — gerador e jogo tiram os dois do mesmo `isBossFloor`, então só chegam
+    // aqui discordando se alguém mexer num sem o outro.
     if (data.type == RoomType.boss) {
       if (bossBuilder != null && !_cutsceneBossJaRodou) {
         _cutsceneBossJaRodou = true;
         _iniciarCutsceneBoss(ladoEntrada);
       } else {
-        // Sem boss neste andar (`bossBuilder` nulo) a sala destranca na hora,
-        // e aí não há cena nenhuma pra abrir.
         _spawnBoss();
       }
       return;

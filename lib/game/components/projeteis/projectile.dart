@@ -31,10 +31,28 @@ enum ProjetilMovimento {
   /// afasta", e um segundo campo só pra isso ficaria nulo em todo projétil
   /// reto do jogo.
   espiral,
+
+  /// Direção copiada de quem atirou, quadro a quadro, com velocidade PRÓPRIA:
+  /// o projétil vai pro mesmo lado que o dono está indo, mais rápido que ele.
+  /// Dono parado, projétil parado.
+  ///
+  /// A direção sai da DIFERENÇA de posição do dono entre dois quadros, não da
+  /// `velocity` dele. É o que faz o esporo acompanhar também as esquivas, que
+  /// se movem por `MoveByEffect` e não encostam em `velocity`.
+  dirigidoPeloDono
 }
 
 class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGameRef {
   final Vector2 direction;
+
+  /// Última posição conhecida do dono, pro modo
+  /// [ProjetilMovimento.dirigidoPeloDono]. Semeada no `onLoad` — semear no
+  /// construtor pegaria a posição antes de o projétil entrar na árvore.
+  final Vector2 _posAnteriorDono = Vector2.zero();
+
+  /// Deslocamento mínimo por quadro (ao quadrado) pra o dono contar como em
+  /// movimento.
+  static const double _limiarParadoDono = 0.0001;
   double speed;
   bool isEnemy;
   String sprPath;
@@ -145,6 +163,10 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
 
     paint = Paint()..filterQuality = FilterQuality.none;
     angle = direction.screenAngle();
+    // Semeado aqui e não no construtor: só depois de montado o `owner` tem
+    // posição final, e a primeira diferença precisa dar zero em vez de um
+    // salto do projétil no primeiro quadro.
+    _posAnteriorDono.setFrom(owner.position);
     add(CircleHitbox(collisionType: CollisionType.active,radius: radius,anchor: Anchor.center,position: size/2));
     //debugMode = true;
   }
@@ -220,6 +242,18 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         _raioEspiral += speed * dt;
         position = _centroEspiral +
             Vector2(cos(_anguloEspiral), sin(_anguloEspiral)) * _raioEspiral;
+      case ProjetilMovimento.dirigidoPeloDono:
+        final deslocamento = owner.position - _posAnteriorDono;
+        _posAnteriorDono.setFrom(owner.position);
+        // Limiar pra tremor de analógico não virar direção: abaixo disto o
+        // dono conta como parado, e o projétil para junto.
+        if (deslocamento.length2 > _limiarParadoDono) {
+          direction.setFrom(deslocamento.normalized());
+          angle = direction.screenAngle();
+        } else {
+          break;
+        }
+        position += direction * speed * dt;
     }
 
     if (hits.isNotEmpty) {
@@ -277,6 +311,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         return;
       }
       if (other is Enemy) {
+        if(other.summonTimer > 0) return;
         if (hits.containsKey(other)) {
           return; 
         }

@@ -27,6 +27,11 @@ import 'package:creatures_rogue/game/components/creatures/abilities/esquiva_bomb
 import 'package:creatures_rogue/game/components/creatures/abilities/esquiva_tornado.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/explosao_venenosa.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/soco_flamejante.dart';
+import 'abilities/esporo_errante.dart';
+import 'abilities/esporo_errante_evo.dart';
+import 'abilities/casulo_de_esporos.dart';
+import 'abilities/casulo_de_esporos_evo.dart';
+import 'package:creatures_rogue/game/components/enemies/creatures/cogumelo_planta_enemy.dart';
 import 'abilities/arranhao.dart';
 import 'abilities/baforada_de_cinzas_evo.dart';
 import 'abilities/recolher_no_casco_evo.dart';
@@ -798,6 +803,45 @@ class CreatureRegistry {
         LeaoEletricoEnemy(position: pos, playerTarget: plr),
   );
 
+  /// Cogumelo de Planta. Não mira: o esporo do botão A vai pro lado que o
+  /// jogador está indo, e para quando ele para — arma de condução, não de
+  /// pontaria. O botão B converte o golpe absorvido em nuvem no chão.
+  static final CreatureData cogumeloPlanta = CreatureData(
+    id: 'cogumelo_planta',
+    nome: 'Esporim',
+    spritePath: 'actors/coguPlanta.png',
+    tipo: CreatureType.planta,
+    corClara: Palette.picotronBege,
+    corEscura: Palette.roxoEsc,
+    stats: BaseStats(maxHp: 3, speed: 52, defesa: 1, ataque: 4),
+    ability1: EsporoErrante(),
+    ability2: CasuloDeEsporos(),
+    moveAnim: MovementAnimation.saltitar,
+    hitboxSize: Vector2(10, 12),
+    enemyBuilder: (pos, plr) =>
+        CogumeloPlantaEnemy(position: pos, playerTarget: plr),
+    evoluir: () => cogumeloPlantaEvo,
+  );
+
+  /// Evolução do Cogumelo de Planta. O que ela resolve é ACERTO, não dano: o
+  /// esporo não mira, e conduzir um só até um alvo que anda exige adivinhar a
+  /// rota dele. Três lado a lado perdoam o erro sem tirar a condução.
+  static final CreatureData cogumeloPlantaEvo = CreatureData(
+    id: 'cogumelo_planta',
+    nome: 'Esporugo',
+    spritePath: 'actors/coguPlantaEvo.png',
+    tipo: CreatureType.planta,
+    corClara: Palette.picotronBege,
+    corEscura: Palette.roxoEsc,
+    stats: BaseStats(maxHp: 4, speed: 56, defesa: 1, ataque: 5),
+    ability1: EsporoErranteEvo(),
+    ability2: CasuloDeEsporosEvo(),
+    moveAnim: MovementAnimation.saltitar,
+    hitboxSize: Vector2(12, 14),
+    enemyBuilder: (pos, plr) =>
+        CogumeloPlantaEnemy(position: pos, playerTarget: plr),
+  );
+
   static final List<CreatureData> all = [
     roedorFogo,
     tartarugaPlanta,
@@ -816,6 +860,7 @@ class CreatureRegistry {
     tocoPlanta,
     tubaraoAgua,
     leaoEletrico,
+    cogumeloPlanta,
     caoNeutro,
     gatoNeutro,
     aveNeutro,

@@ -42,21 +42,21 @@ class FloorText extends PositionComponent {
     fontSize,
     () => TextPaint(
       style: TextStyle(
-        color: Palette.preto,
+        color: Palette.branco,
         fontSize: fontSize,
         fontFamily: 'pixelFont',
         fontWeight: FontWeight.bold,
         // Contorno branco nas 8 direções: o chão muda de cor por bioma, e sem
         // isso o texto desaparece no tileset escuro da caverna.
         shadows: const [
-          Shadow(color: Palette.branco, offset: Offset(1, 1)),
-          Shadow(color: Palette.branco, offset: Offset(-1, -1)),
-          Shadow(color: Palette.branco, offset: Offset(1, -1)),
-          Shadow(color: Palette.branco, offset: Offset(-1, 1)),
-          Shadow(color: Palette.branco, offset: Offset(0, 1)),
-          Shadow(color: Palette.branco, offset: Offset(0, -1)),
-          Shadow(color: Palette.branco, offset: Offset(1, 0)),
-          Shadow(color: Palette.branco, offset: Offset(-1, 0)),
+          Shadow(color: Palette.preto, offset: Offset(1, 1)),
+          Shadow(color: Palette.preto, offset: Offset(-1, -1)),
+          Shadow(color: Palette.preto, offset: Offset(1, -1)),
+          Shadow(color: Palette.preto, offset: Offset(-1, 1)),
+          Shadow(color: Palette.preto, offset: Offset(0, 1)),
+          Shadow(color: Palette.preto, offset: Offset(0, -1)),
+          Shadow(color: Palette.preto, offset: Offset(1, 0)),
+          Shadow(color: Palette.preto, offset: Offset(-1, 0)),
         ],
       ),
     ),

@@ -51,22 +51,33 @@ class DynamicJoystickComponent extends PositionComponent
   /// nada neste jogo, então soltar depois de um tempão ainda é um toque.
   void Function()? onToqueRapido;
 
-  /// Dois toques rápidos seguidos nesta metade da tela.
+  /// Dedo encostado e MANTIDO parado nesta metade da tela por
+  /// [limiarToqueMantido], sem arrastar.
   ///
-  /// Dois toques rápidos seguidos nesta metade da tela.
+  /// Substituiu o toque duplo. O duplo tinha um defeito que não dava pra
+  /// consertar sem atrasar o jogo: como [onToqueRapido] dispara nos DOIS
+  /// toques (esperar pra ver se vem o segundo custava 200ms em todo disparo,
+  /// e foi revertido por parecer travamento), trocar de criatura sempre
+  /// gastava a habilidade 2 junto.
   ///
-  /// [onToqueRapido] dispara nos DOIS toques, sem esperar pra ver se vem o
-  /// segundo. Já tentamos o contrário — segurar o simples em suspenso até a
-  /// janela do duplo fechar — e a latência de 200ms em TODO disparo se sentia
-  /// como travamento, então foi revertido. O custo aceito é o oposto: um
-  /// toque duplo também dispara a ação de toque simples.
-  void Function()? onToqueDuplo;
+  /// Dispara com o dedo AINDA na tela, no instante em que o tempo completa —
+  /// escolha do jogador, pra ter retorno imediato em vez de só ao soltar. O
+  /// preço é que plantar o polegar e demorar pra arrastar troca de criatura
+  /// sem querer; [limiarToqueMantido] é o botão que regula isso.
+  void Function()? onToqueMantido;
 
-  /// Janela entre um toque e o seguinte pra contarem como duplo. 300ms é o
-  /// mesmo tempo que o Flutter usa no `DoubleTapGestureRecognizer`.
-  static const int _intervaloToqueDuplo = 300;
+  /// Segundos de dedo parado pra contar como "mantido". Toque normal dura de
+  /// 0,05 a 0,15s, então isto tem folga larga pra não confundir os dois.
+  static const double limiarToqueMantido = 0.4;
 
-  int _ultimoToqueMs = 0;
+  /// Só conta enquanto o dedo está encostado e o arrasto ainda não venceu a
+  /// arena de gestos.
+  bool _tocando = false;
+  double _tempoTocando = 0.0;
+
+  /// Impede que o mesmo toque dispare [onToqueMantido] mais de uma vez, e
+  /// avisa o [onTapUp] pra NÃO disparar a ação de toque rápido depois.
+  bool _mantidoDisparado = false;
 
   final Vector2 delta = Vector2.zero();
   final Vector2 _unscaledDelta = Vector2.zero();
@@ -188,6 +199,18 @@ class DynamicJoystickComponent extends PositionComponent
   @override
   void update(double dt) {
     super.update(dt);
+
+    // Antes do corte de `_active`: dedo parado não gera arrasto (o
+    // reconhecedor só aceita depois de ~18px), então durante um toque mantido
+    // `_active` é falso e o corte abaixo nunca deixaria este relógio andar.
+    if (_tocando && !_mantidoDisparado) {
+      _tempoTocando += dt;
+      if (_tempoTocando >= limiarToqueMantido) {
+        _mantidoDisparado = true;
+        onToqueMantido?.call();
+      }
+    }
+
     if (!_active) return;
 
     final knobRadius2 = knobRadius * knobRadius;
@@ -206,6 +229,10 @@ class DynamicJoystickComponent extends PositionComponent
   @override
   bool onDragStart(DragStartEvent event) {
     super.onDragStart(event);
+    // Rede de segurança: o `onTapCancel` já mata a contagem quando o arrasto
+    // vence a arena, mas depender só dele deixaria o relógio correndo se
+    // alguma plataforma entregasse os eventos em outra ordem.
+    _pararContagemDeToque();
     _active = true;
     _unscaledDelta.setZero();
     delta.setZero();
@@ -248,21 +275,39 @@ class DynamicJoystickComponent extends PositionComponent
     return false;
   }
 
+  @override
+  void onTapDown(TapDownEvent event) {
+    super.onTapDown(event);
+    _tocando = true;
+    _tempoTocando = 0.0;
+    _mantidoDisparado = false;
+  }
+
   /// Chegar aqui já é a prova de que não houve arrasto — ver [onToqueRapido].
   @override
   void onTapUp(TapUpEvent event) {
     super.onTapUp(event);
-    onToqueRapido?.call();
+    final eraMantido = _mantidoDisparado;
+    _pararContagemDeToque();
 
-    final agora = DateTime.now().millisecondsSinceEpoch;
-    if (agora - _ultimoToqueMs <= _intervaloToqueDuplo) {
-      // Zera pra que um terceiro toque comece um par novo, em vez de formar
-      // um segundo duplo com o mesmo toque do meio.
-      _ultimoToqueMs = 0;
-      onToqueDuplo?.call();
-    } else {
-      _ultimoToqueMs = agora;
-    }
+    // Um toque que já virou "mantido" NÃO vira também toque rápido ao soltar:
+    // era justamente isso que fazia a troca de criatura gastar a habilidade 2
+    // junto, no tempo do toque duplo.
+    if (eraMantido) return;
+    onToqueRapido?.call();
+  }
+
+  /// O arrasto venceu a arena de gestos: o toque deixou de existir, e o
+  /// relógio do toque mantido morre com ele.
+  @override
+  void onTapCancel(TapCancelEvent event) {
+    super.onTapCancel(event);
+    _pararContagemDeToque();
+  }
+
+  void _pararContagemDeToque() {
+    _tocando = false;
+    _tempoTocando = 0.0;
   }
 
   @override

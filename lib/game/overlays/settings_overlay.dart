@@ -210,6 +210,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                 ),
             ],
           ),
+          
           const SizedBox(height: 5),
           SizedBox(
             width: Responsive.largura(context, 420),
@@ -219,6 +220,16 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
               style: const TextStyle(color: Palette.preto, fontSize: 13),
             ),
           ),
+          const SizedBox(width: 6),
+              Text(
+                context.l10n.settings_joysticksFixos,
+                style: const TextStyle(color: Palette.preto, fontSize: 14),
+              ),
+              Switch(
+                value: GameSettings.instance.joysticksFixos,
+                activeThumbColor: Palette.preto,
+                onChanged: (valor) => _alternarJoysticksFixos(valor),
+              ),
           const SizedBox(height: 4),
           Text(
             context.l10n.settings_idioma,
@@ -274,6 +285,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                 ),
             ],
           ),
+          
           const SizedBox(height: 4),
           Text(
             context.l10n.settings_audio,
@@ -319,17 +331,8 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                 activeThumbColor: Palette.preto,
                 onChanged: (valor) => _alternarGodMode(valor),
               ),
-              const SizedBox(width: 6),
-              Text(
-                context.l10n.settings_joysticksFixos,
-                style: const TextStyle(color: Palette.preto, fontSize: 14),
-              ),
-              Switch(
-                value: GameSettings.instance.joysticksFixos,
-                activeThumbColor: Palette.preto,
-                onChanged: (valor) => _alternarJoysticksFixos(valor),
-              ),
-              const SizedBox(width: 6),
+              
+            /*  const SizedBox(width: 6),
               Text(
                 context.l10n.settings_controlesNaTela,
                 style: const TextStyle(color: Palette.preto, fontSize: 14),
@@ -339,6 +342,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                 activeThumbColor: Palette.preto,
                 onChanged: (valor) => _alternarControlesNaTela(valor),
               ),
+              */
             ],
           ),
           const SizedBox(height: 4),

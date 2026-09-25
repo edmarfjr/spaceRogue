@@ -750,7 +750,12 @@ class CreaturesRogueGame extends FlameGame
 
     // Depois do save ser aplicado / do andar ser zerado acima: `salasDoAndar`
     // lê `currentFloor`, então a ordem importa.
-    final generator = DungeonGenerator(maxRooms: salasDoAndar);
+    final generator = DungeonGenerator(
+      maxRooms: salasDoAndar,
+      // Mesmo `isBossFloor` que decide o `bossBuilder` logo abaixo: a sala
+      // final nasce como BOSS no andar de boss e como ESCADA nos outros.
+      comBoss: isBossFloor,
+    );
     mapData = generator.generate();
 
     // Percorre todos os dados de salas criados pelo algoritmo
@@ -972,6 +977,10 @@ class CreaturesRogueGame extends FlameGame
             .cast<String>()
             .map((n) => PowerUpType.values.byName(n)),
       );
+    // Save anterior às cargas de sala: começa zerado. Perder as cargas ao
+    // continuar seria injusto, mas o contrário (ganhar) seria explorável, e
+    // zero é o lado seguro.
+    player.cargasDeSala = (j['cargasDeSala'] as int?) ?? 0;
     player.critChance = (j['critChance'] as num).toDouble();
     player.critMult = (j['critMult'] as num).toDouble();
     player.bombsAmount = j['bombs'] as int;
@@ -1029,6 +1038,7 @@ class CreaturesRogueGame extends FlameGame
         'bonusShield': player.bonusShieldItens,
         'itens': player.itens.map((i) => i.id).toList(),
         'upgrades': player.upgradesPegos.map((u) => u.name).toList(),
+        'cargasDeSala': player.cargasDeSala,
         'velMult': player.velMult,
         'cdMult': player.cdMult,
         'danoMult': Player.danoMult,
@@ -1760,7 +1770,7 @@ class CreaturesRogueGame extends FlameGame
     _ability2Button = null;
     _trocaButton = null;
     aimJoystick.onToqueRapido = null;
-    aimJoystick.onToqueDuplo = null;
+    aimJoystick.onToqueMantido = null;
 
     // Desktop joga no teclado (ver `Player.onKeyEvent`): nenhum botão de ação
     // é montado, e os ganchos de gesto ficam nulos — o analógico direito que
@@ -1786,12 +1796,14 @@ class CreaturesRogueGame extends FlameGame
           HapticFeedback.lightImpact();
           if (_runStarted) player.dispararAbility2();
         };
-        // O toque duplo NÃO cancela a habilidade 2 do primeiro toque: esperar
-        // pra ver se vem um segundo atrasaria todo disparo em ~250ms, o que
-        // num jogo de ação se sente como travamento. O custo é que trocar de
-        // criatura também gasta uma habilidade 2 — barato perto de deixar o
-        // ataque lento.
-        aimJoystick.onToqueDuplo = () {
+        // Trocar de criatura é SEGURAR o dedo parado, não tocar duas vezes.
+        // Com o toque duplo, a habilidade 2 saía junto: o toque rápido
+        // dispara nos dois toques, e adiar o primeiro pra ver se vinha um
+        // segundo custava ~250ms em TODO ataque, o que se sentia como
+        // travamento. Segurar separa os dois gestos sem atrasar nenhum — o
+        // `DynamicJoystickComponent` não chama o toque rápido quando o toque
+        // já virou mantido.
+        aimJoystick.onToqueMantido = () {
           HapticFeedback.lightImpact();
           trocarParaProximaCriatura();
         };
@@ -2059,7 +2071,12 @@ class CreaturesRogueGame extends FlameGame
     }
 
     // 3. GERAÇÃO DE NOVO MAPA
-    final generator = DungeonGenerator(maxRooms: salasDoAndar);
+    final generator = DungeonGenerator(
+      maxRooms: salasDoAndar,
+      // Mesmo `isBossFloor` que decide o `bossBuilder` logo abaixo: a sala
+      // final nasce como BOSS no andar de boss e como ESCADA nos outros.
+      comBoss: isBossFloor,
+    );
     mapData = generator.generate();
 
     for (var roomData in mapData.values) {

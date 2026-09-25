@@ -15,18 +15,73 @@ class MinimapHud extends PositionComponent with HasGameRef {
     _recalculateBounds();
   }
 
-  final double cellSize = 4.0;
+  /// Lado do bloco de uma sala. Subiu de 4 pra 7 por causa do "?" das salas
+  /// de tesouro e desafio: em 4x4 não cabia o desenho completo (3 de largura
+  /// por 5 de altura, com o pingo separado do gancho), e o que cabia lia como
+  /// "2".
+  ///
+  /// O minimapa é dimensionado a partir deste valor (ver `_recalculateBounds`)
+  /// e ancorado no canto superior DIREITO da área de jogo, então aumentá-lo
+  /// faz o mapa crescer pra esquerda, na direção do contador de moedas da Hud.
+  /// Com os 15 quartos de `DungeonGenerator.maxRooms` a largura raramente
+  /// passa de 5 colunas, mas é aqui que se mexe se encostar.
+  final double cellSize = 7.0;
   final double spacing = 1.0; 
   
   final Paint currentRoomPaint = Paint()..color = Palette.branco;
   final Paint visitedRoomPaint = Paint()..color = Palette.indigo;
   final Paint bossRoomPaint = Paint()..color = Palette.vermelho;
-  final Paint itemRoomPaint = Paint()..color = Palette.amarelo;
   final Paint shopRoomPaint = Paint()..color = Palette.verde;
-  /// Sala de DESAFIO. Laranja porque é a cor livre entre as especiais —
-  /// vermelho já é boss, amarelo é tesouro e verde é loja.
-  final Paint desafioRoomPaint = Paint()..color = Palette.laranja;
-  final Paint unvisitedPaint = Paint()..color = Palette.cinzaEsc; 
+  final Paint unvisitedPaint = Paint()..color = Palette.cinzaEsc;
+
+  /// Tinta do "?" das salas de tesouro e desafio. Amarelo porque precisa
+  /// aparecer sobre as TRÊS cores de bloco que essas salas podem ter: indigo
+  /// (visitada), cinza escuro (não visitada) e branco (sala atual).
+  final Paint marcaPaint = Paint()..color = Palette.amarelo;
+
+  /// O "?" desenhado pixel a pixel, em vez de texto.
+  ///
+  /// O bloco de uma sala tem [cellSize] = 4px, e nenhuma fonte desenha um
+  /// interrogação legível nesse tamanho — sairia um borrão. Aqui cada 'X' é
+  /// um pixel do minimapa, então o desenho é exato.
+  ///
+  /// 3 de largura por 5 de altura: gancho, linha vazia e pingo — o "?" de
+  /// verdade, que só passou a caber depois que [cellSize] foi pra 7.
+  ///
+  /// Trocar o desenho é editar estas linhas e nada mais: `_desenharMarca`
+  /// centraliza pelo tamanho do próprio glifo, então um maior ou menor
+  /// continua caindo no meio do bloco.
+  static const List<String> glifoInterrogacao = [
+    'XX.',
+    '..X',
+    '.X.',
+    '...',
+    '.X.',
+  ];
+
+  static const List<String> glifoExclama = [
+    '.X.',
+    '.X.',
+    '.X.',
+    '...',
+    '.X.',
+  ];
+
+  static const List<String> glifoBoss= [
+    '.XXX.',
+    'XXXXX',
+    'X.X.X',
+    'XXXXX',
+    '.X.X.',
+  ];
+
+  static const List<String> glifoStairs= [
+    '.....',
+    '....X',
+    '..X.X',
+    'X.X.X',
+    'X.X.X',
+  ];
 
   final Paint backgroundPaint = Paint()..color = Palette.preto;
   final Paint borderPaint = Paint()
@@ -137,15 +192,15 @@ class MinimapHud extends PositionComponent with HasGameRef {
       } else{
         // Salas especiais mantêm a cor mesmo reveladas sem visita — é
         // justamente pra isso que serve o item MAPA.
-        if (room.type == RoomType.boss) {
+        // Tesouro e desafio NÃO têm cor própria: usam a cor de sala comum e
+        // se distinguem pelo "?" desenhado por cima (ver `_desenharMarca`).
+        // A ideia é que o jogador leia "tem alguma coisa aqui" sem que o mapa
+        // entregue de antemão o que é.
+        /* if (room.type == RoomType.boss) {
           roomPaint = bossRoomPaint;
-        } else if (room.type == RoomType.item) {
-          roomPaint = itemRoomPaint;
-        } else if (room.type == RoomType.shop) {
-          roomPaint = shopRoomPaint;
-        } else if (room.type == RoomType.desafio) {
-          roomPaint = desafioRoomPaint;
-        } else if (!room.isVisited) {
+        //} else if (room.type == RoomType.shop) {
+        //  roomPaint = shopRoomPaint;
+        } else */ if (!room.isVisited) {
           // Sala comum que o jogador ainda não pisou (revelada pelo mapa, ou
           // apenas adjacente): cor apagada, pra separar do que já foi andado.
           roomPaint = unvisitedPaint;
@@ -158,6 +213,22 @@ class MinimapHud extends PositionComponent with HasGameRef {
       
       canvas.drawRect(roomRect, roomPaint);
       canvas.drawRect(roomRect, roomOutlinePaint);
+//start, normal, boss, item, shop, desafio 
+      if (room.type == RoomType.item || room.type == RoomType.desafio || room.type == RoomType.shop) {
+        _desenharMarca(canvas,glifoExclama, drawX, drawY);
+      }
+      if (!room.isVisited && room.type == RoomType.normal) {
+        _desenharMarca(canvas,glifoInterrogacao, drawX, drawY);
+      }
+      if (room.type == RoomType.boss) {
+        _desenharMarca(canvas,glifoBoss, drawX, drawY);
+      }
+      // Sala final SEM luta: a escada, e nada mais. Marca diferente da de
+      // boss de propósito — é o que diz ao jogador se ele vai só subir ou se
+      // vai brigar antes.
+      if (room.type == RoomType.stairs) {
+        _desenharMarca(canvas,glifoStairs, drawX, drawY);
+      }
 
       // Reaproveita o mesmo Paint da sala (mesma cor, mesmo estilo)
       final Paint passagePaint = roomPaint;
@@ -217,5 +288,29 @@ class MinimapHud extends PositionComponent with HasGameRef {
     }
 
     canvas.restore(); 
+  }
+
+  /// Carimba [glifoInterrogacao] dentro do bloco que começa em
+  /// ([drawX], [drawY]).
+  ///
+  /// Centralizado pelo tamanho do próprio desenho, e não por números fixos:
+  /// assim trocar o glifo por um maior ou menor continua caindo no meio do
+  /// bloco sem mexer aqui.
+  void _desenharMarca(Canvas canvas,List<String> glifo, double drawX, double drawY) {
+    final altura = glifo.length;
+    final largura = glifo.first.length;
+    final origemX = drawX + (cellSize - largura) / 2;
+    final origemY = drawY + (cellSize - altura) / 2;
+
+    for (var linha = 0; linha < altura; linha++) {
+      final texto = glifo[linha];
+      for (var coluna = 0; coluna < texto.length; coluna++) {
+        if (texto[coluna] != 'X') continue;
+        canvas.drawRect(
+          Rect.fromLTWH(origemX + coluna, origemY + linha, 1, 1),
+          marcaPaint,
+        );
+      }
+    }
   }
 }

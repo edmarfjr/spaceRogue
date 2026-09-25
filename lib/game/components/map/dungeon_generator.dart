@@ -1,6 +1,10 @@
 import 'dart:math';
 
-enum RoomType { start, normal, boss, item, shop, desafio }
+/// `boss` e `stairs` são a MESMA sala em papéis diferentes: a última do andar,
+/// onde nasce a escada pro andar seguinte. A diferença é se há luta antes —
+/// em andar de boss é `boss`, nos outros é `stairs`. Separar os dois é o que
+/// deixa o minimapa avisar qual dos dois espera o jogador lá.
+enum RoomType { start, normal, boss, stairs, item, shop, desafio }
 
 /// Origem do grid lógico de salas: a sala inicial nasce em (origem, origem),
 /// e todo lugar que converte entre índice relativo do jogador
@@ -37,7 +41,16 @@ class DungeonGenerator {
 
   static const List<List<int>> _direcoes = [[0, -1], [0, 1], [-1, 0], [1, 0]];
 
-  DungeonGenerator({this.maxRooms = 15});
+  /// [comBoss] decide se a sala final do andar nasce como [RoomType.boss] ou
+  /// [RoomType.stairs]. Quem sabe disso é o jogo (`isBossFloor`), não o
+  /// gerador — por isso entra por parâmetro.
+  ///
+  /// Tem que bater com o `bossBuilder` que o jogo passa pro `RoomComponent`:
+  /// os dois saem do mesmo `isBossFloor`. Se discordarem, a sala marcada como
+  /// boss não teria quem invocar.
+  DungeonGenerator({this.maxRooms = 15, this.comBoss = true});
+
+  final bool comBoss;
 
   Map<String, RoomData> generate() {
     Map<String, RoomData> grid = {};
@@ -125,7 +138,7 @@ class DungeonGenerator {
     
     if (deadEnds.isNotEmpty) {
       var bossRoom = deadEnds.removeLast();
-      bossRoom.type = RoomType.boss;
+      bossRoom.type = comBoss ? RoomType.boss : RoomType.stairs;
       
       if (deadEnds.isNotEmpty) {
         var itemRoom = deadEnds.removeLast();

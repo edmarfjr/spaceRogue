@@ -167,6 +167,7 @@ abstract class Enemy extends PositionComponent
 
   late final SpriteComponent visual;
   late final Vector2 _visualBasePosition;
+  late final CircleComponent shadow ;
   // `isAirborne` vem de MovementHost; valor inicial é atribuído no corpo do
   // construtor (ver abaixo), já que `this.isAirborne` shorthand só funciona
   // pra campo declarado na própria classe.
@@ -231,6 +232,8 @@ abstract class Enemy extends PositionComponent
   /// Relógio do pisca-pisca de vida baixa (< 30% de maxHealth). Só avança
   /// enquanto a condição vale; ver `update`.
   double _lowHpBlinkClock = 0.0;
+
+  double summonTimer = 1.0;
 
   Enemy({
     required Vector2 position,
@@ -339,7 +342,7 @@ abstract class Enemy extends PositionComponent
     final shadowPaint = Paint()
       ..color = Palette.preto; // Preto com 40% de opacidade
 
-    final shadow = CircleComponent(
+    shadow = CircleComponent(
       radius: hitboxSize.x / 2, // O raio é metade da largura da Hitbox
       anchor: Anchor.center,
       position: _visualBasePosition + shadowOffset,
@@ -369,6 +372,11 @@ abstract class Enemy extends PositionComponent
 
     // Anchor.center: o "chão" (pés) fica meio size.y abaixo do centro.
     priority = ySortPriority(position.y + size.y / 2);
+
+    if(summonTimer>0){
+      summonTimer -= dt;
+      return;
+    }
 
     // Pisca vermelho com vida abaixo de 30%. Roda independente de stun/raiz/
     // knockback — é indicador de vida, não movimento — mas só enquanto o
@@ -460,7 +468,30 @@ abstract class Enemy extends PositionComponent
 
   @override
   void render(Canvas canvas) {
+    if(summonTimer>0){
+      visual.setOpacity(0);
+      shadow.setOpacity(0);
+      canvas.drawCircle(Offset(size.x/2,size.y/2), size.x * summonTimer / 1, Paint()..color = Palette.vermelho..style = PaintingStyle.stroke..strokeWidth=1.0..isAntiAlias = false);
+      return;
+    }else{
+      if(visual.opacity == 0){
+        visual.setOpacity(1.0);
+        shadow.setOpacity(1.0);
+        final effect = SpriteEffect(
+          position: position.clone(),
+          size: Vector2(24, 24),
+          corClara: Palette.vermelho,
+          corEscura: Palette.cinzaEsc,
+          corBranco: Palette.branco,
+          spritePath: 'effects/summon.png',
+          textureSize: Vector2(24, 24),
+        );
+        effect.priority = priority + 10;
+        parent?.add(effect);
+      }
+    }
     super.render(canvas);
+    
     if(!ehBoss)_renderBarraVida(canvas);
   }
 

@@ -53,7 +53,7 @@ class LoadingScreen extends StatelessWidget {
             context.l10n.loading_carregando,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Palette.cinzaEsc,
+              color: Palette.preto,
               fontSize: estreita ? 16 : 20,
             ),
           ),
