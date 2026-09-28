@@ -7,6 +7,7 @@ import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flame/camera.dart';
+import 'package:creatures_rogue/game/components/effects/camera_tremor.dart';
 import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/game.dart';
@@ -91,6 +92,10 @@ class CreaturesRogueGame extends FlameGame
 
   // A câmera que vai renderizar o mundo na resolução do Game Boy
   late final CameraComponent gameCamera;
+
+  /// Sacudida da câmera no dano (ver `Player.takeDamage`). Filha da própria
+  /// câmera pra nascer e morrer junto com ela.
+  late final CameraTremor tremorCamera;
 
   // `onGameResize` pode disparar antes do `onLoad` terminar (e montar
   // `gameCamera`) — sem essa trava, `_reposicionarVidro` explodiria com
@@ -189,6 +194,12 @@ class CreaturesRogueGame extends FlameGame
   void _trocarParaSlot(int slot) {
     final creature = companionCreatures[slot];
     if (creature == null) return;
+    // Trocar no meio de um mergulho (ver `Player.submergir`) entregaria o
+    // estado de enterrado — invulnerabilidade inclusa — pra uma criatura que
+    // não tem a habilidade, e a explosão de emersão sairia com o dano
+    // guardado da anterior. Só a troca por morte é que precisa passar de
+    // qualquer jeito, e ela não pode acontecer aqui: enterrado não apanha.
+    if (player.submerso) return;
 
     final slotAntigo = companionAtivoIndex;
     companionCreatures[slotAntigo] = player.creatureData;
@@ -664,6 +675,8 @@ class CreaturesRogueGame extends FlameGame
     // no modo RETRATO já com o vidro errado (só um resize de verdade depois
     // corrigia).
     await add(gameCamera);
+    tremorCamera = CameraTremor(gameCamera.viewfinder);
+    gameCamera.add(tremorCamera);
     add(GameboyBezel(camera: gameCamera));
 
 
@@ -774,6 +787,10 @@ class CreaturesRogueGame extends FlameGame
     }
 
     currentRoomIndex = Vector2.zero();
+    // Antes de escrever na câmera: um tremor em curso venceria esta linha
+    // todo quadro e depois restauraria a posição ANTIGA (ver
+    // `CameraTremor.parar`).
+    tremorCamera.parar();
     gameCamera.viewfinder.position = Vector2(
       RoomComponent.roomWidth / 2,
       RoomComponent.roomHeight / 2,
@@ -2101,6 +2118,7 @@ class CreaturesRogueGame extends FlameGame
     currentRoomIndex = Vector2.zero();
 
     // Dá um "corte seco" na câmera de volta para o início
+    tremorCamera.parar();
     gameCamera.viewfinder.position = Vector2(
       RoomComponent.roomWidth / 2,
       RoomComponent.roomHeight / 2,
@@ -2340,6 +2358,10 @@ class CreaturesRogueGame extends FlameGame
         (newRoomY * roomHeight) + (roomHeight / 2),
       );
 
+      // O tremor escreve na mesma `viewfinder.position` que este efeito, e
+      // venceria todo quadro — a câmera ficaria presa na sala de onde o
+      // jogador saiu até o tremor acabar.
+      tremorCamera.parar();
       gameCamera.viewfinder.add(
         MoveToEffect(
           newCameraPosition,

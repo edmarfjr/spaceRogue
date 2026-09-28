@@ -19,7 +19,7 @@ class Arranhao extends Ability {
   }) : super(
          nome: 'Arranhão',
          descricao: 'Golpe rápido de curto alcance, cadência altíssima.',
-         cooldown: 0.35,
+         cooldown: 0.2,
          custoEnergia: 1.0,
        );
 

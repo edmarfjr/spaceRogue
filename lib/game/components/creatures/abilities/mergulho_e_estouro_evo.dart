@@ -38,35 +38,34 @@ class MergulhoEEstouroEvo extends Ability {
   }) : super(
          nome: 'Mergulho Profundo',
          descricao:
-             'Mergulha invulnerável, explode ao emergir e deixa uma poça que atrasa.',
-         cooldown: 5.0,
+             'Mergulha invulnerável, explode ao emergir e deixa uma poça congelante.',
+         cooldown: 3.5,
          tipo: AbilityTipo.esquiva,
        );
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
+    // Dano e tipo são lidos AGORA, não lá dentro do `aoEmergir`:
+    // `trocarCriatura` muta esta mesma instância de `Player`, então ler
+    // `user.creatureData` dois segundos depois poderia dar a criatura errada.
+    user.grantInvulnerability(duracao+0.3);
     final dano = user.creatureData.stats.ataque * coef;
-    user.grantInvulnerability(duracao);
+    final tipo = user.creatureData.tipo;
 
-    GhostEffect.spawnTrail(
-      visual: user.visual,
-      add: (g) => user.parent?.add(g),
-      overDuration: duracao,
-    );
-
-    user.startJump(
-      direction: dir,
-      distance: distancia,
-      duration: duracao - 0.2,
-      height: altura,
-      onLand: () {
+    // `dir` é ignorado de propósito: a mira travada no inimigo mais próximo
+    // servia ao salto de destino fixo. Agora quem dirige é o analógico de
+    // movimento, quadro a quadro.
+    user.submergir(
+      duracao: duracao,
+      fatorVelocidade: 2,
+      aoEmergir: () {
         user.parent?.add(
           ExplosionHitbox(
             position: user.position.clone(),
             dmg: dano,
             knockback: empurrao,
-            size: Vector2(40, 40),
-            tipo: user.creatureData.tipo,
+            size: Vector2(36, 36),
+            tipo: tipo,
           ),
         );
         user.parent?.add(
@@ -92,5 +91,6 @@ class MergulhoEEstouroEvo extends Ability {
         );
       },
     );
+
   }
 }

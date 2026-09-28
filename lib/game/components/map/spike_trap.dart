@@ -100,6 +100,11 @@ class SpikeTrap extends PositionComponent with CollisionCallbacks, HasGameRef {
   @override
   void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollisionStart(intersectionPoints, other);
+    // Quem passa por baixo não pisa na placa de pressão. Antes do `_ativar`,
+    // e não só no `onCollision` de dano, porque o próprio armar da armadilha
+    // toca `Sfx.hit` — um espinho subindo sozinho denunciaria o jogador
+    // enterrado, que é exatamente o que o mergulho comprou.
+    if (other is Player && other.submerso) return;
     if (other is Player || other is Enemy) _ativar();
   }
 
@@ -107,6 +112,7 @@ class SpikeTrap extends PositionComponent with CollisionCallbacks, HasGameRef {
   void onCollision(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollision(intersectionPoints, other);
     if (_fase != _FaseArmadilha.ativa) return;
+    if (other is Player && other.submerso) return;
     if (_atingidosNestaAtivacao.contains(other)) return;
 
     if (other is Enemy) {

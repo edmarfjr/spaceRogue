@@ -30,7 +30,7 @@ class EricarEvo extends Ability {
   }) : super(
          nome: 'Eriçar+',
          descricao: 'Espinhos em todas as direções que perfuram e paralisam.',
-         cooldown: 1.5,
+         cooldown: 0.4,
          custoEnergia: 4.5,
        );
 

@@ -32,7 +32,7 @@ class InvestidaDaLancaEvo extends Ability {
   }) : super(
          nome: 'Investida Trovejante',
          descricao:
-             'Dash com i-frames; o golpe do final empurra e paralisa o alvo.',
+             'Salto com estocada de lança no chão que paralisa o alvo.',
          cooldown: 4.0,
          target: AbilityTarget.plrDir,
          tipo: AbilityTipo.esquiva,
@@ -49,25 +49,22 @@ class InvestidaDaLancaEvo extends Ability {
       overDuration: duracao,
     );
 
-    user.add(
-      MoveByEffect(
-        // `dashOffsetLivre` é o que impede a investida de enfiar o Leão dentro
-        // da parede — com a distância maior daqui isso passou a importar mais.
-        user.dashOffsetLivre(dir, distancia),
-        EffectController(duration: duracao),
-        onComplete: () {
-          user.parent?.add(
-            ExplosionHitbox(
+    user.startJump(
+      direction: dir,
+      distance: distancia,
+      duration: duracao - 0.2,
+      height: 32,
+      onLand: () {
+        user.parent?.add(
+          ExplosionHitbox(
               position: user.position.clone(),
               dmg: dano,
               knockback: empurrao,
-              paraliseDuration: duracaoParalise,
-              size: Vector2(30, 30),
+              size: Vector2(32, 32),
               tipo: user.creatureData.tipo,
             ),
-          );
-        },
-      ),
+        );
+      },
     );
   }
 }

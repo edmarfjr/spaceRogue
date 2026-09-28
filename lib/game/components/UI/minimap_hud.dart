@@ -147,11 +147,17 @@ class MinimapHud extends PositionComponent with HasGameRef {
     Vector2 currentRoomCoords = getCurrentLogicalRoom();
 
     // CHECAGEM DE OCULTAÇÃO (SALA TRANCADA)
+    // A sala onde o jogador está. Guardada aqui, no laço que já a procurava
+    // pra decidir se o minimapa aparece, porque a vizinhança desenhada lá
+    // embaixo sai das PORTAS dela (ver `temLigacao`).
+    dynamic salaAtual;
+
     for (var room in mapData.values) {
       if (room.x == currentRoomCoords.x && room.y == currentRoomCoords.y) {
         if (!room.isCleared && room.type != RoomType.start) {
           return; // Aborta e esconde o minimapa!
         }
+        salaAtual = room;
         break; 
       }
     }
@@ -174,11 +180,27 @@ class MinimapHud extends PositionComponent with HasGameRef {
       
       bool isCurrentRoom = room.x == currentRoomCoords.x && room.y == currentRoomCoords.y;
       
-      bool isAdjacent = ((room.x - currentRoomCoords.x).abs() == 1 && room.y == currentRoomCoords.y) ||
-                        ((room.y - currentRoomCoords.y).abs() == 1 && room.x == currentRoomCoords.x);
+      // Vizinha por PORTA, e não por grade: antes bastava encostar na sala
+      // atual em X ou Y pra aparecer, e o minimapa entregava salas que o
+      // jogador não tinha como alcançar dali — duas salas coladas na grade
+      // são rotina no gerador, e boa parte desses pares não tem porta entre
+      // si. Com isto, o que está desenhado em volta é exatamente pra onde dá
+      // pra ir daqui.
+      //
+      // Basta consultar as portas de [salaAtual]: o gerador sempre marca o
+      // par junto (`origem.doorRight` com `nova.doorLeft`, e assim por
+      // diante), então os dois lados nunca discordam.
+      final dx = room.x - currentRoomCoords.x;
+      final dy = room.y - currentRoomCoords.y;
+      final bool temLigacao =
+          salaAtual != null &&
+          ((dx == 1 && dy == 0 && salaAtual.doorRight) ||
+              (dx == -1 && dy == 0 && salaAtual.doorLeft) ||
+              (dx == 0 && dy == 1 && salaAtual.doorBottom) ||
+              (dx == 0 && dy == -1 && salaAtual.doorTop));
 
       // `isRevealed` é o item MAPA: a sala aparece sem nunca ter sido pisada.
-      if (!room.isVisited && !room.isRevealed && !isCurrentRoom && !isAdjacent) {
+      if (!room.isVisited && !room.isRevealed && !isCurrentRoom && !temLigacao) {
         continue;
       }
 

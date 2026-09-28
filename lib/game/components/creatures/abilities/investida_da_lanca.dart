@@ -23,7 +23,7 @@ class InvestidaDaLanca extends Ability {
   }) : super(
          nome: 'Investida da Lança',
          descricao:
-             'Dash com i-frames; o golpe só acontece no final do trajeto.',
+             'Salto com estocada de lança no chão.',
          cooldown: 4.0,
          target: AbilityTarget.plrDir,
          tipo: AbilityTipo.esquiva,
@@ -40,22 +40,22 @@ class InvestidaDaLanca extends Ability {
       overDuration: duracao,
     );
 
-    user.add(
-      MoveByEffect(
-        user.dashOffsetLivre(dir, distancia),
-        EffectController(duration: duracao),
-        onComplete: () {
-          user.parent?.add(
-            ExplosionHitbox(
+    user.startJump(
+      direction: dir,
+      distance: distancia,
+      duration: duracao - 0.2,
+      height: 32,
+      onLand: () {
+        user.parent?.add(
+          ExplosionHitbox(
               position: user.position.clone(),
               dmg: dano,
               knockback: empurrao,
               size: Vector2(24, 24),
               tipo: user.creatureData.tipo,
             ),
-          );
-        },
-      ),
+        );
+      },
     );
   }
 }

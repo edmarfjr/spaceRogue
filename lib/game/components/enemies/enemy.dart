@@ -44,7 +44,7 @@ enum CampeaoTipo {
 
   /// Explode ao morrer. Pune matar de perto e muda o posicionamento sem
   /// precisar de IA nova.
-  explosivo(Palette.pumpkin);
+  explosivo(Palette.vermelho);
 
   const CampeaoTipo(this.corAura);
 
@@ -107,7 +107,21 @@ abstract class Enemy extends PositionComponent
   /// Transforma este inimigo num campeão. Chamar ANTES de montar na árvore:
   /// `onLoad` lê `size`, `hitboxSize` e `shadowOffset` pra construir sprite,
   /// hitbox e sombra, e depois disso mexer neles não reconstrói nada.
+  ///
+  /// REGRA: aqui só se mexe em DADO — `size`, `hitboxSize`, `shadowOffset`,
+  /// vida e velocidade. NUNCA nos componentes que o `onLoad` cria (`visual`,
+  /// `shadow`, `shieldVisual`, `conditionIcons`, `aura`): como isto roda
+  /// antes dele, esses campos ainda não existem, e tocá-los estoura
+  /// `LateInitializationError` no meio do `update` — o jogo trava, e trava
+  /// só na sala que sorteou campeão, o que faz parecer aleatório.
+  ///
+  /// Não é preciso ajustar a sombra na mão: o `onLoad` calcula o raio dela
+  /// como `hitboxSize.x / 2`, e a hitbox já foi escalada duas linhas acima.
   void promoverACampeao(CampeaoTipo tipo) {
+    assert(
+      !isLoaded,
+      'promoverACampeao precisa rodar antes do onLoad — ver a regra na doc.',
+    );
     if (ehCampeao || ehBoss) return;
     ehCampeao = true;
     campeaoTipo = tipo;
@@ -227,13 +241,25 @@ abstract class Enemy extends PositionComponent
   /// movimento leem [speed] direto todo frame, então a lentidão escreve nele;
   /// sem uma base pra restaurar, duas aplicações sobrepostas corromperiam a
   /// velocidade permanentemente.
-  late final double speedBase;
+  ///
+  /// NÃO é `final`, pelo mesmo motivo do [maxHealth]: a promoção a campeão
+  /// (ver [promoverACampeao]) acontece depois do construtor e reescreve a
+  /// velocidade do campeão VELOZ. Como `late final`, essa segunda escrita
+  /// estourava `LateInitializationError` em pleno `update` — e só nele, o que
+  /// fazia o travamento parecer aleatório: só acontecia na sala que sorteava
+  /// campeão E tirava justamente o tipo veloz.
+  late double speedBase;
 
   /// Relógio do pisca-pisca de vida baixa (< 30% de maxHealth). Só avança
   /// enquanto a condição vale; ver `update`.
   double _lowHpBlinkClock = 0.0;
 
   double summonTimer = 1.0;
+
+  /// Anel do campeão. `null` em inimigo comum — era `late final`, e como só
+  /// é atribuído pra campeão, qualquer leitura num inimigo comum estourava
+  /// `LateInitializationError` em tempo de execução, sem o analisador ver.
+  AuraCampeao? aura;
 
   Enemy({
     required Vector2 position,
@@ -272,9 +298,18 @@ abstract class Enemy extends PositionComponent
     this.pulando = pulando;
 
     // Hitbox: explícita > da criatura > tamanho visual.
+    //
+    // `.clone()` NÃO é zelo: `creature.hitboxSize` é um `Vector2` de um
+    // `CreatureData` que mora num `static final` do registro, e portanto é o
+    // MESMO objeto pra todo inimigo da espécie e pro jogador quando ele usa
+    // essa criatura. Sem a cópia, o `hitboxSize.scale()` da promoção a
+    // campeão reescrevia o registro: a espécie inteira ficava maior daquele
+    // ponto da run em diante, multiplicando de novo a cada campeão novo, e a
+    // hitbox do próprio jogador crescia junto.
     this.hitboxSize =
-        hitboxSize ?? creature?.hitboxSize ?? (size ?? Vector2(16, 16));
-    this.shadowOffset = shadowOffset ?? Vector2.zero();
+        (hitboxSize ?? creature?.hitboxSize ?? (size ?? Vector2(16, 16)))
+            .clone();
+    this.shadowOffset = (shadowOffset ?? Vector2.zero()).clone();
   }
 
   /// O jogador — alvo fixo de todo `Enemy` (ver PIVOT_TREINADOR.md §3.4).
@@ -354,15 +389,18 @@ abstract class Enemy extends PositionComponent
 
     final tipo = campeaoTipo;
     if (tipo != null) {
-      add(
-        AuraCampeao(
+      final novaAura = AuraCampeao(
           cor: tipo.corAura,
+          // Some junto com o corpo durante a invocação — ver a doc de
+          // `AuraCampeao.visivel`.
+          visivel: () => summonTimer <= 0,
           // Um pouco maior que a sombra pra emoldurar o corpo em vez de
           // ficar escondido embaixo dele.
           raioBase: hitboxSize.x / 2 + 3,
           position: _visualBasePosition + shadowOffset,
-        ),
-      );
+        );
+      aura = novaAura;
+      add(novaAura);
     }
   }
 
@@ -649,15 +687,17 @@ abstract class Enemy extends PositionComponent
     // Cheat (ver GameSettings.godMode): qualquer golpe que passe da redução
     // de dano mata na hora, não importa a vida restante.
     if (GameSettings.instance.godMode && amountFinal > 0) amountFinal = health;
-
-    parent?.add(
-      TextEffect.dano(
-        amountFinal,
-        position: position.clone() + Vector2(0, -size.y / 2 - 4),
-        color: corTxt,
-        fontSize: fontSize,
-      ),
-    );
+    if(amountFinal>0){
+      parent?.add(
+        TextEffect.dano(
+          amountFinal,
+          position: position.clone() + Vector2(0, -size.y / 2 - 4),
+          color: corTxt,
+          fontSize: fontSize,
+        ),
+      );
+    }
+    
 
     health -= amountFinal;
     if (health <= 0) {

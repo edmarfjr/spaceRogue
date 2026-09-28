@@ -20,7 +20,7 @@ class BicadaRapida extends Ability {
   }) : super(
          nome: 'Bicada Rápida',
          descricao: 'Cadência altíssima, dano baixo por tiro.',
-         cooldown: 0.25,
+         cooldown: 0.15,
          custoEnergia: 1.0,
        );
 

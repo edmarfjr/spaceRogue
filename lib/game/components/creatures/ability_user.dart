@@ -77,6 +77,26 @@ mixin AbilityUser on PositionComponent, EfeitosTemporarios {
     VoidCallback? onLand,
   });
 
+  /// Enfia o usuário DENTRO do chão por [duracao] segundos (ver
+  /// `MergulhoEEstouro`). Enquanto durar, ele continua sendo dirigido pelo
+  /// controle normalmente — só que por baixo do cenário: não pode ser
+  /// atingido, atravessa pedra e não pisa em armadilha. Buraco continua
+  /// barrando, porque buraco também é ausência de chão por baixo.
+  ///
+  /// Estado próprio, e não um `aplicarEfeito` do `EfeitosTemporarios`: a
+  /// troca de andar chama `limparEfeitos(dono: EfeitoDono.jogador)` antes de
+  /// serializar a run, e isso cortaria o mergulho no meio — ou pior,
+  /// dispararia [aoEmergir] (a explosão) no meio da transição.
+  ///
+  /// [fatorVelocidade] multiplica a velocidade máxima enquanto durar.
+  /// [aoEmergir] roda no quadro em que o prazo acaba, na posição em que o
+  /// usuário estiver naquele instante.
+  void submergir({
+    required double duracao,
+    double fatorVelocidade = 1.0,
+    VoidCallback? aoEmergir,
+  });
+
   /// Distância real que dá pra avançar em [dir] antes de bater em parede ou
   /// obstáculo sólido — usada pelas habilidades de dash/esquiva (que movem
   /// via `MoveByEffect`, um tween de posição que não passa pelo

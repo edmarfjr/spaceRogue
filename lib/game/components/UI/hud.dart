@@ -334,7 +334,7 @@ class Hud extends PositionComponent with HasGameRef {
     );
     textPaint.render(canvas, ':${player.coins}', Vector2(136, 1));
 
-    /*
+    
     // --- LÓGICA DO MEIO-CORAÇÃO ---
     // Quantos corações INICIAIS (capacidade total) o jogador tem na tela?
     // Como a escala do player é dobrada (maxHealth = 6), dividimos por 2 (3 corações na tela).
@@ -370,7 +370,7 @@ class Hud extends PositionComponent with HasGameRef {
       );
     }
 
-    */
+    /*
     //barra de vida com logica sem meia vida
 
     for (int i = 0; i < player.maxHealth; i++) {
@@ -398,7 +398,7 @@ class Hud extends PositionComponent with HasGameRef {
         overridePaint: paint,
       );
     }
-
+  */
     // --- BARRA DE ESCUDO PASSIVO (defesa) ---
     for (int i = 0; i < player.shield; i++) {
       double shieldX =

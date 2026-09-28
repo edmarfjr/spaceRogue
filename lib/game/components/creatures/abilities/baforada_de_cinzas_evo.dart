@@ -32,7 +32,7 @@ class BaforadaDeCinzasEvo extends Ability {
          nome: 'Baforada de Brasas',
          descricao:
              'Sopro de cinzas que se desfaz em brasas espalhadas, todas queimando.',
-         cooldown: 1.6,
+         cooldown: 0.3,
          custoEnergia: 4.5,
        );
 

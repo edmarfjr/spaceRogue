@@ -353,7 +353,7 @@
   "abilityName_LatidoFeroz": "Latido Feroz",
   "abilityDesc_LatidoFeroz": "Empurra e reduz movimento de todos ao redor.",
   "abilityName_MergulhoEEstouro": "Mergulho e Estouro",
-  "abilityDesc_MergulhoEEstouro": "Mergulha em cima do inimigo mais próximo; explode ao emergir.",
+  "abilityDesc_MergulhoEEstouro": "Enterra-se no chão por 2s: atravessa pedras e armadilhas, corre mais rápido e explode ao emergir.",
   "abilityName_MergulhoEEstouroEvo": "Mergulho Profundo",
   "abilityDesc_MergulhoEEstouroEvo": "Mergulha em cima do inimigo mais próximo, explode ao emergir e deixa uma poça que reduz movimento.",
   "abilityName_RecolherNoCasco": "Recolher no Casco",

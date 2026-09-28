@@ -93,7 +93,7 @@ enum ConsumableType implements ItemDescritor {
     final bool sucesso;
     switch (this) {
       case ConsumableType.pocao:
-        sucesso = player.heal(1);
+        sucesso = player.heal(4);
       case ConsumableType.escudo:
         // Escudo sem prazo: empilha com a bolha de habilidade em vez de
         // sobrescrevê-la, e é o ÚLTIMO a ser gasto — golpe leva primeiro o

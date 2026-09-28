@@ -28,8 +28,8 @@ class EstocadaRelampagoEvo extends Ability {
   }) : super(
          nome: 'Tridente Relâmpago',
          descricao: 'Três lanças paralelas que atravessam alvos em linha.',
-         cooldown: 1.4,
-         custoEnergia: 5.0,
+         cooldown: 0.3,
+         custoEnergia: 3.5,
        );
 
   @override

@@ -317,7 +317,7 @@
   "abilityName_LatidoFeroz": "Fierce Bark",
   "abilityDesc_LatidoFeroz": "Pushes and slows everything around.",
   "abilityName_MergulhoEEstouro": "Dive and Burst",
-  "abilityDesc_MergulhoEEstouro": "Dives onto the nearest enemy; explodes on surfacing.",
+  "abilityDesc_MergulhoEEstouro": "Burrows underground for 2s: phases through rocks and traps, moves faster and explodes on surfacing.",
   "abilityName_MergulhoEEstouroEvo": "Deep Dive",
   "abilityDesc_MergulhoEEstouroEvo": "Dives onto the nearest enemy, explodes on surfacing and leaves a slowing pool.",
   "abilityName_RecolherNoCasco": "Withdraw",

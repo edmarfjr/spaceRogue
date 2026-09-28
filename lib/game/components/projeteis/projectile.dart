@@ -292,6 +292,15 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         if(noChao && other is Player && other.isAirborne){
           return;
         }
+        // Enterrado, o jogador não está na linha de tiro — e `takeDamage`
+        // recusar o dano aqui em cima não bastaria: o `atravessa--` logo
+        // abaixo ainda apagaria o projétil, que sumiria no ar em cima de uma
+        // sombra vazia. Vale pra tiro de qualquer altura, ao contrário do
+        // `isAirborne` acima (só `noChao`), porque não há altura de tiro que
+        // alcance quem está debaixo da terra.
+        if (other is Player && other.submerso) {
+          return;
+        }
         if(other.refleteProjetil){
           refleteProjetil(other);
           onDestroy();

@@ -20,6 +20,7 @@ class AuraCampeao extends PositionComponent {
   AuraCampeao({
     required this.cor,
     required this.raioBase,
+    required this.visivel,
     required Vector2 position,
   }) : super(
          position: position,
@@ -31,6 +32,21 @@ class AuraCampeao extends PositionComponent {
 
   final Color cor;
 
+  /// A aura deve aparecer AGORA?
+  ///
+  /// Closure em vez de campo escrito de fora por um motivo concreto: a aura é
+  /// FILHA do inimigo, e filho é desenhado pelo `renderTree`, não pelo
+  /// `render` do pai. O `return` que o `Enemy.render` dá durante a invocação
+  /// esconde só o que ele mesmo desenha — cada filho precisa se esconder
+  /// sozinho, e é por isso que `visual` e `shadow` levam `setOpacity(0)` na
+  /// mão. Esta aura não tem opacidade (pinta direto no `render`), então a
+  /// forma dela de sumir é não desenhar.
+  ///
+  /// Perguntando ao dono em vez de esperar que ele avise, ninguém precisa
+  /// lembrar de religar: se amanhã houver outro estado que esconda o inimigo,
+  /// basta a condição aqui saber dele.
+  final bool Function() visivel;
+
   /// Metade da largura da hitbox do inimigo, igual à sombra — assim o anel
   /// acompanha o corpo de qualquer criatura sem número escolhido a dedo.
   final double raioBase;
@@ -39,7 +55,7 @@ class AuraCampeao extends PositionComponent {
   static const double _amplitude = 0.15;
 
   /// Segundos de um ciclo completo do pulso.
-  static const double _periodo = 1.2;
+  static const double _periodo = 2.0;
 
   double _tempo = 0.0;
 
@@ -51,27 +67,35 @@ class AuraCampeao extends PositionComponent {
 
   @override
   void render(Canvas canvas) {
+    if (!visivel()) return;
+
     final fase = (_tempo / _periodo) * 2 * math.pi;
     final raio = raioBase * (1 + _amplitude * math.sin(fase));
 
     final aura = Paint()
-      ..color = cor.withAlpha(100)
-      //..style = PaintingStyle.stroke
-     // ..strokeWidth = 1.5
+      //..color = cor.withAlpha(100)
+      ..style = PaintingStyle.stroke
+      //..strokeWidth = 1.5
       ..isAntiAlias = false;
 
-    final traco = Paint()
-      ..color = cor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..isAntiAlias = false;
+    //final traco = Paint()
+    //  ..color = cor
+    //  ..style = PaintingStyle.stroke
+    //  ..strokeWidth = 1.0
+    //  ..isAntiAlias = false;
 
     // Achatado no eixo Y pela mesma razão da sombra: a câmera é topdown de
     // três quartos, e um círculo redondo no chão leria como esfera em pé.
     canvas.save();
     canvas.scale(1.0, 0.75);
-    canvas.drawCircle(Offset.zero, raio, aura);
-    canvas.drawCircle(Offset.zero, raio, traco);
+    // `i > 0`, não `i == 0`: com `i == 0` o laço nunca entra (começa em 4) e a
+    // aura não desenhava NADA, independente da visibilidade. Da borda pro
+    // centro, cada anel mais opaco que o de fora.
+    for (var i = 5; i > 0; i--) {
+      canvas.drawCircle(Offset.zero, raio + (i-1)*(1.5), aura..color = cor.withAlpha(15*i)..strokeWidth = i*(1.5));
+    }
+    //canvas.drawCircle(Offset.zero, raio, aura);
+    //canvas.drawCircle(Offset.zero, raio, traco);
     canvas.restore();
   }
 }

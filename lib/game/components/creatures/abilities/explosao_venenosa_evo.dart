@@ -24,7 +24,7 @@ class ExplosaoVenenosaEvo extends Ability {
   const ExplosaoVenenosaEvo({
     this.coef = 0.4,
     this.empurrao = 70,
-    this.ladoEstouro = 36,
+    this.ladoEstouro = 48,
     this.ladoPoca = 40,
     this.duracaoPoca = 7,
     this.dotTicks = 3,

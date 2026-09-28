@@ -309,13 +309,56 @@ class RoomComponent extends PositionComponent with HasGameRef {
       
   }
 
-  void _spawnTreasure({double offsetX = 0,double offsetY = 0}) {
-    Vector2 centerPos = position + Vector2(width / 2 - 8, centerY) + Vector2(offsetX,offsetY);
+  /// Afastamento de cada pedestal em relação ao centro da sala, em px.
+  ///
+  /// O vão entre os dois blocos de 16px é `2 * este valor - 16`, ou seja 32px
+  /// — dois tiles. Perto o bastante pra ler como UMA oferta de duas opções, e
+  /// não como dois prêmios soltos, e largo o bastante pro jogador passar no
+  /// meio sem encostar sem querer no que não quer.
+  ///
+  /// Um tile de vão (16px) seria apertado demais: a criatura de hitbox mais
+  /// larga do elenco tem 15px, então sobraria 1px de folga e o jogador ficaria
+  /// preso entre os dois pedestais tentando escolher.
+  static const double _afastamentoPedestais = 24.0;
 
-    // O pedestal sorteia sozinho entre UPGRADE, CONSUMÍVEL e ITEM_EFEITO —
-    // ver `PedestalComponent.onLoad`, que é onde a pool da run fica acessível.
-    parent?.add(PedestalComponent(position: centerPos));
+  /// Sala de tesouro: DOIS pedestais, e o jogador leva UM.
+  ///
+  /// Pegar um item apaga o outro na hora (ver `PedestalComponent.irmao`) — a
+  /// sala deixa de ser "achou um item" e vira uma decisão, que é onde está a
+  /// graça: um upgrade permanente agora contra um consumível que resolve o
+  /// próximo aperto.
+  ///
+  /// As duas famílias são sorteadas DISTINTAS e passadas prontas pros
+  /// pedestais, em vez de cada um sortear a sua. Sorteio independente repete:
+  /// dois UPGRADE podem cair no mesmo `PowerUpType`, e uma escolha entre duas
+  /// coisas iguais não é escolha nenhuma. Famílias diferentes tornam o item
+  /// repetido impossível sem precisar comparar item com item.
+  void _spawnTreasure({double offsetX = 0, double offsetY = 0}) {
+    final centro =
+        position + Vector2(width / 2 - 8, centerY) + Vector2(offsetX, offsetY);
 
+    final familias = [0, 1, 2]..shuffle();
+    final esquerda = familias[0];
+    final direita = familias[1];
+
+    final pedestalEsq = PedestalComponent(
+      position: centro - Vector2(_afastamentoPedestais, 0),
+      familia: esquerda,
+      familiaIrmao: direita,
+    );
+    final pedestalDir = PedestalComponent(
+      position: centro + Vector2(_afastamentoPedestais, 0),
+      familia: direita,
+      familiaIrmao: esquerda,
+    );
+
+    // Antes do `add`: o `onLoad` de um deles pode terminar no mesmo quadro, e
+    // ele precisa já conhecer o irmão pra fechar a oferta se for o escolhido.
+    pedestalEsq.irmao = pedestalDir;
+    pedestalDir.irmao = pedestalEsq;
+
+    parent?.add(pedestalEsq);
+    parent?.add(pedestalDir);
   }
 
   /// Três balcões, sempre nas mesmas posições: cura, um item de uso único e um
@@ -351,9 +394,9 @@ class RoomComponent extends PositionComponent with HasGameRef {
         cor2: Palette.verdeEsc,
         // `heal` devolve false com a vida cheia — e é isso que evita cobrar por
         // uma cura que não curou.
-        entregar: (p) => p.heal(1),
+        entregar: (p) => p.heal(2),
         msgFalha: game.buildContext!.l10n.effect_vidaCheia,
-        descricao: (context) => context.l10n.effect_maisVida(1),
+        descricao: (context) => context.l10n.effect_maisVida(2),
       ),
     );
 
@@ -415,7 +458,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
     final recompensaChance = _random.nextInt(100);
     if (recompensaChance < 12) {
       parent?.add(HeartPickup(position: pos));
-    } else if (recompensaChance >= 12 && recompensaChance < 40){
+    } else if (recompensaChance >= 12 && recompensaChance < 60){
       parent?.add(CoinPickup(position: pos));
     }
   }
@@ -635,6 +678,8 @@ class RoomComponent extends PositionComponent with HasGameRef {
       Vector2(8, -24),
       Vector2(-24, -8),
       Vector2(8, -8),
+      Vector2(-24, 8),
+      Vector2(-8, 8),
     ];
 
     for (var pos in posList){

@@ -291,7 +291,12 @@ class Player extends PositionComponent
       creatureData.stats.speed *
       lentidaoFator *
       velMult *
-      ((_dentroGramaAlta || speedLocked )? gramaAltaFator : 1.0);
+      _submersoFator *
+      // Enterrado, o terreno de cima não alcança mais: a grama alta que
+      // segurava os pés está acima da cabeça. É a metade "livremente" do
+      // mergulho — sem isso, atravessar a sala por baixo poderia sair MAIS
+      // lento que atravessar por cima.
+      ((_dentroGramaAlta || speedLocked) && !submerso ? gramaAltaFator : 1.0);
 
   /// Lentidão e cegueira são as únicas condições que atingem o jogador — DoT
   /// fica só do lado dos inimigos, que têm os ícones de condição pra mostrar.
@@ -365,12 +370,12 @@ class Player extends PositionComponent
 
   /// Quanto de XP falta pra evoluir. Só uma constante por enquanto — todas
   /// as criaturas evoluem no mesmo ritmo.
-  static const double xpParaEvoluir = 30.0;
+  static const double xpParaEvoluir = 50.0;
 
   /// XP da SEGUNDA contagem, que a criatura já evoluída acumula rumo à
   /// aposentadoria (ver `CreaturesRogueGame.aposentarSlotAtivo`). Maior que
   /// [xpParaEvoluir] porque é o fim da linha daquela criatura, não um meio.
-  static const double xpParaAposentar = 30.0;
+  static const double xpParaAposentar = 50.0;
 
   /// Três estados, não dois: antes de evoluir mede rumo à evolução; depois de
   /// evoluir mede rumo à aposentadoria; e criatura evoluída SEM passiva
@@ -497,6 +502,49 @@ class Player extends PositionComponent
   // vêm de AbilityUser.
 
   bool isAirborne = false;
+
+  /// O jogador está DENTRO do chão agora? (ver [submergir] e
+  /// `MergulhoEEstouro`.)
+  ///
+  /// Deliberadamente separado de [isAirborne], e não o oposto dele: os dois
+  /// dizem "fora do plano do chão", mas para lados contrários, e cada um
+  /// atravessa exatamente o que o outro barra. Quem voa passa por cima de
+  /// [Hole] e bate em [Rock]; quem cava passa por dentro da [Rock] e é barrado
+  /// pelo [Hole], que é justamente onde o chão por onde ele cava acaba.
+  bool submerso = false;
+
+  double _submersoTimer = 0.0;
+
+  /// Prazo total do mergulho em curso, guardado só pra saber quanto já
+  /// passou (o [_submersoTimer] conta pra trás).
+  double _submersoDuracao = 0.0;
+
+  /// Multiplicador de [maxSpeed] enquanto [submerso]. 1.0 fora do mergulho,
+  /// pra que o termo possa ficar sempre no getter sem um `if`.
+  double _submersoFator = 1.0;
+
+  VoidCallback? _submersoAoEmergir;
+
+  /// Quanto do corpo está FORA do chão: 1 = inteiro em pé, 0 = afundado de
+  /// vez. É o canal único da animação de mergulho — quem decide opacidade e
+  /// escala do `visual` durante o mergulho lê daqui, e ninguém mais escreve.
+  double _foraDoChao = 1.0;
+
+  /// Conta a animação de SAÍDA, que roda depois de [submerso] já ter virado
+  /// false — o corpo brota do chão com o jogador já no controle. Separado do
+  /// [_submersoTimer] por isso: o mergulho acabou, a animação não.
+  double _emersaoTimer = 0.0;
+
+  /// Tempo pra afundar e tempo pra brotar de volta. Curtos de propósito: os
+  /// dois saem de dentro dos 2s de mergulho, e uma entrada lenta comeria a
+  /// parte que interessa, que é andar por baixo.
+  static const double _mergulhoEntrada = 0.18;
+  static const double _mergulhoSaida = 0.3;
+
+  /// Quanto o corpo ESPALHA de lado ao ser achatado, no ponto mais fundo.
+  /// Sem isso o sprite só encolhe, que lê como "ficou pequeno" em vez de
+  /// "entrou no chão" — é o mesmo esmagar/esticar que o salto já usa.
+  static const double _mergulhoEspalha = 0.4;
 
   // --- Animação de morte. Terceiro escritor exclusivo de
   // `visual.position`/`scale`/`angle` — os outros dois são o `_updateJump` e o
@@ -691,6 +739,100 @@ class Player extends PositionComponent
     if (seconds > _statusImunidadeTimer) _statusImunidadeTimer = seconds;
   }
 
+  @override
+  void submergir({
+    required double duracao,
+    double fatorVelocidade = 1.0,
+    VoidCallback? aoEmergir,
+  }) {
+    submerso = true;
+    _submersoTimer = duracao;
+    _submersoDuracao = duracao;
+    _submersoFator = fatorVelocidade;
+    _submersoAoEmergir = aoEmergir;
+    // Corta uma emersão pela metade, se houver: submergir de novo no meio de
+    // brotar deixaria os dois disputando [_foraDoChao].
+    _emersaoTimer = 0.0;
+    // Lentidão, cegueira e empurrão vêm de quem está na superfície e não
+    // alcançam mais — [takeDamage] já corta o dano, e deixar o status passar
+    // daria o caso esquisito de sair do chão lento sem ter apanhado de nada.
+    grantStatusImmunity(duracao);
+    // Zera a inércia da superfície: o mergulho começa parado e o jogador
+    // reacelera por baixo, senão o primeiro instante embaixo da terra ainda
+    // seria o último passo dado em cima dela.
+    velocity.setZero();
+  }
+
+  /// Sai do chão e devolve o controle normal, disparando o que a habilidade
+  /// deixou marcado pro momento da emersão (no Tubarão, a explosão).
+  ///
+  /// A callback é apagada ANTES de rodar: ela pode, em tese, mandar submergir
+  /// de novo, e um campo ainda apontando pra ela apagaria o mergulho novo
+  /// assim que este terminasse de sair.
+  void _emergir() {
+    submerso = false;
+    _submersoTimer = 0.0;
+    _submersoDuracao = 0.0;
+    _submersoFator = 1.0;
+    _emersaoTimer = _mergulhoSaida;
+    final aoEmergir = _submersoAoEmergir;
+    _submersoAoEmergir = null;
+    aoEmergir?.call();
+  }
+
+  /// Avança os prazos do mergulho e recalcula [_foraDoChao]. Roda CEDO no
+  /// quadro, antes de quem lê a opacidade.
+  void _atualizarMergulho(double dt) {
+    if (submerso) {
+      _submersoTimer -= dt;
+      // O corpo afunda no começo do mergulho e fica escondido o resto dele.
+      final decorrido = _submersoDuracao - _submersoTimer;
+      _foraDoChao = 1.0 - (decorrido / _mergulhoEntrada).clamp(0.0, 1.0);
+      // `_emergir` DEPOIS da conta acima, e com o `return` logo em seguida:
+      // no quadro em que a explosão sai, o corpo ainda está escondido, e é
+      // só no quadro seguinte que ele começa a brotar. Chamar antes deixaria
+      // o ramo de emersão rodar neste mesmo quadro com o timer ainda cheio,
+      // ou seja, com o corpo inteiro em pé por um quadro — um estalo.
+      if (_submersoTimer <= 0) _emergir();
+      return;
+    }
+
+    if (_emersaoTimer > 0) {
+      _emersaoTimer -= dt;
+      _foraDoChao = 1.0 - (_emersaoTimer / _mergulhoSaida).clamp(0.0, 1.0);
+      return;
+    }
+
+    _foraDoChao = 1.0;
+  }
+
+  /// Achata o `visual` contra o chão conforme [_foraDoChao].
+  ///
+  /// Roda DEPOIS do `MovementAnimator`, e não antes: aquele reescreve
+  /// `scale` e `angle` todo quadro (respira parado, balança andando), então
+  /// quem escrever primeiro perde. Enquanto [_foraDoChao] é 1 este método
+  /// não encosta em nada, e o animador segue dono do canal como sempre.
+  ///
+  /// O afundar em si é só `scale.y`: o `visual` tem âncora `bottomCenter`,
+  /// fincada na mesma linha da sombra, então encolher em Y recolhe o corpo
+  /// pra dentro daquela linha — sem precisar recortar nada. Descer a posição
+  /// em vez disso só desenharia a criatura mais embaixo, inteira e por cima
+  /// do chão.
+  void _aplicarAfundamento() {
+    if (_foraDoChao >= 1.0) return;
+
+    final flip = visual.scale.x.isNegative ? -1.0 : 1.0;
+    final afundado = 1.0 - _foraDoChao;
+    visual.scale = Vector2(
+      flip * (1.0 + afundado * _mergulhoEspalha),
+      _foraDoChao,
+    );
+    // Sem inclineção: um corpo achatado contra o chão e ao mesmo tempo
+    // torto pelo passo da caminhada não lê como nada.
+    visual.angle = 0.0;
+    visual.position.y = _visualBasePosition.y;
+  }
+
   /// Ação pessoal do jogador — não passa por `Ability` nenhuma. Mesma receita
   /// de `EsquivaBomba`: i-frames curtos mais um dash curto com rastro
   /// fantasma.
@@ -736,6 +878,10 @@ class Player extends PositionComponent
 
   void dodge() {
     if (_dodgeCooldown > 0) return;
+    // A esquiva anda por `MoveByEffect`, medido com `dashOffsetLivre`, que
+    // consulta `barraMovimento` — e aquela regra não conhece [submerso].
+    // Deixar passar daria um dash que trava na pedra que o corpo atravessa.
+    if (submerso) return;
     GameAudio.instance.play(Sfx.dash);
     //final passivas = passivasAtivas;
 
@@ -1174,17 +1320,33 @@ class Player extends PositionComponent
       moveDelta = _keyboardMove.normalized();
     }
 
-    if (_invulnerabilityTimer > 0) {
-      _invulnerabilityTimer -= dt;
-      bool isVisible = (_invulnerabilityTimer * 10).toInt() % 2 == 0;
-      visual.setOpacity(isVisible ? 1.0 : 0.2);
+    _atualizarMergulho(dt);
+
+    if (_invulnerabilityTimer > 0) _invulnerabilityTimer -= dt;
+
+    // A ordem aqui é a regra, não estilo: os dois ramos escrevem o MESMO
+    // canal (a opacidade do `visual`), e o pisca-pisca da invulnerabilidade
+    // reacende o corpo em quadros alternados. Testado depois dele, o corpo do
+    // jogador enterrado apareceria por cima da terra metade do tempo.
+    //
+    // A condição é [_foraDoChao], e não [submerso]: com `submerso` o corpo
+    // sumiria de uma vez no quadro do toque, e a animação de afundar nunca
+    // seria vista. Some só quando já está todo dentro do chão.
+    if (_foraDoChao <= 0.0) {
+      visual.setOpacity(0.0);
+    } else if (_invulnerabilityTimer > 0) {
+      final visivel = (_invulnerabilityTimer * 10).toInt() % 2 == 0;
+      visual.setOpacity(visivel ? 1.0 : 0.2);
     } else {
       visual.setOpacity(1.0);
     }
 
     if (_statusImunidadeTimer > 0) _statusImunidadeTimer -= dt;
 
-    shieldVisual.setOpacity(shieldVisualActive ? 1.0 : 0.0);
+    // A sombra fica de propósito: enterrado, ela é a ÚNICA coisa que diz ao
+    // jogador onde ele está e pra onde vai. A bolha, ao contrário, some —
+    // ela orbita um corpo que não está mais ali em cima.
+    shieldVisual.setOpacity(shieldVisualActive && !submerso ? 1.0 : 0.0);
 
     if (shield <= shieldMax) {
       _shieldRegenTimer += dt;
@@ -1207,6 +1369,10 @@ class Player extends PositionComponent
         dt: dt,
       );
     }
+
+    // Último escritor de `visual.scale`/`angle` no quadro — ver o porquê na
+    // doc do método. No-op fora do mergulho.
+    _aplicarAfundamento();
 
     _updateAbilities(dt);
   }
@@ -1306,8 +1472,9 @@ class Player extends PositionComponent
   void dispararAbility2() {
     // Guarda AQUI, e não só no `_updateAbilities`: o esquema de gestos chama
     // este método direto pelo `onToqueRapido` do analógico direito, sem
-    // passar pelo polling por quadro.
-    if (emCutscene) return;
+    // passar pelo polling por quadro. Vale igual pro [submerso] — sem esta
+    // linha, "enterrado não usa habilidade" só valeria no teclado.
+    if (emCutscene || submerso) return;
     if (_cooldown2 > 0) return;
     if (!creatureData.ability2.canExecute(this)) return;
     creatureData.ability2.execute(this, lockedAb2Direction);
@@ -1357,9 +1524,18 @@ class Player extends PositionComponent
       energia = (energia + energiaRegen * dt).clamp(0.0, energiaMax);
     }
     if (_cooldown1 > 0) _cooldown1 -= dt;
-    if (_cooldown2 > 0) _cooldown2 -= dt;
+    // O cooldown da 2 congela enquanto o jogador está enterrado, e só começa
+    // a correr quando ele sai. É o que impede a corrente: `_cooldownMax2` de
+    // uma esquiva é `cooldown * cdMult * dodgeCdMult`, e o piso de 0,3 do
+    // `dodgeCdMult` deixa os 5s base chegarem a 1,5s com upgrades. Menor que
+    // os 2s de mergulho, o próprio mergulho pagaria o próprio cooldown:
+    // segurar B daria invulnerabilidade sem fim, com uma explosão a cada 2s.
+    if (_cooldown2 > 0 && !submerso) _cooldown2 -= dt;
 
-    if (emCutscene) return;
+    // Nada de atacar de dentro do chão: invulnerável e atirando à vontade, o
+    // mergulho viraria a melhor forma de LUTAR, em vez de a de se
+    // reposicionar. Os cooldowns acima seguem correndo — só o disparo para.
+    if (emCutscene || submerso) return;
 
     _atualizarMira();
 
@@ -1566,7 +1742,15 @@ class Player extends PositionComponent
 
     if (other is WallBarrier || other is Obstacle) {
       // MÁGICA AQUI: Só para de andar se bater os pés (sombra)!
-      if (!isPhysicsCollision(other) || (isAirborne && other is Hole)) return;
+      // Regra de solidez do jogador. `Rock` só, e não `Obstacle` inteiro, de
+      // propósito: `Door` também é `Obstacle`, e uma porta trancada
+      // atravessável deixaria sair da sala de desafio e da sala de boss no
+      // meio da briga.
+      if (!isPhysicsCollision(other) ||
+          (isAirborne && other is Hole) ||
+          (submerso && other is Rock)) {
+        return;
+      }
 
       // Empurra pela profundidade real do overlap. O rect é lido AGORA, não no
       // começo do frame: numa quina chegam duas chamadas de onCollision no
@@ -1592,6 +1776,11 @@ class Player extends PositionComponent
     // o Game Over sairia duas vezes.
     if (_morrendo) return;
 
+    // Enterrado não apanha de nada: é o que paga a travessia livre. Aqui, e
+    // não via `grantInvulnerability`, porque aquele timer também manda no
+    // pisca-pisca do sprite — e o corpo, enterrado, já está invisível.
+    if (submerso) return;
+
     // Cheat de teste (ver `GameSettings.godMode`): a outra metade dele vive
     // em `Enemy.takeDamage`, onde qualquer golpe mata o inimigo na hora. Sem
     // esta metade aqui o godmode matava rapido mas o jogador continuava
@@ -1616,6 +1805,19 @@ class Player extends PositionComponent
     if (amountFinal <= 0)
       return; // golpe totalmente mitigado: não gasta i-frame
     GameAudio.instance.play(Sfx.hit);
+    // Junto do som, e não mais pra frente: este é o ponto em que o golpe está
+    // confirmado — já passou por godmode, i-frames e mitigação total. Vale
+    // mesmo quando o escudo come o dano logo abaixo: o jogador levou o golpe,
+    // e é disso que o feedback fala.
+    //
+    // `vibrate`, e não `heavyImpact`: os `*Impact` são ténues de propósito —
+    // no Android saem por `performHapticFeedback`, calibrado pra confirmar um
+    // toque de interface, e ao lado do `lightImpact` dos botões a diferença
+    // mal se sente. `vibrate` aciona o motor direto e é o único degrau
+    // realmente mais forte que `flutter/services` oferece sem depêndência.
+    HapticFeedback.vibrate();
+    final jogoDano = game;
+    if (jogoDano is CreaturesRogueGame) jogoDano.tremorCamera.disparar();
 
     _invulnerabilityTimer = _invulnerabilityDuration;
     _tempoSemApanhar = 0.0;
@@ -1631,13 +1833,6 @@ class Player extends PositionComponent
     }
     creatureData.passive?.aoTentarTomarDano(this, amountFinal);
 
-    parent?.add(
-      TextEffect.dano(
-        amountFinal,
-        position: position.clone() + Vector2(0, -size.y / 2 - 4),
-        color: corTxt,
-      ),
-    );
 
     for (final item in itens) {
       item.aoTomarDano(this, amountFinal, tipoAtacante);
@@ -1692,6 +1887,18 @@ class Player extends PositionComponent
       //if (amountFinal <= 0) return;
     }
 
+    
+
+    if (amountFinal > 0) {
+      if(amountFinal < 1) amountFinal = 1;
+      parent?.add(
+        TextEffect.dano(
+          amountFinal,
+          position: position.clone() + Vector2(0, -size.y / 2 - 4),
+          color: corTxt,
+        ),
+      );
+    }
     currentHealth -= amountFinal;
 
     if (currentHealth <= 0) {

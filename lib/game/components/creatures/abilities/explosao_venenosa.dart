@@ -27,7 +27,7 @@ class ExplosaoVenenosa extends Ability {
         position: user.position.clone(),
         dmg: dano,
         knockback: empurrao,
-        size: Vector2(24, 24),
+        size: Vector2(32,32),
         cor1: Palette.verde,
         cor2: Palette.verdeEsc,
         tipo: user.creatureData.tipo,
@@ -49,7 +49,7 @@ class ExplosaoVenenosa extends Ability {
         dotKind: DotKind.veneno,
         dotTicks: 1, // igual ao poisonCount padrao de antes: nao virou buff
         atravessa: 10,
-        size: Vector2(24, 24),
+        size: Vector2(32,32),
         lifeTime: 3,
         radius: 12,
       ),

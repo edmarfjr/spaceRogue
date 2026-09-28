@@ -1,3 +1,5 @@
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 import 'package:flame/components.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/creatures/ability_user.dart';
@@ -22,13 +24,13 @@ class MordidaEvo extends Ability {
 
   const MordidaEvo({
     this.coef = 0.8,
-    this.alcance = 10,
-    this.alcanceLonge = 22,
+    this.alcance = 16,
+    this.alcanceLonge = 32,
     this.empurrao = 70,
   }) : super(
          nome: 'Dentada Dupla',
          descricao: 'Duas mordidas em sequência, a segunda alcançando mais longe.',
-         cooldown: 1.3,
+         cooldown: 0.3,
          custoEnergia: 4.0,
        );
 
@@ -41,7 +43,22 @@ class MordidaEvo extends Ability {
     final dano = user.creatureData.stats.ataque * coef;
     final frente = dir.normalized();
 
+     
+
     for (final distancia in [alcance, alcanceLonge]) {
+      user.parent?.add(Projectile(
+          owner: user,
+          position:user.position.clone() + dir.normalized() * distancia,
+          direction: dir,
+          speed: 0,
+          dmg: dano,
+          lifeTime: 0.4,
+          sprPath: 'projeteis/bite.png',
+          cor1: Palette.bege,
+          cor2: Palette.royal,
+          tipo: user.creatureData.tipo,
+        ));
+
       user.parent?.add(
         ExplosionHitbox(
           position: user.position.clone() + frente * distancia,

@@ -84,9 +84,9 @@ enum PowerUpType implements ItemDescritor {
       case PowerUpType.hpUp:
         // O bônus vai pro campo que sobrevive à troca E pro total de agora:
         // `trocarCriatura` recompõe `maxHealth` como `stats.maxHp + bônus`.
-        player.bonusHpItens += 1;
-        player.maxHealth += 1;
-        player.currentHealth += 1;
+        player.bonusHpItens += 2;
+        player.maxHealth += 2;
+        player.currentHealth += 2;
       case PowerUpType.shieldUp:
         player.bonusShieldItens += 1;
         player.shieldMax += 1;
