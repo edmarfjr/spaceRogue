@@ -43,7 +43,7 @@ class OuricoEletricoBossEnemy extends Enemy{
     required super.position,
     required super.playerTarget,
   }) : super(
-         creature: CreatureRegistry.ouricoEletrico,
+         creature: CreatureRegistry.ouricoEletricoEvo,
          speed: 14.0,
          health: _vidaInicial,
          dmg: 2,
@@ -108,8 +108,8 @@ class OuricoEletricoBossEnemy extends Enemy{
       dmg: _danoOnda,
       knockback: _empurraoOnda,
       size: Vector2.all(_raioOnda),
-      cor1: CreatureRegistry.ouricoEletrico.corClara,
-      cor2: CreatureRegistry.ouricoEletrico.corEscura,
+      cor1: CreatureRegistry.ouricoEletricoEvo.corClara,
+      cor2: CreatureRegistry.ouricoEletricoEvo.corEscura,
     ));
   }
 
@@ -125,8 +125,8 @@ class OuricoEletricoBossEnemy extends Enemy{
       isEnemy: true,
       dmg: _danoRetaliacao,
       knockback: _empurraoRetaliacao,
-      cor1: CreatureRegistry.ouricoEletrico.corClara,
-      cor2: CreatureRegistry.ouricoEletrico.corEscura,
+      cor1: CreatureRegistry.ouricoEletricoEvo.corClara,
+      cor2: CreatureRegistry.ouricoEletricoEvo.corEscura,
     ));
   }
 

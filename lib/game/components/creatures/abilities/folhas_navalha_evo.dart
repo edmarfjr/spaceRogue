@@ -34,7 +34,7 @@ class FolhasNavalhaEvo extends Ability {
          nome: 'Vendaval de Folhas',
          descricao:
              'Dois anéis de espinhos giram em sentidos opostos ao redor do usuário.',
-         cooldown: 0.5,
+         cooldown: 0.4,
          custoEnergia: 6.0,
        );
 

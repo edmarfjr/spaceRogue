@@ -53,7 +53,7 @@ class BombaFogoBossEnemy extends Enemy{
     required super.position,
     required super.playerTarget,
   }) : super(
-         creature: CreatureRegistry.bombaFogo,
+         creature: CreatureRegistry.bombaFogoEvo,
          corClara: Palette.burgundy,
          corEscura: Palette.roxoEsc,
          speed: 34.0, // mais lento que a normal (40): o tamanho já pressiona

@@ -25,14 +25,14 @@ class LeaoEletricoBossEnemy extends Enemy with ShooterAttack, JumpMovement {
     required super.position,
     required super.playerTarget,
   }) : super(
-         creature: CreatureRegistry.leaoEletrico,
+         creature: CreatureRegistry.leaoEletricoEvo,
          speed: 44.0,
          health: _vidaInicial,
          dmg: 2,
          bltSpeed: 150,
          bltImg: 'projeteis/raio.png',
-         bltCor1: CreatureRegistry.leaoEletrico.corClara,
-         bltCor2: CreatureRegistry.leaoEletrico.corEscura,
+         bltCor1: CreatureRegistry.leaoEletricoEvo.corClara,
+         bltCor2: CreatureRegistry.leaoEletricoEvo.corEscura,
          shadowOffset: Vector2(0, 8),
          size: Vector2(32, 32),        // dobro do padrão (16x16)
          hitboxSize: Vector2(22, 30),  // dobro do hitbox normal (11, 15)
@@ -99,8 +99,8 @@ class LeaoEletricoBossEnemy extends Enemy with ShooterAttack, JumpMovement {
       dmg: _danoQueda,
       knockback: _empurraoQueda,
       size: Vector2(40, 40),
-      cor1: CreatureRegistry.leaoEletrico.corClara,
-      cor2: CreatureRegistry.leaoEletrico.corEscura,
+      cor1: CreatureRegistry.leaoEletricoEvo.corClara,
+      cor2: CreatureRegistry.leaoEletricoEvo.corEscura,
     ));
   }
 

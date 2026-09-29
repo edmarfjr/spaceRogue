@@ -29,7 +29,7 @@ class GatoNeutroBossEnemy extends Enemy with JumpMovement {
 
   GatoNeutroBossEnemy({required super.position, required super.playerTarget})
     : super(
-        creature: CreatureRegistry.gatoNeutro,
+        creature: CreatureRegistry.gatoNeutroEvo,
         moveAnim: null,
         speed: 0.0,
         health: _vidaInicial,
@@ -93,8 +93,8 @@ class GatoNeutroBossEnemy extends Enemy with JumpMovement {
         dmg: _danoImpacto.toDouble(),
         knockback: _empurraoImpacto,
         size: Vector2(32, 32),
-        cor1: CreatureRegistry.gatoNeutro.corClara,
-        cor2: CreatureRegistry.gatoNeutro.corEscura,
+        cor1: CreatureRegistry.gatoNeutroEvo.corClara,
+        cor2: CreatureRegistry.gatoNeutroEvo.corEscura,
       ),
     );
   }

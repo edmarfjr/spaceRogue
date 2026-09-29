@@ -10,6 +10,7 @@ import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/items/heart_half_pickup.dart';
 import 'package:creatures_rogue/game/components/items/heart_pickup.dart';
 import 'package:creatures_rogue/game/components/items/xp_pickup.dart';
+import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 
 /// Quanto e pra onde empurrar [corpo] pra tirá-lo de dentro de [alvo]: o eixo
@@ -123,8 +124,32 @@ class Rock extends Obstacle {
          collisionType: CollisionType.active,
        );
 
+  /// Já foi quebrada? `removeFromParent()` só tira o componente no FIM do
+  /// quadro, então duas explosões no mesmo quadro chamam `blowUp` na MESMA
+  /// pedra duas vezes — drop dobrado, e, com o `Pé de Cabra`, duas explosões
+  /// saindo dela. Aí a reação em cadeia deixa de ser em cadeia e vira
+  /// exponencial: cada elo dobra em vez de seguir adiante.
+  ///
+  /// Mesma trava, pelo mesmo motivo, que a de `Enemy._morto`.
+  bool _quebrada = false;
+
   void blowUp() {
+    if (_quebrada) return;
+    _quebrada = true;
     final random = Random();
+
+    // Antes dos drops e do `removeFromParent`: quem reage à pedra quebrada
+    // pode querer nascer na posição dela, e `parent` deixa de existir pra
+    // este componente assim que ele sai da árvore.
+    //
+    // O jogador é buscado pelo jogo porque a pedra não tem referência pra ele
+    // — `blowUp` é chamado pela `ExplosionHitbox`, que também não tem.
+    final jogo = game;
+    if (jogo is CreaturesRogueGame) {
+      for (final item in jogo.player.itens) {
+        item.aoQuebrarPedra(jogo.player, this);
+      }
+    }
 
     if (random.nextDouble() < 0.05) {
       double itemChance = random.nextDouble();

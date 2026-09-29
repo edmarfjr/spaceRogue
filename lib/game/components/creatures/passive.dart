@@ -1,5 +1,6 @@
 import 'package:flame/components.dart';
 
+import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/player/player.dart';
 
 /// Comportamento sempre-ligado de UMA criatura, que vale enquanto ela estiver
@@ -35,4 +36,13 @@ abstract class Passive {
   /// mas ANTES de qualquer escudo consumir o golpe — dispara mesmo que o dano
   /// acabe inteiramente absorvido.
   void aoTentarTomarDano(Player player, double amount) {}
+
+  /// O golpe saiu crítico. Call site em `Enemy.takeDamage`, colado no laço
+  /// equivalente do `ItemEfeito.aoCritar` — gancho e ponto de chamada
+  /// entraram na mesma mudança, como manda a doc desta classe.
+  ///
+  /// Dispara pra QUALQUER fonte de dano da criatura, tique de veneno incluso,
+  /// porque é o `takeDamage` inteiro que rola crítico. Quem precisar de um
+  /// ritmo controlado deve se estrangular sozinho (ver `PontaDaLanca`).
+  void aoCritar(Player player, Enemy alvo) {}
 }

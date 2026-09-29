@@ -20,7 +20,7 @@ class MordidaCerteira extends Ability {
   }) : super(
          nome: 'Mordida Certeira',
          descricao: 'Investida que mira sozinha no inimigo mais próximo.',
-         cooldown: 0.9,
+         cooldown: 0.4,
          custoEnergia: 2.5,
        );
 

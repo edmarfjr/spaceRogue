@@ -31,15 +31,15 @@ class GriloEletricoBossEnemy extends Enemy with JumpMovement, ShooterAttack {
     required super.position,
     required super.playerTarget,
   }) : super(
-         creature: CreatureRegistry.griloEletrico,
+         creature: CreatureRegistry.griloEletricoEvo,
          moveAnim: null, // o pulo é a animação
          speed: 0.0,     // quem move é o JumpMovement
          health: _vidaInicial,
          dmg: 2, // dano da faísca na fase 1 — fase 2 escala pra _danoFaiscaFase2
          bltSpeed: 130,
          bltImg: 'projeteis/raio.png',
-         bltCor1: CreatureRegistry.griloEletrico.corClara,
-         bltCor2: CreatureRegistry.griloEletrico.corEscura,
+         bltCor1: CreatureRegistry.griloEletricoEvo.corClara,
+         bltCor2: CreatureRegistry.griloEletricoEvo.corEscura,
          shadowOffset: Vector2(0, 6),
          size: Vector2(32, 32),        // dobro do padrão (16x16)
          hitboxSize: Vector2(16, 20),  // dobro do hitbox normal (8, 10)
@@ -109,8 +109,8 @@ class GriloEletricoBossEnemy extends Enemy with JumpMovement, ShooterAttack {
       kbForce: 0,
       dmg: _danoNo,
       sprPath: 'projeteis/raio.png',
-      cor1: CreatureRegistry.griloEletrico.corClara,
-      cor2: CreatureRegistry.griloEletrico.corEscura,
+      cor1: CreatureRegistry.griloEletricoEvo.corClara,
+      cor2: CreatureRegistry.griloEletricoEvo.corEscura,
       lifeTime: _noDuracao,
       atravessa: 10,
       atravessaObstaculos: true,

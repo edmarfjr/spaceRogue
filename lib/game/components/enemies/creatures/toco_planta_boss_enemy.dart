@@ -29,7 +29,7 @@ class TocoPlantaBossEnemy extends Enemy{
     required super.position,
     required super.playerTarget,
   }) : super(
-         creature: CreatureRegistry.tocoPlanta,
+         creature: CreatureRegistry.tocoPlantaEvo,
          speed: 6.0,
          health: _vidaInicial,
          dmg: 2,

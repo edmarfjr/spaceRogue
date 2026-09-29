@@ -29,7 +29,7 @@ class TiroDeGeloEvo extends Ability {
   }) : super(
          nome: 'Tiro de Gelo+',
          descricao: 'Leque de três projéteis que estilhaçam e lentificam.',
-         cooldown: 1.0,
+         cooldown: 0.4,
          custoEnergia: 3.0,
        );
 

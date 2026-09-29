@@ -10,14 +10,20 @@ import 'dart:math';
 
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/effects/aura_pulse_effect.dart';
+import 'package:creatures_rogue/game/components/effects/corrente_visual.dart';
 import 'package:creatures_rogue/game/components/effects/dot.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 import 'package:creatures_rogue/game/components/map/dungeon_generator.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
+import 'package:creatures_rogue/game/components/projeteis/orbit_projectile.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
+import 'package:creatures_rogue/game/components/items/coin_pickup.dart';
+import 'package:creatures_rogue/game/components/items/xp_pickup.dart';
+import 'package:creatures_rogue/game/components/map/obstacle.dart';
 import 'package:creatures_rogue/game/components/effects/text_effect.dart';
 import 'package:creatures_rogue/game/components/items/collectible.dart';
 import 'package:creatures_rogue/game/components/items/item_descritor.dart';
+import 'package:creatures_rogue/game/components/items/power_up_item.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'package:flame/components.dart';
 
@@ -116,6 +122,35 @@ abstract class ItemEfeito implements ItemDescritor {
   /// gancho pra `AbilityTipo.ataque` porque ninguém precisou até agora.
   void aoUsarDefesa(Player player) {}
 
+  /// O jogador MATOU [alvo]. Irmão do [aoCritar]: os dois recebem o inimigo, e
+  /// os dois saem de dentro do próprio `Enemy` — este do `death`, aquele do
+  /// `takeDamage`.
+  ///
+  /// Dispara uma única vez por inimigo, garantido pela trava `Enemy._morto`:
+  /// dois golpes no mesmo quadro chamavam `death()` duas vezes.
+  ///
+  /// Roda ANTES do inimigo sair da árvore, então `alvo.position` e
+  /// `alvo.parent` ainda valem — é por onde um item faz nascer algo no lugar
+  /// da morte.
+  void aoMatarInimigo(Player player, Enemy alvo) {}
+
+  /// Uma [Rock] foi quebrada por uma explosão. Roda ANTES dos drops dela e
+  /// antes de ela sair da árvore, então `pedra.position` e `pedra.parent`
+  /// ainda valem.
+  ///
+  /// Quem dispara é a própria `Rock.blowUp`, que busca o jogador pelo jogo —
+  /// nem a pedra nem a `ExplosionHitbox` que a quebrou têm referência pra ele.
+  void aoQuebrarPedra(Player player, Rock pedra) {}
+
+  /// A vida da criatura ativa acabou de chegar a zero, e ela ainda NÃO saiu de
+  /// campo. Devolver `true` segura o golpe: o `Player` refaz a vida em 1 e o
+  /// game over não acontece.
+  ///
+  /// Único gancho com retorno. É o que permite ao item decidir — e o `Player`
+  /// para no primeiro que aceitar, então dois itens de salvamento não gastam
+  /// os dois recursos no mesmo golpe.
+  bool aoCairEmCombate(Player player) => false;
+
   void aoAtualizar(Player player, double dt) {}
 }
 
@@ -135,6 +170,15 @@ class ItemEfeitoRegistry {
     PeconhaReflexiva(),
     RetaliacaoEletrica(),
     RastroCongelante(),
+    PenaDeVoo(),
+    EscamasGuardadas(),
+    FumacaResidual(),
+    EsporosLatentes(),
+    EcoDoLatido(),
+    PontaDaLanca(),
+    SeteVidas(),
+    RaizProfunda(),
+    FaroDeSangue(),
     Revezamento(),
     CascaInstavel(),
     Estilhaco(),
@@ -153,6 +197,18 @@ class ItemEfeitoRegistry {
     Recarga(),
     Repulsao(),
     SegundoFolego(),
+    Frenesi(),
+    PresaDoCampeao(),
+    BauDoTesouro(),
+    CascaDeOvo(),
+    Prisma(),
+    Ninhada(),
+    Espolio(),
+    VeioRico(),
+    PeDeCabra(),
+    Jejum(),
+    Coleira(),
+    Ressonancia(),
     Esgotamento(),
     GatilhoFrio(),
     SangueFrio(),
@@ -546,11 +602,11 @@ class RastroFlamejante extends ItemEfeito {
   @override
   String get id => 'rastroFlamejante';
   @override
-  String get spritePath => 'items/capsula.png';
+  String get spritePath => 'actors/ratFogo.png';
   @override
-  Color get cor1 => Palette.vermelho;
+  Color get cor1 => cinzaMarcadorClaro;
   @override
-  Color get cor2 => Palette.laranja;
+  Color get cor2 => cinzaMarcadorEscuro;
   @override
   String nome(BuildContext context) => context.l10n.passiva_rastroFlamejante;
   @override
@@ -558,7 +614,7 @@ class RastroFlamejante extends ItemEfeito {
       context.l10n.passiva_rastroFlamejanteDesc;
 
   @override
-  void aoEsquivar(Player player, Vector2 direcao) {
+  void aoUsarAbility2(Player player) {
     final dano = player.creatureData.stats.ataque * coef;
     // No FIM da esquiva, não no início: a explosão marca onde ele chegou.
     // Efeito temporário em vez do `Future.delayed` que a `Passive` usava —
@@ -589,11 +645,11 @@ class CascoReflexivo extends ItemEfeito {
   @override
   String get id => 'cascoReflexivo';
   @override
-  String get spritePath => 'items/casco.png';
+  String get spritePath => 'actors/tartPlanta.png';
   @override
-  Color get cor1 => Palette.verde;
+  Color get cor1 => cinzaMarcadorClaro;
   @override
-  Color get cor2 => Palette.verdeEsc;
+  Color get cor2 => cinzaMarcadorEscuro;
   @override
   String nome(BuildContext context) => context.l10n.passiva_cascoReflexivo;
   @override
@@ -601,7 +657,13 @@ class CascoReflexivo extends ItemEfeito {
       context.l10n.passiva_cascoReflexivoDesc;
 
   @override
-  void aoEsquivar(Player player, Vector2 direcao) {
+  void aoUsarAbility2(Player player) {
+    // Alguém já está refletindo? Então o dono do campo é outro, e o
+    // `aoTerminar` daqui desligaria a reflexão DELE no meio: Casco
+    // Fechado e Recolher no Casco duram bem mais que esta janela, e
+    // antes da migração nunca coincidiam — aquelas são de defesa, e
+    // este gancho só pegava esquiva.
+    if (player.refleteProjetil) return;
     player.aplicarEfeito(
       #cascoReflexivo,
       player.dodgeIframeDuration,
@@ -623,11 +685,11 @@ class BolhaAutonoma extends ItemEfeito {
   @override
   String get id => 'bolhaAutonoma';
   @override
-  String get spritePath => 'items/escudo.png';
+  String get spritePath => 'actors/sapoAgua.png';
   @override
-  Color get cor1 => Palette.indigo;
+  Color get cor1 => cinzaMarcadorClaro;
   @override
-  Color get cor2 => Palette.royal;
+  Color get cor2 => cinzaMarcadorEscuro;
   @override
   String nome(BuildContext context) => context.l10n.passiva_bolhaAutonoma;
   @override
@@ -655,11 +717,11 @@ class CorrenteReflexa extends ItemEfeito {
   @override
   String get id => 'correnteReflexa';
   @override
-  String get spritePath => 'items/capsula.png';
+  String get spritePath => 'actors/aveEletric.png';
   @override
-  Color get cor1 => Palette.amarelo;
+  Color get cor1 => cinzaMarcadorClaro;
   @override
-  Color get cor2 => Palette.laranja;
+  Color get cor2 => cinzaMarcadorEscuro;
   @override
   String nome(BuildContext context) => context.l10n.passiva_correnteReflexa;
   @override
@@ -691,11 +753,11 @@ class TornadoResidual extends ItemEfeito {
   @override
   String get id => 'tornadoResidual';
   @override
-  String get spritePath => 'items/capsula.png';
+  String get spritePath => 'actors/furacFogo.png';
   @override
-  Color get cor1 => Palette.vermelho;
+  Color get cor1 => cinzaMarcadorClaro;
   @override
-  Color get cor2 => Palette.laranja;
+  Color get cor2 => cinzaMarcadorEscuro;
   @override
   String nome(BuildContext context) => context.l10n.passiva_tornadoResidual;
   @override
@@ -703,7 +765,10 @@ class TornadoResidual extends ItemEfeito {
       context.l10n.passiva_tornadoResidualDesc;
 
   @override
-  void aoEsquivar(Player player, Vector2 direcao) {
+  void aoUsarAbility2(Player player) {
+    // Mesmo vetor que o `aoEsquivar` recebia: é o que o
+    // `dispararAbility2` passa pros dois ganchos.
+    final direcao = player.lockedAb2Direction;
     player.parent?.add(
       Projectile(
         owner: player,
@@ -734,11 +799,11 @@ class BombaNaEsquiva extends ItemEfeito {
   @override
   String get id => 'bombaNaEsquiva';
   @override
-  String get spritePath => 'items/bomb.png';
+  String get spritePath => 'actors/bombaFogo.png';
   @override
-  Color get cor1 => Palette.cinza;
+  Color get cor1 => cinzaMarcadorClaro;
   @override
-  Color get cor2 => Palette.cinzaEsc;
+  Color get cor2 => cinzaMarcadorEscuro;
   @override
   String nome(BuildContext context) => context.l10n.passiva_bombaNaEsquiva;
   @override
@@ -746,7 +811,10 @@ class BombaNaEsquiva extends ItemEfeito {
       context.l10n.passiva_bombaNaEsquivaDesc;
 
   @override
-  void aoEsquivar(Player player, Vector2 direcao) {
+  void aoUsarAbility2(Player player) {
+    // Mesmo vetor que o `aoEsquivar` recebia: é o que o
+    // `dispararAbility2` passa pros dois ganchos.
+    final direcao = player.lockedAb2Direction;
     player.placeBomb(-direcao);
   }
 }
@@ -762,11 +830,11 @@ class SaltoAquatico extends ItemEfeito {
   @override
   String get id => 'saltoAquatico';
   @override
-  String get spritePath => 'items/gelo.png';
+  String get spritePath => 'actors/cobraAgua.png';
   @override
-  Color get cor1 => Palette.azul;
+  Color get cor1 => cinzaMarcadorClaro;
   @override
-  Color get cor2 => Palette.royal;
+  Color get cor2 => cinzaMarcadorEscuro;
   @override
   String nome(BuildContext context) => context.l10n.passiva_saltoAquatico;
   @override
@@ -774,7 +842,7 @@ class SaltoAquatico extends ItemEfeito {
       context.l10n.passiva_saltoAquaticoDesc;
 
   @override
-  void aoEsquivar(Player player, Vector2 direcao) {
+  void aoUsarAbility2(Player player) {
     final dano = player.creatureData.stats.ataque * coef;
     player.aplicarEfeito(
       #saltoAquatico,
@@ -807,11 +875,11 @@ class BradoReflexo extends ItemEfeito {
   @override
   String get id => 'bradoReflexo';
   @override
-  String get spritePath => 'items/fruta.png';
+  String get spritePath => 'actors/ursoPlanta.png';
   @override
-  Color get cor1 => Palette.verde;
+  Color get cor1 => cinzaMarcadorClaro;
   @override
-  Color get cor2 => Palette.marromEsc;
+  Color get cor2 => cinzaMarcadorEscuro;
   @override
   String nome(BuildContext context) => context.l10n.passiva_bradoReflexo;
   @override
@@ -851,11 +919,11 @@ class ReflexoEletrico extends ItemEfeito {
   @override
   String get id => 'reflexoEletrico';
   @override
-  String get spritePath => 'items/capsula.png';
+  String get spritePath => 'actors/griloEletric.png';
   @override
-  Color get cor1 => Palette.amarelo;
+  Color get cor1 => cinzaMarcadorClaro;
   @override
-  Color get cor2 => Palette.marromEsc;
+  Color get cor2 => cinzaMarcadorEscuro;
   @override
   String nome(BuildContext context) => context.l10n.passiva_reflexoEletrico;
   @override
@@ -892,11 +960,11 @@ class ImpetoArdente extends ItemEfeito {
   @override
   String get id => 'impetoArdente';
   @override
-  String get spritePath => 'items/capsula.png';
+  String get spritePath => 'actors/rodaFogo.png';
   @override
-  Color get cor1 => Palette.laranja;
+  Color get cor1 => cinzaMarcadorClaro;
   @override
-  Color get cor2 => Palette.vermelho;
+  Color get cor2 => cinzaMarcadorEscuro;
   @override
   String nome(BuildContext context) => context.l10n.passiva_impetoArdente;
   @override
@@ -939,11 +1007,11 @@ class PeconhaReflexiva extends ItemEfeito {
   @override
   String get id => 'peconhaReflexiva';
   @override
-  String get spritePath => 'items/fruta.png';
+  String get spritePath => 'actors/slimePlanta.png';
   @override
-  Color get cor1 => Palette.verde;
+  Color get cor1 => cinzaMarcadorClaro;
   @override
-  Color get cor2 => Palette.verdeEsc;
+  Color get cor2 => cinzaMarcadorEscuro;
   @override
   String nome(BuildContext context) => context.l10n.passiva_peconhaReflexiva;
   @override
@@ -983,11 +1051,11 @@ class RetaliacaoEletrica extends ItemEfeito {
   @override
   String get id => 'retaliacaoEletrica';
   @override
-  String get spritePath => 'items/capsula.png';
+  String get spritePath => 'actors/ouricoEletric.png';
   @override
-  Color get cor1 => Palette.amarelo;
+  Color get cor1 => cinzaMarcadorClaro;
   @override
-  Color get cor2 => Palette.cinzaEsc;
+  Color get cor2 => cinzaMarcadorEscuro;
   @override
   String nome(BuildContext context) => context.l10n.passiva_retaliacaoEletrica;
   @override
@@ -1032,11 +1100,11 @@ class RastroCongelante extends ItemEfeito {
   @override
   String get id => 'rastroCongelante';
   @override
-  String get spritePath => 'items/gelo.png';
+  String get spritePath => 'actors/pinguimAgua.png';
   @override
-  Color get cor1 => Palette.azul;
+  Color get cor1 => cinzaMarcadorClaro;
   @override
-  Color get cor2 => Palette.royal;
+  Color get cor2 => cinzaMarcadorEscuro;
   @override
   String nome(BuildContext context) => context.l10n.passiva_rastroCongelante;
   @override
@@ -1044,7 +1112,7 @@ class RastroCongelante extends ItemEfeito {
       context.l10n.passiva_rastroCongelanteDesc;
 
   @override
-  void aoEsquivar(Player player, Vector2 direcao) {
+  void aoUsarAbility2(Player player) {
     player.parent?.add(
       Projectile(
         owner: player,
@@ -1673,6 +1741,1122 @@ class SegundoFolego extends ItemEfeito {
   }
 }
 
+
+/// Abates em sequência aceleram a habilidade 1. O contador zera se você
+/// passar [janela] segundos sem matar nada.
+///
+/// Mexe no [Player.cdMultDerivado], que entra tanto no cooldown quanto no
+/// CUSTO DE ENERGIA do disparo (ver `Player.dispararAbility1`). Só no
+/// cooldown o item quase não se sentiria: em fogo sustentado quem limita a
+/// cadência é a energia, não o cooldown.
+///
+/// [maxPilhas] existe porque cadência sem piso trava o indicador da Hud — o
+/// mesmo motivo do `_dodgeCooldownMultFloor` da esquiva.
+class Frenesi extends ItemEfeito {
+  const Frenesi();
+
+  static const double janela = 3.0;
+  static const double porAbate = 0.12;
+  static const int maxPilhas = 5;
+
+  @override
+  String get id => 'frenesi';
+  @override
+  String get spritePath => 'items/frenesi.png';
+  @override
+  Color get cor1 => Palette.vermelho;
+  @override
+  Color get cor2 => Palette.marromEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.item_frenesi;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_frenesiDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    // `Player.tempoDesdeAbate` anda sozinho no `update`; aqui só se lê.
+    if (player.tempoDesdeAbate > janela) {
+      player.abatesSeguidos = 0;
+      return;
+    }
+    final pilhas = player.abatesSeguidos > maxPilhas
+        ? maxPilhas
+        : player.abatesSeguidos;
+    if (pilhas <= 0) return;
+    player.cdMultDerivado *= 1.0 - porAbate * pilhas;
+  }
+}
+
+/// Campeão abatido larga um item de verdade.
+///
+/// Hoje campeão é risco puro: o dobro de tamanho e 150% de vida por uns dois
+/// pontos de XP a mais, então a jogada certa é evitar. Com isto ele vira
+/// caça, que era a intenção da mecânica desde o começo.
+///
+/// Sorteia da pool da run (`sortearItemEfeito` JÁ retira o que devolve, então
+/// não sai repetido) e cai num upgrade quando a pool acaba — nunca larga
+/// nada.
+class PresaDoCampeao extends ItemEfeito {
+  const PresaDoCampeao();
+
+  @override
+  String get id => 'presaDoCampeao';
+  @override
+  String get spritePath => 'items/presaCampeao.png';
+  @override
+  Color get cor1 => Palette.branco;
+  @override
+  Color get cor2 => Palette.cinzaEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.item_presaDoCampeao;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_presaDoCampeaoDesc;
+
+  @override
+  void aoMatarInimigo(Player player, Enemy alvo) {
+    if (!alvo.ehCampeao) return;
+
+    // `alvo.parent`, e não `player.parent`: os dois são o mundo, mas o do alvo
+    // é quem ainda está montado no quadro em que esta linha roda.
+    final mundo = alvo.parent;
+    if (mundo == null) return;
+
+    final jogo = player.game;
+    final item = jogo is CreaturesRogueGame ? jogo.sortearItemEfeito() : null;
+
+    if (item != null) {
+      mundo.add(ItemEfeitoPickup(position: alvo.position.clone(), item: item));
+      return;
+    }
+
+    mundo.add(
+      PowerUpItem(
+        position: alvo.position.clone(),
+        tipo: PowerUpType.values[Random().nextInt(PowerUpType.values.length)],
+      ),
+    );
+  }
+}
+
+/// A sala de tesouro passa a nascer com TRÊS pedestais em vez de dois (ver
+/// `RoomComponent._spawnTreasure`). Continua levando um só: o item não dá
+/// mais prêmio, dá mais opção.
+///
+/// Não tem gancho nenhum — quem consulta é a sala, na hora de montar. E por
+/// isso vale SÓ A PARTIR DO ANDAR SEGUINTE: todas as salas de um andar são
+/// criadas de uma vez quando o andar é gerado, então a sala de tesouro do
+/// andar em que você achou o item já nasceu com dois.
+class BauDoTesouro extends ItemEfeito {
+  const BauDoTesouro();
+
+  @override
+  String get id => 'bauDoTesouro';
+  @override
+  String get spritePath => 'items/bauDoTesouro.png';
+  @override
+  Color get cor1 => Palette.amarelo;
+  @override
+  Color get cor2 => Palette.marromEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.item_bauDoTesouro;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_bauDoTesouroDesc;
+}
+
+/// +[bonusDano] de dano, e o escudo passivo nunca mais enche.
+///
+/// NÃO é o Desesperado com outra roupa: aquele PREMIA estar sem escudo e
+/// devolve o bônus quando a barra volta; este FORÇA a condição pra sempre. Os
+/// dois na mesma run são uma build, não uma repetição — e a bolha de
+/// habilidade (`shieldHits`) segue funcionando, que é a única defesa que
+/// sobra.
+class CascaDeOvo extends ItemEfeito {
+  const CascaDeOvo();
+
+  static const double bonusDano = 0.5;
+
+  @override
+  String get id => 'cascaDeOvo';
+  @override
+  String get spritePath => 'items/cascaDeOvo.png';
+  @override
+  Color get cor1 => Palette.bege;
+  @override
+  Color get cor2 => Palette.laranja;
+  @override
+  String nome(BuildContext context) => context.l10n.item_cascaDeOvo;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_cascaDeOvoDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    Player.danoMultDerivado *= 1.0 + bonusDano;
+    // A trava vale mais que zerar o valor: a regeneração roda depois deste
+    // laço no mesmo `update` (ver `Player.escudoTravado`).
+    player.escudoTravado = true;
+    if (player.shield > 0) player.shield = 0;
+  }
+}
+
+/// A desvantagem elemental (o 0,5x da tabela) deixa de existir: todo golpe
+/// seu vale pelo menos 1,0x.
+///
+/// NÃO dá vantagem — o 2,0x continua 2,0x, então trocar de criatura pelo
+/// tipo certo segue valendo. O que ele tira é a PUNIÇÃO, que é o que hoje
+/// obriga a largar a criatura de que você gosta numa sala inteira do tipo
+/// errado.
+class Prisma extends ItemEfeito {
+  const Prisma();
+
+  @override
+  String get id => 'prisma';
+  @override
+  String get spritePath => 'items/prisma.png';
+  @override
+  Color get cor1 => Palette.branco;
+  @override
+  Color get cor2 => Palette.indigo;
+  @override
+  String nome(BuildContext context) => context.l10n.item_prisma;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_prismaDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    player.ignoraDesvantagemElemental = true;
+  }
+}
+
+
+/// Um filhote orbita o jogador e ATIRA sozinho no inimigo mais próximo, com o
+/// ELEMENTO da criatura ativa — troque de criatura e ele troca de cor e de
+/// tipo junto.
+///
+/// Atira, e não machuca por encosto, pra não repetir a [Coleira]. As duas
+/// nasceram como "corpo girando que fere quem toca" e a diferença entre elas
+/// era só numérica — dano, raio e velocidade angular —, o que é o mesmo item
+/// com dois nomes. Agora cada uma tem um verbo: esta cobre o que você NÃO
+/// alcança, a Coleira defende o que está colado em você e cobra velocidade por
+/// isso. Carregar as duas passa a somar em vez de repetir.
+///
+/// O orbital é uma subclasse própria, e não um `OrbitProjectile` cru, por uma
+/// razão prática: os espinhos do Toco de Madeira também são `OrbitProjectile`,
+/// e sem um tipo só dele este item não teria como perguntar "o meu ainda está
+/// lá?" sem contar os do Toco junto.
+///
+/// A vigia é por tique periódico e não por um campo guardando a referência:
+/// instância de `ItemEfeito` é `const` e não guarda estado, e um tique que
+/// repara sozinho cobre de graça todo jeito de perder o filhote (morte, troca
+/// de andar, fim de run).
+class Ninhada extends ItemEfeito {
+  const Ninhada();
+
+  static const double intervaloVigia = 0.5;
+  static const double raio = 20.0;
+  static const double velocidadeAngular = 2.2;
+
+  /// Dano do TIRO. O corpo do filhote não fere (ver [NinhoOrbital]).
+  static const double coefDano = 0.5;
+
+  static const double intervaloTiro = 1.2;
+
+  /// Até onde ele enxerga alvo. Curto o bastante pra não atirar em inimigo de
+  /// outra sala — ele nasce no mundo, não na sala, então a varredura de
+  /// inimigos não tem fronteira própria.
+  static const double alcance = 72.0;
+
+  static const double velocidadeTiro = 150.0;
+
+  @override
+  String get id => 'ninhada';
+  @override
+  String get spritePath => 'items/ninho.png';
+  @override
+  Color get cor1 => Palette.bege;
+  @override
+  Color get cor2 => Palette.marromEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.item_ninhada;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_ninhadaDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    player.aplicarEfeito(
+      #ninhadaVigia,
+      intervaloVigia,
+      stack: EfeitoStack.ignora,
+      dono: EfeitoDono.jogador,
+      aoIniciar: () => _garantirFilhote(player),
+    );
+  }
+
+  /// Ao trocar de criatura o filhote velho é descartado; o tique seguinte
+  /// devolve um com a cor e o tipo da criatura que entrou.
+  @override
+  void aoTrocarCriatura(Player player, CreatureData sai, CreatureData entra) {
+    for (final f in _filhotes(player)) {
+      f.removeFromParent();
+    }
+  }
+
+  Iterable<NinhoOrbital> _filhotes(Player player) =>
+      player.parent?.children.whereType<NinhoOrbital>() ??
+      const <NinhoOrbital>[];
+
+  void _garantirFilhote(Player player) {
+    if (_filhotes(player).isNotEmpty) return;
+    final criatura = player.creatureData;
+    player.parent?.add(
+      NinhoOrbital(
+        owner: player,
+        anguloAtual: 0,
+        raio: raio,
+        velocidadeAngular: velocidadeAngular,
+        danoTiro: criatura.stats.ataque * coefDano,
+        intervaloTiro: intervaloTiro,
+        alcance: alcance,
+        velocidadeTiro: velocidadeTiro,
+        tipo: criatura.tipo,
+        sprPath: 'actors/bird.png',
+        cor1: criatura.corClara,
+        cor2: criatura.corEscura,
+      ),
+    );
+  }
+}
+
+/// O filhote da [Ninhada]: orbita o dono e dispara sozinho.
+///
+/// Tipo próprio, e não um `OrbitProjectile` cru, por duas razões. A primeira
+/// é a lógica de tiro daqui. A segunda é identificação: os espinhos do Toco de
+/// Madeira também são `OrbitProjectile`, e sem um tipo só dele a `Ninhada` não
+/// teria como perguntar "o meu ainda está lá?" sem contar os do Toco junto.
+///
+/// `dmg: 0` de propósito — o corpo do filhote NÃO fere. Quem fere é o tiro.
+/// Sem isso ele acumularia os dois papeis e voltaria a ser a Coleira.
+class NinhoOrbital extends OrbitProjectile {
+  NinhoOrbital({
+    required PositionComponent owner,
+    required double anguloAtual,
+    required double raio,
+    required double velocidadeAngular,
+    required this.danoTiro,
+    required this.intervaloTiro,
+    required this.alcance,
+    required this.velocidadeTiro,
+    CreatureType tipo = CreatureType.neutro,
+    String sprPath = 'projeteis/proj1.png',
+    Color cor1 = Palette.bege,
+    Color cor2 = Palette.marromEsc,
+  }) : super(
+         owner: owner,
+         anguloAtual: anguloAtual,
+         raio: raio,
+         velocidadeAngular: velocidadeAngular,
+         dmg: 0,
+         tipo: tipo,
+         sprPath: sprPath,
+         cor1: cor1,
+         cor2: cor2,
+       );
+
+  final double danoTiro;
+  final double intervaloTiro;
+  final double alcance;
+  final double velocidadeTiro;
+
+  double _recarga = 0.0;
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+
+    // Desfaz o giro que o `OrbitProjectile` acabou de aplicar. Aquele
+    // `angle = anguloAtual` é certo pros espinhos do Toco de Madeira, que são
+    // simetricos e devem rodar; num bicho com cabeça e pé ele deixa o filhote
+    // de ponta-cabeça em metade da órbita. Aqui, e não lá no pai, porque os
+    // dois usos querem coisas opostas do mesmo canal.
+    angle = 0;
+
+    // Vira pro lado pra onde está indo. A órbita é `(cos, sin) * raio`, então
+    // o deslocamento é a derivada disso, `(-sin, cos)` — ou seja ele vai pra
+    // direita quando `sin` é negativo.
+    //
+    // `bird.png` nasce olhando pra ESQUERDA (o bico ocupa as primeiras
+    // colunas), por isso é o caso da direita que leva o espelho.
+    scale.x = sin(anguloAtual) < 0 ? -1.0 : 1.0;
+
+    _recarga -= dt;
+    if (_recarga > 0) return;
+
+    final alvo = _alvoMaisProximo();
+    if (alvo == null) return;
+
+    // Só recarrega quando ATIRA, não a cada quadro: sem alvo à vista o
+    // filhote fica de tocaia e dispara no instante em que alguém entra no
+    // alcance, em vez de esperar o relógio virar.
+    _recarga = intervaloTiro;
+
+    final delta = alvo.position - position;
+    if (delta.length == 0) return;
+    parent?.add(
+      Projectile(
+        owner: owner,
+        position: position.clone(),
+        direction: delta.normalized(),
+        speed: velocidadeTiro,
+        dmg: danoTiro,
+        lifeTime: 1.5,
+        sprPath: 'projeteis/proj1.png',
+        cor1: cor1,
+        cor2: cor2,
+        tipo: tipo,
+        playSfx: false,
+      ),
+    );
+  }
+
+  Enemy? _alvoMaisProximo() {
+    final vizinhos = parent?.children.whereType<Enemy>() ?? const <Enemy>[];
+    Enemy? perto;
+    var menor = alcance;
+    for (final inimigo in vizinhos) {
+      if (inimigo.summonTimer > 0) continue;
+      final d = inimigo.position.distanceTo(position);
+      if (d < menor) {
+        menor = d;
+        perto = inimigo;
+      }
+    }
+    return perto;
+  }
+}
+
+/// Quem você mata deixa uma poça do PRÓPRIO elemento: inimigo de fogo vira
+/// queimadura no chão, de planta vira veneno.
+///
+/// Elemento do morto, e não o seu, de propósito: assim a sala vai ficando
+/// cheia do tipo que aquele bioma usa, e você escolhe a criatura pensando no
+/// que o chão vai virar, não só no que está vivo.
+class Espolio extends ItemEfeito {
+  const Espolio();
+
+  static const double coefDano = 0.8;
+  static const double duracao = 3.5;
+
+  @override
+  String get id => 'espolio';
+  @override
+  String get spritePath => 'items/espolio.png';
+  @override
+  Color get cor1 => Palette.mauve;
+  @override
+  Color get cor2 => Palette.roxoEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.item_espolio;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_espolioDesc;
+
+  @override
+  void aoMatarInimigo(Player player, Enemy alvo) {
+    final morto = alvo.creature;
+    if (morto == null) return;
+    final mundo = alvo.parent;
+    if (mundo == null) return;
+
+    final (sprite, dot) = switch (morto.tipo) {
+      CreatureType.fogo => ('projeteis/fogo.png', DotKind.queimadura),
+      CreatureType.planta => ('projeteis/folha.png', DotKind.veneno),
+      CreatureType.agua => ('projeteis/proj1.png', null),
+      CreatureType.eletrico => ('projeteis/raio.png', null),
+      CreatureType.neutro => ('projeteis/nuvemP.png', null),
+    };
+
+    mundo.add(
+      Projectile(
+        owner: player,
+        position: alvo.position.clone(),
+        direction: Vector2.zero(),
+        speed: 0,
+        lifeTime: duracao,
+        dmg: player.creatureData.stats.ataque * coefDano,
+        sprPath: sprite,
+        cor1: morto.corClara,
+        cor2: morto.corEscura,
+        tipo: morto.tipo,
+        radius: 8,
+        atravessa: 100,
+        dotKind: dot,
+        dotTicks: 3,
+        playSfx: false,
+      ),
+    );
+  }
+}
+
+/// Toda pedra quebrada larga alguma coisa.
+///
+/// Sem ele a pedra dá coração ou moeda em 5% das vezes, ou seja: quebrar
+/// pedra é quase só limpar o caminho. Com ele o cenário vira recurso, que é
+/// um eixo de progressão que o jogo ainda não tinha.
+class VeioRico extends ItemEfeito {
+  const VeioRico();
+
+  static const int xpExtra = 2;
+
+  @override
+  String get id => 'veioRico';
+  @override
+  String get spritePath => 'items/veioRico.png';
+  @override
+  Color get cor1 => Palette.amarelo;
+  @override
+  Color get cor2 => Palette.cinzaEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.item_veioRico;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_veioRicoDesc;
+
+  @override
+  void aoQuebrarPedra(Player player, Rock pedra) {
+    final mundo = pedra.parent;
+    if (mundo == null) return;
+    final rng = Random();
+
+    mundo.add(CoinPickup(position: pedra.position.clone()));
+    for (var i = 0; i < xpExtra; i++) {
+      mundo.add(
+        XpPickup(
+          position:
+              pedra.position +
+              Vector2(rng.nextDouble() * 16 - 8, rng.nextDouble() * 16 - 8),
+        ),
+      );
+    }
+  }
+}
+
+/// Pedra quebrada estoura.
+///
+/// A explosão quebra as pedras vizinhas, que estouram também — a reação em
+/// cadeia é INTENCIONAL, e é o que torna uma sala cheia de pedra uma arma. Ela
+/// não corre solta: gasta um quadro por elo (o `add` só vale no fim do quadro)
+/// e acaba quando as pedras acabam.
+///
+/// `isEnemy` fica no padrão (false), então o estouro só pega inimigo. Quebrar
+/// pedra do seu lado não pode te punir por usar o item.
+class PeDeCabra extends ItemEfeito {
+  const PeDeCabra();
+
+  static const double coefDano = 1.2;
+  static const double raio = 34.0;
+
+  @override
+  String get id => 'peDeCabra';
+  @override
+  String get spritePath => 'items/peDeCabra.png';
+  @override
+  Color get cor1 => Palette.cinza;
+  @override
+  Color get cor2 => Palette.marromEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.item_peDeCabra;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_peDeCabraDesc;
+
+  @override
+  void aoQuebrarPedra(Player player, Rock pedra) {
+    pedra.parent?.add(
+      ExplosionHitbox(
+        position: pedra.position.clone(),
+        dmg: player.creatureData.stats.ataque * coefDano,
+        knockback: 60,
+        size: Vector2.all(raio),
+        tipo: player.creatureData.tipo,
+        cor1: Palette.cinza,
+        cor2: Palette.marromEsc,
+      ),
+    );
+  }
+}
+
+/// Você não cura mais. Em troca, o dano cresce a cada andar sobrevivido.
+///
+/// O bônus sai do andar e não de um tempo corrido porque é o andar que mede o
+/// que você pagou: cada um foi atravessado sem nenhum coração. E a cura
+/// recusada devolve `false` em `Player.heal`, então o coração FICA no chão em
+/// vez de sumir — se depois você largar o Jejum, ele ainda está lá.
+class Jejum extends ItemEfeito {
+  const Jejum();
+
+  static const double bonusPorAndar = 0.15;
+
+  @override
+  String get id => 'jejum';
+  @override
+  String get spritePath => 'items/jejum.png';
+  @override
+  Color get cor1 => Palette.cinza;
+  @override
+  Color get cor2 => Palette.preto;
+  @override
+  String nome(BuildContext context) => context.l10n.item_jejum;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_jejumDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    player.curaBloqueada = true;
+    final jogo = player.game;
+    final andar = jogo is CreaturesRogueGame ? jogo.currentFloor : 1;
+    Player.danoMultDerivado *= 1.0 + bonusPorAndar * (andar - 1);
+  }
+}
+
+/// Uma bola de ferro presa a você por uma corrente: gira devagar, machuca
+/// forte quem encosta, e cobra velocidade.
+///
+/// É o oposto da [Ninhada] de propósito — aquela é pequena, rápida, elemental
+/// e de graça; esta é pesada, lenta, neutra e cobra. Duas órbitas que jogam
+/// diferente valem mais que duas parecidas.
+///
+/// O custo entra pelo [Player.velMultDerivado], canal reconstruído todo
+/// quadro. Um `velMult -= x` pareado com um `+= x` no fim seria a receita de
+/// virar permanente no dia em que o par se desequilibrasse.
+class Coleira extends ItemEfeito {
+  const Coleira();
+
+  static const double intervaloVigia = 0.5;
+  static const double raio = 30.0;
+  static const double velocidadeAngular = 1.1;
+  static const double coefDano = 2.0;
+  static const double custoVelocidade = 0.15;
+
+  @override
+  String get id => 'coleira';
+  @override
+  String get spritePath => 'items/coleira.png';
+  @override
+  Color get cor1 => Palette.cinzaEsc;
+  @override
+  Color get cor2 => Palette.preto;
+  @override
+  String nome(BuildContext context) => context.l10n.item_coleira;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_coleiraDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    player.velMultDerivado *= 1.0 - custoVelocidade;
+    player.aplicarEfeito(
+      #coleiraVigia,
+      intervaloVigia,
+      stack: EfeitoStack.ignora,
+      dono: EfeitoDono.jogador,
+      aoIniciar: () => _garantirBola(player),
+    );
+  }
+
+  void _garantirBola(Player player) {
+    final existentes =
+        player.parent?.children.whereType<BolaCorrente>() ??
+        const <BolaCorrente>[];
+    if (existentes.isNotEmpty) return;
+    final bola = BolaCorrente(
+      owner: player,
+      anguloAtual: pi,
+      raio: raio,
+      velocidadeAngular: velocidadeAngular,
+      dmg: player.creatureData.stats.ataque * coefDano,
+      atravessaObstaculos: true,
+    );
+    player.parent?.add(bola);
+    // Irmã da bola, não filha — ver `CorrenteVisual`. Ela se remove sozinha
+    // quando a bola sai da árvore, então o par nasce e morre junto sem
+    // ninguém precisar lembrar de limpar.
+    player.parent?.add(CorrenteVisual(dono: player, bola: bola));
+  }
+}
+
+/// A bola da [Coleira]. Tipo próprio pelo mesmo motivo do [NinhoOrbital].
+class BolaCorrente extends OrbitProjectile {
+  BolaCorrente({
+    required super.owner,
+    required super.anguloAtual,
+    required super.raio,
+    required super.velocidadeAngular,
+    super.dmg,
+    super.atravessaObstaculos,
+  }) : super(
+         sprPath: 'projeteis/ballChain.png',
+         cor1: Palette.cinza,
+         cor2: Palette.indigo,
+       );
+}
+
+/// Matar com VANTAGEM elemental devolve energia.
+///
+/// Premia trocar de criatura pelo motivo certo, que é o que a tabela de tipos
+/// existe pra ensinar e o que o jogo hoje quase não recompensa — a vantagem
+/// só faz o inimigo morrer mais rápido, e morrer mais rápido não devolve nada.
+///
+/// A conta usa o tipo da criatura ATIVA, e não o do golpe que matou: o
+/// [aoMatarInimigo] não carrega o golpe, e "matei com a criatura certa" é de
+/// qualquer forma a leitura que o item promete.
+class Ressonancia extends ItemEfeito {
+  const Ressonancia();
+
+  static const double energiaDevolvida = 2.5;
+
+  @override
+  String get id => 'ressonancia';
+  @override
+  String get spritePath => 'items/ressonancia.png';
+  @override
+  Color get cor1 => Palette.cinza;
+  @override
+  Color get cor2 => Palette.cinzaEsc;
+  @override
+  String nome(BuildContext context) => context.l10n.item_ressonancia;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_ressonanciaDesc;
+
+  @override
+  void aoMatarInimigo(Player player, Enemy alvo) {
+    final morto = alvo.creature;
+    if (morto == null) return;
+    if (typeMultiplier(player.creatureData.tipo, morto.tipo) <= 1.0) return;
+
+    player.energia = (player.energia + energiaDevolvida).clamp(
+      0.0,
+      player.energiaMax,
+    );
+    player.parent?.add(
+      TextEffect.dano(
+        energiaDevolvida,
+        position: player.position.clone() + Vector2(0, -player.size.y / 2 - 4),
+        color: Palette.azul,
+      ),
+    );
+  }
+}
+
+
+/// Cinzas EXATOS que o `PaletteSwapper` procura no sprite. Passar eles como
+/// substituição é uma troca IDENTIDADE: o desenho sai exatamente como está no
+/// arquivo.
+///
+/// É assim que as passivas de aposentadoria usam o sprite da própria criatura
+/// sem a cor dela: cinza é o que sobra de uma criatura que saiu de campo, e
+/// serve de marca de família — item colorido é achado, item cinza é lembrança.
+const Color cinzaMarcadorClaro = Color(0xFFA9A9A9);
+const Color cinzaMarcadorEscuro = Color(0xFF545454);
+
+/// Paassarin (`ave_neutro`). Eco do Vôo Alto: todo botão B estende a janela de
+/// invulnerabilidade.
+///
+/// SOMA ao que sobrou em vez de pedir um valor fixo: `grantInvulnerability`
+/// fica com o maior dos dois, então pedir 0,4s durante uma esquiva de 0,6s
+/// não faria nada. Assim o bônus se sente igual nas duas famílias de botão B.
+class PenaDeVoo extends ItemEfeito {
+  const PenaDeVoo();
+
+  static const double bonus = 0.4;
+
+  @override
+  String get id => 'penaDeVoo';
+  @override
+  bool get sorteavel => false;
+  @override
+  String get spritePath => 'actors/aveNeutro.png';
+  @override
+  Color get cor1 => cinzaMarcadorClaro;
+  @override
+  Color get cor2 => cinzaMarcadorEscuro;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_penaDeVoo;
+  @override
+  String descricao(BuildContext context) => context.l10n.passiva_penaDeVooDesc;
+
+  @override
+  void aoUsarAbility2(Player player) {
+    player.grantInvulnerability(player.invulnerabilidadeRestante + bonus);
+  }
+}
+
+/// layfishy (`peixe_neutro`). Eco das Escamas Escorregadias: todo botão B dá
+/// imunidade a STATUS.
+///
+/// Par de propósito com a [PenaDeVoo], e o par ensina a diferença que o jogo
+/// faz: aquela bloqueia DANO (`grantInvulnerability`), esta bloqueia CONDIÇÃO
+/// — lentidão, cegueira e empurrão (`grantStatusImmunity`). Carregar as duas
+/// é o que torna a distinção visível.
+class EscamasGuardadas extends ItemEfeito {
+  const EscamasGuardadas();
+
+  static const double duracao = 2.0;
+
+  @override
+  String get id => 'escamasGuardadas';
+  @override
+  bool get sorteavel => false;
+  @override
+  String get spritePath => 'actors/peixeNeutro.png';
+  @override
+  Color get cor1 => cinzaMarcadorClaro;
+  @override
+  Color get cor2 => cinzaMarcadorEscuro;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_escamasGuardadas;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_escamasGuardadasDesc;
+
+  @override
+  void aoUsarAbility2(Player player) {
+    player.grantStatusImmunity(duracao);
+  }
+}
+
+/// Hermiton (`caranguejo_fogo`). Eco do Recolher no Casco: todo botão B deixa
+/// uma fumaça que cega e atrasa quem entra nela.
+///
+/// Não é clone do `RastroFlamejante`: aquele explode e queima, este não causa
+/// dano nenhum. Um limpa, o outro atrapalha.
+class FumacaResidual extends ItemEfeito {
+  const FumacaResidual();
+
+  static const double duracao = 4.0;
+  static const double cegueira = 1.5;
+  static const double lentidaoDuracao = 2.0;
+  static const double lentidaoFator = 0.6;
+
+  @override
+  String get id => 'fumacaResidual';
+  @override
+  bool get sorteavel => false;
+  @override
+  String get spritePath => 'actors/caranguejoFogo.png';
+  @override
+  Color get cor1 => cinzaMarcadorClaro;
+  @override
+  Color get cor2 => cinzaMarcadorEscuro;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_fumacaResidual;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_fumacaResidualDesc;
+
+  @override
+  void aoUsarAbility2(Player player) {
+    player.parent?.add(
+      Projectile(
+        owner: player,
+        position: player.position.clone(),
+        direction: Vector2.zero(),
+        speed: 0,
+        dmg: 0,
+        kbForce: 0,
+        sprPath: 'projeteis/nuvem.png',
+        cor1: Palette.cinza,
+        cor2: Palette.cinzaEsc,
+        tipo: player.creatureData.tipo,
+        cegoDuracao: cegueira,
+        lentidaoDuracao: lentidaoDuracao,
+        lentidaoFator: lentidaoFator,
+        atravessa: 100,
+        size: Vector2(24, 24),
+        lifeTime: duracao,
+        radius: 12,
+        playSfx: false,
+      ),
+    );
+  }
+}
+
+/// Esporim (`cogumelo_planta`). Eco do Casulo de Esporos: quando a barra de
+/// escudo zera, ela arrebenta numa nuvem de veneno.
+///
+/// É o casulo estourando, e o gancho [aoQuebrarEscudo] quase não tinha dono —
+/// só o Estilhaço. Dispara pela barra passiva, não pela bolha de habilidade:
+/// são dois sistemas, e a bolha estoura com frequência muito diferente.
+class EsporosLatentes extends ItemEfeito {
+  const EsporosLatentes();
+
+  static const double coef = 0.6;
+  static const double alcance = 26.0;
+  static const int ticks = 4;
+
+  @override
+  String get id => 'esporosLatentes';
+  @override
+  bool get sorteavel => false;
+  @override
+  String get spritePath => 'actors/coguPlanta.png';
+  @override
+  Color get cor1 => cinzaMarcadorClaro;
+  @override
+  Color get cor2 => cinzaMarcadorEscuro;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_esporosLatentes;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_esporosLatentesDesc;
+
+  @override
+  void aoQuebrarEscudo(Player player) {
+    player.parent?.add(
+      AuraPulseEffect(
+        position: player.position.clone(),
+        raio: alcance,
+        cor1: Palette.verde,
+        cor2: Palette.verdeEsc,
+      ),
+    );
+    // Laço direto nos inimigos em vez de uma `ExplosionHitbox`: aquela quebra
+    // pedra (ver `ExplosionHitbox`), e com o `Pé de Cabra` na mochila cada
+    // escudo quebrado viraria uma reação em cadeia pela sala.
+    final inimigos =
+        player.parent?.children.whereType<Enemy>() ?? const <Enemy>[];
+    for (final inimigo in inimigos) {
+      if (inimigo.position.distanceTo(player.position) > alcance) continue;
+      inimigo.takeDamage(
+        player.creatureData.stats.ataque * coef,
+        tipoAtacante: CreatureType.planta,
+      );
+      inimigo.applyDot(DotKind.veneno, ticks);
+    }
+  }
+}
+
+/// Doguin (`cao_neutro`). Eco do Latido Feroz: cada abate solta um latido que
+/// atrasa quem estiver perto.
+///
+/// Não é clone do `BradoReflexo` (urso), que EMPURRA ao apanhar: aqui é
+/// lentidão, e ao matar. Gatilho e efeito diferentes.
+class EcoDoLatido extends ItemEfeito {
+  const EcoDoLatido();
+
+  static const double alcance = 40.0;
+  static const double duracao = 2.0;
+  static const double fator = 0.5;
+
+  @override
+  String get id => 'ecoDoLatido';
+  @override
+  bool get sorteavel => false;
+  @override
+  String get spritePath => 'actors/caoNeutro.png';
+  @override
+  Color get cor1 => cinzaMarcadorClaro;
+  @override
+  Color get cor2 => cinzaMarcadorEscuro;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_ecoDoLatido;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_ecoDoLatidoDesc;
+
+  @override
+  void aoMatarInimigo(Player player, Enemy alvo) {
+    player.parent?.add(
+      AuraPulseEffect(
+        position: player.position.clone(),
+        raio: alcance,
+        cor1: Palette.bege,
+        cor2: Palette.marromEsc,
+      ),
+    );
+    // Mesma razão do `EsporosLatentes` pra não usar `ExplosionHitbox`: ela
+    // quebra pedra, e isto aqui dispara a cada abate.
+    final inimigos =
+        player.parent?.children.whereType<Enemy>() ?? const <Enemy>[];
+    for (final inimigo in inimigos) {
+      if (inimigo.position.distanceTo(player.position) > alcance) continue;
+      inimigo.applyLentidao(duracao, fator: fator);
+    }
+  }
+}
+
+/// Leão Elétrico (`leao_eletrico`). Eco da Investida da Lança: o crítico
+/// dispara uma lança que atravessa.
+///
+/// O estrangulador de 0,3s NÃO é zelo: a lança acerta, o `Enemy.takeDamage`
+/// rola crítico de novo, e o [aoCritar] dispara outra lança. Com `atravessa`
+/// alto e o Sangue Frio empurrando a chance pra cima, isso vira um laço que
+/// só para quando a sala esvazia. Tique de veneno e queimadura também passam
+/// pelo `takeDamage` e também rolam crítico, então nem "só golpe direto"
+/// resolveria.
+class PontaDaLanca extends ItemEfeito {
+  const PontaDaLanca();
+
+  static const double coef = 0.7;
+  static const double velocidade = 170;
+  static const double estrangulador = 0.3;
+
+  @override
+  String get id => 'pontaDaLanca';
+  @override
+  bool get sorteavel => false;
+  @override
+  String get spritePath => 'actors/gatoEletrico.png';
+  @override
+  Color get cor1 => cinzaMarcadorClaro;
+  @override
+  Color get cor2 => cinzaMarcadorEscuro;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_pontaDaLanca;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_pontaDaLancaDesc;
+
+  @override
+  void aoCritar(Player player, Enemy alvo) {
+    player.aplicarEfeito(
+      #pontaDaLanca,
+      estrangulador,
+      stack: EfeitoStack.ignora,
+      dono: EfeitoDono.jogador,
+      aoIniciar: () => _lancar(player, alvo),
+    );
+  }
+
+  void _lancar(Player player, Enemy alvo) {
+    final delta = alvo.position - player.position;
+    if (delta.length == 0) return;
+    final frente = delta.normalized();
+    player.parent?.add(
+      Projectile(
+        owner: player,
+        position: player.position.clone() + frente * player.size.x / 2,
+        direction: frente,
+        speed: velocidade,
+        dmg: player.creatureData.stats.ataque * coef,
+        atravessa: 3,
+        sprPath: 'projeteis/proj2.png',
+        cor1: Palette.amarelo,
+        cor2: Palette.laranja,
+        tipo: player.creatureData.tipo,
+      ),
+    );
+  }
+}
+
+/// Meao (`gato_neutro`). Um golpe letal por ANDAR deixa você com 1 de vida em
+/// vez de tirar a criatura de campo.
+///
+/// É a única rede de segurança contra morte do jogo. Por andar, e não por
+/// sala nem por run: por sala salvaria demais, por run quase nunca apareceria.
+class SeteVidas extends ItemEfeito {
+  const SeteVidas();
+
+  @override
+  String get id => 'seteVidas';
+  @override
+  bool get sorteavel => false;
+  @override
+  String get spritePath => 'actors/gatoNeutro.png';
+  @override
+  Color get cor1 => cinzaMarcadorClaro;
+  @override
+  Color get cor2 => cinzaMarcadorEscuro;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_seteVidas;
+  @override
+  String descricao(BuildContext context) => context.l10n.passiva_seteVidasDesc;
+
+  @override
+  bool aoCairEmCombate(Player player) {
+    if (player.seteVidasUsada) return false;
+    player.seteVidasUsada = true;
+    player.grantInvulnerability(1.0);
+    player.parent?.add(
+      AuraPulseEffect(
+        position: player.position.clone(),
+        raio: 20,
+        cor1: Palette.branco,
+        cor2: Palette.cinza,
+      ),
+    );
+    return true;
+  }
+}
+
+/// Toco de Madeira (`toco_planta`). Eco do Enraizar: ficar parado crava raízes
+/// e reduz o dano recebido.
+///
+/// Único efeito do jogo que premia NÃO se mexer. A conta sai de
+/// `Player.tempoParado`, que mede DESLOCAMENTO e não `velocity` — ver a doc
+/// daquele campo pra saber por quê.
+class RaizProfunda extends ItemEfeito {
+  const RaizProfunda();
+
+  /// Quanto tempo parado até a redução começar a subir.
+  static const double carencia = 1.0;
+
+  /// Quanto tempo parado até o máximo.
+  static const double ateOMaximo = 3.0;
+
+  static const double reducaoMax = 0.4;
+
+  @override
+  String get id => 'raizProfunda';
+  @override
+  bool get sorteavel => false;
+  @override
+  String get spritePath => 'actors/tocoPlanta.png';
+  @override
+  Color get cor1 => cinzaMarcadorClaro;
+  @override
+  Color get cor2 => cinzaMarcadorEscuro;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_raizProfunda;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_raizProfundaDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    final parado = player.tempoParado - carencia;
+    if (parado <= 0) return;
+    final fracao = (parado / (ateOMaximo - carencia)).clamp(0.0, 1.0);
+    player.reducaoDanoDerivada += reducaoMax * fracao;
+  }
+}
+
+/// Tubarão de Água (`tubarao_agua`). Faro de sangue: mais dano contra inimigo
+/// com menos da metade da vida.
+///
+/// Dano de execução é um eixo que nenhum outro item tem. Vale contra boss e
+/// campeão também, que é onde a metade final da barra custa mais caro.
+class FaroDeSangue extends ItemEfeito {
+  const FaroDeSangue();
+
+  static const double bonus = 0.35;
+
+  @override
+  String get id => 'faroDeSangue';
+  @override
+  bool get sorteavel => false;
+  @override
+  String get spritePath => 'actors/tubaAgua.png';
+  @override
+  Color get cor1 => cinzaMarcadorClaro;
+  @override
+  Color get cor2 => cinzaMarcadorEscuro;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_faroDeSangue;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_faroDeSangueDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    player.bonusAlvoFerido += bonus;
+  }
+}
+
 class PassivasAposentadoria {
   static const Map<String, ItemEfeito> porCriatura = {
     'roedor_fogo': RastroFlamejante(),
@@ -1688,6 +2872,15 @@ class PassivasAposentadoria {
     'slime_planta': PeconhaReflexiva(),
     'ourico_eletrico': RetaliacaoEletrica(),
     'pinguim_agua': RastroCongelante(),
+    'ave_neutro': PenaDeVoo(),
+    'peixe_neutro': EscamasGuardadas(),
+    'caranguejo_fogo': FumacaResidual(),
+    'cogumelo_planta': EsporosLatentes(),
+    'cao_neutro': EcoDoLatido(),
+    'leao_eletrico': PontaDaLanca(),
+    'gato_neutro': SeteVidas(),
+    'toco_planta': RaizProfunda(),
+    'tubarao_agua': FaroDeSangue(),
   };
 
   static ItemEfeito? de(String creatureId) => porCriatura[creatureId];

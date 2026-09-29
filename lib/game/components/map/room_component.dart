@@ -188,9 +188,10 @@ class RoomComponent extends PositionComponent with HasGameRef {
     } else if (data.type == RoomType.desafio) {
       _spawnDesafio();
     } else if (data.type == RoomType.start) {
-      if (dungeon == 1 && floor ==1) {
-        _spawnTutorial();
-      //  _spawnSalaDeTeste();
+      if (floor ==1) {
+        _spawnTreasure();
+         if (dungeon ==1)_spawnTutorial();
+        //_spawnSalaDeTeste();
       }
     }
   }
@@ -299,8 +300,10 @@ class RoomComponent extends PositionComponent with HasGameRef {
       );
     }
     */
-    parent?.add(ItemEfeitoPickup(position: Vector2(width / 2 - 24, centerY + 24), item: SegundoFolego()));
-    parent?.add(ItemEfeitoPickup(position: Vector2(width / 2 + 24, centerY + 24), item: Recarga()));
+   // parent?.add(ItemEfeitoPickup(position: Vector2(width / 2 - 32, centerY + 24), item: CascaDeOvo()));
+    parent?.add(ItemEfeitoPickup(position: Vector2(width / 2 + 32, centerY + 24), item: Coleira()));
+   // parent?.add(ItemEfeitoPickup(position: Vector2(width / 2 + 32, centerY + 48), item: Espolio()));
+    parent?.add(ItemEfeitoPickup(position: Vector2(width / 2 - 32, centerY + 48), item: Ninhada()));
       Enemy enemy = DummyEnemy(
         position: Vector2(width / 2, height / 2 - 32),
         playerTarget: player,
@@ -311,15 +314,16 @@ class RoomComponent extends PositionComponent with HasGameRef {
 
   /// Afastamento de cada pedestal em relação ao centro da sala, em px.
   ///
-  /// O vão entre os dois blocos de 16px é `2 * este valor - 16`, ou seja 32px
-  /// — dois tiles. Perto o bastante pra ler como UMA oferta de duas opções, e
-  /// não como dois prêmios soltos, e largo o bastante pro jogador passar no
-  /// meio sem encostar sem querer no que não quer.
+  /// Distância entre os CENTROS de dois pedestais vizinhos, em px.
   ///
-  /// Um tile de vão (16px) seria apertado demais: a criatura de hitbox mais
-  /// larga do elenco tem 15px, então sobraria 1px de folga e o jogador ficaria
-  /// preso entre os dois pedestais tentando escolher.
-  static const double _afastamentoPedestais = 24.0;
+  /// 48 deixa 32px de vão entre blocos de 16px — dois tiles. Um tile só
+  /// (16px de vão) seria apertado demais: a criatura de hitbox mais larga do
+  /// elenco tem 15px, então sobraria 1px de folga e o jogador ficaria preso
+  /// entre os pedestais tentando escolher.
+  ///
+  /// Com três pedestais (ver `MapaDoTesouro`) a fila ocupa 16 + 32 + 16 + 32 +
+  /// 16 = 112px, e a sala tem 192 — cabe com folga de parede dos dois lados.
+  static const double _passoPedestais = 48.0;
 
   /// Sala de tesouro: DOIS pedestais, e o jogador leva UM.
   ///
@@ -337,28 +341,41 @@ class RoomComponent extends PositionComponent with HasGameRef {
     final centro =
         position + Vector2(width / 2 - 8, centerY) + Vector2(offsetX, offsetY);
 
-    final familias = [0, 1, 2]..shuffle();
-    final esquerda = familias[0];
-    final direita = familias[1];
+    // Lido AQUI, na montagem da sala, e não num gancho: o item não tem gancho
+    // nenhum. A consequência é que ele só vale do ANDAR SEGUINTE em diante,
+    // porque todas as salas de um andar nascem de uma vez quando o andar é
+    // gerado — está dito na doc do `MapaDoTesouro`.
+    final quantos = player.itens.any((i) => i is BauDoTesouro) ? 3 : 2;
 
-    final pedestalEsq = PedestalComponent(
-      position: centro - Vector2(_afastamentoPedestais, 0),
-      familia: esquerda,
-      familiaIrmao: direita,
-    );
-    final pedestalDir = PedestalComponent(
-      position: centro + Vector2(_afastamentoPedestais, 0),
-      familia: direita,
-      familiaIrmao: esquerda,
-    );
+    final familias = [0, 1, 2]..shuffle();
+
+    final pedestais = <PedestalComponent>[];
+    for (var i = 0; i < quantos; i++) {
+      // Fila centrada: com 2 as posições são -0,5 e +0,5 do passo; com 3 são
+      // -1, 0 e +1.
+      final desvio = i - (quantos - 1) / 2;
+      pedestais.add(
+        PedestalComponent(
+          position: centro + Vector2(desvio * _passoPedestais, 0),
+          familia: familias[i],
+          // O irmão citado é só pro desempate de quando a pool de ITEM_EFEITO
+          // acaba. Com três pedestais as três famílias já estão tomadas, então
+          // nesse caso raro (pool vazia, fim de run) uma oferta pode repetir a
+          // família de outra. É barato de aceitar e caro de evitar.
+          familiaIrmao: familias[(i + 1) % quantos],
+        ),
+      );
+    }
 
     // Antes do `add`: o `onLoad` de um deles pode terminar no mesmo quadro, e
-    // ele precisa já conhecer o irmão pra fechar a oferta se for o escolhido.
-    pedestalEsq.irmao = pedestalDir;
-    pedestalDir.irmao = pedestalEsq;
+    // ele precisa já conhecer os irmãos pra fechar a oferta se for o escolhido.
+    for (final p in pedestais) {
+      p.irmaos.addAll(pedestais.where((outro) => outro != p));
+    }
 
-    parent?.add(pedestalEsq);
-    parent?.add(pedestalDir);
+    for (final p in pedestais) {
+      parent?.add(p);
+    }
   }
 
   /// Três balcões, sempre nas mesmas posições: cura, um item de uso único e um
@@ -679,7 +696,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
       Vector2(-24, -8),
       Vector2(8, -8),
       Vector2(-24, 8),
-      Vector2(-8, 8),
+      Vector2(8, 8),
     ];
 
     for (var pos in posList){

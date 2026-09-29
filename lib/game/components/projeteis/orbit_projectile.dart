@@ -26,6 +26,7 @@ class OrbitProjectile extends Projectile {
     super.cor2,
     super.isEnemy,
     super.lifeTime,
+    super.atravessaObstaculos,
   }) : super(
           owner: owner,
           position: owner.absolutePosition,

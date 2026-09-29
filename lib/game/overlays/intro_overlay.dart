@@ -45,9 +45,9 @@ enum _Fase { dialogo, escolha }
 const List<String> _idsIniciais = [
   'roedor_fogo',
   'tartaruga_planta',
-  //'sapo_agua',
-  'tubarao_agua',
+  'sapo_agua',
   'ave_eletrica',
+  //'tubarao_agua',
   //'tornado_fogo',
   //'cao_neutro',
   //'gato_neutro',

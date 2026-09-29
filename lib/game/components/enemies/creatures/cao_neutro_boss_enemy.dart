@@ -22,14 +22,14 @@ class CaoNeutroBossEnemy extends Enemy with ShooterAttack {
 
   CaoNeutroBossEnemy({required super.position, required super.playerTarget})
     : super(
-        creature: CreatureRegistry.caoNeutro,
+        creature: CreatureRegistry.caoNeutroEvo,
         speed: 60.0,
         health: _vidaInicial,
         dmg: 2,
         bltSpeed: 130,
         bltImg: 'projeteis/soco.png',
-        bltCor1: CreatureRegistry.caoNeutro.corClara,
-        bltCor2: CreatureRegistry.caoNeutro.corEscura,
+        bltCor1: CreatureRegistry.caoNeutroEvo.corClara,
+        bltCor2: CreatureRegistry.caoNeutroEvo.corEscura,
         size: Vector2(28, 28),
         hitboxSize: Vector2(20, 20),
         isPushable: false,

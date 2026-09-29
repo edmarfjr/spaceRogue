@@ -147,6 +147,85 @@ class Player extends PositionComponent
   /// nenhuma pro jogador.
   double critChanceDerivada = 0.0;
 
+  /// Multiplicador de cadência da habilidade 1, reconstruído do zero a cada
+  /// quadro. Irmão derivado do [cdMult], que é permanente (o upgrade
+  /// `fireRateUp` escreve nele e fica).
+  ///
+  /// Separado justamente por isso: um bônus TEMPORÁRIO escrito no `cdMult`
+  /// teria que ser desfeito depois, e foi assim que os bônus do Couraça e do
+  /// Desesperado acabaram assados no save. Canal derivado não tem esse
+  /// problema — ele nasce 1.0 todo quadro e nunca é serializado.
+  double cdMultDerivado = 1.0;
+
+  /// Multiplicador de velocidade reconstruído a cada quadro. Irmão derivado do
+  /// [velMult], que é permanente (o upgrade `speedUp` escreve nele e fica).
+  ///
+  /// Existe pra que um item possa COBRAR velocidade sem o par soma/subtrai que
+  /// o `Desesperado` usa — par desbalanceado por um `aoTerminar` que não roda
+  /// é exatamente como um bônus temporário vira permanente sem ninguém ver.
+  double velMultDerivado = 1.0;
+
+  /// Cura desligada (ver `Jejum`). Lida em [heal], que é por onde TODA cura
+  /// passa — coração do chão, poção e sanduíche inclusos.
+  bool curaBloqueada = false;
+
+  /// Redução de dano reconstruída a cada quadro (ver `RaizProfunda`).
+  ///
+  /// Canal próprio, e não o [damageReduction] do `AbilityUser`: aquele é
+  /// LIGADO e DESLIGADO por habilidade (Casco Fechado, Enraizar), e um item
+  /// somando nele todo quadro sem subtrair acumularia até o jogador ficar
+  /// imune. Aplicado multiplicativo junto com o outro, então nem os dois
+  /// somados passam de 100%.
+  double reducaoDanoDerivada = 0.0;
+
+  /// Dano extra contra inimigo com menos da metade da vida (ver
+  /// `FaroDeSangue`). Lido no `Enemy.takeDamage`, que é quem conhece a vida do
+  /// alvo. 0 = sem bônus.
+  double bonusAlvoFerido = 0.0;
+
+  /// A passiva de aposentadoria do Meao (`SeteVidas`) já foi usada NESTE andar?
+  /// Zerado por `CreaturesRogueGame` ao montar o andar seguinte.
+  bool seteVidasUsada = false;
+
+  /// Há quanto tempo o corpo não sai do lugar (ver `RaizProfunda`).
+  ///
+  /// Medido por DIFERENÇA DE POSIÇÃO entre quadros, e não por `velocity`: a
+  /// velocidade é zerada no empurrão, no salto e durante a panorâmica de
+  /// troca de sala, e em todos esses casos o jogador não está parado — estaria
+  /// ganhando redução de dano justamente enquanto voa pela sala. Mesma lição
+  /// do `ProjetilMovimento.dirigidoPeloDono`.
+  double tempoParado = 0.0;
+  Vector2 _posQuadroAnterior = Vector2.zero();
+
+  /// Quanto ainda falta da janela de invulnerabilidade. Só leitura — quem
+  /// escreve é [grantInvulnerability]. Exposto pra `PenaDeVoo`, que ESTENDE a
+  /// janela em vez de sobrescrevê-la: `grantInvulnerability` fica com o maior
+  /// dos dois, então pedir "0,4s" durante uma esquiva de 0,6s não faria nada.
+  double get invulnerabilidadeRestante => _invulnerabilityTimer;
+
+  /// Desvantagem elemental (o 0,5x de `typeMultiplier`) vira 1,0x? Ver
+  /// `Prisma`. NÃO concede vantagem: 2,0x continua 2,0x.
+  bool ignoraDesvantagemElemental = false;
+
+  /// Escudo passivo travado em zero (ver `CascaDeOvo`).
+  ///
+  /// Trava a REGENERAÇÃO, e não só zera o valor: zerar em `aoAtualizar`
+  /// deixava um furo de um quadro por intervalo de regeneração, porque a
+  /// regeneração roda DEPOIS do laço de itens no mesmo `update`, e a colisão
+  /// (que é quem traz o dano de contato) roda depois dos dois. Nesse quadro o
+  /// escudo estava >0 e comia o golpe — exatamente o que o item promete que
+  /// não acontece.
+  bool escudoTravado = false;
+
+  /// Abates em sequência e quanto faz desde o último (ver `Frenesi`).
+  ///
+  /// Mora no `Player` pelo mesmo motivo que [golpesSemCrit]: as instâncias de
+  /// `ItemEfeito` são `const` e não guardam estado. O contador anda mesmo sem
+  /// o item na mão, o que custa dois campos e evita que pegar o item no meio
+  /// de uma sala começasse com histórico falso.
+  int abatesSeguidos = 0;
+  double tempoDesdeAbate = 0.0;
+
   /// Multiplicador de dano POR ELEMENTO, derivado dos itens (ver
   /// `PedraElemental`). 1.0 = sem bônus.
   ///
@@ -291,6 +370,7 @@ class Player extends PositionComponent
       creatureData.stats.speed *
       lentidaoFator *
       velMult *
+      velMultDerivado *
       _submersoFator *
       // Enterrado, o terreno de cima não alcança mais: a grama alta que
       // segurava os pés está acima da cabeça. É a metade "livremente" do
@@ -596,6 +676,14 @@ class Player extends PositionComponent
     // grupo inteiro caído.
     danoMultDerivado = 1.0;
     critChanceDerivada = 0.0;
+    cdMultDerivado = 1.0;
+    velMultDerivado = 1.0;
+    ignoraDesvantagemElemental = false;
+    escudoTravado = false;
+    curaBloqueada = false;
+    reducaoDanoDerivada = 0.0;
+    bonusAlvoFerido = 0.0;
+    abatesSeguidos = 0;
 
     // O pisca-pisca de invulnerabilidade não roda mais depois daqui — sem
     // isto, morrer durante os quadros de imunidade congelava o corpo
@@ -1023,6 +1111,15 @@ class Player extends PositionComponent
     // guardaria o valor da run passada. Zera junto pra não existir quadro
     // nenhum com o número de outra partida.
     danoMultDerivado = 1.0;
+    cdMultDerivado = 1.0;
+    velMultDerivado = 1.0;
+    ignoraDesvantagemElemental = false;
+    escudoTravado = false;
+    curaBloqueada = false;
+    reducaoDanoDerivada = 0.0;
+    bonusAlvoFerido = 0.0;
+    abatesSeguidos = 0;
+    seteVidasUsada = false;
   }
 
   @override
@@ -1286,6 +1383,16 @@ class Player extends PositionComponent
 
     if (_dodgeCooldown > 0) _dodgeCooldown -= dt;
     _tempoSemApanhar += dt;
+    tempoDesdeAbate += dt;
+
+    // Limiar em px, e não `== 0`: o corpo é empurrado frações de pixel pela
+    // resolução de colisão mesmo com o jogador sem tocar em nada.
+    if (position.distanceTo(_posQuadroAnterior) < 0.05) {
+      tempoParado += dt;
+    } else {
+      tempoParado = 0.0;
+    }
+    _posQuadroAnterior.setFrom(position);
     atualizarEfeitos(dt);
 
     // Reconstrói o multiplicador derivado do zero (ver `danoMultDerivado`):
@@ -1293,6 +1400,13 @@ class Player extends PositionComponent
     // precisa ser desfeito depois. Hoje só item escreve nesse campo.
     danoMultDerivado = 1.0;
     critChanceDerivada = 0.0;
+    cdMultDerivado = 1.0;
+    velMultDerivado = 1.0;
+    ignoraDesvantagemElemental = false;
+    escudoTravado = false;
+    curaBloqueada = false;
+    reducaoDanoDerivada = 0.0;
+    bonusAlvoFerido = 0.0;
     for (final tipo in CreatureType.values) {
       danoElementalDerivado[tipo] = 1.0;
     }
@@ -1348,7 +1462,7 @@ class Player extends PositionComponent
     // ela orbita um corpo que não está mais ali em cima.
     shieldVisual.setOpacity(shieldVisualActive && !submerso ? 1.0 : 0.0);
 
-    if (shield <= shieldMax) {
+    if (shield <= shieldMax && !escudoTravado) {
       _shieldRegenTimer += dt;
       if (_shieldRegenTimer >= shieldRegenInterval) {
         _shieldRegenTimer = 0.0;
@@ -1452,13 +1566,18 @@ class Player extends PositionComponent
     if (ability == null) return;
 
     if (_cooldown1 > 0) return;
-    final custo = ability.custoEnergia;
+    // O derivado entra no CUSTO também, e não só no cooldown. Em fogo
+    // sustentado quem manda é a energia: com custo 2,5 a 3,5, regeneração de
+    // 5/s e os 0,3s de `energiaRegenAtraso`, um tiro sai a cada 0,8 a 1,0s —
+    // muito acima do cooldown de 0,4s, que só limita os três ou quatro
+    // primeiros tiros do tanque cheio. Mexer só no cooldown não se sentiria.
+    final custo = ability.custoEnergia * cdMultDerivado;
     if (energia < custo) return;
     if (!ability.canExecute(this)) return;
     ability.execute(this, lockedAb1Direction);
     energia -= custo;
     energiaRegenPausa = energiaRegenAtraso;
-    _cooldownMax1 = ability.cooldown * cdMult;
+    _cooldownMax1 = ability.cooldown * cdMult * cdMultDerivado;
     _cooldown1 = _cooldownMax1;
   }
 
@@ -1801,7 +1920,8 @@ class Player extends PositionComponent
       corTxt = Palette.cinza;
     }
 
-    double amountFinal = mult * amount * (1 - damageReduction);
+    double amountFinal =
+        mult * amount * (1 - damageReduction) * (1 - reducaoDanoDerivada);
     if (amountFinal <= 0)
       return; // golpe totalmente mitigado: não gasta i-frame
     GameAudio.instance.play(Sfx.hit);
@@ -1901,6 +2021,18 @@ class Player extends PositionComponent
     }
     currentHealth -= amountFinal;
 
+    // Última chance antes de a criatura sair de campo: o primeiro item que
+    // aceitar segura o golpe e o resto nem é consultado (dois salvamentos no
+    // mesmo golpe seriam um desperdício de recurso, não um bônus).
+    if (currentHealth <= 0) {
+      for (final item in itens) {
+        if (item.aoCairEmCombate(this)) {
+          currentHealth = 1;
+          break;
+        }
+      }
+    }
+
     if (currentHealth <= 0) {
       final jogo = game;
       if (jogo is CreaturesRogueGame) jogo.pocketarSlotAtivo();
@@ -1949,6 +2081,11 @@ class Player extends PositionComponent
   }
 
   bool heal(int amount) {
+    // Devolve false, e não true-sem-curar: quem chama usa a resposta pra
+    // decidir se CONSOME o item (ver `Collectible.onCollisionStart`). Com
+    // false o coração fica no chão, que é a leitura certa — a cura não foi
+    // desperdiçada, ela só não serve pra você agora.
+    if (curaBloqueada) return false;
     if (currentHealth < maxHealth) {
       currentHealth += amount;
       if (currentHealth > maxHealth) currentHealth = maxHealth;

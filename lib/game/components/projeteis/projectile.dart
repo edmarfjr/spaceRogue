@@ -351,7 +351,8 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
 
   void _resolverColisaoEntreProjeteis(Projectile other) {
     if (typeMultiplier(tipo, other.tipo) > 1.0) return;
-    onDestroy();
+    atravessa-=1;
+    if(atravessa<=0)onDestroy();
   }
 
   void refleteProjetil(PositionComponent owner) {

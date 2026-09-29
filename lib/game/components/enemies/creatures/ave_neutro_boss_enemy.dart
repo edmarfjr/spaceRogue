@@ -31,7 +31,7 @@ class AveNeutroBossEnemy extends Enemy with ShooterAttack {
 
   AveNeutroBossEnemy({required super.position, required super.playerTarget})
     : super(
-        creature: CreatureRegistry.aveNeutro,
+        creature: CreatureRegistry.aveNeutroEvo,
         speed: 34.0,
         health: _vidaInicial,
         dmg: 2,
@@ -83,8 +83,8 @@ class AveNeutroBossEnemy extends Enemy with ShooterAttack {
           dmg: _dano,
           isEnemy: true,
           sprPath: 'projeteis/proj2.png',
-          cor1: CreatureRegistry.aveNeutro.corClara,
-          cor2: CreatureRegistry.aveNeutro.corEscura,
+          cor1: CreatureRegistry.aveNeutroEvo.corClara,
+          cor2: CreatureRegistry.aveNeutroEvo.corEscura,
           lifeTime: _duracaoPenas,
         ),
       );

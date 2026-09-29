@@ -68,14 +68,14 @@ class PinguimAguaBossEnemy extends Enemy with ShooterAttack {
     required super.position,
     required super.playerTarget,
   }) : super(
-         creature: CreatureRegistry.pinguimAgua,
+         creature: CreatureRegistry.pinguimAguaEvo,
          speed: 20.0,
          health: _vidaInicial,
          dmg: 2,
          bltSpeed: _velocidadeTiro,
          bltImg: 'projeteis/proj1.png',
-         bltCor1: CreatureRegistry.pinguimAgua.corClara,
-         bltCor2: CreatureRegistry.pinguimAgua.corEscura,
+         bltCor1: CreatureRegistry.pinguimAguaEvo.corClara,
+         bltCor2: CreatureRegistry.pinguimAguaEvo.corEscura,
          size: Vector2(32, 32),        // dobro do padrão (16x16)
          hitboxSize: Vector2(16, 32),  // dobro do hitbox normal (8, 16)
          isPushable: false,
@@ -185,7 +185,7 @@ class PinguimAguaBossEnemy extends Enemy with ShooterAttack {
         sprPath: bltImg,
         cor1: bltCor1,
         cor2: bltCor2,
-        tipo: CreatureRegistry.pinguimAgua.tipo,
+        tipo: CreatureRegistry.pinguimAguaEvo.tipo,
         lifeTime: tempoDeVoo,
         estilhaca: true,
       ));
@@ -199,10 +199,10 @@ class PinguimAguaBossEnemy extends Enemy with ShooterAttack {
       position: position.clone(),
       isEnemy: true,
       dmg: _danoInvestida,
-      tipo: CreatureRegistry.pinguimAgua.tipo,
+      tipo: CreatureRegistry.pinguimAguaEvo.tipo,
       lentidaoDuracao: _lentidaoInvestida,
-      cor1: CreatureRegistry.pinguimAgua.corClara,
-      cor2: CreatureRegistry.pinguimAgua.corEscura,
+      cor1: CreatureRegistry.pinguimAguaEvo.corClara,
+      cor2: CreatureRegistry.pinguimAguaEvo.corEscura,
     ));
   }
 
@@ -218,8 +218,8 @@ class PinguimAguaBossEnemy extends Enemy with ShooterAttack {
       dmg: 0,
       kbForce: 0,
       sprPath: 'projeteis/bolaGrande.png',
-      cor1: CreatureRegistry.pinguimAgua.corClara,
-      cor2: CreatureRegistry.pinguimAgua.corEscura,
+      cor1: CreatureRegistry.pinguimAguaEvo.corClara,
+      cor2: CreatureRegistry.pinguimAguaEvo.corEscura,
       lentidaoDuracao: _lentidaoInvestida,
       lifeTime: _rastroDuracao,
       atravessa: 10,

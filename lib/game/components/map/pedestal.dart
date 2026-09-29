@@ -19,10 +19,13 @@ class PedestalComponent extends Obstacle {
   /// [irmao] e esta oferta foi encerrada junto (ver [encerrarOferta]).
   bool hasItem = true;
 
-  /// O outro pedestal da MESMA oferta, quando a sala põe um par (ver
-  /// `RoomComponent._spawnTreasure`). `null` num pedestal sozinho — é o caso
-  /// da sala de desafio —, e aí nada nesta classe muda em relação a antes.
-  PedestalComponent? irmao;
+  /// Os OUTROS pedestais da mesma oferta (ver `RoomComponent._spawnTreasure`).
+  /// Vazia num pedestal sozinho — é o caso da sala de desafio —, e aí nada
+  /// nesta classe muda em relação a antes.
+  ///
+  /// Lista, e não uma referência só, por causa do `MapaDoTesouro`: com ele a
+  /// sala põe três.
+  final List<PedestalComponent> irmaos = [];
 
   /// Qual família de item este pedestal oferece: 0 = ITEM_EFEITO,
   /// 1 = CONSUMÍVEL, 2 = UPGRADE. `null` sorteia na hora, que é o
@@ -125,7 +128,7 @@ class PedestalComponent extends Obstacle {
   @override
   void update(double dt) {
     super.update(dt);
-    if (irmao == null || !hasItem) return;
+    if (irmaos.isEmpty || !hasItem) return;
 
     if (children.whereType<Collectible>().isNotEmpty) {
       _itemApareceu = true;
@@ -136,7 +139,9 @@ class PedestalComponent extends Obstacle {
     // O item daqui sumiu: o jogador escolheu. Fecha os dois lados — este
     // primeiro, pra que o `encerrarOferta` do irmão não volte batendo aqui.
     hasItem = false;
-    irmao?.encerrarOferta();
+    for (final outro in irmaos) {
+      outro.encerrarOferta();
+    }
   }
 
   /// Tira o item daqui porque a escolha foi feita no outro pedestal.

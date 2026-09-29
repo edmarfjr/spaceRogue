@@ -23,6 +23,7 @@ import 'package:creatures_rogue/game/components/creatures/abilities/explosao_ven
 import 'package:creatures_rogue/game/components/creatures/abilities/ericar_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/escudo_de_espinhos_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/passives/roda_de_fogo.dart';
+import 'package:creatures_rogue/game/components/creatures/passives/faro_do_predador.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/esquiva_bomba.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/esquiva_tornado.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/explosao_venenosa.dart';
@@ -64,6 +65,12 @@ import 'abilities/rabanada.dart';
 import 'abilities/rajada_de_brasa_evo.dart';
 import 'abilities/salto_felino.dart';
 import 'abilities/voo_alto.dart';
+import 'abilities/voo_alto_evo.dart';
+import 'abilities/bicada_rapida_evo.dart';
+import 'abilities/mordida_certeira_evo.dart';
+import 'abilities/latido_feroz_evo.dart';
+import 'abilities/arranhao_evo.dart';
+import 'abilities/salto_felino_evo.dart';
 import 'abilities/enraizar.dart';
 import 'abilities/ericar.dart';
 import 'abilities/escudo_de_espinhos.dart';
@@ -266,7 +273,7 @@ class CreatureRegistry {
     tipo: CreatureType.agua,
     corClara: Palette.azul,
     corEscura: Palette.pumpkin,
-    stats: BaseStats(maxHp: 4, speed: 48, defesa: 1, ataque: 4),
+    stats: BaseStats(maxHp: 4, speed: 50, defesa: 1, ataque: 4),
     ability1: JatoAquatico(),
     ability2: JogadaDeCorpo(),
     moveAnim: MovementAnimation.arrastar,
@@ -283,7 +290,7 @@ class CreatureRegistry {
     tipo: CreatureType.agua,
     corClara: Palette.azul,
     corEscura: Palette.pumpkin,
-    stats: BaseStats(maxHp: 6, speed: 48, defesa: 1, ataque: 4),
+    stats: BaseStats(maxHp: 6, speed: 50, defesa: 1, ataque: 4),
     ability1: JatoAquaticoEvo(),
     ability2: JogadaDeCorpoEvo(),
     moveAnim: MovementAnimation.arrastar,
@@ -471,7 +478,7 @@ class CreatureRegistry {
     tipo: CreatureType.agua,
     corClara: Palette.azul,
     corEscura: Palette.azulEsc,
-    stats: BaseStats(maxHp: 4, speed: 60, defesa: 1, ataque: 4),
+    stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 4),
     ability1: TiroDeGelo(),
     ability2: DisparadaCongelante(),
     moveAnim: MovementAnimation.caminhada,
@@ -491,7 +498,7 @@ class CreatureRegistry {
     tipo: CreatureType.agua,
     corClara: Palette.azul,
     corEscura: Palette.royal,
-    stats: BaseStats(maxHp: 6, speed: 60, defesa: 1, ataque: 5),
+    stats: BaseStats(maxHp: 6, speed: 70, defesa: 1, ataque: 5),
     ability1: TiroDeGeloEvo(),
     ability2: DisparadaCongelanteEvo(),
     moveAnim: MovementAnimation.caminhada,
@@ -544,7 +551,7 @@ class CreatureRegistry {
     tipo: CreatureType.fogo,
     corClara: Palette.vermelho,
     corEscura: Palette.cinzaEsc,
-    stats: BaseStats(maxHp: 4, speed: 34, defesa: 1, ataque: 3),
+    stats: BaseStats(maxHp: 4, speed: 50, defesa: 1, ataque: 3),
     ability1: BaforadaDeCinzas(),
     ability2: RecolherNoCasco(),
     moveAnim: MovementAnimation.arrastar,
@@ -555,6 +562,24 @@ class CreatureRegistry {
     evoluir: () => caranguejoErmitaoEvo,
   );
 
+   /// Evolução do Caranguejo Ermitão. O sopro deixa de ser uma linha e vira
+  /// área suja; o casco deixa de só aguentar e passa a devolver tiro.
+  static final CreatureData caranguejoErmitaoEvo = CreatureData(
+    id: 'caranguejo_fogo',
+    nome: 'Brasiton',
+    spritePath: 'actors/caranguejoFogoEvo.png',
+    tipo: CreatureType.fogo,
+    corClara: Palette.vermelho,
+    corEscura: Palette.cinzaEsc,
+    stats: BaseStats(maxHp: 6, speed: 50, defesa: 2, ataque: 4),
+    ability1: BaforadaDeCinzasEvo(),
+    ability2: RecolherNoCascoEvo(),
+    moveAnim: MovementAnimation.arrastar,
+    hitboxSize: Vector2(14, 12),
+    enemyBuilder: (pos, plr) =>
+        CaranguejoErmitaoEnemy(position: pos, playerTarget: plr),
+  );
+
   static final CreatureData tocoPlanta = CreatureData(
     id: 'toco_planta',
     nome: 'Toco de Madeira',
@@ -562,7 +587,7 @@ class CreatureRegistry {
     tipo: CreatureType.planta,
     corClara: Palette.verdeEsc,
     corEscura: Palette.chocolate,
-    stats: BaseStats(maxHp: 4, speed: 45, defesa: 1, ataque: 3),
+    stats: BaseStats(maxHp: 4, speed: 50, defesa: 1, ataque: 3),
     ability1: FolhasNavalha(),
     ability2: Enraizar(),
     moveAnim: MovementAnimation.saltitar,
@@ -573,6 +598,25 @@ class CreatureRegistry {
     evoluir: () => tocoPlantaEvo,
   );
 
+  /// Evolução do Toco de Madeira. Continua sem sair do lugar — o que ele ganha
+  /// é fechar a brecha do anel de folhas e prender quem chega perto.
+  static final CreatureData tocoPlantaEvo = CreatureData(
+    id: 'toco_planta',
+    nome: 'Tronconte',
+    spritePath: 'actors/tocoPlantaEvo.png',
+    tipo: CreatureType.planta,
+    corClara: Palette.verdeEsc,
+    corEscura: Palette.chocolate,
+    stats: BaseStats(maxHp: 4, speed: 50, defesa: 2, ataque: 4),
+    ability1: FolhasNavalhaEvo(),
+    ability2: EnraizarEvo(),
+    moveAnim: MovementAnimation.saltitar,
+    hitboxSize: Vector2(10, 10),
+    enemyBuilder: (pos, plr) =>
+        TocoPlantaEnemy(position: pos, playerTarget: plr),
+  );
+
+
   static final CreatureData tubaraoAgua = CreatureData(
     id: 'tubarao_agua',
     nome: 'Tubarão de Água',
@@ -580,7 +624,7 @@ class CreatureRegistry {
     tipo: CreatureType.agua,
     corClara: Palette.azul,
     corEscura: Palette.royal,
-    stats: BaseStats(maxHp: 4, speed: 60, defesa: 1, ataque: 5),
+    stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 5),
     ability1: Mordida(),
     ability2: MergulhoEEstouro(),
     moveAnim: MovementAnimation.caminhada,
@@ -598,7 +642,7 @@ class CreatureRegistry {
     tipo: CreatureType.eletrico,
     corClara: Palette.laranja,
     corEscura: Palette.chocolate,
-    stats: BaseStats(maxHp: 4, speed: 55, defesa: 1, ataque: 4),
+    stats: BaseStats(maxHp: 4, speed: 50, defesa: 1, ataque: 4),
     ability1: EstocadaRelampago(),
     ability2: InvestidaDaLanca(),
     moveAnim: MovementAnimation.caminhada,
@@ -609,6 +653,25 @@ class CreatureRegistry {
     evoluir: () => leaoEletricoEvo,
   );
 
+  
+  /// Evolução do Leão Elétrico. Segue sendo o de LONGE do elenco elétrico:
+  /// três linhas em vez de uma, e a investida agora prende onde termina.
+  static final CreatureData leaoEletricoEvo = CreatureData(
+    id: 'leao_eletrico',
+    nome: 'Leontrovão',
+    spritePath: 'actors/gatoEletricoEvo.png',
+    tipo: CreatureType.eletrico,
+    corClara: Palette.laranja,
+    corEscura: Palette.chocolate,
+    stats: BaseStats(maxHp: 6, speed: 50, defesa: 1, ataque: 5),
+    ability1: EstocadaRelampagoEvo(),
+    ability2: InvestidaDaLancaEvo(),
+    moveAnim: MovementAnimation.caminhada,
+    hitboxSize: Vector2(10, 15),
+    enemyBuilder: (pos, plr) =>
+        LeaoEletricoEnemy(position: pos, playerTarget: plr),
+  );
+
   static final CreatureData caoNeutro = CreatureData(
     id: 'cao_neutro',
     nome: 'Doguin',
@@ -616,9 +679,36 @@ class CreatureRegistry {
     tipo: CreatureType.neutro,
     corClara: Palette.marromEsc,
     corEscura: Palette.chocolate,
-    stats: BaseStats(maxHp: 4, speed: 60, defesa: 1, ataque: 3),
+    stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 3),
     ability1: MordidaCerteira(),
     ability2: LatidoFeroz(),
+    moveAnim: MovementAnimation.caminhada,
+    hitboxSize: Vector2(10, 12),
+    enemyBuilder: (pos, plr) =>
+        CaoNeutroEnemy(position: pos, playerTarget: plr),
+    evoluir: () => caoNeutroEvo,
+  );
+
+  /// Forma evoluída de [caoNeutro]. O `critBonus` NÃO é enfeite: ele é quem
+  /// dimensiona a [FaroDoPredador], que cura no crítico — ver a conta na doc
+  /// daquela passiva.
+  static final CreatureData caoNeutroEvo = CreatureData(
+    id: 'cao_neutro',
+    nome: 'Doguin',
+    spritePath: 'actors/caoNeutroEvo.png',
+    tipo: CreatureType.neutro,
+    corClara: Palette.marromEsc,
+    corEscura: Palette.chocolate,
+    stats: BaseStats(
+      maxHp: 6,
+      speed: 70,
+      defesa: 1,
+      ataque: 3,
+      critBonus: 10,
+    ),
+    ability1: MordidaCerteiraEvo(),
+    ability2: LatidoFerozEvo(),
+    passive: FaroDoPredador(),
     moveAnim: MovementAnimation.caminhada,
     hitboxSize: Vector2(10, 12),
     enemyBuilder: (pos, plr) =>
@@ -632,9 +722,28 @@ class CreatureRegistry {
     tipo: CreatureType.neutro,
     corClara: Palette.cinza,
     corEscura: Palette.cinzaEsc,
-    stats: BaseStats(maxHp: 4, speed: 45, defesa: 1, ataque: 2),
+    stats: BaseStats(maxHp: 4, speed: 50, defesa: 1, ataque: 2),
     ability1: Arranhao(),
     ability2: SaltoFelino(),
+    moveAnim: MovementAnimation.saltitar,
+    hitboxSize: Vector2(8, 9),
+    enemyBuilder: (pos, plr) =>
+        GatoNeutroEnemy(position: pos, playerTarget: plr),
+    evoluir: () => gatoNeutroEvo,
+  );
+
+  /// Forma evoluída de [gatoNeutro]. As três partes do Bote Felino atacam a
+  /// mesma fraqueza: ele é o mais lento do elenco jogável.
+  static final CreatureData gatoNeutroEvo = CreatureData(
+    id: 'gato_neutro',
+    nome: 'Meao',
+    spritePath: 'actors/gatoNeutroEvo.png',
+    tipo: CreatureType.neutro,
+    corClara: Palette.cinza,
+    corEscura: Palette.cinzaEsc,
+    stats: BaseStats(maxHp: 6, speed: 50, defesa: 1, ataque: 3),
+    ability1: ArranhaoEvo(),
+    ability2: SaltoFelinoEvo(),
     moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(8, 9),
     enemyBuilder: (pos, plr) =>
@@ -648,9 +757,28 @@ class CreatureRegistry {
     tipo: CreatureType.neutro,
     corClara: Palette.picotronBege,
     corEscura: Palette.chocolate,
-    stats: BaseStats(maxHp: 4, speed: 75, defesa: 1, ataque: 1),
+    stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 1),
     ability1: BicadaRapida(),
     ability2: VooAlto(),
+    moveAnim: MovementAnimation.flutuar,
+    hitboxSize: Vector2(8, 10),
+    enemyBuilder: (pos, plr) =>
+        AveNeutroEnemy(position: pos, playerTarget: plr),
+    evoluir: () => aveNeutroEvo,
+  );
+
+  /// Forma evoluída de [aveNeutro] — mesmo `id`, mesmo nome: só sprite,
+  /// vida e as duas habilidades mudam.
+  static final CreatureData aveNeutroEvo = CreatureData(
+    id: 'ave_neutro',
+    nome: 'paassarin',
+    spritePath: 'actors/aveNeutroEvo.png',
+    tipo: CreatureType.neutro,
+    corClara: Palette.picotronBege,
+    corEscura: Palette.chocolate,
+    stats: BaseStats(maxHp: 6, speed: 70, defesa: 1, ataque: 1),
+    ability1: BicadaRapidaEvo(),
+    ability2: VooAltoEvo(),
     moveAnim: MovementAnimation.flutuar,
     hitboxSize: Vector2(8, 10),
     enemyBuilder: (pos, plr) =>
@@ -664,7 +792,7 @@ class CreatureRegistry {
     tipo: CreatureType.neutro,
     corClara: Palette.salmon,
     corEscura: Palette.coral,
-    stats: BaseStats(maxHp: 4, speed: 40, defesa: 1, ataque: 3),
+    stats: BaseStats(maxHp: 4, speed: 50, defesa: 1, ataque: 3),
     ability1: Rabanada(),
     ability2: EscamasEscorregadias(),
     moveAnim: MovementAnimation.arrastar,
@@ -673,7 +801,25 @@ class CreatureRegistry {
         PeixeNeutroEnemy(position: pos, playerTarget: plr),
   );
 
-  /// Sem habilidade 1 de proposito: a passiva [RodaDeFogo] ocupa o lugar dela
+  /// Evolução do Tubarão de Água. Ganha alcance na mordida e, no mergulho,
+  /// resolve o problema do depois: a poça segura quem o estouro empurrou.
+  static final CreatureData tubaraoAguaEvo = CreatureData(
+    id: 'tubarao_agua',
+    nome: 'Tubarrasco',
+    spritePath: 'actors/tubaAguaEvo.png',
+    tipo: CreatureType.agua,
+    corClara: Palette.azul,
+    corEscura: Palette.royal,
+    stats: BaseStats(maxHp: 6, speed: 70, defesa: 1, ataque: 6),
+    ability1: MordidaEvo(),
+    ability2: MergulhoEEstouroEvo(),
+    moveAnim: MovementAnimation.caminhada,
+    hitboxSize: Vector2(13, 15),
+    enemyBuilder: (pos, plr) =>
+        TubaraoAguaEnemy(position: pos, playerTarget: plr),
+  );
+
+   /// Sem habilidade 1 de proposito: a passiva [RodaDeFogo] ocupa o lugar dela
   /// (ver `CreatureData.ability1`). `acceleration` e `friction` baixos porque
   /// o jogo dela e ganhar embalo e manter — acelerar rapido tornaria a
   /// invulnerabilidade trivial de ligar.
@@ -686,7 +832,7 @@ class CreatureRegistry {
     corEscura: Palette.roxoEsc,
     stats: BaseStats(
       maxHp: 4,
-      speed: 95,
+      speed: 90,
       // Rampa longa de proposito: a passiva `RodaDeFogo` so liga na
       // velocidade maxima, e com os 0,3s padrao ligar seria trivial. Freia
       // devagar pelo mesmo motivo tematico — e uma roda, ela carrega inercia.
@@ -715,7 +861,7 @@ class CreatureRegistry {
     corEscura: Palette.vermelho,
     stats: BaseStats(
       maxHp: 6,
-      speed: 110,
+      speed: 90,
       // Mesmo tempo da forma base: a evolucao ganha no rastro de fogo, nao
       // em ficar mais facil de acelerar.
       tempoAteMaxima: 0.6,
@@ -731,77 +877,6 @@ class CreatureRegistry {
         RodaFogoEnemy(position: pos, playerTarget: plr),
   );
 
-  /// Evolução do Caranguejo Ermitão. O sopro deixa de ser uma linha e vira
-  /// área suja; o casco deixa de só aguentar e passa a devolver tiro.
-  static final CreatureData caranguejoErmitaoEvo = CreatureData(
-    id: 'caranguejo_fogo',
-    nome: 'Brasiton',
-    spritePath: 'actors/caranguejoFogoEvo.png',
-    tipo: CreatureType.fogo,
-    corClara: Palette.vermelho,
-    corEscura: Palette.cinzaEsc,
-    stats: BaseStats(maxHp: 6, speed: 38, defesa: 2, ataque: 4),
-    ability1: BaforadaDeCinzasEvo(),
-    ability2: RecolherNoCascoEvo(),
-    moveAnim: MovementAnimation.arrastar,
-    hitboxSize: Vector2(14, 12),
-    enemyBuilder: (pos, plr) =>
-        CaranguejoErmitaoEnemy(position: pos, playerTarget: plr),
-  );
-
-  /// Evolução do Toco de Madeira. Continua sem sair do lugar — o que ele ganha
-  /// é fechar a brecha do anel de folhas e prender quem chega perto.
-  static final CreatureData tocoPlantaEvo = CreatureData(
-    id: 'toco_planta',
-    nome: 'Tronconte',
-    spritePath: 'actors/tocoPlantaEvo.png',
-    tipo: CreatureType.planta,
-    corClara: Palette.verdeEsc,
-    corEscura: Palette.chocolate,
-    stats: BaseStats(maxHp: 4, speed: 45, defesa: 2, ataque: 4),
-    ability1: FolhasNavalhaEvo(),
-    ability2: EnraizarEvo(),
-    moveAnim: MovementAnimation.saltitar,
-    hitboxSize: Vector2(10, 10),
-    enemyBuilder: (pos, plr) =>
-        TocoPlantaEnemy(position: pos, playerTarget: plr),
-  );
-
-  /// Evolução do Tubarão de Água. Ganha alcance na mordida e, no mergulho,
-  /// resolve o problema do depois: a poça segura quem o estouro empurrou.
-  static final CreatureData tubaraoAguaEvo = CreatureData(
-    id: 'tubarao_agua',
-    nome: 'Tubarrasco',
-    spritePath: 'actors/tubaAguaEvo.png',
-    tipo: CreatureType.agua,
-    corClara: Palette.azul,
-    corEscura: Palette.royal,
-    stats: BaseStats(maxHp: 6, speed: 46, defesa: 1, ataque: 6),
-    ability1: MordidaEvo(),
-    ability2: MergulhoEEstouroEvo(),
-    moveAnim: MovementAnimation.caminhada,
-    hitboxSize: Vector2(13, 15),
-    enemyBuilder: (pos, plr) =>
-        TubaraoAguaEnemy(position: pos, playerTarget: plr),
-  );
-
-  /// Evolução do Leão Elétrico. Segue sendo o de LONGE do elenco elétrico:
-  /// três linhas em vez de uma, e a investida agora prende onde termina.
-  static final CreatureData leaoEletricoEvo = CreatureData(
-    id: 'leao_eletrico',
-    nome: 'Leontrovão',
-    spritePath: 'actors/gatoEletricoEvo.png',
-    tipo: CreatureType.eletrico,
-    corClara: Palette.laranja,
-    corEscura: Palette.chocolate,
-    stats: BaseStats(maxHp: 6, speed: 62, defesa: 1, ataque: 5),
-    ability1: EstocadaRelampagoEvo(),
-    ability2: InvestidaDaLancaEvo(),
-    moveAnim: MovementAnimation.caminhada,
-    hitboxSize: Vector2(10, 15),
-    enemyBuilder: (pos, plr) =>
-        LeaoEletricoEnemy(position: pos, playerTarget: plr),
-  );
 
   /// Cogumelo de Planta. Não mira: o esporo do botão A vai pro lado que o
   /// jogador está indo, e para quando ele para — arma de condução, não de
@@ -813,7 +888,7 @@ class CreatureRegistry {
     tipo: CreatureType.planta,
     corClara: Palette.picotronBege,
     corEscura: Palette.roxoEsc,
-    stats: BaseStats(maxHp: 4, speed: 52, defesa: 1, ataque: 4),
+    stats: BaseStats(maxHp: 4, speed: 50, defesa: 1, ataque: 4),
     ability1: EsporoErrante(),
     ability2: CasuloDeEsporos(),
     moveAnim: MovementAnimation.saltitar,
@@ -833,7 +908,7 @@ class CreatureRegistry {
     tipo: CreatureType.planta,
     corClara: Palette.picotronBege,
     corEscura: Palette.roxoEsc,
-    stats: BaseStats(maxHp: 6, speed: 56, defesa: 1, ataque: 5),
+    stats: BaseStats(maxHp: 6, speed: 50, defesa: 1, ataque: 5),
     ability1: EsporoErranteEvo(),
     ability2: CasuloDeEsporosEvo(),
     moveAnim: MovementAnimation.saltitar,

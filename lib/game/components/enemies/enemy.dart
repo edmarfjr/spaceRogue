@@ -641,10 +641,15 @@ abstract class Enemy extends PositionComponent
     Color corTxt = Palette.amarelo,
     CreatureType tipoAtacante = CreatureType.neutro,
   }) {
-    final mult = typeMultiplier(
+    var mult = typeMultiplier(
       tipoAtacante,
       creature?.tipo ?? CreatureType.neutro,
     );
+    // `Prisma`: a desvantagem (0,5x) vira 1,0x. Antes do bloco de cor logo
+    // abaixo, de propósito — depois dele o número sairia cinza, a cor de
+    // "resistiu", enquanto o dano na verdade saiu inteiro, e o jogador nunca
+    // veria o item funcionando.
+    if (mult < 1.0 && playerTarget.ignoraDesvantagemElemental) mult = 1.0;
     double fontSize = 6;
 
     if (mult > 1.0) {
@@ -660,8 +665,13 @@ abstract class Enemy extends PositionComponent
     // chegam por `applyDot` com o tipo da fonte.
     final bonusElemento =
         playerTarget.danoElementalDerivado[tipoAtacante] ?? 1.0;
+    // `FaroDeSangue`: alvo abaixo da metade da vida apanha mais. Aqui, e não
+    // no disparo, porque este é o único ponto que conhece a vida do alvo.
+    final bonusFerido = health < maxHealth * 0.5
+        ? 1.0 + playerTarget.bonusAlvoFerido
+        : 1.0;
     double amountFinal =
-        amount * mult * bonusElemento * (1 - damageReduction);
+        amount * mult * bonusElemento * bonusFerido * (1 - damageReduction);
     if (amountFinal < 0) amountFinal = 0;
     // if (amountFinal > 0)
     GameAudio.instance.play(Sfx.hit);
@@ -680,6 +690,7 @@ abstract class Enemy extends PositionComponent
       for (final item in playerTarget.itens) {
         item.aoCritar(playerTarget, this);
       }
+      playerTarget.creatureData.passive?.aoCritar(playerTarget, this);
     } else {
       playerTarget.golpesSemCrit++;
     }
@@ -707,8 +718,26 @@ abstract class Enemy extends PositionComponent
 
   // `direcaoLivre` e `spawnAlerta` vêm de MovementHost.
 
+  /// Já morreu? `removeFromParent()` só tira o componente no FIM do quadro
+  /// (mesma armadilha documentada no `Collectible`), e `takeDamage` chama
+  /// `death()` sempre que a vida fica <= 0 — então dois projéteis que acertam
+  /// no mesmo quadro matam o mesmo inimigo duas vezes. Sem esta trava saem
+  /// dois drops de XP, dois sons e, agora, dois [aoMatarInimigo].
+  bool _morto = false;
+
   void death() {
+    if (_morto) return;
+    _morto = true;
     GameAudio.instance.play(Sfx.enemy_die);
+
+    // Antes do `removeFromParent` lá embaixo, pela mesma razão da explosão do
+    // campeão: quem reage ao abate pode querer nascer no mundo, e `parent`
+    // deixa de existir pra este componente assim que ele sai da árvore.
+    for (final item in playerTarget.itens) {
+      item.aoMatarInimigo(playerTarget, this);
+    }
+    playerTarget.abatesSeguidos++;
+    playerTarget.tempoDesdeAbate = 0.0;
 
     // Antes do `removeFromParent` lá embaixo, e antes do XP: a explosão nasce
     // no mundo (`parent`), que deixa de existir pra este componente assim que

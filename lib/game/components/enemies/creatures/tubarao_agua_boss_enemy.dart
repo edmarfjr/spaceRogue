@@ -27,7 +27,7 @@ class TubaraoAguaBossEnemy extends Enemy with JumpMovement {
     required super.position,
     required super.playerTarget,
   }) : super(
-         creature: CreatureRegistry.tubaraoAgua,
+         creature: CreatureRegistry.tubaraoAguaEvo,
          moveAnim: null,
          speed: 0.0,
          health: _vidaInicial,
@@ -79,8 +79,8 @@ class TubaraoAguaBossEnemy extends Enemy with JumpMovement {
       dmg: _danoPouso,
       knockback: _empurraoPouso,
       size: Vector2(_tamanhoPouso, _tamanhoPouso),
-      cor1: CreatureRegistry.tubaraoAgua.corClara,
-      cor2: CreatureRegistry.tubaraoAgua.corEscura,
+      cor1: CreatureRegistry.tubaraoAguaEvo.corClara,
+      cor2: CreatureRegistry.tubaraoAguaEvo.corEscura,
     ));
   }
 

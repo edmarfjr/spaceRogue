@@ -54,7 +54,7 @@ class RodaFogoBossEnemy extends Enemy {
 
   RodaFogoBossEnemy({required super.position, required super.playerTarget})
     : super(
-        creature: CreatureRegistry.rodaFogo,
+        creature: CreatureRegistry.rodaFogoEvo,
         speed: 36.0,
         health: _vidaInicial,
         dmg: 2,
@@ -145,7 +145,7 @@ class RodaFogoBossEnemy extends Enemy {
         size: Vector2(36, 36),
         cor1: Palette.laranja,
         cor2: Palette.vermelho,
-        tipo: creature?.tipo ?? CreatureRegistry.rodaFogo.tipo,
+        tipo: creature?.tipo ?? CreatureRegistry.rodaFogoEvo.tipo,
       ),
     );
   }
@@ -164,7 +164,7 @@ class RodaFogoBossEnemy extends Enemy {
         sprPath: 'projeteis/fogo2.png',
         cor1: Palette.laranja,
         cor2: Palette.vermelho,
-        tipo: creature?.tipo ?? CreatureRegistry.rodaFogo.tipo,
+        tipo: creature?.tipo ?? CreatureRegistry.rodaFogoEvo.tipo,
         radius: 6,
         atravessa: 100,
         dotKind: DotKind.queimadura,

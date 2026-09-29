@@ -959,7 +959,12 @@ class CreaturesRogueGame extends FlameGame
         poolSalva == null
             // Save anterior à pool: o que a run já ofereceu se perdeu, então
             // o melhor palpite é "tudo menos o que o jogador está carregando".
-            ? ItemEfeitoRegistry.todos
+            //
+            // Com o mesmo `.where(sorteavel)` do `startRun`: sem ele, carregar
+            // um save antigo enchia a pool também com as passivas de
+            // aposentadoria, que moram no mesmo registro só pra reconstruir o
+            // save — e aí elas apareciam em pedestal e na loja.
+            ? ItemEfeitoRegistry.todos.where((i) => i.sorteavel)
             : poolSalva.cast<String>().map(ItemEfeitoRegistry.porId).nonNulls,
       );
 
@@ -2086,6 +2091,9 @@ class CreaturesRogueGame extends FlameGame
       currentFloor = 1;
       runBoss = BossRegistry.sortear(_bossRandom, currentLevel);
     }
+
+    // Andar novo, fôlego novo: a passiva do Meao volta a poder salvar uma vez.
+    player.seteVidasUsada = false;
 
     // 3. GERAÇÃO DE NOVO MAPA
     final generator = DungeonGenerator(

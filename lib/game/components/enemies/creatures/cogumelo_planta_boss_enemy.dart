@@ -49,7 +49,7 @@ class CogumeloPlantaBossEnemy extends Enemy {
     required super.position,
     required super.playerTarget,
   }) : super(
-         creature: CreatureRegistry.cogumeloPlanta,
+         creature: CreatureRegistry.cogumeloPlantaEvo,
          // NÃO é locomoção: este boss nunca anda. `speed` existe aqui porque
          // `direcaoLivre` mede o caminho à frente como `speed * segundos`, e
          // com zero a checagem de parede daria sempre "livre". É a unidade de
@@ -105,10 +105,10 @@ class CogumeloPlantaBossEnemy extends Enemy {
           dmg: dmg * _coefNuvem,
           kbForce: 0,
           sprPath: 'projeteis/nuvem.png',
-          cor1: creature?.corClara ?? CreatureRegistry.cogumeloPlanta.corClara,
+          cor1: creature?.corClara ?? CreatureRegistry.cogumeloPlantaEvo.corClara,
           cor2:
-              creature?.corEscura ?? CreatureRegistry.cogumeloPlanta.corEscura,
-          tipo: creature?.tipo ?? CreatureRegistry.cogumeloPlanta.tipo,
+              creature?.corEscura ?? CreatureRegistry.cogumeloPlantaEvo.corEscura,
+          tipo: creature?.tipo ?? CreatureRegistry.cogumeloPlantaEvo.tipo,
           dotKind: DotKind.veneno,
           dotTicks: 2,
           atravessa: 100,

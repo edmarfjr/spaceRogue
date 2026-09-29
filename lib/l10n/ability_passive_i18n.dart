@@ -14,6 +14,12 @@ import 'package:creatures_rogue/game/components/creatures/abilities/casco_fechad
 import 'package:creatures_rogue/game/components/creatures/abilities/corrente_estatica.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/corrente_estatica_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/disparada_congelante.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/bicada_rapida_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/voo_alto_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/mordida_certeira_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/latido_feroz_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/arranhao_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/salto_felino_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/disparada_congelante_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/disparada_flamejante.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/disparada_flamejante_evo.dart';
@@ -123,12 +129,18 @@ String abilityName(BuildContext context, Ability a) {
     JogadaDeCorpo() => l.abilityName_JogadaDeCorpo,
     JogadaDeCorpoEvo() => l.abilityName_JogadaDeCorpoEvo,
     LatidoFeroz() => l.abilityName_LatidoFeroz,
+    LatidoFerozEvo() => l.abilityName_LatidoFerozEvo,
     MergulhoEEstouro() => l.abilityName_MergulhoEEstouro,
     MergulhoEEstouroEvo() => l.abilityName_MergulhoEEstouroEvo,
     RecolherNoCasco() => l.abilityName_RecolherNoCasco,
     RecolherNoCascoEvo() => l.abilityName_RecolherNoCascoEvo,
     SaltoFelino() => l.abilityName_SaltoFelino,
+    SaltoFelinoEvo() => l.abilityName_SaltoFelinoEvo,
     VooAlto() => l.abilityName_VooAlto,
+    ArranhaoEvo() => l.abilityName_ArranhaoEvo,
+    MordidaCerteiraEvo() => l.abilityName_MordidaCerteiraEvo,
+    VooAltoEvo() => l.abilityName_VooAltoEvo,
+    BicadaRapidaEvo() => l.abilityName_BicadaRapidaEvo,
 
     _ => a.nome,
   };
@@ -187,12 +199,18 @@ String abilityDescription(BuildContext context, Ability a) {
     JogadaDeCorpo() => l.abilityDesc_JogadaDeCorpo,
     JogadaDeCorpoEvo() => l.abilityDesc_JogadaDeCorpoEvo,
     LatidoFeroz() => l.abilityDesc_LatidoFeroz,
+    LatidoFerozEvo() => l.abilityDesc_LatidoFerozEvo,
     MergulhoEEstouro() => l.abilityDesc_MergulhoEEstouro,
     MergulhoEEstouroEvo() => l.abilityDesc_MergulhoEEstouroEvo,
     RecolherNoCasco() => l.abilityDesc_RecolherNoCasco,
     RecolherNoCascoEvo() => l.abilityDesc_RecolherNoCascoEvo,
     SaltoFelino() => l.abilityDesc_SaltoFelino,
+    SaltoFelinoEvo() => l.abilityDesc_SaltoFelinoEvo,
     VooAlto() => l.abilityDesc_VooAlto,
+    ArranhaoEvo() => l.abilityDesc_ArranhaoEvo,
+    MordidaCerteiraEvo() => l.abilityDesc_MordidaCerteiraEvo,
+    VooAltoEvo() => l.abilityDesc_VooAltoEvo,
+    BicadaRapidaEvo() => l.abilityDesc_BicadaRapidaEvo,
 
     _ => a.descricao,
   };

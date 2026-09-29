@@ -14,7 +14,7 @@ class Rabanada extends Ability {
     : super(
         nome: 'Rabanada',
         descricao: 'Golpe de cauda em área curta.',
-        cooldown: 0.9,
+        cooldown: 0.4,
         custoEnergia: 2.5,
       );
 
