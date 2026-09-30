@@ -29,7 +29,7 @@ class RecolherNoCascoEvo extends Ability {
          nome: 'Casco de Brasa',
          descricao:
              'Recolhe reduzindo dano e refletindo tiros, dentro de uma fumaça que cega e atrasa.',
-         cooldown: 6.5,
+         cooldown: 4.0,
          tipo: AbilityTipo.defesa,
        );
 
@@ -57,6 +57,7 @@ class RecolherNoCascoEvo extends Ability {
         size: Vector2(32, 32),
         lifeTime: duracao,
         radius: 16,
+        atravessaObstaculos: true
       ),
     );
 

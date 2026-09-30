@@ -24,8 +24,8 @@ class BaforadaDeCinzasEvo extends Ability {
 
   const BaforadaDeCinzasEvo({
     this.coef = 0.7,
-    this.velocidade = 80,
-    this.alcanceSegundos = 0.45,
+    this.velocidade = 90,
+    this.alcanceSegundos = 0.65,
     this.ticksQueimadura = 3,
     this.fragmentos = 3,
   }) : super(
@@ -33,7 +33,7 @@ class BaforadaDeCinzasEvo extends Ability {
          descricao:
              'Sopro de cinzas que se desfaz em brasas espalhadas, todas queimando.',
          cooldown: 0.3,
-         custoEnergia: 4.5,
+         custoEnergia: 2.5,
        );
 
   @override
@@ -55,6 +55,8 @@ class BaforadaDeCinzasEvo extends Ability {
         dotTicks: ticksQueimadura,
         fragmentos: fragmentos,
         radius: 9,
+        size: Vector2(24, 24),
+        atravessaObstaculos: true
       ),
     );
   }

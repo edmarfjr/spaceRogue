@@ -19,10 +19,10 @@ class BaforadaDeCinzas extends Ability {
 
   const BaforadaDeCinzas({
     this.coef = 0.6,
-    this.velocidade = 70,
-    this.alcanceSegundos = 0.35,
+    this.velocidade = 90,
+    this.alcanceSegundos = 0.5,
     this.ticksQueimadura = 2,
-  }) : super(nome: 'Baforada de Cinzas', descricao: 'Baforada curta de cinzas quentes que grudam e continuam queimando.', cooldown: 0.3, custoEnergia: 3.5);
+  }) : super(nome: 'Baforada de Cinzas', descricao: 'Baforada curta de cinzas quentes que grudam e continuam queimando.', cooldown: 0.3, custoEnergia: 2.5);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
@@ -41,6 +41,8 @@ class BaforadaDeCinzas extends Ability {
       dotKind: DotKind.queimadura,
       dotTicks: ticksQueimadura,
       radius: 9,
+      size: Vector2(24, 24),
+      atravessaObstaculos: true
     ));
   }
 }

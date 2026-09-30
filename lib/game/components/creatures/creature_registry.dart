@@ -266,6 +266,40 @@ class CreatureRegistry {
         AveEletricaEnemy(position: pos, playerTarget: plr),
   );
 
+  static final CreatureData tornadoFogo = CreatureData(
+    id: 'tornado_fogo',
+    nome: 'Flamenado',
+    spritePath: 'actors/furacFogo.png',
+    tipo: CreatureType.fogo,
+    corClara: Palette.vermelho,
+    corEscura: Palette.roxoEsc,
+    stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 4),
+    ability1: SocoFlamejante(),
+    ability2: EsquivaTornado(),
+    moveAnim: MovementAnimation.flutuar,
+    hitboxSize: Vector2(8, 10),
+    enemyBuilder: (pos, plr) =>
+        TornadoFogoEnemy(position: pos, playerTarget: plr),
+    evoluir: () => tornadoFogoEvo,
+  );
+
+  static final CreatureData tornadoFogoEvo = CreatureData(
+    id: 'tornado_fogo',
+    nome: 'Flamenado',
+    spritePath: 'actors/furacFogoEvo.png',
+    tipo: CreatureType.fogo,
+    corClara: Palette.vermelho,
+    corEscura: Palette.roxoEsc,
+    stats: BaseStats(maxHp: 6, speed: 70, defesa: 1, ataque: 4),
+    ability1: SocoFlamejanteEvo(),
+    ability2: EsquivaTornadoEvo(),
+    moveAnim: MovementAnimation.flutuar,
+    hitboxSize: Vector2(8, 10),
+    enemyBuilder: (pos, plr) =>
+        TornadoFogoEnemy(position: pos, playerTarget: plr),
+    //passive: TornadoResidual(),
+  );
+
   static final CreatureData cobraAgua = CreatureData(
     id: 'cobra_agua',
     nome: 'Seadracon',
@@ -364,40 +398,6 @@ class CreatureRegistry {
     enemyBuilder: (pos, plr) =>
         GriloEletricoEnemy(position: pos, playerTarget: plr),
     //passive: ReflexoEletrico(),
-  );
-
-  static final CreatureData tornadoFogo = CreatureData(
-    id: 'tornado_fogo',
-    nome: 'Flamenado',
-    spritePath: 'actors/furacFogo.png',
-    tipo: CreatureType.fogo,
-    corClara: Palette.vermelho,
-    corEscura: Palette.roxoEsc,
-    stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 4),
-    ability1: SocoFlamejante(),
-    ability2: EsquivaTornado(),
-    moveAnim: MovementAnimation.flutuar,
-    hitboxSize: Vector2(8, 10),
-    enemyBuilder: (pos, plr) =>
-        TornadoFogoEnemy(position: pos, playerTarget: plr),
-    evoluir: () => tornadoFogoEvo,
-  );
-
-  static final CreatureData tornadoFogoEvo = CreatureData(
-    id: 'tornado_fogo',
-    nome: 'Flamenado',
-    spritePath: 'actors/furacFogoEvo.png',
-    tipo: CreatureType.fogo,
-    corClara: Palette.vermelho,
-    corEscura: Palette.roxoEsc,
-    stats: BaseStats(maxHp: 6, speed: 70, defesa: 1, ataque: 4),
-    ability1: SocoFlamejanteEvo(),
-    ability2: EsquivaTornadoEvo(),
-    moveAnim: MovementAnimation.flutuar,
-    hitboxSize: Vector2(8, 10),
-    enemyBuilder: (pos, plr) =>
-        TornadoFogoEnemy(position: pos, playerTarget: plr),
-    //passive: TornadoResidual(),
   );
 
   static final CreatureData bombaFogo = CreatureData(

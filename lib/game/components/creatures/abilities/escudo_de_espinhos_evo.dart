@@ -22,7 +22,7 @@ class EscudoDeEspinhosEvo extends Ability {
 
   const EscudoDeEspinhosEvo({
     this.golpes = 4,
-    this.duracao = 5.0,
+    this.duracao = 6.0,
     this.coefDano = 1.0,
     this.duracaoStun = 1.5,
   }) : super(

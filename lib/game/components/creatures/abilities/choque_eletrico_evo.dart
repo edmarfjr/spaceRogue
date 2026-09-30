@@ -20,7 +20,7 @@ class ChoqueEletricoEvo extends Ability {
     final dano = user.creatureData.stats.ataque * coef;
     user.parent?.add(Projectile(
       owner: user,
-      position: user.position.clone(),
+      position: user.position.clone()+dir*16,
       direction: dir,
       //speed: velocidade,
       dmg: dano,

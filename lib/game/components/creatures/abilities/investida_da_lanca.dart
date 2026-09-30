@@ -43,8 +43,13 @@ class InvestidaDaLanca extends Ability {
     user.startJump(
       direction: dir,
       distance: distancia,
-      duration: duracao - 0.2,
-      height: 32,
+      // `duracao`, e NÃO `duracao - 0.2`: aquele subtraendo veio do
+      // Mergulho e Estouro, onde a duração é 0,6. Aqui ela é 0,2, então a
+      // conta dava ZERO e o `startJump` fazia `distance / 0` — velocidade
+      // infinita, posição infinita, e o jogo travava no `ySortPriority`,
+      // que chama `.round()` num double que não é finito.
+      duration: duracao,
+     // height: 32,
       onLand: () {
         user.parent?.add(
           ExplosionHitbox(

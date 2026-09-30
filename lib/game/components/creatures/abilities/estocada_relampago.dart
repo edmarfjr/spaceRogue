@@ -22,6 +22,7 @@ class EstocadaRelampago extends Ability {
       position: user.position.clone() + dir.normalized() * user.size.x / 2,
       direction: dir,
       speed: velocidade,
+      lifeTime: 0.3,
       dmg: dano,
       atravessa: atravessa,
       sprPath: 'projeteis/proj2.png',

@@ -26,10 +26,10 @@ class FolhasNavalhaEvo extends Ability {
   const FolhasNavalhaEvo({
     this.coef = 0.4,
     this.porAnel = 4,
-    this.raioInterno = 16,
-    this.raioExterno = 28,
+    this.raioInterno = 24,
+    this.raioExterno = 40,
     this.velocidadeAngular = 4.0,
-    this.duracao = 5.0,
+    this.duracao = 8.0,
   }) : super(
          nome: 'Vendaval de Folhas',
          descricao:
@@ -60,7 +60,7 @@ class FolhasNavalhaEvo extends Ability {
         OrbitProjectile(
           owner: user,
           anguloAtual: (2 * pi / porAnel) * i + defasagem,
-          raio: raio,
+          raioOrbita: raio,
           velocidadeAngular: velocidade,
           dmg: dano,
           lifeTime: duracao,

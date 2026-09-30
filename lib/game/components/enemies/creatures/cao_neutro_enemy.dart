@@ -14,7 +14,7 @@ class CaoNeutroEnemy extends Enemy with ShooterAttack {
   CaoNeutroEnemy({required super.position, required super.playerTarget})
     : super(
         creature: CreatureRegistry.caoNeutro,
-        speed: 45.0, // relentless: um dos mais rápidos perseguidores
+        speed: 40.0, // relentless: um dos mais rápidos perseguidores
         health: 15,
         dmg: 1,
         bltSpeed: 120,

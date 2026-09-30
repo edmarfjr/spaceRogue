@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/audio/game_music.dart';
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/core/responsive.dart';
@@ -95,6 +96,14 @@ class MainMenuOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A trilha do menu é pedida AQUI, e não em cada lugar que reexibe o menu.
+    // São cinco caminhos de volta pra cá (boot, game over, vitória, pausa,
+    // seleção de criatura), e espalhar a chamada por todos é garantir que um
+    // deles seja esquecido. `GameMusic.play` não faz nada quando a faixa
+    // pedida já é a que está tocando, então rebuild aqui custa uma comparação
+    // de string.
+    GameMusic.instance.play(GameMusic.menu);
+
     final estreita = Responsive.ehEstreita(context);
     final temSave = RunSave.instance.hasSave;
 

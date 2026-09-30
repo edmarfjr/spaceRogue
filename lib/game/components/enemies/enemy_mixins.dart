@@ -136,6 +136,40 @@ mixin ShooterAttack on MovementHost {
   double attackDuration = 0.3;
   double fireTimer = 0.0;
 
+  /// Quanto varia a espera entre tiros, como fração de `fireRate`. 0.25 = a
+  /// cadence fica entre 75% e 125% do valor declarado.
+  ///
+  /// Sem isto os inimigos da sala atiram em coro: todos nascem no mesmo quadro
+  /// (o `onLoad` da sala) e todos usam a mesma `fireRate`, então entram em
+  /// fase e nunca saem — nada perturba o relógio deles. Um pelotão de
+  /// fuzilamento em vez de um bando.
+  static const double jitterCadencia = 0.25;
+
+  /// Quanto tempo o inimigo aceita ficar CARREGADO sem atirar antes de
+  /// desistir e recomeçar a contagem.
+  ///
+  /// É o que desmonta a salva de entrada em sala. `wantsToShoot` amadurece sem
+  /// olhar distância, então com o jogador longe TODO inimigo da sala termina
+  /// carregado e esperando — e no quadro em que ele cruza o alcance, todos
+  /// descarregam juntos. Reembaralhando a trava enquanto ela está ociosa, os
+  /// inimigos ficam espalhados pelo ciclo em vez de prontos em bloco.
+  ///
+  /// O preço é que entrar numa sala deixa de ser punido com tiro instantâneo:
+  /// alguns vão levar até um ciclo pra soltar o primeiro. É o ponto.
+  static const double pacienciaCarregado = 2.0;
+
+  /// A espera sorteada do ciclo ATUAL. 0 = ainda não sorteada.
+  double _alvoCadencia = 0.0;
+
+  /// Há quanto tempo está carregado sem que ninguém tenha chamado
+  /// [triggerAttack] — ou seja, com o jogador fora de alcance.
+  double _esperaCarregado = 0.0;
+
+  /// A fase inicial já foi sorteada? Ver o sorteio em [updateAttack].
+  bool _cadenciaIniciada = false;
+
+  final Random _cadenciaRandom = Random();
+
   /// Aviso: o inimigo trava, a exclamação aparece, e só DEPOIS o ataque começa.
   /// É essa fase que dá ao jogador tempo de sair da frente — sem ela o aviso
   /// nasceria junto com o golpe e não avisaria nada.
@@ -193,14 +227,47 @@ mixin ShooterAttack on MovementHost {
     if (cegoTimer > 0) {
       wantsToShoot = false;
       fireTimer = 0.0;
+      // Zera o sorteio junto: sair da cegueira é uma boa hora pra reembaralhar,
+      // e sem isto um grupo cegado pela mesma nuvem voltaria a atirar em coro.
+      _alvoCadencia = 0.0;
       return false;
     }
 
     if (!wantsToShoot) {
+      // Sorteado por CICLO, e não guardado no `onLoad`: `fireRate` chega por
+      // parâmetro e muda durante a briga — boss troca de cadência na fase 2.
+      // Sorteando aqui, a fase nova já vale no ciclo seguinte.
+      if (_alvoCadencia <= 0) {
+        _alvoCadencia =
+            fireRate *
+            (1 - jitterCadencia + _cadenciaRandom.nextDouble() * 2 * jitterCadencia);
+
+        // FASE inicial aleatória, uma vez só: começar o relógio no meio do
+        // ciclo em vez de no zero. Vale pra quem nasce com o jogador JÁ em
+        // alcance — as três ondas da sala de desafio, lacaio de boss,
+        // qualquer invocação em pleno combate. Sem isto a turma toda nasce
+        // com `fireTimer` zerado e solta o primeiro tiro em bloco.
+        if (!_cadenciaIniciada) {
+          _cadenciaIniciada = true;
+          fireTimer = _cadenciaRandom.nextDouble() * _alvoCadencia;
+        }
+      }
       fireTimer += dt;
-      if (fireTimer >= fireRate) {
+      if (fireTimer >= _alvoCadencia) {
         wantsToShoot = true;
         fireTimer = 0.0;
+        _alvoCadencia = 0.0;
+      }
+    } else {
+      // Carregado e sem atirar = jogador fora de alcance (quem está em
+      // alcance chama `triggerAttack` no MESMO quadro, então este contador
+      // nem sobe). Passada a paciência, desiste e recomeça com sorteio novo.
+      _esperaCarregado += dt;
+      if (_esperaCarregado >= pacienciaCarregado) {
+        wantsToShoot = false;
+        _esperaCarregado = 0.0;
+        fireTimer = 0.0;
+        _alvoCadencia = 0.0;
       }
     }
     return false;
@@ -212,6 +279,7 @@ mixin ShooterAttack on MovementHost {
     isTelegraphing = true;
     telegraphTimer = 0.0;
     wantsToShoot = false;
+    _esperaCarregado = 0.0;
     attackTimer = 0.0;
 
     final sfx = attackSfx;

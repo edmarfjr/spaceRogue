@@ -1732,11 +1732,14 @@ class SegundoFolego extends ItemEfeito {
   @override
   void aoUsarAbility2(Player player) {
     if (player.cargasDeSala < custoCargas) return;
-
-    // Confere a cura ANTES de cobrar: com a vida cheia o `heal` devolve false,
-    // e gastar as cargas aí seria queimar exploração por nada.
     if (!player.heal(1)) return;
-
+    player.parent?.add(
+        TextEffect(
+          text:player.game.buildContext!.l10n.effect_maisVida(1),
+          position: player.position.clone() + Vector2(0, -player.size.y / 2 - 4),
+          color: Palette.verde,
+        )
+      );
     player.gastarCargasDeSala(custoCargas);
   }
 }
@@ -2052,13 +2055,14 @@ class NinhoOrbital extends OrbitProjectile {
   }) : super(
          owner: owner,
          anguloAtual: anguloAtual,
-         raio: raio,
+         raioOrbita: raio,
          velocidadeAngular: velocidadeAngular,
          dmg: 0,
          tipo: tipo,
          sprPath: sprPath,
          cor1: cor1,
          cor2: cor2,
+         atravessaObstaculos: true
        );
 
   final double danoTiro;
@@ -2107,8 +2111,7 @@ class NinhoOrbital extends OrbitProjectile {
         direction: delta.normalized(),
         speed: velocidadeTiro,
         dmg: danoTiro,
-        lifeTime: 1.5,
-        sprPath: 'projeteis/proj1.png',
+        sprPath: 'projeteis/proj2.png',
         cor1: cor1,
         cor2: cor2,
         tipo: tipo,
@@ -2297,9 +2300,9 @@ class Jejum extends ItemEfeito {
   @override
   String get spritePath => 'items/jejum.png';
   @override
-  Color get cor1 => Palette.cinza;
+  Color get cor1 => Palette.marromEsc;
   @override
-  Color get cor2 => Palette.preto;
+  Color get cor2 => Palette.chocolate;
   @override
   String nome(BuildContext context) => context.l10n.item_jejum;
   @override
@@ -2328,7 +2331,7 @@ class Coleira extends ItemEfeito {
   const Coleira();
 
   static const double intervaloVigia = 0.5;
-  static const double raio = 30.0;
+  static const double raio = 36.0;
   static const double velocidadeAngular = 1.1;
   static const double coefDano = 2.0;
   static const double custoVelocidade = 0.15;
@@ -2338,9 +2341,9 @@ class Coleira extends ItemEfeito {
   @override
   String get spritePath => 'items/coleira.png';
   @override
-  Color get cor1 => Palette.cinzaEsc;
+  Color get cor1 => Palette.indigo;
   @override
-  Color get cor2 => Palette.preto;
+  Color get cor2 => Palette.cinzaEsc;
   @override
   String nome(BuildContext context) => context.l10n.item_coleira;
   @override
@@ -2366,7 +2369,7 @@ class Coleira extends ItemEfeito {
     final bola = BolaCorrente(
       owner: player,
       anguloAtual: pi,
-      raio: raio,
+      raioOrbita: raio,
       velocidadeAngular: velocidadeAngular,
       dmg: player.creatureData.stats.ataque * coefDano,
       atravessaObstaculos: true,
@@ -2384,10 +2387,11 @@ class BolaCorrente extends OrbitProjectile {
   BolaCorrente({
     required super.owner,
     required super.anguloAtual,
-    required super.raio,
+    required super.raioOrbita,
     required super.velocidadeAngular,
     super.dmg,
     super.atravessaObstaculos,
+    super.radius = 8,
   }) : super(
          sprPath: 'projeteis/ballChain.png',
          cor1: Palette.cinza,

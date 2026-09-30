@@ -14,7 +14,8 @@ class Mordida extends Ability {
   final double empurrao;
 
   const Mordida({this.coef = 1.1, this.alcance = 16, this.empurrao = 60})
-      : super(nome: 'Mordida', descricao: 'Mordida curta e pesada com empurrão forte.', cooldown: 0.3, custoEnergia: 3.5);
+      : super(nome: 'Mordida', descricao: 'Mordida curta e pesada com empurrão forte.',
+       cooldown: 0.3, custoEnergia: 3.0);
 
   @override
   void execute(AbilityUser user, Vector2 dir) {
@@ -25,18 +26,25 @@ class Mordida extends Ability {
           direction: dir,
           speed: 0,
           dmg: dano,
+          kbForce:empurrao,
           lifeTime: 0.4,
           sprPath: 'projeteis/bite.png',
+          stepTime:0.1,
           cor1: Palette.bege,
           cor2: Palette.royal,
           tipo: user.creatureData.tipo,
+          radius: 8,
+          size: Vector2(24, 24),
+          atravessa:10,
+          atravessaObstaculos: true
         ));
-    user.parent?.add(ExplosionHitbox(
+    /*user.parent?.add(ExplosionHitbox(
       position: user.position.clone() + dir.normalized() * alcance,
       dmg: dano/4,
       size: Vector2(20, 20),
       knockback: empurrao,
       tipo: user.creatureData.tipo,
     ));
+    */
   }
 }

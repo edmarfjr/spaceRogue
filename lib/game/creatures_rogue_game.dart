@@ -20,6 +20,7 @@ import 'package:flutter/services.dart'
     show LogicalKeyboardKey, KeyDownEvent, HapticFeedback;
 import 'package:flame/input.dart';
 import 'package:creatures_rogue/game/audio/game_audio.dart';
+import 'package:creatures_rogue/game/audio/game_music.dart';
 import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/components/UI/gameboy_bezel.dart';
 import 'package:creatures_rogue/game/audio/sfx.dart';
@@ -839,6 +840,7 @@ class CreaturesRogueGame extends FlameGame
 
     overlays.remove('CreatureSelect');
     overlays.remove('MainMenu');
+    GameMusic.instance.play(GameMusic.run);
 
     // Boss pendente nesta run: mostra quem espera no andar final antes de
     // liberar o jogo. Motor continua pausado até `dismissBossReveal`. Numa
@@ -1114,6 +1116,10 @@ class CreaturesRogueGame extends FlameGame
 
     final boss = option.builder(position, player);
     boss.ehBoss = true;
+    // Aqui, e não no `BossReveal`: o reveal acontece no começo do andar, e o
+    // jogador ainda tem a masmorra inteira pela frente. Este método só roda
+    // quando ele ABRE a porta da sala do boss.
+    GameMusic.instance.play(GameMusic.boss);
     // A barra se auto-remove quando o boss sai do mundo, então é só somar.
     gameCamera.viewport.add(
       BossHealthBar(boss: boss, nome: option.nome(buildContext!)),
@@ -1131,6 +1137,7 @@ class CreaturesRogueGame extends FlameGame
         BossRegistry.all[(currentLevel - 1) % BossRegistry.all.length].first;
     final boss = option.builder(player.position + Vector2(0, -40), player);
     boss.ehBoss = true;
+    GameMusic.instance.play(GameMusic.boss);
     dungeonWorld.add(boss);
     gameCamera.viewport.add(
       BossHealthBar(boss: boss, nome: option.nome(buildContext!)),

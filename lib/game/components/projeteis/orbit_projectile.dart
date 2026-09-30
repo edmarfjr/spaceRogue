@@ -11,13 +11,13 @@ import 'projectile.dart';
 class OrbitProjectile extends Projectile {
   final PositionComponent owner;
   double anguloAtual;
-  final double raio;
+  final double raioOrbita;
   final double velocidadeAngular;
 
   OrbitProjectile({
     required this.owner,
     required this.anguloAtual,
-    required this.raio,
+    required this.raioOrbita,
     required this.velocidadeAngular,
     super.dmg,
     super.tipo,
@@ -27,6 +27,8 @@ class OrbitProjectile extends Projectile {
     super.isEnemy,
     super.lifeTime,
     super.atravessaObstaculos,
+    super.radius,
+    super.size,
   }) : super(
           owner: owner,
           position: owner.absolutePosition,
@@ -39,7 +41,7 @@ class OrbitProjectile extends Projectile {
   void update(double dt) {
     super.update(dt);
     anguloAtual += velocidadeAngular * dt;
-    position = owner.absolutePosition + Vector2(cos(anguloAtual), sin(anguloAtual)) * raio;
+    position = owner.absolutePosition + Vector2(cos(anguloAtual), sin(anguloAtual)) * raioOrbita;
     angle = anguloAtual;
   }
 }

@@ -53,6 +53,7 @@ class EstocadaRelampagoEvo extends Ability {
               lado * desvio * separacao,
           direction: frente,
           speed: velocidade,
+          lifeTime: 0.3,
           dmg: dano,
           atravessa: atravessa,
           sprPath: 'projeteis/proj2.png',

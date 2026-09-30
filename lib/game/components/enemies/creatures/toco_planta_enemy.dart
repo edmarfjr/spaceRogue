@@ -35,7 +35,7 @@ class TocoPlantaEnemy extends Enemy {
       final espinho = OrbitProjectile(
         owner: this,
         anguloAtual: (2 * 3.14159265 / _numEspinhos) * i,
-        raio: _raio,
+        raioOrbita: _raio,
         velocidadeAngular: _velocidadeAngular,
         dmg: dmg.toDouble(),
         isEnemy: true,

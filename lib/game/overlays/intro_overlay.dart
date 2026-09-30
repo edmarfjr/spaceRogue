@@ -47,8 +47,22 @@ const List<String> _idsIniciais = [
   'tartaruga_planta',
   'sapo_agua',
   'ave_eletrica',
-  //'tubarao_agua',
+///////////////////
   //'tornado_fogo',
+  //'cobra_agua',
+  //'urso_planta',
+  //'grilo_eletrico',
+///////////////////
+//  'bomba_fogo',
+//  'slime_planta',
+//  'pinguim_agua',
+//  'ourico_eletrico',
+///////////////////
+  //'caranguejo_fogo',
+  //'toco_planta',
+  //'tubarao_agua',
+  //'leao_eletrico',
+///////////////////
   //'cao_neutro',
   //'gato_neutro',
   //'ave_neutro',

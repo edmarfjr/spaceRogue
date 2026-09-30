@@ -312,31 +312,8 @@ class RoomComponent extends PositionComponent with HasGameRef {
       
   }
 
-  /// Afastamento de cada pedestal em relação ao centro da sala, em px.
-  ///
-  /// Distância entre os CENTROS de dois pedestais vizinhos, em px.
-  ///
-  /// 48 deixa 32px de vão entre blocos de 16px — dois tiles. Um tile só
-  /// (16px de vão) seria apertado demais: a criatura de hitbox mais larga do
-  /// elenco tem 15px, então sobraria 1px de folga e o jogador ficaria preso
-  /// entre os pedestais tentando escolher.
-  ///
-  /// Com três pedestais (ver `MapaDoTesouro`) a fila ocupa 16 + 32 + 16 + 32 +
-  /// 16 = 112px, e a sala tem 192 — cabe com folga de parede dos dois lados.
-  static const double _passoPedestais = 48.0;
+  static const double _passoPedestais = 52.0;
 
-  /// Sala de tesouro: DOIS pedestais, e o jogador leva UM.
-  ///
-  /// Pegar um item apaga o outro na hora (ver `PedestalComponent.irmao`) — a
-  /// sala deixa de ser "achou um item" e vira uma decisão, que é onde está a
-  /// graça: um upgrade permanente agora contra um consumível que resolve o
-  /// próximo aperto.
-  ///
-  /// As duas famílias são sorteadas DISTINTAS e passadas prontas pros
-  /// pedestais, em vez de cada um sortear a sua. Sorteio independente repete:
-  /// dois UPGRADE podem cair no mesmo `PowerUpType`, e uma escolha entre duas
-  /// coisas iguais não é escolha nenhuma. Famílias diferentes tornam o item
-  /// repetido impossível sem precisar comparar item com item.
   void _spawnTreasure({double offsetX = 0, double offsetY = 0}) {
     final centro =
         position + Vector2(width / 2 - 8, centerY) + Vector2(offsetX, offsetY);

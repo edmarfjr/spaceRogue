@@ -17,10 +17,27 @@ class ConditionIcons extends PositionComponent {
   bool paralisadoAtivo = false;
   bool medoAtivo = false;
 
+  /// Reflexão de projétil ligada. É a única condição BOA da lista — as outras
+  /// são todas coisas ruins acontecendo com quem carrega o ícone —, e está
+  /// aqui porque o canal já existia e ninguém precisa aprender um lugar novo
+  /// pra olhar.
+  bool espelhoAtivo = false;
+
   final List<SpriteComponent> _icones = [];
 
-  List<bool> get _estados =>
-      [stunAtivo, venenoAtivo, queimaduraAtivo, lentidaoAtivo, cegoAtivo, paralisadoAtivo, medoAtivo];
+  /// A ordem aqui casa com a de [onLoad], índice a índice — é o `for` do
+  /// [update] que amarra as duas listas. Acrescentar condição é mexer nas
+  /// DUAS, na mesma posição.
+  List<bool> get _estados => [
+    stunAtivo,
+    venenoAtivo,
+    queimaduraAtivo,
+    lentidaoAtivo,
+    cegoAtivo,
+    paralisadoAtivo,
+    medoAtivo,
+    espelhoAtivo,
+  ];
 
   ConditionIcons() : super(anchor: Anchor.bottomCenter);
 
@@ -34,6 +51,7 @@ class ConditionIcons extends PositionComponent {
       ('effects/cego.png', Palette.cinza, Palette.cinzaEsc),   // cegueira
       ('effects/chain.png', Palette.cinza, Palette.indigo), // paralisia
       ('effects/fear.png', Palette.cinza, Palette.azulEsc),   // medo
+      ('effects/espelho.png', Palette.cinza, Palette.indigo),  // espelho
     ];
 
     for (final (caminho, clara, escura) in definicoes) {

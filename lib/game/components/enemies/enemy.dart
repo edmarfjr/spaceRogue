@@ -7,6 +7,7 @@ import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/audio/game_audio.dart';
+import 'package:creatures_rogue/game/audio/game_music.dart';
 import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
@@ -729,6 +730,9 @@ abstract class Enemy extends PositionComponent
     if (_morto) return;
     _morto = true;
     GameAudio.instance.play(Sfx.enemy_die);
+
+    // Boss caiu: a masmorra volta ao normal, e a trilha junto.
+    if (ehBoss) GameMusic.instance.play(GameMusic.run);
 
     // Antes do `removeFromParent` lá embaixo, pela mesma razão da explosão do
     // campeão: quem reage ao abate pode querer nascer no mundo, e `parent`

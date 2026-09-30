@@ -99,6 +99,8 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
 
   final PositionComponent owner;
 
+  final double stepTime;
+
   Projectile({
     required Vector2 position,
     required this.direction,
@@ -107,6 +109,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     this.speed = 200,
     this.kbForce = 20,
     this.sprPath = 'projeteis/tiro.png',
+    this.stepTime = 0.2,
     this.cor1 = Palette.azul,
     this.cor2 = Palette.verdeEsc,
     this.dmg = 1,
@@ -158,7 +161,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     );
     animation = SpriteAnimation.fromFrameData(
       img,
-      SpriteAnimationData.sequenced(amount: (img.width/img.height).toInt(), stepTime: 0.2, textureSize: Vector2(16, 16)),
+      SpriteAnimationData.sequenced(amount: (img.width/img.height).toInt(), stepTime: stepTime, textureSize: Vector2(16, 16)),
     );
 
     paint = Paint()..filterQuality = FilterQuality.none;
@@ -266,6 +269,13 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
       if (_age >= lifeTime!) onDestroy();
     }
   }
+
+
+  //@override
+  //void render(Canvas canvas) {
+  //  super.render(canvas);
+  //  canvas.drawCircle(Offset(size.x/2,size.y/2), radius, Paint()..color=Palette.rosa..style = PaintingStyle.stroke..strokeWidth = 1.25..filterQuality = FilterQuality.none);
+  //}
 
   @override
   void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {

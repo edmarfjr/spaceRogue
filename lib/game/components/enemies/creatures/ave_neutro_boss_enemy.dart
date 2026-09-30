@@ -78,7 +78,7 @@ class AveNeutroBossEnemy extends Enemy with ShooterAttack {
         OrbitProjectile(
           owner: this,
           anguloAtual: angulo,
-          raio: _raioPenas,
+          raioOrbita: _raioPenas,
           velocidadeAngular: _velocidadeAngular,
           dmg: _dano,
           isEnemy: true,

@@ -19,7 +19,7 @@ class Bomb extends SpriteAnimationComponent with CollisionCallbacks, HasGameRef 
   final double friction = 80.0; // O quão rápido a bomba para de deslizar
   double acc = 100.0;
   Vector2 _previousPosition = Vector2.zero();
-  double dmg = 50;
+  double dmg = 5;
 
   Bomb({required Vector2 position}) 
       : super(position: position, size: Vector2(16, 16), anchor: Anchor.center);

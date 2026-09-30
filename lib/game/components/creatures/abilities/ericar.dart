@@ -28,7 +28,7 @@ class Ericar extends Ability {
         direction: direcao,
         speed: velocidade,
         dmg: dano,
-        lifeTime: 0.75,
+        lifeTime: 0.5,
         sprPath: 'projeteis/raio.png',
         cor1: user.creatureData.corClara,
         cor2: user.creatureData.corEscura,

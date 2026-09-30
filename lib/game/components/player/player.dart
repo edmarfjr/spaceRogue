@@ -742,6 +742,9 @@ class Player extends PositionComponent
   double _puloVelocidade = 0.0;
   VoidCallback? _puloAoAterrissar;
 
+  /// Menor duração que um salto pode ter, em segundos. Ver [startJump].
+  static const double _puloDuracaoMinima = 0.05;
+
   /// Salta na direção [direction], percorrendo [distance] px ao longo de
   /// [duration]s. Com [direction] zero (sem mira/movimento), pula no lugar
   /// — mesma curva de altura, sem deslocamento horizontal. [onLand] roda no
@@ -755,7 +758,13 @@ class Player extends PositionComponent
   }) {
     _pulando = true;
     _puloTimer = 0.0;
-    _puloDuracao = duration;
+    // Piso na duração: `_puloVelocidade` é `distance / duration` e o progresso
+    // do arco é `_puloTimer / _puloDuracao`. Com zero os dois viram infinito e
+    // NaN, a posição do jogador vai junto, e o quadro seguinte trava no
+    // `ySortPriority` — `.round()` recusa double não finito. Um salto de
+    // duração zero é sempre erro de quem chamou, mas ele não pode derrubar o
+    // jogo: aqui vira o salto mais curto possível, e o `onLand` ainda sai.
+    _puloDuracao = duration > _puloDuracaoMinima ? duration : _puloDuracaoMinima;
     _puloAltura = height;
     _puloAoAterrissar = onLand;
     velocity.setZero();
@@ -1379,7 +1388,22 @@ class Player extends PositionComponent
     // Anchor.center: o "chão" (pés) fica meio size.y abaixo do centro.
     priority = ySortPriority(position.y + size.y / 2);
 
-    conditionIcons.lentidaoAtivo = _gramaAltaSobrepostas.isNotEmpty;
+    // `lentidaoTimer`, e não só a grama: até aqui o ícone falava da GRAMA ALTA
+    // e não da lentidão de verdade, então levar uma nuvem de gelo na cara não
+    // acendia nada. O inimigo já fazia certo (`Enemy.update`); o jogador era o
+    // único fora do padrão.
+    //
+    // A grama continua no `||` porque ela lentifica de fato — por terreno, sem
+    // timer (ver `gramaAltaFator`).
+    conditionIcons.lentidaoAtivo =
+        lentidaoTimer > 0 || _gramaAltaSobrepostas.isNotEmpty;
+    conditionIcons.cegoAtivo = cegoTimer > 0;
+    // Lido do CANAL, e não do efeito `#espelho` do consumível: `refleteProjetil`
+    // é escrito por cinco fontes — o item Espelho, as habilidades Casco Fechado
+    // e Casco Fechado Evo, o Recolher no Casco Evo e a passiva de aposentadoria
+    // Casco Reflexivo. Amarrar o ícone ao canal dá indicativo às cinco de uma
+    // vez, e nenhuma delas tinha nenhum até agora.
+    conditionIcons.espelhoAtivo = refleteProjetil;
 
     if (_dodgeCooldown > 0) _dodgeCooldown -= dt;
     _tempoSemApanhar += dt;

@@ -31,7 +31,7 @@ class MordidaEvo extends Ability {
          nome: 'Dentada Dupla',
          descricao: 'Duas mordidas em sequência, a segunda alcançando mais longe.',
          cooldown: 0.3,
-         custoEnergia: 4.0,
+         custoEnergia: 3.0,
        );
 
   @override
@@ -52,14 +52,18 @@ class MordidaEvo extends Ability {
           direction: dir,
           speed: 0,
           dmg: dano,
+          kbForce:empurrao,
           lifeTime: 0.4,
           sprPath: 'projeteis/bite.png',
+          stepTime:0.1,
           cor1: Palette.bege,
           cor2: Palette.royal,
           tipo: user.creatureData.tipo,
+          radius: 10,
+          size: Vector2(32, 32),
         ));
 
-      user.parent?.add(
+     /* user.parent?.add(
         ExplosionHitbox(
           position: user.position.clone() + frente * distancia,
           dmg: dano,
@@ -68,6 +72,7 @@ class MordidaEvo extends Ability {
           tipo: user.creatureData.tipo,
         ),
       );
+      */
     }
   }
 }

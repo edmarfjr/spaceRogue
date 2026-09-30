@@ -47,7 +47,7 @@ class EricarEvo extends Ability {
           direction: Vector2(cos(angulo), sin(angulo)),
           speed: velocidade,
           dmg: dano,
-          lifeTime: 0.9,
+          lifeTime: 0.5,
           sprPath: 'projeteis/raio.png',
           cor1: user.creatureData.corClara,
           cor2: user.creatureData.corEscura,

@@ -93,7 +93,7 @@ enum ConsumableType implements ItemDescritor {
     final bool sucesso;
     switch (this) {
       case ConsumableType.pocao:
-        sucesso = player.heal(4);
+        sucesso = player.heal(2);
       case ConsumableType.escudo:
         // Escudo sem prazo: empilha com a bolha de habilidade em vez de
         // sobrescrevê-la, e é o ÚLTIMO a ser gasto — golpe leva primeiro o
@@ -136,7 +136,7 @@ enum ConsumableType implements ItemDescritor {
       player.parent?.add(TextEffect(
         text: descricao(context),
         position: player.position.clone() + Vector2(0, -player.size.y / 2 - 4),
-        color: Palette.branco,
+        color: Palette.verde,
       ));
     }
 

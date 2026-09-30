@@ -27,7 +27,7 @@ class RecolherNoCasco extends Ability {
          nome: 'Recolher no Casco',
          descricao:
              'Reduz o dano recebido e solta uma fumaça que cega e atrasa quem entra nela.',
-         cooldown: 6.5,
+         cooldown: 4.0,
          tipo: AbilityTipo.defesa,
        );
 
@@ -51,9 +51,10 @@ class RecolherNoCasco extends Ability {
         cegoDuracao: duracaoCegueira,
         lentidaoDuracao: duracaoLentidao,
         atravessa: 10,
-        size: Vector2(24, 24),
+        size: Vector2(32, 32),
         lifeTime: duracao,
-        radius: 12,
+        radius: 14,
+        atravessaObstaculos: true
       ),
     );
 

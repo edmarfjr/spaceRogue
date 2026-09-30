@@ -15,7 +15,7 @@ class EscudoDeEspinhos extends Ability {
 
   const EscudoDeEspinhos({
     this.golpes = 2,
-    this.duracao = 3.5,
+    this.duracao = 5.0,
     this.coefDano = 0.5,
     this.duracaoStun = 1.0,
   }) : super(
