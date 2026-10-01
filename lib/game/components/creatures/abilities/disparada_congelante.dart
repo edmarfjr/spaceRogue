@@ -19,7 +19,7 @@ class DisparadaCongelante extends Ability {
   }) : super(
          nome: 'Disparada Congelante',
          descricao: 'Dash com i-frames que deixa gelo lentificante no caminho.',
-         cooldown: 3.0,
+         cooldown: 2.0,
          target: AbilityTarget.plrDir,
          tipo: AbilityTipo.esquiva,
        );
@@ -71,7 +71,7 @@ class DisparadaCongelante extends Ability {
         user.dashOffsetLivre(dir, distancia),
         EffectController(duration: duracao),
         onComplete: () {
-          user.parent?.add(
+        /*  user.parent?.add(
             ExplosionHitbox(
               position: user.position.clone(),
               dmg: danoRastro,
@@ -81,6 +81,7 @@ class DisparadaCongelante extends Ability {
               lentidaoDuracao: 3.0,
             ),
           );
+          */
         },
       ),
     );

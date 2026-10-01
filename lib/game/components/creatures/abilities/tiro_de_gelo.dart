@@ -9,7 +9,7 @@ import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 class TiroDeGelo extends Ability {
   final double coef;
 
-  const TiroDeGelo({this.coef = 1.33})
+  const TiroDeGelo({this.coef = 1.0})
       : super(nome: 'Tiro de Gelo', descricao: 'Projétil que estilhaça ao acertar.', cooldown: 0.4, custoEnergia: 2.5);
 
   @override
@@ -19,6 +19,7 @@ class TiroDeGelo extends Ability {
       owner: user,
       position: user.position.clone(),
       direction: dir,
+      lifeTime: 1.0,
       dmg: dano,
       sprPath: 'projeteis/proj1.png',
       cor1: Palette.azul,

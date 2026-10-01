@@ -1,5 +1,7 @@
 import 'dart:ui' as ui;
 
+import 'package:creatures_rogue/game/audio/game_audio.dart';
+import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:flame/collisions.dart';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
@@ -66,6 +68,7 @@ class Bomb extends SpriteAnimationComponent with CollisionCallbacks, HasGameRef 
   }
 
   void _explode() {
+    GameAudio.instance.play(Sfx.estouro);
     final currentWorld = parent; 
     currentWorld?.add(ExplosionHitbox(position: position.clone(), dmg: dmg));
     

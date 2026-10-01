@@ -607,7 +607,7 @@ class CreaturesRogueGame extends FlameGame
       // Sem controles na tela a faixa que sobra ao redor da área de jogo não
       // é mais o "plástico" de um aparelho portátil — é só a moldura de uma
       // janela. Preto some, cinza vira borda à toa.
-      : Palette.preto;
+      : Palette.cinza;
 
   Map loadedRooms = {};
 
@@ -1487,6 +1487,29 @@ class CreaturesRogueGame extends FlameGame
         imagePath: 'effects/cego.png',
         lightGrayReplacement: Palette.cinza,
         darkGrayReplacement: Palette.cinzaEsc,
+        whiteReplacement: Palette.branco,
+      ),
+      // Os três que faltavam do conjunto do `ConditionIcons`. Ele carrega os
+      // OITO ícones no `onLoad` de CADA inimigo, então quem não está aqui é
+      // processado no primeiro inimigo da run, em pleno jogo. As cores
+      // precisam bater exatamente com as de lá — elas entram na chave do
+      // cache, e uma cor diferente aquece uma entrada que ninguém usa.
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'effects/chain.png',
+        lightGrayReplacement: Palette.cinza,
+        darkGrayReplacement: Palette.indigo,
+        whiteReplacement: Palette.branco,
+      ),
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'effects/fear.png',
+        lightGrayReplacement: Palette.cinza,
+        darkGrayReplacement: Palette.azulEsc,
+        whiteReplacement: Palette.branco,
+      ),
+      PaletteSwapper.createSwappedImage(
+        imagePath: 'effects/espelho.png',
+        lightGrayReplacement: Palette.branco,
+        darkGrayReplacement: Palette.azul,
         whiteReplacement: Palette.branco,
       ),
       // Alerta antes do inimigo atacar (Enemy.spawnAlerta)

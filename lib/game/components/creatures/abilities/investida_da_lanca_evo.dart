@@ -33,7 +33,7 @@ class InvestidaDaLancaEvo extends Ability {
          nome: 'Investida Trovejante',
          descricao:
              'Salto com estocada de lança no chão que paralisa o alvo.',
-         cooldown: 4.0,
+         cooldown: 2.5,
          target: AbilityTarget.plrDir,
          tipo: AbilityTipo.esquiva,
        );

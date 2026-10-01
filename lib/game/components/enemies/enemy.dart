@@ -519,8 +519,8 @@ abstract class Enemy extends PositionComponent
         final effect = SpriteEffect(
           position: position.clone(),
           size: Vector2(24, 24),
-          corClara: Palette.vermelho,
-          corEscura: Palette.cinzaEsc,
+          corClara: Palette.cinza,
+          corEscura: Palette.indigo,
           corBranco: Palette.branco,
           spritePath: 'effects/summon.png',
           textureSize: Vector2(24, 24),

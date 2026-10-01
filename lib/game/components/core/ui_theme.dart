@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
 
 /// Cores da "casca" da tela de jogo — tudo que não é o mundo desenhado pela
 /// câmera de resolução fixa (160x144). Hoje só a área lateral onde ficam
@@ -8,6 +9,23 @@ import 'package:creatures_rogue/game/components/core/palette.dart';
 /// caçar hex espalhado pelo código.
 class UiTheme {
   UiTheme._();
+
+  /// Cor que representa cada elemento na INTERFACE.
+  ///
+  /// Não confundir com `CreatureData.corClara`/`corEscura`, que pintam o
+  /// SPRITE de uma criatura específica: duas criaturas de fogo podem ter
+  /// tons diferentes, e aqui o que se quer é o contrário — "fogo é laranja"
+  /// valendo igual pra todas, pra que a etiqueta de tipo seja reconhecível à
+  /// primeira vista.
+  static const Map<CreatureType, Color> _porTipo = {
+    CreatureType.fogo: Palette.laranja,
+    CreatureType.planta: Palette.verde,
+    CreatureType.agua: Palette.azul,
+    CreatureType.eletrico: Palette.amarelo,
+    CreatureType.neutro: Palette.cinza,
+  };
+
+  static Color corDoTipo(CreatureType tipo) => _porTipo[tipo] ?? Palette.cinza;
 
   /// Preenche a tela inteira atrás do mundo do jogo — visível nas margens
   /// laterais onde os controles ficam, já que o mapa só ocupa a resolução
@@ -58,13 +76,24 @@ class UiTheme {
 class BordaDupla extends BoxBorder {
   const BordaDupla({
     this.cor = Palette.preto,
+    this.corExterna,
     this.espessura = 2.0,
     this.vao = 2.0,
   });
 
-  /// Cor das duas linhas. Elas têm a mesma cor de propósito: a distinção vem
-  /// do vão, não do contraste entre as linhas.
+  /// Cor da linha de DENTRO, e também da de fora quando [corExterna] é nula.
+  /// Por padrão as duas têm a mesma cor: a distinção vem do vão, não do
+  /// contraste entre as linhas.
   final Color cor;
+
+  /// Cor só da linha de FORA, quando ela precisa destoar da de dentro — é
+  /// como o cartão da criatura selecionada se marca, ganhando um contorno da
+  /// cor do próprio elemento (ver `_CartaoCandidata`).
+  ///
+  /// Marcar seleção por COR, e não por espessura, é o que mantém a geometria
+  /// idêntica nos dois estados: [dimensions] não muda, então o conteúdo do
+  /// cartão não se mexe nem um pixel quando a seleção troca.
+  final Color? corExterna;
 
   /// Espessura de CADA linha.
   final double espessura;
@@ -89,8 +118,12 @@ class BordaDupla extends BoxBorder {
   bool get isUniform => true;
 
   @override
-  ShapeBorder scale(double t) =>
-      BordaDupla(cor: cor, espessura: espessura * t, vao: vao * t);
+  ShapeBorder scale(double t) => BordaDupla(
+    cor: cor,
+    corExterna: corExterna,
+    espessura: espessura * t,
+    vao: vao * t,
+  );
 
   @override
   Path getOuterPath(Rect rect, {TextDirection? textDirection}) =>
@@ -119,7 +152,18 @@ class BordaDupla extends BoxBorder {
     // `deflate(espessura / 2)`: o Canvas centra o traço na linha do caminho,
     // então sem isso metade da linha de fora cairia fora do retângulo e
     // sumiria no corte do widget.
-    canvas.drawRect(rect.deflate(espessura / 2), tinta);
-    canvas.drawRect(rect.deflate(espessura * 1.5 + vao), tinta);
+    //canvas.drawRect(rect.deflate(espessura / 2), tinta);
+    //canvas.drawRect(rect.deflate(espessura * 1.5 + vao), tinta);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(rect.deflate(espessura / 2), Radius.circular(5)),
+      tinta..color = corExterna ?? cor,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        rect.deflate(espessura * 1.5 + vao),
+        Radius.circular(5),
+      ),
+      tinta..color = cor,
+    );
   }
 }

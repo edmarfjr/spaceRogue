@@ -51,7 +51,7 @@ class CargaSalaIndicator extends PositionComponent {
 
   @override
   void render(Canvas canvas) {
-    if (!deveAparecer()) return;
+    //if (!deveAparecer()) return;
 
     final quantidade = cargas();
 

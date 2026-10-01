@@ -1,9 +1,10 @@
-import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'dart:ui' as ui;
 
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/core/responsive.dart';
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
+import 'package:creatures_rogue/game/overlays/selecao_widgets.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
@@ -141,12 +142,16 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
                     );
 
                     if (constraints.maxWidth < Responsive.larguraEstreita) {
+                      // Frações, e não os 160px fixos de antes: a linha da lista
+                      // cresceu (ganhou sprite e etiqueta de tipo), e em 160px
+                      // só cabiam duas e meia — a terceira aparecia cortada no
+                      // meio, parecendo defeito.
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          SizedBox(height: 160, child: list),
+                          Expanded(flex: 2, child: list),
                           const SizedBox(height: 12),
-                          Expanded(child: detailLimitado),
+                          Expanded(flex: 3, child: detailLimitado),
                         ],
                       );
                     }
@@ -221,34 +226,82 @@ class _CreatureListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // final accent = CreatureSelectOverlay.typeColor(creature.tipo);
+    final corTipo = UiTheme.corDoTipo(creature.tipo);
 
-    return InkWell(
-      onTap: withBtnSfx(onTap),
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        //decoration: BoxDecoration(
-        //  color: isSelected ? accent.withAlpha(60) : Colors.transparent,
-        //  borderRadius: BorderRadius.circular(8),
-        //  border: Border(left: BorderSide(color: locked ? Colors.white24 : accent, width: 4)),
-        //),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: InkWell(
+        onTap: withBtnSfx(onTap),
         child: Row(
           children: [
+            // Seta à esquerda marcando a linha atual. Ocupa lugar mesmo quando
+            // invisível: sem isso a lista inteira escorregava alguns pixels
+            // toda vez que a seleção mudava de linha.
+            SizedBox(
+              width: 12,
+              child: isSelected
+                  ? Icon(Icons.play_arrow, size: 12, color: corTipo)
+                  : null,
+            ),
             Expanded(
-              child: Text(
-                locked
-                    ? context.l10n.creatureSelect_bloqueada
-                    : creatureName(context, creature.id),
-                style: TextStyle(
-                  color: locked ? Palette.indigo : Palette.preto,
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                decoration: BoxDecoration(
+                  // Mesma regra do cartão da intro: seleção muda a COR da linha
+                  // de fora, nunca a espessura, pra geometria não se mexer.
+                  border: BordaDupla(
+                    cor: Palette.preto,
+                    corExterna: isSelected ? corTipo : null,
+                    espessura: 2,
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
+                child: Row(
+                  children: [
+                    CreatureSprite(
+                      creature: creature,
+                      size: 34,
+                      tudoPreto: locked,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              locked
+                                  ? context.l10n.creatureSelect_bloqueada
+                                  : creatureName(context, creature.id),
+                              style: const TextStyle(
+                                color: Palette.preto,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          if (!locked) ...[
+                            const SizedBox(height: 2),
+                            EtiquetaTipo(
+                              tipo: creature.tipo,
+                              rotulo: CreatureSelectOverlay.typeLabel(
+                                context,
+                                creature.tipo,
+                              ),
+                              fontSize: 10,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (locked)
+                      const Icon(Icons.lock, color: Palette.cinzaEsc, size: 16),
+                  ],
+                ),
               ),
             ),
-            if (locked) const Icon(Icons.lock, color: Colors.white38, size: 16),
           ],
         ),
       ),
@@ -256,8 +309,8 @@ class _CreatureListTile extends StatelessWidget {
   }
 }
 
-/// Painel da direita: sprite + nome/tipo em cima, status ao lado das
-/// habilidades embaixo — layout tirado direto do rascunho.
+/// Painel de detalhe: sprite e identidade em cima, status e habilidades
+/// embaixo, botão de jogar no pé — o rascunho de paisagem.
 class _CreatureDetailPanel extends StatelessWidget {
   final CreatureData creature;
   final VoidCallback onPlay;
@@ -266,321 +319,269 @@ class _CreatureDetailPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: const BoxDecoration(
+        border: BordaDupla(cor: Palette.preto, espessura: 4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(flex: 5, child: _identidade(context)),
+          const SizedBox(height: 8),
+          const Divider(color: Palette.preto, thickness: 2, height: 2),
+          const SizedBox(height: 8),
+          Expanded(flex: 4, child: _habilidades(context)),
+          const SizedBox(height: 10),
+          Center(child: _botaoJogar(context)),
+        ],
+      ),
+    );
+  }
+
+  /// Sprite grande à esquerda, nome / tipo / frase / barras à direita.
+  Widget _identidade(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Palette.branco,
-              borderRadius: BorderRadius.circular(0),
-              border: const BordaDupla(cor: Palette.preto, espessura: 2),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const SizedBox(width: 20),
-                    CreatureSprite(creature: creature, size: 80),
-                    const SizedBox(width: 5),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(0),
-                              border: Border(
-                                right: BorderSide(
-                                  color: Palette.preto,
-                                  width: 2,
-                                ),
-                                bottom: BorderSide(
-                                  color: Palette.preto,
-                                  width: 2,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              context.l10n.creatureSelect_nomeTipo(
-                                creatureName(context, creature.id),
-                                CreatureSelectOverlay.typeLabel(
-                                  context,
-                                  creature.tipo,
-                                ),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Palette.preto,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            border: const BordaDupla(cor: Palette.preto, espessura: 2),
-                            borderRadius: BorderRadius.circular(0),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              _StatLine(
-                                context.l10n.creatureSelect_saude,
-                                creature.stats.maxHp.toString(),
-                              ),
-                              _StatLine(
-                                context.l10n.creatureSelect_velocidade,
-                                creature.stats.speed.toInt().toString(),
-                              ),
-                              _StatLine(
-                                context.l10n.creatureSelect_ataque,
-                                creature.stats.ataque.toInt().toString(),
-                              ),
-                              // _StatLine('DEFESA', creature.stats.defesa.toInt().toString()),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // Nome+descrição da habilidade e da passiva
-                            // podem passar da altura disponível em
-                            // landscape de celular — mesma faixa estreita
-                            // que já causou "BOTTOM OVERFLOWED" com só 4
-                            // linhas de stat (ver _StatLine). `FittedBox`
-                            // encolhe o bloco inteiro em vez de rolar; sem
-                            // efeito quando o texto já cabe.
-                            Expanded(
-                              // `LayoutBuilder` + `SizedBox(width:)` dá ao
-                              // `Container` a largura EXATA disponível antes
-                              // do `FittedBox` medir — sem isso o
-                              // `FittedBox` mediria a largura intrínseca do
-                              // texto (mais estreita) e o painel encolheria
-                              // na horizontal mesmo quando a altura já
-                              // coubesse sozinha.
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  return FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    alignment: Alignment.topLeft,
-                                    child: SizedBox(
-                                      width: constraints.maxWidth,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                            0,
-                                          ),
-                                          border: Border(
-                                            right: BorderSide(
-                                              color: Palette.preto,
-                                              width: 2,
-                                            ),
-                                            bottom: BorderSide(
-                                              color: Palette.preto,
-                                              width: 2,
-                                            ),
-                                          ),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              context
-                                                  .l10n
-                                                  .creatureSelect_habilidade,
-                                              style: const TextStyle(
-                                                color: Palette.preto,
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              slotUmDaCriatura(
-                                                context,
-                                                creature,
-                                              ).nome,
-                                              style: const TextStyle(
-                                                color: Palette.preto,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            if (slotUmDaCriatura(
-                                              context,
-                                              creature,
-                                            ).descricao.isNotEmpty) ...[
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                slotUmDaCriatura(
-                                                  context,
-                                                  creature,
-                                                ).descricao,
-                                                style: const TextStyle(
-                                                  color: Palette.preto,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              context
-                                                  .l10n
-                                                  .creatureSelect_habilidade,
-                                              style: const TextStyle(
-                                                color: Palette.preto,
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              abilityName(
-                                                context,
-                                                creature.ability2,
-                                              ),
-                                              style: const TextStyle(
-                                                color: Palette.preto,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                            if (creature
-                                                .ability2
-                                                .descricao
-                                                .isNotEmpty) ...[
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                abilityDescription(
-                                                  context,
-                                                  creature.ability2,
-                                                ),
-                                                style: const TextStyle(
-                                                  color: Palette.preto,
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+          flex: 4,
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: CreatureSprite(creature: creature, size: 110),
             ),
           ),
         ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: withBtnSfx(onPlay),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Palette.branco,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              elevation: 0,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-                side: BorderSide(color: Palette.preto, width: 2),
-              ),
-            ),
-            child: Text(
-              context.l10n.creatureSelect_jogar,
-              style: const TextStyle(
-                color: Palette.preto,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+        const SizedBox(width: 10),
+        Expanded(flex: 6, child: _ficha(context)),
+      ],
+    );
+  }
+
+  /// Nome, etiqueta, frase e barras.
+  ///
+  /// Tudo dentro de `SizedBox` de largura medida + `FittedBox`, a mesma receita
+  /// da caixa de habilidade, e aqui ela é OBRIGATÓRIA: o conteúdo tem altura
+  /// variável (a frase quebra em uma a três linhas conforme a criatura e a
+  /// largura) e o espaço é uma fração fixa do painel. Sem rede, a criatura de
+  /// frase mais longa estourava a caixa — era o "BOTTOM OVERFLOWED BY 74
+  /// PIXELS" com as barras por cima do texto.
+  ///
+  /// A largura fixada antes do `FittedBox` é o que mantém a ordem certa:
+  /// quebra de linha primeiro, encolher a fonte só se o já quebrado não couber.
+  Widget _ficha(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) => FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: SizedBox(
+          width: constraints.maxWidth,
+          child: _fichaConteudo(context),
+        ),
+      ),
+    );
+  }
+
+  Widget _fichaConteudo(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            creatureName(context, creature.id).toUpperCase(),
+            style: const TextStyle(
+              color: Palette.preto,
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
             ),
           ),
+        ),
+        const SizedBox(height: 4),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: EtiquetaTipo(
+            tipo: creature.tipo,
+            rotulo: CreatureSelectOverlay.typeLabel(context, creature.tipo),
+          ),
+        ),
+        const SizedBox(height: 6),
+        // A frase é a única coisa aqui que QUEBRA em várias linhas, então fica
+        // fora de qualquer `FittedBox` — dentro de um, largura infinita faria
+        // dela uma linha só, encolhida até não dar pra ler.
+        Text(
+          creatureDescription(context, creature.id),
+          style: const TextStyle(color: Palette.preto, fontSize: 13),
+        ),
+        const SizedBox(height: 8),
+        _linhaStatus(
+          context.l10n.intro_saudeRotulo,
+          creature.stats.maxHp.toDouble(),
+          TetosStatus.saude,
+          Palette.vermelho,
+        ),
+        _linhaStatus(
+          context.l10n.intro_velocidadeRotulo,
+          creature.stats.speed,
+          TetosStatus.velocidade,
+          Palette.azul,
+        ),
+        _linhaStatus(
+          context.l10n.intro_ataqueRotulo,
+          creature.stats.ataque,
+          TetosStatus.ataque,
+          Palette.laranja,
         ),
       ],
     );
   }
-}
 
-/// Rótulo à esquerda, número à direita, numa linha só.
-///
-/// O rascunho empilha o número embaixo do rótulo, mas em landscape de celular
-/// (~360dp de altura) 4 stats de 2 linhas somam ~160px numa faixa que tem
-/// ~100px — era exatamente o "BOTTOM OVERFLOWED". Uma linha por stat cabe em
-/// qualquer altura e mantém o número destacado.
-class _StatLine extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _StatLine(this.label, this.value);
-
-  @override
-  Widget build(BuildContext context) {
+  /// Rótulo e barra na MESMA linha, ao contrário da intro: aqui a ficha tem
+  /// 6/10 da largura do painel, então cabe lado a lado.
+  Widget _linhaStatus(String rotulo, double valor, double teto, Color cor) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.only(bottom: 3),
       child: Row(
         children: [
-          Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Palette.preto,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+          SizedBox(
+            width: 86,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                rotulo,
+                style: const TextStyle(
+                  color: Palette.preto,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(width: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Palette.preto,
-              fontSize: 17,
-              fontWeight: FontWeight.bold,
+          // `Flexible` porque a ficha agora vive dentro de um `SizedBox` de
+          // largura medida: os dez segmentos são largura fixa, e numa janela
+          // estreita eles passavam do que sobrava depois do rótulo.
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: BarraStatus(valor: valor, teto: teto, cor: cor),
             ),
           ),
         ],
       ),
     );
   }
+
+  Widget _habilidades(BuildContext context) {
+    final slotUm = slotUmDaCriatura(context, creature);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Expanded(
+          child: _caixaHabilidade(slotUm.nome, slotUm.descricao, ehAtaque: true),
+        ),
+        const SizedBox(height: 6),
+        Expanded(
+          child: _caixaHabilidade(
+            abilityName(context, creature.ability2),
+            abilityDescription(context, creature.ability2),
+            ehAtaque: false,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Ícone à esquerda, nome em negrito e descrição normal à direita.
+  ///
+  /// O texto fica num `SizedBox` de largura medida, e não solto dentro do
+  /// `FittedBox`: com largura infinita o `Text` nunca quebra — monta tudo numa
+  /// linha e o `FittedBox` encolhe a fonte até não dar pra ler. Quebra
+  /// primeiro; encolher só se o texto JÁ QUEBRADO ainda não couber.
+  Widget _caixaHabilidade(
+    String nome,
+    String descricao, {
+    required bool ehAtaque,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        border: Border.all(color: Palette.preto, width: 2),
+      ),
+      child: LayoutBuilder(
+        builder: (context, constraints) => Row(
+          children: [
+            IconeHabilidade(criatura: creature, ehAtaque: ehAtaque),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Center(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: SizedBox(
+                    width: (constraints.maxWidth - 48).clamp(
+                      1.0,
+                      double.infinity,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          nome,
+                          style: const TextStyle(
+                            color: Palette.preto,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          descricao,
+                          style: const TextStyle(
+                            color: Palette.preto,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _botaoJogar(BuildContext context) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Palette.branco,
+        padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 10),
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero,
+          side: BorderSide(color: Palette.preto, width: 2),
+        ),
+      ),
+      onPressed: withBtnSfx(onPlay),
+      child: Text(
+        context.l10n.creatureSelect_jogar,
+        style: const TextStyle(
+          fontSize: 18,
+          color: Palette.preto,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
 }
 
-/// Sprite da criatura já com a paleta trocada — as mesmas cores que ela tem
-/// em jogo. `Image.asset` não serve aqui: o PNG em disco é cinza-marcador
-/// (169/84), quem pinta é o [PaletteSwapper], que devolve `ui.Image`, não um
-/// asset — daí o FutureBuilder + RawImage.
 class CreatureSprite extends StatelessWidget {
   final CreatureData creature;
   final double size;

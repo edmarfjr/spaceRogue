@@ -22,7 +22,7 @@ class TiroDeGeloEvo extends Ability {
   final double aberturaGraus;
 
   const TiroDeGeloEvo({
-    this.coef = 1.1,
+    this.coef = 1.0,
     this.lentidaoDuracao = 1.5,
     this.lentidaoFator = 0.5,
     this.aberturaGraus = 14,
@@ -45,6 +45,7 @@ class TiroDeGeloEvo extends Ability {
           position: user.position.clone(),
           direction: dir.clone()..rotate(desvio),
           dmg: dano,
+          lifeTime: 1.0,
           sprPath: 'projeteis/proj1.png',
           cor1: Palette.azul,
           cor2: Palette.indigo,

@@ -1,6 +1,9 @@
 import 'package:flame_audio/flame_audio.dart';
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
+import 'game_music.dart';
 import 'sfx.dart';
 
 /// Efeitos sonoros do jogo — dash, retorno de criatura, dano e ataques
@@ -89,19 +92,35 @@ class GameAudio {
   };
 
   /// Quantas vozes cada som ganha — só os que realmente se sobrepõem em
-  /// combate (dano e ataques elementais) precisam de mais de duas. O padrão
+  /// combate (dano e ataques elementais) precisam de mais de uma. O padrão
   /// pra quem não está aqui é [_defaultVoiceCount].
+  ///
+  /// ESTE MAPA TEM ORÇAMENTO. Cada voz é um `MediaPlayer` NATIVO vivo o tempo
+  /// todo, e o Android tem teto de instâncias por processo — perto de 32 na
+  /// maioria dos aparelhos. A soma daqui era 54, e enquanto o jogo era mudo de
+  /// trilha isso passou despercebido; no dia em que a música entrou, o player
+  /// dela foi o 55º, não conseguiu decodificador (`MediaPlayer error (1, -19)`)
+  /// e o reinício do loop derrubou o app com um `IllegalStateException` NATIVO,
+  /// que nenhum `catch` em Dart alcança.
+  ///
+  /// O teto real de sobreposição é muito menor do que parece: [_globalThrottleMs]
+  /// de 80ms limita o jogo INTEIRO a ~12 toques por segundo, e um efeito curto
+  /// dura uns 0,3s — ou seja, nunca há muito mais que meia dúzia de vozes
+  /// soando ao mesmo tempo. Três vozes no som mais disputado já sobra.
+  ///
+  /// Antes de aumentar qualquer número aqui, some o mapa inteiro e lembre de
+  /// reservar uma vaga pra música.
   static const Map<Sfx, int> _voiceCounts = {
-    Sfx.hit: 10,
-    Sfx.fogo: 5,
-    Sfx.agua: 5,
-    Sfx.raio: 8,
-    Sfx.veneno: 5,
-    Sfx.stairs: 1,
-    Sfx.pick: 1,
-    Sfx.use: 1,
+    Sfx.hit: 3,
+    Sfx.fogo: 3,
+    Sfx.agua: 3,
+    Sfx.raio: 3,
+    Sfx.veneno: 3,
+    Sfx.tiro: 2,
+    Sfx.estouro: 2,
+    Sfx.enemy_die: 2,
   };
-  static const int _defaultVoiceCount = 2;
+  static const int _defaultVoiceCount = 1;
 
   static const int _throttleMs = 50;
 
@@ -174,26 +193,46 @@ class GameAudio {
         focus: AudioContextConfigFocus.mixWithOthers,
       ).build();
 
-      for (final entry in _paths.entries) {
-        final voiceCount = _voiceCounts[entry.key] ?? _defaultVoiceCount;
-        final players = <AudioPlayer>[];
-        for (var i = 0; i < voiceCount; i++) {
-          final player = AudioPlayer(playerId: '${entry.key.name}_$i')
-            ..audioCache = FlameAudio.audioCache
-            // Achado #7 (ver doc da classe): desliga o `FramePositionUpdater`
-            // que o `AudioPlayer` instala sozinho no construtor.
-            ..positionUpdater = null;
-          await player.setPlayerMode(PlayerMode.mediaPlayer);
-          await player.setAudioContext(audioContext);
-          await player.setReleaseMode(ReleaseMode.stop);
-          await player.setVolume(volume);
-          await player.setSource(AssetSource(entry.value));
-          players.add(player);
-        }
-        _voices[entry.key] = players;
-        _nextVoice[entry.key] = 0;
-      }
+      // Em PARALELO por som, serial dentro de cada som. Antes era uma fila
+      // única de ~170 idas e voltas ao canal de plataforma, e ela já estourou
+      // o timeout de 30s do `audioplayers` em campo — quando isso acontece o
+      // `catch` lá embaixo deixa `_ready` em false e o jogo fica MUDO, não
+      // lento. Dezessete correntes curtas encurtam o caminho crítico sem
+      // virar uma rajada de 170 chamadas de uma vez.
+      //
+      // O alerta de rajada na doc desta classe (item 5) é sobre COMBATE, com
+      // o quadro correndo; aqui não há quadro pra atrapalhar.
+      await Future.wait(
+        _paths.entries.map((entry) async {
+          final voiceCount = _voiceCounts[entry.key] ?? _defaultVoiceCount;
+          final players = <AudioPlayer>[];
+          for (var i = 0; i < voiceCount; i++) {
+            final player = AudioPlayer(playerId: '${entry.key.name}_$i')
+              ..audioCache = FlameAudio.audioCache
+              // Achado #7 (ver doc da classe): desliga o `FramePositionUpdater`
+              // que o `AudioPlayer` instala sozinho no construtor.
+              ..positionUpdater = null;
+            await player.setPlayerMode(PlayerMode.mediaPlayer);
+            await player.setAudioContext(audioContext);
+            await player.setReleaseMode(ReleaseMode.stop);
+            // O volume fica fixado AQUI, no caminho crítico. O aquecimento
+            // também o reajusta no fim, mas ele é opcional e pulado no web —
+            // depender dele deixaria as vozes no 1.0 padrão do `AudioPlayer`.
+            await player.setVolume(volume);
+            await player.setSource(AssetSource(entry.value));
+            players.add(player);
+          }
+          _voices[entry.key] = players;
+          _nextVoice[entry.key] = 0;
+        }),
+      );
       _ready = true;
+
+      // Fora do caminho crítico de propósito: sem `await`, o `onLoad` do jogo
+      // segue e a tela de loading sai. Ter pôsto trabalho opcional aqui dentro
+      // já travou o jogo no navegador uma vez, onde a política de autoplay
+      // deixa chamadas de áudio penduradas sem nunca resolver.
+      unawaited(FlameAudio.audioCache.loadAll(GameMusic.todas));
     } catch (e, st) {
       // Loga em vez de engolir: roda uma vez no boot, então o custo é zero e
       // um preload que falha calado deixa o jogo mudo sem nenhuma pista.

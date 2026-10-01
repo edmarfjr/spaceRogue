@@ -205,7 +205,7 @@ class Hud extends PositionComponent with HasGameRef {
         maximo: Player.cargasDeSalaMax,
         custo: SegundoFolego.custoCargas,
         deveAparecer: () => player.usaCargasDeSala,
-        position: Vector2(48, 10),
+        position: Vector2(46, 10),
       ),
 
       // Três retratos, um por slot do grupo — mesmo cinza que o indicador de
@@ -328,11 +328,11 @@ class Hud extends PositionComponent with HasGameRef {
 
     moedaSprite.render(
       canvas,
-      position: Vector2(120, 0),
+      position: Vector2(90, 0),
       size: bombIconSize,
       overridePaint: paint,
     );
-    textPaint.render(canvas, ':${player.coins}', Vector2(136, 1));
+    textPaint.render(canvas, ':${player.coins}', Vector2(106, 1));
 
     
     // --- LÓGICA DO MEIO-CORAÇÃO ---
@@ -460,7 +460,7 @@ class Hud extends PositionComponent with HasGameRef {
     textPaint.render(
       canvas,
       '${game.currentFloor.toString()} - ${game.currentLevel.toString()}',
-      Vector2(83, 1),
+      Vector2(60, 1),
     );
   }
 }
