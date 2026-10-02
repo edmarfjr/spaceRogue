@@ -157,7 +157,7 @@ class _IntroOverlayState extends State<IntroOverlay> {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Palette.branco,
+      color: UiTheme.backgroundMenuCor,
       child: SafeArea(
         child: _fase == _Fase.dialogo
             ? _construirDialogo()
@@ -191,7 +191,7 @@ class _IntroOverlayState extends State<IntroOverlay> {
             child: Text(
               context.l10n.intro_pular,
               style: const TextStyle(
-                color: Palette.preto,
+                color: UiTheme.txtCor,
                 fontSize: 14,
                 letterSpacing: 2,
               ),
@@ -265,7 +265,7 @@ class _IntroOverlayState extends State<IntroOverlay> {
       child: Text(
         context.l10n.intro_escolhaPrimeira,
         style: const TextStyle(
-          color: Palette.preto,
+          color: UiTheme.txtCor,
           fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
@@ -277,13 +277,10 @@ class _IntroOverlayState extends State<IntroOverlay> {
       padding: EdgeInsets.symmetric(vertical: retrato ? 10 : 4),
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          backgroundColor: Palette.branco,
+          backgroundColor: UiTheme.btnCor,
           padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 10),
           elevation: 0,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.zero,
-            side: BorderSide(color: Palette.preto, width: 2),
-          ),
+          shape: const BordaDuplaShape(),
         ),
         // Toque no cartão seleciona, este botão confirma: escolha
         // permanente merece dois toques.
@@ -292,7 +289,7 @@ class _IntroOverlayState extends State<IntroOverlay> {
           context.l10n.intro_escolher,
           style: const TextStyle(
             fontSize: 18,
-            color: Palette.preto,
+            color: UiTheme.txtCor,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -352,7 +349,7 @@ class _CaixaDialogo extends StatelessWidget {
           height: 116,
           padding: const EdgeInsets.all(12),
           decoration:  BoxDecoration(
-            color: Palette.branco,
+            color: UiTheme.backgroundMenuCor,
             borderRadius: BorderRadius.circular(2) ,
             border: BordaDupla(cor: Palette.preto, espessura: 2),
           ),
@@ -365,7 +362,7 @@ class _CaixaDialogo extends StatelessWidget {
                   maxLines: 4,
                   overflow: TextOverflow.fade,
                   style: const TextStyle(
-                    color: Palette.preto,
+                    color: UiTheme.txtCor,
                     fontSize: 13,
                     height: 1.4,
                   ),
@@ -376,7 +373,7 @@ class _CaixaDialogo extends StatelessWidget {
                   alignment: Alignment.bottomRight,
                   child: Text(
                     '▼',
-                    style: TextStyle(color: Palette.preto, fontSize: 14),
+                    style: TextStyle(color: UiTheme.txtCor, fontSize: 14),
                   ),
                 ),
             ],
@@ -483,7 +480,7 @@ class _CartaoCandidata extends StatelessWidget {
               child: Text(
                 CreatureSelectOverlay.typeLabel(context, criatura.tipo),
                 style: const TextStyle(
-                  color: Palette.preto,
+                  color: UiTheme.txtCor,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -561,6 +558,12 @@ class _FaixaDetalhe extends StatelessWidget {
               TetosStatus.ataque,
               Palette.laranja,
             ),
+            _linhaStatus(
+              context.l10n.intro_evasaoRotulo,
+              criatura.stats.evasao,
+              TetosStatus.evasao,
+              Palette.verde,
+            ),
           ],
         ),
       ),
@@ -580,7 +583,7 @@ class _FaixaDetalhe extends StatelessWidget {
           Text(
             rotulo,
             style: const TextStyle(
-              color: Palette.preto,
+              color: UiTheme.txtCor,
               fontSize: 13,
               fontWeight: FontWeight.bold,
             ),
@@ -687,7 +690,7 @@ class _FaixaDetalhe extends StatelessWidget {
                           nome,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            color: Palette.preto,
+                            color: UiTheme.txtCor,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -696,7 +699,7 @@ class _FaixaDetalhe extends StatelessWidget {
                           descricao,
                           textAlign: TextAlign.center,
                           style: const TextStyle(
-                            color: Palette.preto,
+                            color: UiTheme.txtCor,
                             fontSize: 14,
                           ),
                         ),

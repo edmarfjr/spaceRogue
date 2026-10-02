@@ -20,7 +20,7 @@ class BolaDaguaEvo extends Ability {
     user.parent?.add(
       Projectile(
         owner: user,
-        position: user.position.clone(),
+        position: user.position.clone() + dir * 12,
         direction: dir,
         speed: velocidade,
         dmg: dano,

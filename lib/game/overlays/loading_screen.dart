@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/components/core/responsive.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 
@@ -26,7 +26,7 @@ class LoadingScreen extends StatelessWidget {
     final estreita = Responsive.ehEstreita(context);
 
     return ResponsiveOverlayScaffold(
-      background: Palette.branco,
+      background: UiTheme.backgroundMenuCor,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -43,7 +43,7 @@ class LoadingScreen extends StatelessWidget {
             context.l10n.menu_titulo,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Palette.preto,
+              color: UiTheme.txtCor,
               fontSize: estreita ? 32 : 48,
               fontWeight: FontWeight.bold,
             ),
@@ -53,7 +53,7 @@ class LoadingScreen extends StatelessWidget {
             context.l10n.loading_carregando,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Palette.preto,
+              color: UiTheme.txtCor,
               fontSize: estreita ? 16 : 20,
             ),
           ),

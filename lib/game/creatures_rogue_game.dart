@@ -1005,6 +1005,9 @@ class CreaturesRogueGame extends FlameGame
     // continuar seria injusto, mas o contrário (ganhar) seria explorável, e
     // zero é o lado seguro.
     player.cargasDeSala = (j['cargasDeSala'] as int?) ?? 0;
+    // Save anterior ao upgrade de evasão: cai em zero, que é o mesmo que
+    // "nunca peguei nenhum".
+    player.bonusEvasaoItens = (j['bonusEvasao'] as num?)?.toDouble() ?? 0.0;
     player.critChance = (j['critChance'] as num).toDouble();
     player.critMult = (j['critMult'] as num).toDouble();
     player.bombsAmount = j['bombs'] as int;
@@ -1069,6 +1072,7 @@ class CreaturesRogueGame extends FlameGame
         'energiaMax': player.energiaMax,
         'energiaRegen': player.energiaRegen,
         'shieldRegenInterval': player.shieldRegenInterval,
+        'bonusEvasao': player.bonusEvasaoItens,
         'critChance': player.critChance,
         'critMult': player.critMult,
         'bombs': player.bombsAmount,

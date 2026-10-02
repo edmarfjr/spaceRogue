@@ -66,7 +66,7 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Palette.branco,
+      color: UiTheme.backgroundMenuCor,
       child: SafeArea(
         child: Column(
           children: [
@@ -91,7 +91,7 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
                       context.l10n.creatureSelect_titulo,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        color: Palette.preto,
+                        color: UiTheme.txtCor,
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
@@ -187,7 +187,7 @@ class _CreatureList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Palette.branco,
+        color: UiTheme.backgroundMenuCor,
         borderRadius: BorderRadius.circular(0),
       ),
       padding: const EdgeInsets.all(6),
@@ -238,9 +238,9 @@ class _CreatureListTile extends StatelessWidget {
             // invisível: sem isso a lista inteira escorregava alguns pixels
             // toda vez que a seleção mudava de linha.
             SizedBox(
-              width: 12,
+              width: 24,
               child: isSelected
-                  ? Icon(Icons.play_arrow, size: 12, color: corTipo)
+                  ? Icon(Icons.play_arrow, size: 28, color: corTipo)
                   : null,
             ),
             Expanded(
@@ -276,7 +276,7 @@ class _CreatureListTile extends StatelessWidget {
                                   ? context.l10n.creatureSelect_bloqueada
                                   : creatureName(context, creature.id),
                               style: const TextStyle(
-                                color: Palette.preto,
+                                color: UiTheme.txtCor,
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -395,7 +395,7 @@ class _CreatureDetailPanel extends StatelessWidget {
           child: Text(
             creatureName(context, creature.id).toUpperCase(),
             style: const TextStyle(
-              color: Palette.preto,
+              color: UiTheme.txtCor,
               fontSize: 26,
               fontWeight: FontWeight.bold,
             ),
@@ -415,7 +415,7 @@ class _CreatureDetailPanel extends StatelessWidget {
         // dela uma linha só, encolhida até não dar pra ler.
         Text(
           creatureDescription(context, creature.id),
-          style: const TextStyle(color: Palette.preto, fontSize: 13),
+          style: const TextStyle(color: UiTheme.txtCor, fontSize: 13),
         ),
         const SizedBox(height: 8),
         _linhaStatus(
@@ -436,6 +436,12 @@ class _CreatureDetailPanel extends StatelessWidget {
           TetosStatus.ataque,
           Palette.laranja,
         ),
+        _linhaStatus(
+          context.l10n.intro_evasaoRotulo,
+          creature.stats.evasao,
+          TetosStatus.evasao,
+          Palette.verde,
+        ),
       ],
     );
   }
@@ -455,7 +461,7 @@ class _CreatureDetailPanel extends StatelessWidget {
               child: Text(
                 rotulo,
                 style: const TextStyle(
-                  color: Palette.preto,
+                  color: UiTheme.txtCor,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -534,7 +540,7 @@ class _CreatureDetailPanel extends StatelessWidget {
                         Text(
                           nome,
                           style: const TextStyle(
-                            color: Palette.preto,
+                            color: UiTheme.txtCor,
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
                           ),
@@ -542,7 +548,7 @@ class _CreatureDetailPanel extends StatelessWidget {
                         Text(
                           descricao,
                           style: const TextStyle(
-                            color: Palette.preto,
+                            color: UiTheme.txtCor,
                             fontSize: 12,
                           ),
                         ),
@@ -561,20 +567,17 @@ class _CreatureDetailPanel extends StatelessWidget {
   Widget _botaoJogar(BuildContext context) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        backgroundColor: Palette.branco,
+        backgroundColor: UiTheme.btnCor,
         padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 10),
         elevation: 0,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
-          side: BorderSide(color: Palette.preto, width: 2),
-        ),
+        shape: const BordaDuplaShape(),
       ),
       onPressed: withBtnSfx(onPlay),
       child: Text(
         context.l10n.creatureSelect_jogar,
         style: const TextStyle(
           fontSize: 18,
-          color: Palette.preto,
+          color: UiTheme.txtCor,
           fontWeight: FontWeight.bold,
         ),
       ),

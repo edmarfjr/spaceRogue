@@ -19,7 +19,7 @@ class BolaDagua extends Ability {
     final dano = user.creatureData.stats.ataque * coef;
     user.parent?.add(Projectile(
       owner: user,
-      position: user.position.clone(),
+      position: user.position.clone() + dir * 12,
       direction: dir,
       speed: velocidade,
       dmg: dano,

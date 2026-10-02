@@ -23,6 +23,18 @@ class BaseStats {
   final double ataque;
   final double critBonus;
 
+  /// Chance, em PORCENTO, de o golpe errar por completo — ver
+  /// `Player.takeDamage`, que é quem rola o dado.
+  ///
+  /// Porcento, e não fração de 0 a 1, pela mesma razão do `critBonus` e do
+  /// `Player.critChance`: todo número de chance do jogo já está em porcento, e
+  /// misturar as duas escalas é como se erra um balanceamento por um fator de
+  /// cem sem ninguém notar.
+  ///
+  /// 5% em todo mundo por padrão: baixo o bastante pra não ser estratégia
+  /// sozinho, alto o bastante pra o jogador ver acontecer numa run.
+  final double evasao;
+
   const BaseStats({
     required this.maxHp,
     required this.speed,
@@ -31,7 +43,11 @@ class BaseStats {
     required this.defesa,
     required this.ataque,
     this.critBonus = 0.0,
+    this.evasao = evasaoPadrao,
   });
+
+  /// Evasão de quem não declara a sua.
+  static const double evasaoPadrao = 5.0;
 
   double get shieldMax => defesa * 1.0;
 }

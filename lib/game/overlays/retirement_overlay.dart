@@ -179,12 +179,9 @@ class _RetirementOverlayState extends State<RetirementOverlay>
                 child: _mostrarContinuar
                     ? ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Palette.branco,
+                          backgroundColor: UiTheme.btnCor,
                           elevation: 0,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
-                            side: BorderSide(color: Palette.preto, width: 2),
-                          ),
+                          shape: const BordaDuplaShape(),
                         ),
                         onPressed: withBtnSfx(
                           widget.game.dismissAposentadoria,
@@ -193,7 +190,7 @@ class _RetirementOverlayState extends State<RetirementOverlay>
                           context.l10n.pause_continuar,
                           style: const TextStyle(
                             fontSize: 16,
-                            color: Palette.preto,
+                            color: UiTheme.txtCor,
                           ),
                         ),
                       )

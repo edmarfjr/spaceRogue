@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flame/flame.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flutter/material.dart';
 
 class PaletteSwapper {
@@ -22,12 +23,25 @@ class PaletteSwapper {
       '|${white?.toARGB32() ?? -1}|${black?.toARGB32() ?? -1}';
 
   /// Retorna uma ui.Image (imagem bruta) com as cores trocadas, ideal para SpriteAnimations e recortes.
+  /// [whiteReplacement] e [blackReplacement] já vinham opcionais; agora também
+  /// vêm com PADRÃO. Antes, quem omitia deixava branco e preto intocados — e
+  /// como `Palette.branco` e `Palette.preto` são branco e preto puros, o
+  /// resultado é o mesmo HOJE.
+  ///
+  /// A diferença aparece no dia em que a paleta mudar: trocar `Palette.branco`
+  /// por um creme (há um `0xFFFFF1E8` comentado lá) passa a retingir o branco
+  /// de TODOS os sprites de uma vez, em vez de só dos poucos que passavam a
+  /// cor na mão. É o mesmo motivo dos tokens de `UiTheme`.
+  ///
+  /// Continuam NULLÁVEIS de propósito: passar `null` explicitamente segue
+  /// significando "não encoste nesses pixels", que é o que um sprite com
+  /// branco e preto já definitivos quer.
   static Future<ui.Image> createSwappedImage({
     required String imagePath,
     required Color lightGrayReplacement,
     required Color darkGrayReplacement,
-    Color? whiteReplacement,
-    Color? blackReplacement,
+    Color? whiteReplacement = Palette.branco,
+    Color? blackReplacement = Palette.preto,
   }) {
     requests++;
 

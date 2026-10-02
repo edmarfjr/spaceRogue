@@ -142,6 +142,17 @@ abstract class ItemEfeito implements ItemDescritor {
   /// nem a pedra nem a `ExplosionHitbox` que a quebrou têm referência pra ele.
   void aoQuebrarPedra(Player player, Rock pedra) {}
 
+  /// O golpe ERROU pela evasão (ver `Player.takeDamage`).
+  ///
+  /// Irmão do [aoTomarDano], e o oposto dele: um dispara quando o golpe entra,
+  /// o outro quando ele passa raspando. Roda DEPOIS do dado, então quem
+  /// reage aqui tem certeza de que a criatura escapou.
+  ///
+  /// Não recebe o atacante porque `takeDamage` não o conhece — chega só o
+  /// tipo do golpe. Quem precisar bater de volta mira o inimigo mais próximo,
+  /// como a `Sentinela` já faz.
+  void aoEvadir(Player player) {}
+
   /// A vida da criatura ativa acabou de chegar a zero, e ela ainda NÃO saiu de
   /// campo. Devolver `true` segura o golpe: o `Player` refaz a vida em 1 e o
   /// game over não acontece.
@@ -185,7 +196,7 @@ class ItemEfeitoRegistry {
     PeleDeCinzas(),
     Couraca(),
     Desesperado(),
-    Legado(),
+    CapsulaFurada(),
     DiarioDeCampo(),
     EloDoGrupo(),
     Imposto(),
@@ -209,6 +220,9 @@ class ItemEfeitoRegistry {
     Jejum(),
     Coleira(),
     Ressonancia(),
+    Miragem(),
+    Aparar(),
+    PeDeCoelho(),
     Esgotamento(),
     GatilhoFrio(),
     SangueFrio(),
@@ -521,12 +535,29 @@ class Desesperado extends ItemEfeito {
 
 /// A criatura que SAI deixa uma poça do elemento dela no chão. Dá um motivo
 /// pra trocar fora de emergência, e o efeito muda conforme o grupo.
-class Legado extends ItemEfeito {
-  const Legado();
+class CapsulaFurada extends ItemEfeito {
+  const CapsulaFurada();
 
   static const double coefDano = 1.6;
   static const double duracao = 4.0;
 
+  /// Quanto a poça de ÁGUA atrasa quem pisou. Curto de propósito e bem menor
+  /// que [duracao]: a poça reaplica a cada tique de reacerto do `Projectile`,
+  /// então quem FICA dentro dela segue atrasado, e quem só atravessa leva
+  /// pouco.
+  static const double lentidaoDuracao = 1.5;
+
+  static const double lentidaoFator = 0.5;
+
+  /// Atordoamento da poça ELÉTRICA. Bem mais curto que a lentidão porque
+  /// atordoar para o inimigo de vez, enquanto a lentidão só o atrasa.
+  static const double atordoamento = 0.6;
+
+  @override
+  // `id` CONTINUA 'legado', apesar do nome novo: ele é chave de save, e um
+  // save gravado antes desta renomeação reconstrói `player.itens` por
+  // `ItemEfeitoRegistry.porId`. Trocar aqui faria o item sumir da mochila de
+  // quem estava no meio de uma run.
   @override
   String get id => 'legado';
   @override
@@ -536,18 +567,42 @@ class Legado extends ItemEfeito {
   @override
   Color get cor2 => Palette.roxoEsc;
   @override
-  String nome(BuildContext context) => context.l10n.item_legado;
+  String nome(BuildContext context) => context.l10n.item_capsulaFurada;
   @override
-  String descricao(BuildContext context) => context.l10n.item_legadoDesc;
+  String descricao(BuildContext context) =>
+      context.l10n.item_capsulaFuradaDesc;
 
   @override
   void aoTrocarCriatura(Player player, CreatureData sai, CreatureData entra) {
-    final (sprite, dot) = switch (sai.tipo) {
-      CreatureType.fogo => ('projeteis/fogo.png', DotKind.queimadura),
-      CreatureType.planta => ('projeteis/folha.png', DotKind.veneno),
-      CreatureType.agua => ('projeteis/bolha.png', null),
-      CreatureType.eletrico => ('projeteis/raio.png', null),
-      CreatureType.neutro => ('projeteis/nuvem.png', null),
+    // Cada elemento deixa uma poça diferente. Fogo e planta já tinham DoT;
+    // água e elétrico eram só dano cru, e agora carregam status.
+    //
+    // Elétrico ATORDOA. Descarga elétrica parando o inimigo no lugar é o
+    // vocabulário já estabelecido do jogo — ver `RetaliacaoEletrica`,
+    // `CorrenteReflexa` e o `retaliaStunDuration` do Escudo de Espinhos.
+    // Cegueira tem outro dono no jogo (fumaça e desorientação), e usá-la aqui
+    // quebraria a associação que o jogador já aprendeu.
+    final (sprite, dot, lentidao, stun) = switch (sai.tipo) {
+      CreatureType.fogo => (
+        'projeteis/fogo.png',
+        DotKind.queimadura,
+        0.0,
+        0.0,
+      ),
+      CreatureType.planta => ('projeteis/folha.png', DotKind.veneno, 0.0, 0.0),
+      CreatureType.agua => (
+        'projeteis/bolha.png',
+        null,
+        lentidaoDuracao,
+        0.0,
+      ),
+      CreatureType.eletrico => (
+        'projeteis/raio.png',
+        null,
+        0.0,
+        atordoamento,
+      ),
+      CreatureType.neutro => ('projeteis/nuvem.png', null, 0.0, 0.0),
     };
 
     
@@ -569,6 +624,9 @@ class Legado extends ItemEfeito {
           atravessa: 100,
           dotKind: dot,
           dotTicks: 4,
+          lentidaoDuracao: lentidao,
+          lentidaoFator: lentidaoFator,
+          stunDuration: stun,
         ),
       );
     }
@@ -1176,7 +1234,7 @@ class DiarioDeCampo extends ItemEfeito {
   @override
   Color get cor1 => Palette.bege;
   @override
-  Color get cor2 => Palette.marromEsc;
+  Color get cor2 => Palette.marrom;
   @override
   String nome(BuildContext context) => context.l10n.item_diarioDeCampo;
   @override
@@ -1259,7 +1317,7 @@ class Imposto extends ItemEfeito {
   @override
   Color get cor1 => Palette.amarelo;
   @override
-  Color get cor2 => Palette.marromEsc;
+  Color get cor2 => Palette.marrom;
   @override
   String nome(BuildContext context) => context.l10n.item_imposto;
   @override
@@ -1298,7 +1356,7 @@ class Esgotamento extends ItemEfeito {
   @override
   Color get cor1 => Palette.laranja;
   @override
-  Color get cor2 => Palette.marromEsc;
+  Color get cor2 => Palette.marrom;
   @override
   String nome(BuildContext context) => context.l10n.item_esgotamento;
   @override
@@ -1484,7 +1542,7 @@ class PedraElemental extends ItemEfeito {
     CreatureType.fogo => Palette.laranja,
     CreatureType.agua => Palette.royal,
     CreatureType.planta => Palette.verdeEsc,
-    CreatureType.eletrico => Palette.marromEsc,
+    CreatureType.eletrico => Palette.marrom,
     CreatureType.neutro => Palette.cinzaEsc,
   };
 
@@ -1769,7 +1827,7 @@ class Frenesi extends ItemEfeito {
   @override
   Color get cor1 => Palette.vermelho;
   @override
-  Color get cor2 => Palette.marromEsc;
+  Color get cor2 => Palette.vermelho;
   @override
   String nome(BuildContext context) => context.l10n.item_frenesi;
   @override
@@ -1859,7 +1917,7 @@ class BauDoTesouro extends ItemEfeito {
   @override
   Color get cor1 => Palette.amarelo;
   @override
-  Color get cor2 => Palette.marromEsc;
+  Color get cor2 => Palette.marrom;
   @override
   String nome(BuildContext context) => context.l10n.item_bauDoTesouro;
   @override
@@ -1977,7 +2035,7 @@ class Ninhada extends ItemEfeito {
   @override
   Color get cor1 => Palette.bege;
   @override
-  Color get cor2 => Palette.marromEsc;
+  Color get cor2 => Palette.marrom;
   @override
   String nome(BuildContext context) => context.l10n.item_ninhada;
   @override
@@ -2051,7 +2109,7 @@ class NinhoOrbital extends OrbitProjectile {
     CreatureType tipo = CreatureType.neutro,
     String sprPath = 'projeteis/proj1.png',
     Color cor1 = Palette.bege,
-    Color cor2 = Palette.marromEsc,
+    Color cor2 = Palette.marrom,
   }) : super(
          owner: owner,
          anguloAtual: anguloAtual,
@@ -2262,7 +2320,7 @@ class PeDeCabra extends ItemEfeito {
   @override
   Color get cor1 => Palette.cinza;
   @override
-  Color get cor2 => Palette.marromEsc;
+  Color get cor2 => Palette.marrom;
   @override
   String nome(BuildContext context) => context.l10n.item_peDeCabra;
   @override
@@ -2278,7 +2336,7 @@ class PeDeCabra extends ItemEfeito {
         size: Vector2.all(raio),
         tipo: player.creatureData.tipo,
         cor1: Palette.cinza,
-        cor2: Palette.marromEsc,
+        cor2: Palette.marrom,
       ),
     );
   }
@@ -2300,7 +2358,7 @@ class Jejum extends ItemEfeito {
   @override
   String get spritePath => 'items/jejum.png';
   @override
-  Color get cor1 => Palette.marromEsc;
+  Color get cor1 => Palette.marrom;
   @override
   Color get cor2 => Palette.chocolate;
   @override
@@ -2669,7 +2727,7 @@ class EcoDoLatido extends ItemEfeito {
         position: player.position.clone(),
         raio: alcance,
         cor1: Palette.bege,
-        cor2: Palette.marromEsc,
+        cor2: Palette.marrom,
       ),
     );
     // Mesma razão do `EsporosLatentes` pra não usar `ExplosionHitbox`: ela
@@ -2858,6 +2916,148 @@ class FaroDeSangue extends ItemEfeito {
   @override
   void aoAtualizar(Player player, double dt) {
     player.bonusAlvoFerido += bonus;
+  }
+}
+
+
+/// Cada golpe que você escapa deixa você mais escorregadio; tomar dano zera
+/// tudo.
+///
+/// O verbo é EMBALO: a evasão deixa de ser um número fixo e vira uma coisa
+/// que se constrói e se perde. Quem está numa boa sequência pensa duas vezes
+/// antes de entrar numa troca de golpes — que é exatamente a decisão que um
+/// item de evasão deveria provocar.
+class Miragem extends ItemEfeito {
+  const Miragem();
+
+  static const double porEsquiva = 6.0;
+  static const int maxPilhas = 4;
+
+  @override
+  String get id => 'miragem';
+  @override
+  String get spritePath => 'items/miragem.png';
+  @override
+  Color get cor1 => Palette.cinza;
+  @override
+  Color get cor2 => Palette.indigo;
+  @override
+  String nome(BuildContext context) => context.l10n.item_miragem;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_miragemDesc;
+
+  @override
+  void aoEvadir(Player player) {
+    if (player.pilhasMiragem < maxPilhas) player.pilhasMiragem++;
+  }
+
+  /// Zera no golpe que ENTRA. Aqui, e não no `aoTentarTomarDano`: aquele
+  /// dispara também no golpe que o escudo come, e perder o embalo inteiro por
+  /// um golpe que a bolha absorveu seria punir duas vezes.
+  @override
+  void aoTomarDano(Player player, double danoFinal, CreatureType tipoAtacante) {
+    player.pilhasMiragem = 0;
+  }
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    player.evasaoDerivada += porEsquiva * player.pilhasMiragem;
+  }
+}
+
+/// Aparar o golpe revida no inimigo mais próximo.
+///
+/// O verbo é CONTRAGOLPE: a evasão deixa de ser só defesa e vira a abertura
+/// do seu ataque. Transforma o 5% que todo mundo tem de graça em algo que
+/// vale a pena procurar.
+class Aparar extends ItemEfeito {
+  const Aparar();
+
+  static const double coefDano = 1.5;
+  static const double alcance = 64.0;
+
+  @override
+  String get id => 'aparar';
+  @override
+  String get spritePath => 'items/parry.png';
+  // `cinza`, e não `branco`: o sprite já usa o BRANCO FIXO do `PaletteSwapper`
+  // por conta própria, e uma `cor1` branca se dissolveria nele.
+  @override
+  Color get cor1 => Palette.cinza;
+  @override
+  Color get cor2 => Palette.indigo;
+  @override
+  String nome(BuildContext context) => context.l10n.item_aparar;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_apararDesc;
+
+  @override
+  void aoEvadir(Player player) {
+    final inimigos =
+        player.parent?.children.whereType<Enemy>() ?? const <Enemy>[];
+    Enemy? alvo;
+    var menor = alcance;
+    for (final inimigo in inimigos) {
+      if (inimigo.summonTimer > 0) continue;
+      final d = inimigo.position.distanceTo(player.position);
+      if (d < menor) {
+        menor = d;
+        alvo = inimigo;
+      }
+    }
+    if (alvo == null) return;
+
+    player.parent?.add(
+      SpriteEffect(
+        position: alvo.position.clone(),
+        size: Vector2(16, 16),
+        corClara: Palette.branco,
+        corEscura: Palette.azulEsc,
+        corBranco: Palette.branco,
+        spritePath: 'effects/stun.png',
+        textureSize: Vector2(16, 16),
+        stepTime: 0.12,
+      ),
+    );
+    alvo.takeDamage(
+      player.creatureData.stats.ataque * coefDano,
+      tipoAtacante: player.creatureData.tipo,
+    );
+  }
+}
+
+/// Com a vida no fim, a evasão dobra.
+///
+/// O verbo é VIRADA: não dá nada enquanto você está bem, e muito quando você
+/// está por um fio. É a cara oposta do `Couraça`, que premia andar com o
+/// escudo cheio — os dois juntos nunca ligam ao mesmo tempo, e isso é de
+/// propósito: um cobre o começo da briga, o outro o fim.
+class PeDeCoelho extends ItemEfeito {
+  const PeDeCoelho();
+
+  /// Fração da vida abaixo da qual o bônus liga.
+  static const double limiar = 0.34;
+
+  @override
+  String get id => 'peDeCoelho';
+  @override
+  String get spritePath => 'items/peCoelho.png';
+  @override
+  Color get cor1 => Palette.bege;
+  @override
+  Color get cor2 => Palette.marrom;
+  @override
+  String nome(BuildContext context) => context.l10n.item_peDeCoelho;
+  @override
+  String descricao(BuildContext context) => context.l10n.item_peDeCoelhoDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    if (player.currentHealth > player.maxHealth * limiar) return;
+    // DOBRA o que já existe em vez de somar um valor fixo: assim ele escala
+    // junto com a Miragem e com o upgrade, e continua valendo a pena no fim
+    // de uma run em que a evasão já subiu.
+    player.evasaoDerivada += player.evasaoTotal;
   }
 }
 

@@ -1,5 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:creatures_rogue/game/game_settings.dart';
+
 /// Progresso de desbloqueio das criaturas: quais estão liberadas pra jogar, e
 /// quantas mortes já foram acumuladas de cada uma (contagem que mais pra
 /// frente aciona o boss de cada criatura — ver brainstorm de desbloqueio).
@@ -32,7 +34,22 @@ class CreatureProgress {
     _loaded = true;
   }
 
-  bool isUnlocked(String creatureId) => _unlockedIds.contains(creatureId);
+  /// Esta criatura está liberada pra jogar?
+  ///
+  /// O GOD MODE libera TODAS. É cheat de teste, igual às outras duas metades
+  /// dele (`Player.takeDamage` ignora dano, `Enemy.takeDamage` mata de um
+  /// golpe): sem isto, testar uma criatura específica exigia derrotar o boss
+  /// dela antes, e as de andar alto eram praticamente inalcançáveis.
+  ///
+  /// Mente na LEITURA, nunca na escrita: [_unlockedIds] continua intacto, e
+  /// desligar o god mode devolve a lista real de quem o jogador de fato
+  /// desbloqueou.
+  ///
+  /// Aqui, e não na tela de seleção, porque este é o funil por onde as três
+  /// leituras passam — a lista, o cadeado de cada linha e a silhueta do VS.
+  /// Espalhar a condição pelos três era garantir que um deles fosse esquecido.
+  bool isUnlocked(String creatureId) =>
+      GameSettings.instance.godMode || _unlockedIds.contains(creatureId);
 
   /// A intro (diálogo + escolha da criatura inicial) já foi concluída alguma
   /// vez. Enquanto for falso, "NOVO JOGO" leva pra intro em vez do seletor.

@@ -20,6 +20,8 @@ class GameSettings {
   static const _localeKey = 'creatures_rogue.locale';
   static const _soundEnabledKey = 'creatures_rogue.sound_enabled';
   static const _musicEnabledKey = 'creatures_rogue.music_enabled';
+  static const _soundVolumeKey = 'creatures_rogue.sound_volume';
+  static const _musicVolumeKey = 'creatures_rogue.music_volume';
   static const _godModeKey = 'creatures_rogue.god_mode';
   static const _joysticksFixosKey = 'creatures_rogue.joysticks_fixos';
   static const _controlesNaTelaKey = 'creatures_rogue.controles_na_tela';
@@ -53,6 +55,13 @@ class GameSettings {
     // `controlScheme`.
     GameAudio.instance.enabled = _prefs.getBool(_soundEnabledKey) ?? true;
     GameMusic.instance.enabled = _prefs.getBool(_musicEnabledKey) ?? true;
+    // Direto no campo, sem `aplicarVolume`: aqui as vozes ainda não existem
+    // (o `preload` roda depois e lê este valor), e o player de música ainda
+    // não tocou nada. Empurrar pros players agora seria chamada perdida.
+    GameAudio.instance.volume =
+        _prefs.getDouble(_soundVolumeKey) ?? GameAudio.volumePadrao;
+    GameMusic.instance.volume =
+        _prefs.getDouble(_musicVolumeKey) ?? GameMusic.volumePadrao;
     _godMode = _prefs.getBool(_godModeKey) ?? false;
     _joysticksFixos = _prefs.getBool(_joysticksFixosKey) ?? false;
     _controlesNaTela = _prefs.getBool(_controlesNaTelaKey);
@@ -87,6 +96,20 @@ class GameSettings {
   Future<void> setSoundEnabled(bool value) async {
     GameAudio.instance.enabled = value;
     await _prefs.setBool(_soundEnabledKey, value);
+  }
+
+  double get soundVolume => GameAudio.instance.volume;
+
+  Future<void> setSoundVolume(double value) async {
+    GameAudio.instance.aplicarVolume(value);
+    await _prefs.setDouble(_soundVolumeKey, GameAudio.instance.volume);
+  }
+
+  double get musicVolume => GameMusic.instance.volume;
+
+  Future<void> setMusicVolume(double value) async {
+    await GameMusic.instance.aplicarVolume(value);
+    await _prefs.setDouble(_musicVolumeKey, GameMusic.instance.volume);
   }
 
   bool get musicEnabled => GameMusic.instance.enabled;

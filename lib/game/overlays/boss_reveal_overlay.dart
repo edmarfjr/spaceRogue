@@ -1,5 +1,5 @@
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
-import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/components/core/responsive.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/overlays/creature_select_overlay.dart';
@@ -32,18 +32,25 @@ class BossRevealOverlay extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    final recompensa = CreatureRegistry.byId(boss.creatureId);
+    // Forma EVOLUÍDA, não a base: é ela que vai aparecer na sala do boss (todo
+    // `*BossEnemy` aponta pra `...Evo` no registro), então a silhueta tem que
+    // ser a do bicho que o jogador vai encarar — não a do filhote dele.
+    //
+    // `?? base` cobre quem ainda não tem evolução desenhada: hoje só o
+    // `peixe_neutro`, que continua mostrando a forma base.
+    final base = CreatureRegistry.byId(boss.creatureId);
+    final recompensa = base.evoluir?.call() ?? base;
     final estreita = Responsive.ehEstreita(context);
 
     return ResponsiveOverlayScaffold(
-      background: Palette.branco,
+      background: UiTheme.backgroundMenuCor,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             context.l10n.bossReveal_vs,
             style: TextStyle(
-              color: Palette.preto,
+              color: UiTheme.txtCor,
               fontSize: estreita ? 28 : 40,
               fontWeight: FontWeight.bold,
             ),
@@ -57,18 +64,15 @@ class BossRevealOverlay extends StatelessWidget {
           const SizedBox(height: 6),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Palette.branco,
+              backgroundColor: UiTheme.btnCor,
               padding: const EdgeInsets.symmetric(vertical: 10),
               elevation: 0,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-                side: BorderSide(color: Palette.preto, width: 2),
-              ),
+              shape: const BordaDuplaShape(),
             ),
             onPressed: withBtnSfx(game.dismissBossReveal),
             child: Text(
               context.l10n.bossReveal_entrar,
-              style: const TextStyle(fontSize: 20, color: Palette.preto),
+              style: const TextStyle(fontSize: 20, color: UiTheme.txtCor),
             ),
           ),
         ],

@@ -44,7 +44,7 @@ class _PauseMenuOverlayState extends State<PauseMenuOverlay> {
       child: Container(
         padding: const EdgeInsets.all(30),
         decoration: BoxDecoration(
-          color: Palette.branco,
+          color: UiTheme.backgroundMenuCor,
           border: const BordaDupla(cor: Palette.preto, espessura: 4),
           borderRadius: BorderRadius.circular(0),
         ),
@@ -53,14 +53,14 @@ class _PauseMenuOverlayState extends State<PauseMenuOverlay> {
           children: [
             Text(
               context.l10n.pause_jogoPausado,
-              style: const TextStyle(color: Palette.preto, fontSize: 32),
+              style: const TextStyle(color: UiTheme.txtCor, fontSize: 32),
             ),
             // Tempo de run. Lido no build e nao animado de proposito: o motor
             // esta pausado aqui, entao o valor nao muda enquanto a tela esta
             // aberta — nao ha o que atualizar.
             Text(
               game.tempoDeRunFormatado,
-              style: const TextStyle(color: Palette.preto, fontSize: 18),
+              style: const TextStyle(color: UiTheme.txtCor, fontSize: 18),
             ),
             const SizedBox(height: 5),
             _Abas(
@@ -75,13 +75,10 @@ class _PauseMenuOverlayState extends State<PauseMenuOverlay> {
             const SizedBox(height: 5),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Palette.branco,
+                backgroundColor: UiTheme.btnCor,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 elevation: 0,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                  side: BorderSide(color: Palette.preto, width: 2),
-                ),
+                shape: const BordaDuplaShape(),
               ),
               onPressed: withBtnSfx(() {
                 game.overlays.remove('PauseMenu');
@@ -89,19 +86,16 @@ class _PauseMenuOverlayState extends State<PauseMenuOverlay> {
               }),
               child: Text(
                 context.l10n.pause_continuar,
-                style: const TextStyle(fontSize: 20, color: Palette.preto),
+                style: const TextStyle(fontSize: 20, color: UiTheme.txtCor),
               ),
             ),
             const SizedBox(height: 5),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Palette.branco,
+                backgroundColor: UiTheme.btnCor,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 elevation: 0,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                  side: BorderSide(color: Palette.preto, width: 2),
-                ),
+                shape: const BordaDuplaShape(),
               ),
               // Motor continua pausado: só troca de overlay. `VOLTAR` em
               // `SettingsOverlay` lê `settingsReturnOverlay` pra saber que
@@ -113,19 +107,16 @@ class _PauseMenuOverlayState extends State<PauseMenuOverlay> {
               }),
               child: Text(
                 context.l10n.pause_configuracoes,
-                style: const TextStyle(fontSize: 20, color: Palette.preto),
+                style: const TextStyle(fontSize: 20, color: UiTheme.txtCor),
               ),
             ),
             const SizedBox(height: 5),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Palette.branco,
+                backgroundColor: UiTheme.btnCor,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 elevation: 0,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                  side: BorderSide(color: Palette.preto, width: 2),
-                ),
+                shape: const BordaDuplaShape(),
               ),
               onPressed: withBtnSfx(() {
                 game.overlays.remove('PauseMenu');
@@ -136,7 +127,7 @@ class _PauseMenuOverlayState extends State<PauseMenuOverlay> {
               }),
               child: Text(
                 context.l10n.pause_sairParaMenu,
-                style: const TextStyle(fontSize: 20, color: Palette.preto),
+                style: const TextStyle(fontSize: 20, color: UiTheme.txtCor),
               ),
             ),
           ],
@@ -202,7 +193,7 @@ class _EquipeCard extends StatelessWidget {
       width: Responsive.largura(context, 320),
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: Palette.branco,
+        color: UiTheme.backgroundMenuCor,
         border: BordaDupla(cor: Palette.preto, espessura: ativa ? 3 : 1),
       ),
       child: Column(
@@ -217,7 +208,7 @@ class _EquipeCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              color: Palette.preto,
+              color: UiTheme.txtCor,
               fontSize: 12,
               fontWeight: FontWeight.bold,
             ),
@@ -234,7 +225,7 @@ class _EquipeCard extends StatelessWidget {
               slotUmDaCriatura(context, creature).descricao,
             ),
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Palette.preto, fontSize: 9),
+            style: const TextStyle(color: UiTheme.txtCor, fontSize: 9),
           ),
           Text(
             context.l10n.pause_habilidade(
@@ -242,7 +233,7 @@ class _EquipeCard extends StatelessWidget {
               abilityDescription(context, creature.ability2),
             ),
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Palette.preto, fontSize: 9),
+            style: const TextStyle(color: UiTheme.txtCor, fontSize: 9),
           ),
         ],
       ),
@@ -304,7 +295,7 @@ class _Aba extends StatelessWidget {
         child: Text(
           texto,
           style: TextStyle(
-            color: ativa ? Palette.branco : Palette.preto,
+            color: ativa ? Palette.branco : UiTheme.txtCor,
             fontSize: 16,
           ),
         ),
@@ -426,7 +417,7 @@ class _InventarioAbaState extends State<_InventarioAba> {
                     Text(
                       'x${entrada.quantidade}',
                       style: const TextStyle(
-                        color: Palette.preto,
+                        color: UiTheme.txtCor,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
@@ -447,7 +438,7 @@ class _InventarioAbaState extends State<_InventarioAba> {
             item.nome(context),
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Palette.preto,
+              color: UiTheme.txtCor,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -457,12 +448,12 @@ class _InventarioAbaState extends State<_InventarioAba> {
             child: Text(
               item.descricao(context),
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Palette.preto, fontSize: 16),
+              style: const TextStyle(color: UiTheme.txtCor, fontSize: 16),
             ),
           ),
           Text(
             '${indice + 1}/${entradas.length}',
-            style: const TextStyle(color: Palette.preto, fontSize: 16),
+            style: const TextStyle(color: UiTheme.txtCor, fontSize: 16),
           ),
           const SizedBox(height: 30),
         ],

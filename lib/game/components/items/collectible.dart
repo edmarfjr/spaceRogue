@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:creatures_rogue/game/audio/game_audio.dart';
 import 'package:creatures_rogue/game/audio/sfx.dart';
+import 'package:creatures_rogue/game/components/utils/y_sort.dart';
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
@@ -94,6 +95,8 @@ abstract class Collectible extends PositionComponent
         collisionType: CollisionType.passive,
       ),
     );
+
+    priority = ySortPriority(position.y + size.y / 2);
   }
 
   @override

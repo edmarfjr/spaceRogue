@@ -97,7 +97,7 @@ class EtiquetaTipo extends StatelessWidget {
         child: Text(
           rotulo,
           style: TextStyle(
-            color: Palette.preto,
+            color: UiTheme.txtCor,
             fontSize: fontSize,
             fontWeight: FontWeight.bold,
           ),
@@ -159,6 +159,11 @@ class TetosStatus {
   static const double saude = 10;
   static const double velocidade = 100;
   static const double ataque = 10;
+
+  /// Teto da evasão, em porcento. 50 e não 100 de propósito: com teto de cem,
+  /// os 5% padrão não acenderiam nem meio segmento e a barra pareceria
+  /// quebrada. Cinquenta já é um valor absurdo de alcançar no jogo.
+  static const double evasao = 50;
 }
 
 /// Ícone de uma habilidade.
@@ -218,7 +223,7 @@ class IconeHabilidade extends StatelessWidget {
         caminho: caminho,
         tamanho: tamanho,
         cor1: UiTheme.corDoTipo(criatura.tipo),
-        cor2: Palette.preto,
+        cor2: UiTheme.corDoTipo2(criatura.tipo),
         corBranco: Palette.branco,
       ),
     );

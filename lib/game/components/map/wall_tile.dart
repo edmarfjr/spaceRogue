@@ -16,7 +16,7 @@ class WallTile extends SpriteComponent with HasGameRef {
     required Vector2 position,
     required this.spritePath,
     this.angleVal = 0,
-    this.cor1 = Palette.marromEsc,
+    this.cor1 = Palette.marrom,
     this.cor2 = Palette.onyx,
     this.cor3 = Palette.laranja,
   }) : super(

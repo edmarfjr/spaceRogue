@@ -28,14 +28,14 @@ enum ConsumableType implements ItemDescritor {
   pocao('items/potion.png', Palette.indigo, Palette.cinzaEsc),
   escudo('items/escudo.png', Palette.indigo, Palette.royal),
   congelar('items/gelo.png', Palette.azul, Palette.royal),
-  mapa('items/mapa.png', Palette.bege, Palette.marromEsc),
+  mapa('items/mapa.png', Palette.bege, Palette.marrom),
   doce('items/doce.png', Palette.azul, Palette.royal),
   espelho('items/espelho.png', Palette.cinza, Palette.azulEsc);
 
   const ConsumableType(this.spritePath, this.cor1, this.cor2);
 
   /// Segundos de reflexão do ESPELHO.
-  static const double duracaoEspelho = 5.0;
+  static const double duracaoEspelho = 10.0;
 
   @override
   final String spritePath;

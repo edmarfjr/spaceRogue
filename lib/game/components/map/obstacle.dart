@@ -80,7 +80,7 @@ abstract class Obstacle extends PositionComponent with HasGameRef {
   Obstacle({
     required Vector2 position,
     required this.spritePath,
-    this.cor1 = Palette.marromEsc,
+    this.cor1 = Palette.marrom,
     this.cor2 = Palette.onyx,
     this.cor3 = Palette.branco,
     required Vector2 size,

@@ -33,7 +33,20 @@ class GameMusic {
   static const List<String> todas = [menu, run, boss];
 
   String? _current;
-  double volume = 0.5;
+  double volume = volumePadrao;
+
+  static const double volumePadrao = 0.5;
+
+  /// Troca o volume da faixa que está tocando AGORA, além do campo.
+  ///
+  /// O campo sozinho só valeria pra próxima troca de faixa — e trocar de faixa
+  /// numa run pode demorar uma masmorra inteira.
+  Future<void> aplicarVolume(double novo) async {
+    volume = novo.clamp(0.0, 1.0);
+    try {
+      await FlameAudio.bgm.audioPlayer.setVolume(volume);
+    } catch (_) {}
+  }
   bool enabled = true;
 
   bool _iniciado = false;

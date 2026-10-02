@@ -1,5 +1,6 @@
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/components/core/responsive.dart';
 import 'package:creatures_rogue/game/run_save.dart';
 import 'package:flutter/material.dart';
@@ -39,54 +40,45 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
     final confirmou = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: Palette.branco,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
-          side: BorderSide(color: Palette.preto, width: 2),
-        ),
+        backgroundColor: UiTheme.btnCor,
+        shape: const BordaDuplaShape(),
         title: Text(
           context.l10n.settings_confirmarResetTitulo,
           style: const TextStyle(
-            color: Palette.preto,
+            color: UiTheme.txtCor,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
           context.l10n.settings_confirmarResetMensagem,
-          style: const TextStyle(color: Palette.preto),
+          style: const TextStyle(color: UiTheme.txtCor),
         ),
         actions: [
           OutlinedButton(
             onPressed: withBtnSfx(() => Navigator.of(dialogContext).pop(false)),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              backgroundColor: Palette.branco,
+              backgroundColor: UiTheme.btnCor,
               side: BorderSide(color: Palette.preto),
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-                side: BorderSide(color: Palette.preto, width: 5),
-              ),
+              shape: const BordaDuplaShape(),
             ),
             child: Text(
               context.l10n.settings_confirmarResetNao,
-              style: const TextStyle(color: Palette.preto),
+              style: const TextStyle(color: UiTheme.txtCor),
             ),
           ),
           OutlinedButton(
             onPressed: withBtnSfx(() => Navigator.of(dialogContext).pop(true)),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              backgroundColor: Palette.branco,
+              backgroundColor: UiTheme.btnCor,
               side: BorderSide(color: Palette.preto),
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-                side: BorderSide(color: Palette.preto, width: 5),
-              ),
+              shape: const BordaDuplaShape(),
             ),
             child: Text(
               context.l10n.settings_confirmarResetSim,
               style: const TextStyle(
-                color: Palette.preto,
+                color: UiTheme.txtCor,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -123,6 +115,87 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
     if (mounted) setState(() {});
   }
 
+  /// Sem `await` no caminho do arraste: o `Slider` dispara `onChanged` a cada
+  /// passo, e esperar a gravação em disco a cada pixel travaria o dedo. O
+  /// `setState` redesenha com o valor novo na hora; a persistência alcança
+  /// depois.
+  void _mudarVolumeSom(double valor) {
+    GameSettings.instance.setSoundVolume(valor);
+    setState(() {});
+  }
+
+  void _mudarVolumeMusica(double valor) {
+    GameSettings.instance.setMusicVolume(valor);
+    setState(() {});
+  }
+
+  /// Rótulo, barra e porcentagem. Largura fixa porque ele mora num `Wrap`
+  /// junto dos interruptores: sem teto, o `Slider` tenta ocupar a linha
+  /// inteira e empurra todo o resto pra baixo.
+  Widget _seletorVolume({
+    required String rotulo,
+    required double valor,
+    required bool ativo,
+    required ValueChanged<double> onChanged,
+  }) {
+    final cor = ativo ? Palette.preto : Palette.cinzaEsc;
+    // `maxWidth`, e não `width` cravada: este seletor mora numa linha junto do
+    // rótulo e do interruptor, e em paisagem cada coluna tem pouco mais de
+    // 400px. Com largura fixa a linha inteira passava da coluna por um fio —
+    // o overflow de 1px. Com teto, ele encolhe até caber.
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 290),
+      // SEM `mainAxisSize.min` aqui: `min` manda a Row encolher pro tamanho
+      // dos filhos, e o `Expanded` logo abaixo manda ela ocupar tudo. Das duas
+      // ordens contrárias sobra um arredondamento de meio pixel — era o
+      // "RIGHT OVERFLOWED BY 1.0 PIXELS". Com `Expanded` em cena, o padrão
+      // (`max`) é o correto.
+      child: Row(
+        children: [
+          // Caixa de rótulo só quando há rótulo: quem chama hoje passa string
+          // vazia (o nome já vem do texto ao lado do interruptor), e reservar
+          // 64px pra nada era espremer o seletor à toa.
+          if (rotulo.isNotEmpty)
+            SizedBox(
+              width: 64,
+              child: Text(
+                rotulo,
+                style: TextStyle(color: cor, fontSize: 12),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          Expanded(
+            child: Slider(
+              value: valor,
+              activeColor: cor,
+              inactiveColor: Palette.cinza,
+              thumbColor: cor,
+              // Dez passos, do mudo ao máximo: volume é ajuste grosso, e um
+              // seletor contínuo só daria trabalho de acertar a mesma casa
+              // decimal de novo depois.
+              divisions: 10,
+              onChanged: ativo ? onChanged : null,
+            ),
+          ),
+          SizedBox(
+            width: 38,
+            // `FittedBox` porque "100%" é mais largo que "40%", e a caixa é
+            // fixa: sem ele, o valor cheio estoura justo quando o jogador
+            // arrasta até o fim.
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                '${(valor * 100).round()}%',
+                style: TextStyle(color: cor, fontSize: 12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _alternarGodMode(bool valor) async {
     await GameSettings.instance.setGodMode(valor);
     if (mounted) setState(() {});
@@ -143,11 +216,28 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
   }
 
   @override
+  /// Em RETRATO as seções se empilham, como sempre foi. Em PAISAGEM elas se
+  /// dividem em duas colunas: controle de um lado, idioma e áudio do outro.
+  ///
+  /// O motivo é altura, não estética. O cartão inteiro vive num
+  /// `FittedBox(scaleDown)` do `ResponsiveOverlayScaffold`, então numa janela
+  /// baixa (celular deitado) a coluna única não estourava — ela ENCOLHIA, e
+  /// tudo ficava pequeno demais pra tocar. Duas colunas cortam a altura quase
+  /// pela metade e o cartão volta ao tamanho natural.
+  ///
+  /// Título e botões finais ficam FORA da divisão, atravessando as duas
+  /// colunas: são a entrada e a saída da tela, e reparti-los daria duas telas
+  /// em vez de uma.
+  @override
   Widget build(BuildContext context) {
-    final atual = widget.game.controlScheme;
+    final retrato = Responsive.ehRetrato(context);
 
     return ResponsiveOverlayScaffold(
-      background: Palette.branco,
+      background: UiTheme.backgroundMenuCor,
+      // Paisagem pede mais largura de referência — com os 480 do padrão, duas
+      // colunas nasceriam com 240 cada e o `FittedBox` encolheria tudo de novo,
+      // desfazendo o ganho.
+      maxWidth: retrato ? 480 : 860,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -155,240 +245,296 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
             context.l10n.settings_titulo,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Palette.preto,
+              color: UiTheme.txtCor,
               fontSize: 36,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            context.l10n.settings_controle,
-            style: const TextStyle(
-              color: Palette.preto,
-              fontSize: 14,
-              letterSpacing: 3,
-            ),
-          ),
-          const SizedBox(height: 4),
-          // `Wrap`, não `Row`: numa janela estreita, dois botões de controle
-          // (cada um com padding horizontal de 24px + o rótulo) não cabem lado
-          // a lado — `Wrap` quebra pra segunda linha em vez de estourar.
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final scheme in ControlScheme.values)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 10,
-                      ),
-                      backgroundColor: scheme == atual
-                          ? Palette.preto
-                          : Palette.branco,
-                      side: const BorderSide(color: Palette.preto),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
-                        side: BorderSide(color: Palette.preto, width: 5),
-                      ),
-                    ),
-                    onPressed: withBtnSfx(
-                      scheme == atual ? null : () => _escolher(scheme),
-                    ),
-                    child: Text(
-                      scheme.rotulo(context),
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: scheme == atual ? Palette.branco : Palette.preto,
-                      ),
+          if (retrato)
+            ..._secaoControle(context)
+          else
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: _secaoControle(context),
                     ),
                   ),
-                ),
-            ],
-          ),
-          
-          const SizedBox(height: 5),
-          SizedBox(
-            width: Responsive.largura(context, 420),
-            child: Text(
-              atual.descricao(context),
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Palette.preto, fontSize: 13),
-            ),
-          ),
-          const SizedBox(width: 6),
-              Text(
-                context.l10n.settings_joysticksFixos,
-                style: const TextStyle(color: Palette.preto, fontSize: 14),
-              ),
-              Switch(
-                value: GameSettings.instance.joysticksFixos,
-                activeThumbColor: Palette.preto,
-                onChanged: (valor) => _alternarJoysticksFixos(valor),
-              ),
-          const SizedBox(height: 4),
-          Text(
-            context.l10n.settings_idioma,
-            style: const TextStyle(
-              color: Palette.preto,
-              fontSize: 14,
-              letterSpacing: 3,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final MapEntry(key: locale, value: rotulo) in {
-                null: context.l10n.settings_idiomaSistema,
-                for (final loc in AppLocalizations.supportedLocales)
-                  loc: loc.languageCode.toUpperCase(),
-              }.entries)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
-                      ),
-                      backgroundColor: locale == GameSettings.instance.locale
-                          ? Palette.preto
-                          : Palette.branco,
-                      side: BorderSide(color: Palette.preto),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero,
-                        side: BorderSide(color: Palette.preto, width: 5),
-                      ),
-                    ),
-                    onPressed: withBtnSfx(
-                      locale == GameSettings.instance.locale
-                          ? null
-                          : () => _escolherIdioma(locale),
-                    ),
-                    child: Text(
-                      rotulo,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: locale == GameSettings.instance.locale
-                            ? Palette.branco
-                            : Palette.preto,
-                      ),
+                  const VerticalDivider(
+                    color: Palette.preto,
+                    thickness: 2,
+                    width: 24,
+                  ),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ..._secaoIdioma(context),
+                        ..._secaoAudio(context),
+                      ],
                     ),
                   ),
+                ],
+              ),
+            ),
+          if (retrato) ...[
+            ..._secaoIdioma(context),
+            ..._secaoAudio(context),
+          ],
+          const SizedBox(height: 4),
+          ..._botoesFinais(context),
+        ],
+      ),
+    );
+  }
+
+  Widget _rotuloSecao(String texto) => Text(
+    texto,
+    style: const TextStyle(
+      color: UiTheme.txtCor,
+      fontSize: 16,
+      letterSpacing: 3,
+      fontWeight: FontWeight.bold,
+    ),
+  );
+
+  /// Linha de interruptor: rótulo à esquerda, chave à direita.
+  ///
+  /// Os três interruptores soltos que existiam aqui (joysticks fixos, god
+  /// mode) estavam jogados direto na `Column` de fora, sem linha própria — o
+  /// rótulo caía numa linha e a chave na seguinte. Dentro de duas colunas isso
+  /// ficaria ainda mais torto.
+  Widget _linhaSwitch(String rotulo, bool valor, ValueChanged<bool> onChanged) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(rotulo, style: const TextStyle(color: UiTheme.txtCor, fontSize: 14)),
+        Switch(
+          value: valor,
+          activeThumbColor: Palette.preto,
+          onChanged: onChanged,
+        ),
+      ],
+    );
+  }
+
+  List<Widget> _secaoControle(BuildContext context) {
+    final atual = widget.game.controlScheme;
+    return [
+      _rotuloSecao(context.l10n.settings_controle),
+      const SizedBox(height: 4),
+      // `Wrap`, não `Row`: numa janela estreita, dois botões de controle (cada
+      // um com padding horizontal de 24px mais o rótulo) não cabem lado a
+      // lado — `Wrap` quebra pra segunda linha em vez de estourar.
+      Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final scheme in ControlScheme.values)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 10,
+                  ),
+                  backgroundColor: scheme == atual
+                      ? UiTheme.btnCorAtivo
+                      : UiTheme.btnCor,
+                  side: const BorderSide(color: Palette.preto),
+                  shape: const BordaDuplaShape(),
                 ),
-            ],
-          ),
-          
-          const SizedBox(height: 4),
+                onPressed: withBtnSfx(
+                  scheme == atual ? null : () => _escolher(scheme),
+                ),
+                child: Text(
+                  scheme.rotulo(context),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: scheme == atual ? Palette.branco : UiTheme.txtCor,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+      const SizedBox(height: 5),
+      SizedBox(
+        width: Responsive.largura(context, 420),
+        child: Text(
+          atual.descricao(context),
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: UiTheme.txtCor, fontSize: 13),
+        ),
+      ),
+      _linhaSwitch(
+        context.l10n.settings_joysticksFixos,
+        GameSettings.instance.joysticksFixos,
+        _alternarJoysticksFixos,
+      ),
+    ];
+  }
+
+  List<Widget> _secaoIdioma(BuildContext context) {
+    return [
+      const SizedBox(height: 4),
+      _rotuloSecao(context.l10n.settings_idioma),
+      const SizedBox(height: 4),
+      Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final MapEntry(key: locale, value: rotulo) in {
+            null: context.l10n.settings_idiomaSistema,
+            for (final loc in AppLocalizations.supportedLocales)
+              loc: loc.languageCode.toUpperCase(),
+          }.entries)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  backgroundColor: locale == GameSettings.instance.locale
+                      ? UiTheme.btnCorAtivo
+                      : UiTheme.btnCor,
+                  side: const BorderSide(color: Palette.preto),
+                  shape: const BordaDuplaShape(),
+                ),
+                onPressed: withBtnSfx(
+                  locale == GameSettings.instance.locale
+                      ? null
+                      : () => _escolherIdioma(locale),
+                ),
+                child: Text(
+                  rotulo,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: locale == GameSettings.instance.locale
+                        ? Palette.branco
+                        : Palette.preto,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    ];
+  }
+
+  List<Widget> _secaoAudio(BuildContext context) {
+    return [
+      const SizedBox(height: 4),
+      _rotuloSecao(context.l10n.settings_audio),
+      const SizedBox(height: 2),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        spacing: 2,
+        children: [
           Text(
-            context.l10n.settings_audio,
-            style: const TextStyle(
-              color: Palette.preto,
-              fontSize: 14,
-              letterSpacing: 3,
-            ),
+            context.l10n.settings_som,
+            style: const TextStyle(color: UiTheme.txtCor, fontSize: 14),
           ),
-          const SizedBox(height: 2),
-          Wrap(
-            alignment: WrapAlignment.center,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 4,
-            runSpacing: 4,
-            children: [
-              Text(
-                context.l10n.settings_som,
-                style: const TextStyle(color: Palette.preto, fontSize: 14),
-              ),
-              Switch(
-                value: GameSettings.instance.soundEnabled,
-                activeThumbColor: Palette.preto,
-                onChanged: (valor) => _alternarSom(valor),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                context.l10n.settings_musica,
-                style: const TextStyle(color: Palette.preto, fontSize: 14),
-              ),
-              Switch(
-                value: GameSettings.instance.musicEnabled,
-                activeThumbColor: Palette.preto,
-                onChanged: (valor) => _alternarMusica(valor),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                context.l10n.settings_godMode,
-                style: const TextStyle(color: Palette.preto, fontSize: 14),
-              ),
-              Switch(
-                value: GameSettings.instance.godMode,
-                activeThumbColor: Palette.preto,
-                onChanged: (valor) => _alternarGodMode(valor),
-              ),
-              
-            /*  const SizedBox(width: 6),
-              Text(
-                context.l10n.settings_controlesNaTela,
-                style: const TextStyle(color: Palette.preto, fontSize: 14),
-              ),
-              Switch(
-                value: GameSettings.instance.controlesNaTela,
-                activeThumbColor: Palette.preto,
-                onChanged: (valor) => _alternarControlesNaTela(valor),
-              ),
-              */
-            ],
+          Switch(
+            value: GameSettings.instance.soundEnabled,
+            activeThumbColor: Palette.preto,
+            onChanged: (valor) => _alternarSom(valor),
           ),
-          const SizedBox(height: 4),
-          // Apaga a flag de intro e as criaturas liberadas. Sem isto a
-          // intro aparece uma vez na vida do aparelho, e não dá pra
-          // revê-la sem reinstalar o app.
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Palette.branco,
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              elevation: 0,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-                side: BorderSide(color: Palette.preto, width: 2),
-              ),
-            ),
-            onPressed: withBtnSfx(_resetado ? null : _confirmarReset),
-            child: Text(
-              _resetado
-                  ? context.l10n.settings_progressoResetado
-                  : context.l10n.settings_resetarProgresso,
-              style: const TextStyle(fontSize: 14, color: Palette.preto),
-            ),
-          ),
-          const SizedBox(height: 4),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Palette.branco,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              elevation: 0,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-                side: BorderSide(color: Palette.preto, width: 2),
-              ),
-            ),
-            onPressed: withBtnSfx(() {
-              widget.game.overlays.remove('Settings');
-              widget.game.overlays.add(widget.game.settingsReturnOverlay);
-            }),
-            child: Text(
-              context.l10n.settings_voltar,
-              style: const TextStyle(fontSize: 20, color: Palette.preto),
+          // `Flexible` pra ceder largura quando a coluna aperta — sem ele o
+          // seletor insiste nos 290 e empurra a linha pra fora.
+          Flexible(
+            child: _seletorVolume(
+              rotulo: '',
+              valor: GameSettings.instance.soundVolume,
+              // Com o som desligado o seletor não muda nada audível, então
+              // fica desabilitado junto: arrastar e não ouvir diferença leria
+              // como defeito.
+              ativo: GameSettings.instance.soundEnabled,
+              onChanged: _mudarVolumeSom,
             ),
           ),
         ],
       ),
-    );
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        spacing: 2,
+        children: [
+          Text(
+            context.l10n.settings_musica,
+            style: const TextStyle(color: UiTheme.txtCor, fontSize: 14),
+          ),
+          Switch(
+            value: GameSettings.instance.musicEnabled,
+            activeThumbColor: Palette.preto,
+            onChanged: (valor) => _alternarMusica(valor),
+          ),
+          Flexible(
+            child: _seletorVolume(
+              rotulo: '',
+              valor: GameSettings.instance.musicVolume,
+              ativo: GameSettings.instance.musicEnabled,
+              onChanged: _mudarVolumeMusica,
+            ),
+          ),
+        ],
+      ),
+      _linhaSwitch(
+        context.l10n.settings_godMode,
+        GameSettings.instance.godMode,
+        _alternarGodMode,
+      ),
+    ];
+  }
+
+  List<Widget> _botoesFinais(BuildContext context) {
+    return [
+      // Apaga a flag de intro e as criaturas liberadas. Sem isto a intro
+      // aparece uma vez na vida do aparelho, e não dá pra revê-la sem
+      // reinstalar o app.
+      ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: UiTheme.btnCor,
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          elevation: 0,
+          shape: const BordaDuplaShape(),
+        ),
+        onPressed: withBtnSfx(_resetado ? null : _confirmarReset),
+        child: Text(
+          _resetado
+              ? context.l10n.settings_progressoResetado
+              : context.l10n.settings_resetarProgresso,
+          style: const TextStyle(fontSize: 14, color: UiTheme.txtCor),
+        ),
+      ),
+      const SizedBox(height: 4),
+      ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: UiTheme.btnCor,
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
+          elevation: 0,
+          shape: const BordaDuplaShape(),
+        ),
+        onPressed: withBtnSfx(() {
+          widget.game.overlays.remove('Settings');
+          widget.game.overlays.add(widget.game.settingsReturnOverlay);
+        }),
+        child: Text(
+          context.l10n.settings_voltar,
+          style: const TextStyle(fontSize: 20, color: UiTheme.txtCor),
+        ),
+      ),
+    ];
   }
 }

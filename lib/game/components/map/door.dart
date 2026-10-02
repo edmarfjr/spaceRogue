@@ -24,7 +24,7 @@ class Door extends Obstacle {
   Door({
     required super.position,
     required this.angleVal,
-    this.cor1 = Palette.marromEsc,
+    this.cor1 = Palette.marrom,
     this.cor2 = Palette.onyx,
     this.cor3 = Palette.verde,
     this.cor4 = Palette.branco,

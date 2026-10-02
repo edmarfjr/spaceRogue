@@ -312,7 +312,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
       
   }
 
-  static const double _passoPedestais = 52.0;
+  static const double _passoPedestais = 64.0;
 
   void _spawnTreasure({double offsetX = 0, double offsetY = 0}) {
     final centro =

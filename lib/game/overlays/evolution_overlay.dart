@@ -152,7 +152,7 @@ class _EvolutionOverlayState extends State<EvolutionOverlay>
                 Text(
                   creatureName(context, nova.id),
                   style: const TextStyle(
-                    color: Palette.preto,
+                    color: UiTheme.txtCor,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -163,19 +163,16 @@ class _EvolutionOverlayState extends State<EvolutionOverlay>
                 child: _mostrarContinuar
                     ? ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Palette.branco,
+                          backgroundColor: UiTheme.btnCor,
                           elevation: 0,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero,
-                            side: BorderSide(color: Palette.preto, width: 2),
-                          ),
+                          shape: const BordaDuplaShape(),
                         ),
                         onPressed: withBtnSfx(widget.game.dismissEvolucao),
                         child: Text(
                           context.l10n.pause_continuar,
                           style: const TextStyle(
                             fontSize: 16,
-                            color: Palette.preto,
+                            color: UiTheme.txtCor,
                           ),
                         ),
                       )

@@ -18,7 +18,7 @@ class UiTheme {
   /// valendo igual pra todas, pra que a etiqueta de tipo seja reconhecível à
   /// primeira vista.
   static const Map<CreatureType, Color> _porTipo = {
-    CreatureType.fogo: Palette.laranja,
+    CreatureType.fogo: Palette.pumpkin,
     CreatureType.planta: Palette.verde,
     CreatureType.agua: Palette.azul,
     CreatureType.eletrico: Palette.amarelo,
@@ -26,6 +26,16 @@ class UiTheme {
   };
 
   static Color corDoTipo(CreatureType tipo) => _porTipo[tipo] ?? Palette.cinza;
+
+  static const Map<CreatureType, Color> _porTipo2 = {
+    CreatureType.fogo: Palette.vermelho,
+    CreatureType.planta: Palette.forest,
+    CreatureType.agua: Palette.royal,
+    CreatureType.eletrico: Palette.marrom,
+    CreatureType.neutro: Palette.indigo,
+  };
+
+  static Color corDoTipo2(CreatureType tipo) => _porTipo2[tipo] ?? Palette.cinza;
 
   /// Preenche a tela inteira atrás do mundo do jogo — visível nas margens
   /// laterais onde os controles ficam, já que o mapa só ocupa a resolução
@@ -52,6 +62,31 @@ class UiTheme {
   /// Cores do apad.
   static const Color apadCor1 = Palette.burgundy;
   static const Color apadCor2 = Palette.roxoEsc;
+
+  ///Cor botões
+  static const Color btnCor = Palette.cinza;
+
+  /// Fundo do botão que representa a opção JÁ ESCOLHIDA — o esquema de
+  /// controle e o idioma em uso, nas configurações.
+  ///
+  /// É o único sinal de "este é o ativo" que esses botões têm, então ele
+  /// precisa contrastar forte com [btnCor]: se os dois ficarem próximos, a
+  /// tela deixa de dizer qual opção está valendo.
+  static const Color btnCorAtivo = Palette.preto;
+
+  /// Fundo do menu principal, que cobre a tela inteira e precisa contrastar
+  static const Color backgroundMenuCor = Palette.branco;
+  static const Color backgroundMenuCor2 = Palette.preto;
+
+  /// Cor de TEXTO dos menus — títulos, rótulos, descrições e o texto dentro
+  /// dos botões.
+  ///
+  /// Existe pra que escurecer [backgroundMenuCor] ou [btnCor] não exija
+  /// caçar `color: Palette.preto` por dez arquivos. NÃO cobre o texto
+  /// branco de [btnCorAtivo] nem o dos cartões de evolução e aposentadoria,
+  /// que são escuros por dentro — aqueles pedem um token próprio se um dia
+  /// o tema mudar.
+  static const Color txtCor = Palette.preto;
   
 }
 
@@ -75,7 +110,7 @@ class UiTheme {
 @immutable
 class BordaDupla extends BoxBorder {
   const BordaDupla({
-    this.cor = Palette.preto,
+    this.cor = UiTheme.backgroundMenuCor2,
     this.corExterna,
     this.espessura = 2.0,
     this.vao = 2.0,
@@ -164,6 +199,94 @@ class BordaDupla extends BoxBorder {
         Radius.circular(5),
       ),
       tinta..color = cor,
+    );
+  }
+}
+
+
+/// A borda dupla na forma de `ShapeBorder`, pra usar no `shape:` de botão.
+///
+/// Existe separada da [BordaDupla] porque as duas vivem em mundos diferentes
+/// do Flutter: aquela é `BoxBorder`, que só entra em `BoxDecoration`; o
+/// `shape:` de um `ElevatedButton`/`OutlinedButton` exige `OutlinedBorder`.
+/// A alternativa seria embrulhar cada botão num `Container` decorado, o que
+/// tiraria o recorte da tinta de toque do botão e deixaria o respingo
+/// vazando pra fora da moldura.
+///
+/// O desenho é o mesmo da [BordaDupla], de propósito: as molduras de caixa e
+/// as de botão precisam ser indistinguíveis na tela.
+class BordaDuplaShape extends OutlinedBorder {
+  const BordaDuplaShape({
+    this.cor = UiTheme.backgroundMenuCor2,
+    this.espessura = 2.0,
+    this.vao = 2.0,
+  }) : super(side: BorderSide.none);
+
+  final Color cor;
+  final double espessura;
+  final double vao;
+
+  /// Raio do arredondamento. Igual ao da [BordaDupla] — se mudar lá, muda
+  /// aqui.
+  static const double _raio = 5.0;
+
+  /// O conteúdo começa depois das duas linhas E do vão, senão o rótulo do
+  /// botão encostaria na linha de dentro.
+  @override
+  EdgeInsetsGeometry get dimensions => EdgeInsets.all(espessura * 2 + vao);
+
+  @override
+  BordaDuplaShape copyWith({BorderSide? side, Color? cor, double? espessura, double? vao}) =>
+      BordaDuplaShape(
+        cor: cor ?? this.cor,
+        espessura: espessura ?? this.espessura,
+        vao: vao ?? this.vao,
+      );
+
+  @override
+  ShapeBorder scale(double t) => BordaDuplaShape(
+    cor: cor,
+    espessura: espessura * t,
+    vao: vao * t,
+  );
+
+  @override
+  Path getOuterPath(Rect rect, {TextDirection? textDirection}) => Path()
+    ..addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(_raio)));
+
+  @override
+  Path getInnerPath(Rect rect, {TextDirection? textDirection}) => Path()
+    ..addRRect(
+      RRect.fromRectAndRadius(
+        dimensions.resolve(textDirection).deflateRect(rect),
+        const Radius.circular(_raio),
+      ),
+    );
+
+  @override
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {
+    final tinta = Paint()
+      ..color = cor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = espessura
+      // Pixel art: nada de suavizar, senão a linha sai cinza nas pontas.
+      ..isAntiAlias = false;
+
+    // `deflate(espessura / 2)`: o Canvas centra o traço na linha do caminho,
+    // então sem isso metade da linha de fora cairia fora do retângulo.
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        rect.deflate(espessura / 2),
+        const Radius.circular(_raio),
+      ),
+      tinta,
+    );
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        rect.deflate(espessura * 1.5 + vao),
+        const Radius.circular(_raio),
+      ),
+      tinta,
     );
   }
 }

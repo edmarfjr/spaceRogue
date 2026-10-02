@@ -154,8 +154,30 @@ class GameAudio {
   /// atrasados não é.
   final Set<AudioPlayer> _busy = {};
 
-  double volume = 0.7;
+  double volume = volumePadrao;
   bool enabled = true;
+
+  static const double volumePadrao = 0.7;
+
+  /// Troca o volume de TODAS as vozes já criadas, além do campo.
+  ///
+  /// Mexer só no campo não faria nada audível: ele é lido uma vez por voz no
+  /// `preload`, e as 30 vozes já existem com o valor antigo gravado no player
+  /// nativo. Quem chama é o seletor das configurações, então o custo das 30
+  /// chamadas de canal de plataforma cai fora do jogo.
+  ///
+  /// Nenhum `await`: o seletor arrasta e dispara isto a cada passo, e segurar
+  /// o quadro esperando confirmação de 30 players deixaria o arraste travado.
+  void aplicarVolume(double novo) {
+    volume = novo.clamp(0.0, 1.0);
+    for (final vozes in _voices.values) {
+      for (final player in vozes) {
+        player.setVolume(volume).catchError(
+          (e, st) => debugPrint('GameAudio.aplicarVolume falhou: $e'),
+        );
+      }
+    }
+  }
 
   Future<void>? _preloadFuture;
 

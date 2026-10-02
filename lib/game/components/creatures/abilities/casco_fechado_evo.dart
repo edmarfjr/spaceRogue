@@ -37,7 +37,7 @@ class CascoFechadoEvo extends Ability {
         dmg: user.creatureData.stats.ataque * coefEstouro,
         stunDuration: 1.0,
         cor1: Palette.verde,
-        cor2: Palette.marromEsc,
+        cor2: Palette.marrom,
         tipo: user.creatureData.tipo,
       ),
     );

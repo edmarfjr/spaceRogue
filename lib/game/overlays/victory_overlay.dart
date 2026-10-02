@@ -68,7 +68,7 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Palette.branco,
+              color: UiTheme.backgroundMenuCor,
               border: const BordaDupla(cor: Palette.preto, espessura: 3),
             ),
             child: Column(
@@ -78,7 +78,7 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
                   context.l10n.victory_titulo,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    color: Palette.preto,
+                    color: UiTheme.txtCor,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
@@ -86,13 +86,13 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
                 const SizedBox(height: 12),
                 Text(
                   context.l10n.victory_tempo(game.tempoDeRunFormatado),
-                  style: const TextStyle(color: Palette.preto, fontSize: 18),
+                  style: const TextStyle(color: UiTheme.txtCor, fontSize: 18),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   context.l10n.victory_elenco,
                   style: const TextStyle(
-                    color: Palette.preto,
+                    color: UiTheme.txtCor,
                     fontSize: 13,
                     letterSpacing: 2,
                   ),
@@ -132,7 +132,7 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
                               creatureName(context, id),
                               textAlign: TextAlign.center,
                               style: const TextStyle(
-                                color: Palette.preto,
+                                color: UiTheme.txtCor,
                                 fontSize: 10,
                               ),
                             ),
@@ -183,18 +183,15 @@ class _Botao extends StatelessWidget {
   Widget build(BuildContext context) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        backgroundColor: Palette.branco,
+        backgroundColor: UiTheme.btnCor,
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         elevation: 0,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
-          side: BorderSide(color: Palette.preto, width: 2),
-        ),
+        shape: const BordaDuplaShape(),
       ),
       onPressed: withBtnSfx(onPressed),
       child: Text(
         texto,
-        style: TextStyle(fontSize: fonte, color: Palette.preto),
+        style: TextStyle(fontSize: fonte, color: UiTheme.txtCor),
       ),
     );
   }

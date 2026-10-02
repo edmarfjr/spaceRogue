@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
 import 'package:creatures_rogue/game/components/effects/condition_icons.dart';
@@ -177,6 +178,31 @@ class Player extends PositionComponent
   /// imune. Aplicado multiplicativo junto com o outro, então nem os dois
   /// somados passam de 100%.
   double reducaoDanoDerivada = 0.0;
+
+  /// Pontos de evasão somados por item, em PORCENTO, reconstruídos a cada
+  /// quadro. Entram em cima da `BaseStats.evasao` da criatura ativa.
+  double evasaoDerivada = 0.0;
+
+  /// Evasão ganha por UPGRADE (`PowerUpType.evasaoUp`). Permanente e do
+  /// JOGADOR, então sobrevive à troca de criatura e vai pro save — ao
+  /// contrário da [evasaoDerivada], que é zerada todo quadro.
+  ///
+  /// Campo próprio em vez de somar na `BaseStats`: aquela é `const` e
+  /// compartilhada por todas as instâncias da criatura, a mesma razão que fez
+  /// o `bonusHpItens` existir.
+  double bonusEvasaoItens = 0.0;
+
+  /// Quantos golpes seguidos o jogador escapou sem apanhar (ver `Miragem`).
+  ///
+  /// Mora aqui pelo mesmo motivo que [golpesSemCrit] e [abatesSeguidos]: as
+  /// instâncias de `ItemEfeito` são `const` e não guardam estado.
+  int pilhasMiragem = 0;
+
+  /// Chance total de o próximo golpe errar, em porcento. Só leitura — a
+  /// tela de escolha mostra o mesmo número que o `takeDamage` usa, então
+  /// ninguém precisa repetir a soma em dois lugares.
+  double get evasaoTotal =>
+      creatureData.stats.evasao + bonusEvasaoItens + evasaoDerivada;
 
   /// Dano extra contra inimigo com menos da metade da vida (ver
   /// `FaroDeSangue`). Lido no `Enemy.takeDamage`, que é quem conhece a vida do
@@ -683,6 +709,8 @@ class Player extends PositionComponent
     curaBloqueada = false;
     reducaoDanoDerivada = 0.0;
     bonusAlvoFerido = 0.0;
+    evasaoDerivada = 0.0;
+    pilhasMiragem = 0;
     abatesSeguidos = 0;
 
     // O pisca-pisca de invulnerabilidade não roda mais depois daqui — sem
@@ -1127,6 +1155,7 @@ class Player extends PositionComponent
     curaBloqueada = false;
     reducaoDanoDerivada = 0.0;
     bonusAlvoFerido = 0.0;
+    evasaoDerivada = 0.0;
     abatesSeguidos = 0;
     seteVidasUsada = false;
   }
@@ -1431,6 +1460,7 @@ class Player extends PositionComponent
     curaBloqueada = false;
     reducaoDanoDerivada = 0.0;
     bonusAlvoFerido = 0.0;
+    evasaoDerivada = 0.0;
     for (final tipo in CreatureType.values) {
       danoElementalDerivado[tipo] = 1.0;
     }
@@ -1913,6 +1943,18 @@ class Player extends PositionComponent
     }
   }
 
+  /// Este golpe errou? Ver [evasaoTotal].
+  ///
+  /// `<=` e não `<`: com a escala em porcento, uma criatura de evasão 0
+  /// precisa somar 0 acerto de dado, e `nextDouble()` devolve [0, 1) — a
+  /// comparação `0 <= 0` nunca dispara porque a rolagem é estritamente maior
+  /// que zero na prática, mas o `<=` deixa 100% de evasão significar 100%.
+  bool _rolarEvasao() {
+    final chance = evasaoTotal;
+    if (chance <= 0) return false;
+    return Random().nextDouble() * 100 <= chance;
+  }
+
   void takeDamage(double amount, CreatureType tipoAtacante) {
     // Corpo em animação de morte não apanha mais: sem isto, um tiro que já
     // estava no ar chamaria `pocketarSlotAtivo` de novo com a vida negativa e
@@ -1980,6 +2022,25 @@ class Player extends PositionComponent
 
     for (final item in itens) {
       item.aoTomarDano(this, amountFinal, tipoAtacante);
+    }
+
+    // EVASIVA. Aqui, e não antes: os ganchos de "tentou/tomou dano" já
+    // rodaram, então retaliação e companhia valem mesmo no golpe que a
+    // criatura escapa — ela reagiu ao ataque, só não foi atingida. E antes do
+    // escudo, porque escapar não pode custar carga de bolha: a bolha existe
+    // pra golpe que ACERTA.
+    if (_rolarEvasao()) {
+      for (final item in itens) {
+        item.aoEvadir(this);
+      }
+      parent?.add(
+        TextEffect(
+          text: 'MISS',
+          position: position.clone() + Vector2(0, -size.y / 2 - 4),
+          color: Palette.branco,
+        ),
+      );
+      return;
     }
 
     if (consumirEscudo()) {

@@ -1,6 +1,7 @@
 import 'package:creatures_rogue/game/audio/game_music.dart';
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/components/core/responsive.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
@@ -33,54 +34,45 @@ class MainMenuOverlay extends StatelessWidget {
     final confirmou = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: Palette.branco,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.zero,
-          side: BorderSide(color: Palette.preto, width: 2),
-        ),
+        backgroundColor: UiTheme.btnCor,
+        shape: const BordaDuplaShape(),
         title: Text(
           context.l10n.menu_confirmarNovoJogoTitulo,
           style: const TextStyle(
-            color: Palette.preto,
+            color: UiTheme.txtCor,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
           context.l10n.menu_confirmarNovoJogoMensagem,
-          style: const TextStyle(color: Palette.preto),
+          style: const TextStyle(color: UiTheme.txtCor),
         ),
         actions: [
           OutlinedButton(
             onPressed: withBtnSfx(() => Navigator.of(dialogContext).pop(false)),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              backgroundColor: Palette.branco,
+              backgroundColor: UiTheme.btnCor,
               side: BorderSide(color: Palette.preto),
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-                side: BorderSide(color: Palette.preto, width: 5),
-              ),
+              shape: const BordaDuplaShape(),
             ),
             child: Text(
               context.l10n.settings_confirmarResetNao,
-              style: const TextStyle(color: Palette.preto),
+              style: const TextStyle(color: UiTheme.txtCor),
             ),
           ),
           OutlinedButton(
             onPressed: withBtnSfx(() => Navigator.of(dialogContext).pop(true)),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              backgroundColor: Palette.branco,
+              backgroundColor: UiTheme.btnCor,
               side: BorderSide(color: Palette.preto),
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-                side: BorderSide(color: Palette.preto, width: 5),
-              ),
+              shape: const BordaDuplaShape(),
             ),
             child: Text(
               context.l10n.settings_confirmarResetSim,
               style: const TextStyle(
-                color: Palette.preto,
+                color: UiTheme.txtCor,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -108,7 +100,7 @@ class MainMenuOverlay extends StatelessWidget {
     final temSave = RunSave.instance.hasSave;
 
     return ResponsiveOverlayScaffold(
-      background: Palette.branco,
+      background: UiTheme.backgroundMenuCor,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -126,7 +118,7 @@ class MainMenuOverlay extends StatelessWidget {
             context.l10n.menu_titulo,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: Palette.preto,
+              color: UiTheme.txtCor,
               fontSize: estreita ? 32 : 48,
               fontWeight: FontWeight.bold,
             ),
@@ -135,31 +127,25 @@ class MainMenuOverlay extends StatelessWidget {
           if (temSave) ...[
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Palette.branco,
+                backgroundColor: UiTheme.btnCor,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 elevation: 0,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                  side: BorderSide(color: Palette.preto, width: 2),
-                ),
+                shape: const BordaDuplaShape(),
               ),
               onPressed: withBtnSfx(game.continuarSalva),
               child: Text(
                 context.l10n.pause_continuar,
-                style: const TextStyle(fontSize: 24, color: Palette.preto),
+                style: const TextStyle(fontSize: 24, color: UiTheme.txtCor),
               ),
             ),
             const SizedBox(height: 10),
           ],
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Palette.branco,
+              backgroundColor: UiTheme.btnCor,
               padding: const EdgeInsets.symmetric(vertical: 10),
               elevation: 0,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-                side: BorderSide(color: Palette.preto, width: 2),
-              ),
+              shape: const BordaDuplaShape(),
             ),
             // Sem save: entra direto (mesmo caminho de sempre — seletor de
             // criaturas, ou a intro antes da primeira run). Com save,
@@ -168,19 +154,16 @@ class MainMenuOverlay extends StatelessWidget {
             onPressed: withBtnSfx(() => _confirmarNovoJogo(context)),
             child: Text(
               context.l10n.menu_novoJogo,
-              style: const TextStyle(fontSize: 24, color: Palette.preto),
+              style: const TextStyle(fontSize: 24, color: UiTheme.txtCor),
             ),
           ),
           const SizedBox(height: 10),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Palette.branco,
+              backgroundColor: UiTheme.btnCor,
               padding: const EdgeInsets.symmetric(vertical: 10),
               elevation: 0,
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
-                side: BorderSide(color: Palette.preto, width: 2),
-              ),
+              shape: const BordaDuplaShape(),
             ),
             onPressed: withBtnSfx(() {
               game.overlays.remove('MainMenu');
@@ -189,7 +172,7 @@ class MainMenuOverlay extends StatelessWidget {
             }),
             child: Text(
               context.l10n.menu_configuracoes,
-              style: const TextStyle(fontSize: 20, color: Palette.preto),
+              style: const TextStyle(fontSize: 20, color: UiTheme.txtCor),
             ),
           ),
         ],

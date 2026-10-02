@@ -20,7 +20,7 @@ class GameOverMenu extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(30),
         decoration: BoxDecoration(
-          color: Palette.branco,
+          color: UiTheme.backgroundMenuCor,
           border: const BordaDupla(cor: Palette.preto, espessura: 4),
           borderRadius: BorderRadius.circular(0),
         ),
@@ -31,7 +31,7 @@ class GameOverMenu extends StatelessWidget {
               context.l10n.gameOver_titulo,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Palette.preto,
+                color: UiTheme.txtCor,
                 fontSize: estreita ? 34 : 50,
                 fontWeight: FontWeight.bold,
               ),
@@ -39,13 +39,10 @@ class GameOverMenu extends StatelessWidget {
             const SizedBox(height: 30),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Palette.branco,
+                backgroundColor: UiTheme.btnCor,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 elevation: 0,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                  side: BorderSide(color: Palette.preto, width: 2),
-                ),
+                shape: const BordaDuplaShape(),
               ),
               onPressed: withBtnSfx(() {
                 game.overlays.remove('GameOver');
@@ -62,19 +59,16 @@ class GameOverMenu extends StatelessWidget {
               }),
               child: Text(
                 context.l10n.gameOver_restart,
-                style: const TextStyle(fontSize: 20, color: Palette.preto),
+                style: const TextStyle(fontSize: 20, color: UiTheme.txtCor),
               ),
             ),
             const SizedBox(height: 15),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Palette.branco,
+                backgroundColor: UiTheme.btnCor,
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 elevation: 0,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.zero,
-                  side: BorderSide(color: Palette.preto, width: 2),
-                ),
+                shape: const BordaDuplaShape(),
               ),
               onPressed: withBtnSfx(() {
                 game.overlays.remove('GameOver');
@@ -90,7 +84,7 @@ class GameOverMenu extends StatelessWidget {
               }),
               child: Text(
                 context.l10n.gameOver_menuPrincipal,
-                style: const TextStyle(fontSize: 16, color: Palette.preto),
+                style: const TextStyle(fontSize: 16, color: UiTheme.txtCor),
               ),
             ),
           ],
