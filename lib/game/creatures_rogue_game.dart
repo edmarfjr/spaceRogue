@@ -2191,6 +2191,11 @@ class CreaturesRogueGame extends FlameGame
   /// apaga o save —, porque em ambos a run terminou e nao ha pra onde
   /// continuar.
   void _handleVitoria() {
+    // `nextLevel` já fez `currentFloor++` antes de perceber que era a última
+    // dungeon, então aqui o andar está um além do último. Sem voltar, o
+    // resumo da vitória mostraria um andar que não existe. Seguro mexer: o
+    // save é apagado logo abaixo e `startRun` zera o andar.
+    currentFloor = numFloors;
     // Toda criatura que passou pelo grupo ganha a marca, inclusive as que
     // caíram ou se aposentaram no caminho — mesmo critério do elenco que a
     // tela de vitória mostra. Vitória em GOD MODE não conta: é cheat de
