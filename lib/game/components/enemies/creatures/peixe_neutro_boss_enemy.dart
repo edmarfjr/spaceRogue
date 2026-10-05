@@ -29,7 +29,7 @@ class PeixeNeutroBossEnemy extends Enemy with JumpMovement {
 
   PeixeNeutroBossEnemy({required super.position, required super.playerTarget})
     : super(
-        creature: CreatureRegistry.peixeNeutro,
+        creature: CreatureRegistry.peixeNeutroEvo,
         moveAnim: null,
         speed: 0.0,
         health: _vidaInicial,
@@ -82,8 +82,8 @@ class PeixeNeutroBossEnemy extends Enemy with JumpMovement {
         dmg: _danoImpacto.toDouble(),
         knockback: _empurraoImpacto,
         size: Vector2(38, 38),
-        cor1: CreatureRegistry.peixeNeutro.corClara,
-        cor2: CreatureRegistry.peixeNeutro.corEscura,
+        cor1: CreatureRegistry.peixeNeutroEvo.corClara,
+        cor2: CreatureRegistry.peixeNeutroEvo.corEscura,
       ),
     );
 
@@ -98,8 +98,8 @@ class PeixeNeutroBossEnemy extends Enemy with JumpMovement {
           kbForce: 0,
           dmg: _danoPoca,
           sprPath: 'projeteis/bolaGrande.png',
-          cor1: CreatureRegistry.peixeNeutro.corClara,
-          cor2: CreatureRegistry.peixeNeutro.corEscura,
+          cor1: CreatureRegistry.peixeNeutroEvo.corClara,
+          cor2: CreatureRegistry.peixeNeutroEvo.corEscura,
           lifeTime: _duracaoPoca,
           atravessa: 10,
           size: Vector2.all(24.0),

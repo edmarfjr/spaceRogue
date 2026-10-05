@@ -62,6 +62,8 @@ import 'abilities/escamas_escorregadias.dart';
 import 'abilities/latido_feroz.dart';
 import 'abilities/mordida_certeira.dart';
 import 'abilities/rabanada.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/rabanada_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/escamas_espelhadas.dart';
 import 'abilities/rajada_de_brasa_evo.dart';
 import 'abilities/salto_felino.dart';
 import 'abilities/voo_alto.dart';
@@ -813,6 +815,26 @@ class CreatureRegistry {
     stats: BaseStats(maxHp: 4, speed: 50, defesa: 1, ataque: 3),
     ability1: Rabanada(),
     ability2: EscamasEscorregadias(),
+    moveAnim: MovementAnimation.arrastar,
+    hitboxSize: Vector2(10, 8),
+    enemyBuilder: (pos, plr) =>
+        PeixeNeutroEnemy(position: pos, playerTarget: plr),
+    evoluir: () => peixeNeutroEvo,
+  );
+
+  /// Forma evoluída de [peixeNeutro] — mesmo `id`, mesmo nome. Ataque fica em
+  /// 3: a Rabanada Dupla já soma um segundo golpe, e subir o ataque junto
+  /// dobraria o ganho.
+  static final CreatureData peixeNeutroEvo = CreatureData(
+    id: 'peixe_neutro',
+    nome: 'layfishy',
+    spritePath: 'actors/peixeNeutroEvo.png',
+    tipo: CreatureType.neutro,
+    corClara: Palette.salmon,
+    corEscura: Palette.coral,
+    stats: BaseStats(maxHp: 6, speed: 50, defesa: 1, ataque: 3),
+    ability1: RabanadaEvo(),
+    ability2: EscamasEspelhadas(),
     moveAnim: MovementAnimation.arrastar,
     hitboxSize: Vector2(10, 8),
     enemyBuilder: (pos, plr) =>

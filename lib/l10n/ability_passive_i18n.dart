@@ -28,6 +28,9 @@ import 'package:creatures_rogue/game/components/creatures/abilities/disparada_ve
 import 'package:creatures_rogue/game/components/creatures/abilities/enraizar.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/enraizar_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/escamas_escorregadias.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/escamas_espelhadas.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/rabanada.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/rabanada_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/escudo_de_espinhos.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/escudo_de_espinhos_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/esquiva_bomba.dart';
@@ -141,6 +144,9 @@ String abilityName(BuildContext context, Ability a) {
     MordidaCerteiraEvo() => l.abilityName_MordidaCerteiraEvo,
     VooAltoEvo() => l.abilityName_VooAltoEvo,
     BicadaRapidaEvo() => l.abilityName_BicadaRapidaEvo,
+    Rabanada() => l.abilityName_Rabanada,
+    RabanadaEvo() => l.abilityName_RabanadaEvo,
+    EscamasEspelhadas() => l.abilityName_EscamasEspelhadas,
 
     _ => a.nome,
   };
@@ -211,6 +217,9 @@ String abilityDescription(BuildContext context, Ability a) {
     MordidaCerteiraEvo() => l.abilityDesc_MordidaCerteiraEvo,
     VooAltoEvo() => l.abilityDesc_VooAltoEvo,
     BicadaRapidaEvo() => l.abilityDesc_BicadaRapidaEvo,
+    Rabanada() => l.abilityDesc_Rabanada,
+    RabanadaEvo() => l.abilityDesc_RabanadaEvo,
+    EscamasEspelhadas() => l.abilityDesc_EscamasEspelhadas,
 
     _ => a.descricao,
   };

@@ -34,6 +34,7 @@ import 'package:creatures_rogue/game/game_settings.dart';
 import 'package:flutter/services.dart';
 import '../map/obstacle.dart';
 import 'package:creatures_rogue/game/components/effects/chamas_effect.dart';
+import 'package:creatures_rogue/game/components/effects/aura_pulse_effect.dart';
 import 'package:creatures_rogue/game/components/effects/efeitos_temporarios.dart';
 import 'package:creatures_rogue/game/components/items/item_efeito.dart';
 import 'package:creatures_rogue/game/components/projeteis/explosion_hitbox.dart';
@@ -843,14 +844,68 @@ class Player extends PositionComponent
   /// ainda chega normal em `takeDamage`.
   double _statusImunidadeTimer = 0.0;
 
+  /// Janela de [ativarEspelhoDeStatus]: enquanto > 0, todo status barrado
+  /// pela imunidade é devolvido aos inimigos em volta.
+  double _espelhoTimer = 0.0;
+
+  /// Recarga POR STATUS do ricochete. Sem ela, campo que reaplica lentidão a
+  /// cada quadro (o do Pinguim boss, as poças) ricochetearia 60 vezes por
+  /// segundo — um pulso visual por quadro e o inimigo preso numa lentidão
+  /// renovada sem parar.
+  double _espelhoLentidaoCd = 0.0;
+  double _espelhoCegoCd = 0.0;
+  double _espelhoEmpurraoCd = 0.0;
+  static const double _espelhoRecarga = 0.5;
+  static const double _espelhoRaio = 32.0;
+
+  /// Liga o ricochete das Escamas Espelhadas. A imunidade em si vem de
+  /// [grantStatusImmunity], chamada pela habilidade — este timer só decide se
+  /// o status barrado volta pra alguém.
+  void ativarEspelhoDeStatus(double segundos) {
+    if (segundos > _espelhoTimer) _espelhoTimer = segundos;
+  }
+
+  /// Aplica [efeito] em todo inimigo a até [_espelhoRaio] e solta um pulso
+  /// mostrando o alcance. Devolve `false` sem fazer nada fora da janela ou na
+  /// recarga — quem chama usa isso pra armar a recarga só quando refletiu.
+  bool _refletirStatus(double recarga, void Function(Enemy e) efeito) {
+    if (_espelhoTimer <= 0 || recarga > 0) return false;
+    final inimigos = parent?.children.whereType<Enemy>() ?? const <Enemy>[];
+    for (final e in inimigos.toList()) {
+      if (e.position.distanceTo(position) <= _espelhoRaio) efeito(e);
+    }
+    parent?.add(
+      AuraPulseEffect(
+        position: position,
+        raio: _espelhoRaio,
+        cor1: creatureData.corClara,
+        cor2: creatureData.corEscura,
+      ),
+    );
+    return true;
+  }
+
   void aplicarLentidao(double duracao, {double fator = 0.5}) {
-    if (_statusImunidadeTimer > 0) return;
+    if (_statusImunidadeTimer > 0) {
+      if (_refletirStatus(
+        _espelhoLentidaoCd,
+        (e) => e.applyLentidao(duracao, fator: fator),
+      )) {
+        _espelhoLentidaoCd = _espelhoRecarga;
+      }
+      return;
+    }
     if (duracao > lentidaoTimer) lentidaoTimer = duracao;
     if (fator < lentidaoFator) lentidaoFator = fator;
   }
 
   void aplicarCegueira(double duracao) {
-    if (_statusImunidadeTimer > 0) return;
+    if (_statusImunidadeTimer > 0) {
+      if (_refletirStatus(_espelhoCegoCd, (e) => e.applyCego(duracao))) {
+        _espelhoCegoCd = _espelhoRecarga;
+      }
+      return;
+    }
     if (duracao <= cegoTimer) return;
     cegoTimer = duracao;
     cegoDuracaoInicial = duracao;
@@ -1510,6 +1565,10 @@ class Player extends PositionComponent
     }
 
     if (_statusImunidadeTimer > 0) _statusImunidadeTimer -= dt;
+    if (_espelhoTimer > 0) _espelhoTimer -= dt;
+    if (_espelhoLentidaoCd > 0) _espelhoLentidaoCd -= dt;
+    if (_espelhoCegoCd > 0) _espelhoCegoCd -= dt;
+    if (_espelhoEmpurraoCd > 0) _espelhoEmpurraoCd -= dt;
 
     // A sombra fica de propósito: enterrado, ela é a ÚNICA coisa que diz ao
     // jogador onde ele está e pra onde vai. A bolha, ao contrário, some —
@@ -1777,7 +1836,17 @@ class Player extends PositionComponent
   /// Empurra o jogador para longe de [sourcePosition]. Usado por explosões
   /// de inimigos que repelem (Brado, bote da Cobra).
   void applyKnockback(Vector2 sourcePosition, double force) {
-    if (_statusImunidadeTimer > 0) return;
+    if (_statusImunidadeTimer > 0) {
+      // Devolvido a partir do JOGADOR, não da origem: o empurrão volta como
+      // uma onda que afasta quem está perto, não como uma cópia do vetor.
+      if (_refletirStatus(
+        _espelhoEmpurraoCd,
+        (e) => e.applyKnockback(absolutePosition, force),
+      )) {
+        _espelhoEmpurraoCd = _espelhoRecarga;
+      }
+      return;
+    }
     final direction = (absolutePosition - sourcePosition);
     if (direction.length == 0) return;
     knockbackVelocity = direction.normalized() * force;
