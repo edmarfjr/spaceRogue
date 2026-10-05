@@ -359,6 +359,8 @@ class CreaturesRogueGame extends FlameGame
       // "voltou pro grupo" justo quando não há mais grupo. `Sfx.die` estava
       // declarado e com o .wav no disco desde sempre, sem nenhum tocador.
       GameAudio.instance.play(Sfx.die);
+      derrotadoPor = player.ultimaOrigemDeDano;
+      derrotadoPorArmadilha = player.ultimoDanoPorArmadilha;
       _handleGameOver(comAnimacaoDeMorte: true);
       return;
     }
@@ -459,6 +461,16 @@ class CreaturesRogueGame extends FlameGame
   String settingsReturnOverlay = 'MainMenu';
 
   int currentLevel = 1;
+
+  /// Inimigos derrotados nesta run, pro resumo de Game Over/vitória. Contado
+  /// em `Enemy.death`, que já tem guarda contra morrer duas vezes.
+  int abatesDaRun = 0;
+
+  /// Quem derrubou a ÚLTIMA criatura do grupo — ver [pocketarSlotAtivo].
+  /// Nulo quando a run acabou sem morte (aposentando a última) ou quando o
+  /// golpe não tinha origem conhecida; o resumo então omite a linha.
+  CreatureData? derrotadoPor;
+  bool derrotadoPorArmadilha = false;
   int numFloors = 5;
   int currentFloor = 1;
 
@@ -715,6 +727,9 @@ class CreaturesRogueGame extends FlameGame
     }
     companionAtivoIndex = 0;
     tempoDeRun = 0.0;
+    abatesDaRun = 0;
+    derrotadoPor = null;
+    derrotadoPorArmadilha = false;
     criaturasUsadas.clear();
     poolItens
       ..clear()
@@ -906,6 +921,7 @@ class CreaturesRogueGame extends FlameGame
     // Save anterior a estes dois campos: cronometro volta do zero e o elenco
     // fica vazio. Nada quebra, so a tela de vitoria mostraria menos.
     tempoDeRun = (dados['tempoDeRun'] as num?)?.toDouble() ?? 0.0;
+    abatesDaRun = (dados['abates'] as num?)?.toInt() ?? 0;
     criaturasUsadas
       ..clear()
       ..addAll(((dados['criaturasUsadas'] as List?) ?? const []).cast<String>());
@@ -1042,6 +1058,7 @@ class CreaturesRogueGame extends FlameGame
       'andar': currentFloor,
       'poolItens': poolItens.map((i) => i.id).toList(),
       'tempoDeRun': tempoDeRun,
+      'abates': abatesDaRun,
       'criaturasUsadas': List<String>.from(criaturasUsadas),
       'poolAposentadoria': List<String>.from(poolAposentadoria),
       'bossId': runBoss?.creatureId,
@@ -2214,6 +2231,10 @@ class CreaturesRogueGame extends FlameGame
 
     overlays.remove('Hud');
     unawaited(RunSave.instance.apagar());
+    // Aqui, e não em `_mostrarGameOver`: a faixa entra junto com a cena de
+    // morte, que é quando a run acabou de fato. RESTART volta pra trilha da
+    // run sozinho — `startRun` toca `GameMusic.run`.
+    GameMusic.instance.play(GameMusic.gameOver);
 
     if (!comAnimacaoDeMorte) {
       _mostrarGameOver();

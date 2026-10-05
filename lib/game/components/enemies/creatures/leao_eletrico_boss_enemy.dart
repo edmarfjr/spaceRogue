@@ -96,6 +96,7 @@ class LeaoEletricoBossEnemy extends Enemy with ShooterAttack, JumpMovement {
     parent?.add(ExplosionHitbox(
       position: position.clone(),
       isEnemy: true,
+      origem: creature,
       dmg: _danoQueda,
       knockback: _empurraoQueda,
       size: Vector2(40, 40),

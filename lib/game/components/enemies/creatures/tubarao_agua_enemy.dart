@@ -61,6 +61,7 @@ class TubaraoAguaEnemy extends Enemy with JumpMovement {
     parent?.add(ExplosionHitbox(
       position: position.clone(),
       isEnemy: true,
+      origem: creature,
       dmg: _danoPouso,
       knockback: _empurraoPouso,
       size: Vector2(28, 28),

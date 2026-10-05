@@ -105,6 +105,7 @@ class OuricoEletricoBossEnemy extends Enemy{
     parent?.add(ExplosionHitbox(
       position: position.clone(),
       isEnemy: true,
+      origem: creature,
       dmg: _danoOnda,
       knockback: _empurraoOnda,
       size: Vector2.all(_raioOnda),
@@ -123,6 +124,7 @@ class OuricoEletricoBossEnemy extends Enemy{
     parent?.add(ExplosionHitbox(
       position: position.clone(),
       isEnemy: true,
+      origem: creature,
       dmg: _danoRetaliacao,
       knockback: _empurraoRetaliacao,
       cor1: CreatureRegistry.ouricoEletricoEvo.corClara,

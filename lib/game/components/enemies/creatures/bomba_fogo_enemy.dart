@@ -63,6 +63,7 @@ class BombaFogoEnemy extends Enemy{
       parent?.add(ExplosionHitbox(
         position: position.clone(),
         isEnemy: true,
+        origem: creature,
         dmg: _danoExplosao,
         knockback: _empurraoExplosao,
         size: Vector2(38, 38),

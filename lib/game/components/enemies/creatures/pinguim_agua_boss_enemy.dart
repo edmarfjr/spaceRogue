@@ -198,6 +198,7 @@ class PinguimAguaBossEnemy extends Enemy with ShooterAttack {
     parent?.add(ExplosionHitbox(
       position: position.clone(),
       isEnemy: true,
+      origem: creature,
       dmg: _danoInvestida,
       tipo: CreatureRegistry.pinguimAguaEvo.tipo,
       lentidaoDuracao: _lentidaoInvestida,

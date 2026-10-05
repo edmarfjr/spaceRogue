@@ -162,7 +162,8 @@ class UrsoPlantaBossEnemy extends Enemy{
   void _descerPancada() {
     parent?.add(ExplosionHitbox(
       position: position.clone(),
-      isEnemy: true, // sem isso a explosão não machuca o jogador
+      isEnemy: true,
+      origem: creature, // sem isso a explosão não machuca o jogador
       dmg: _danoPancada,
       knockback: _empurraoPancada,
       size: Vector2(50, 50),
@@ -175,6 +176,7 @@ class UrsoPlantaBossEnemy extends Enemy{
     parent?.add(ExplosionHitbox(
       position: position.clone(),
       isEnemy: true,
+      origem: creature,
       dmg: _leapDano,
       knockback: _leapEmpurrao,
       size: Vector2(64, 64),

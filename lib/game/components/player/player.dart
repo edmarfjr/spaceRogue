@@ -1972,7 +1972,7 @@ class Player extends PositionComponent
         if(other.creature!=null){
           tipo = other.creature!.tipo;
         }
-        takeDamage(1, tipo);
+        takeDamage(1, tipo, origem: other.creature);
       }
     }
 
@@ -2024,7 +2024,17 @@ class Player extends PositionComponent
     return Random().nextDouble() * 100 <= chance;
   }
 
-  void takeDamage(double amount, CreatureType tipoAtacante) {
+  /// Quem deu o último golpe que TIROU vida — ver [takeDamage]. Lido pelo
+  /// jogo quando a criatura cai, pro "derrotado por" do resumo de Game Over.
+  CreatureData? ultimaOrigemDeDano;
+  bool ultimoDanoPorArmadilha = false;
+
+  void takeDamage(
+    double amount,
+    CreatureType tipoAtacante, {
+    CreatureData? origem,
+    bool porArmadilha = false,
+  }) {
     // Corpo em animação de morte não apanha mais: sem isto, um tiro que já
     // estava no ar chamaria `pocketarSlotAtivo` de novo com a vida negativa e
     // o Game Over sairia duas vezes.
@@ -2173,6 +2183,11 @@ class Player extends PositionComponent
         ),
       );
     }
+    // Gravado aqui, no ponto em que a vida cai, e não na entrada: golpe
+    // evadido, absorvido pelo escudo ou barrado pela invulnerabilidade sai
+    // antes, e não pode virar o "derrotado por" de quem levou o golpe final.
+    ultimaOrigemDeDano = origem;
+    ultimoDanoPorArmadilha = porArmadilha;
     currentHealth -= amountFinal;
 
     // Última chance antes de a criatura sair de campo: o primeiro item que

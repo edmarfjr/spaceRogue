@@ -24,13 +24,17 @@ class GameMusic {
   /// Luta de boss. Volta pra [run] quando o boss cai (ver `Enemy.death`).
   static const String boss = 'music/victoryRoad.mp3';
 
+  /// Fim da run por derrota. Entra junto com a cena de morte (ver
+  /// `CreaturesRogueGame._handleGameOver`).
+  static const String gameOver = 'music/gameover.mp3';
+
   /// Todas as faixas, pro preload do `GameAudio` aquecer o cache de bytes.
   ///
   /// `FlameAudio.bgm.play` faz `setSource` NA HORA da chamada, e a troca pra
   /// faixa de boss acontece exatamente quando o jogador abre a porta da sala
   /// — o pior instante possível pra engasgar. Aquecendo aqui, aquele
   /// `setSource` encontra os bytes já em memória.
-  static const List<String> todas = [menu, run, boss];
+  static const List<String> todas = [menu, run, boss, gameOver];
 
   String? _current;
   double volume = volumePadrao;

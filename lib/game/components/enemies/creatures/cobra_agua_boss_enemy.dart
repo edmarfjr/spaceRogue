@@ -104,7 +104,8 @@ class CobraAguaBossEnemy extends Enemy with JumpMovement {
   void _impactoAoPousar() {
     parent?.add(ExplosionHitbox(
       position: position.clone(),
-      isEnemy: true, // sem isso a explosão não machuca o jogador
+      isEnemy: true,
+      origem: creature, // sem isso a explosão não machuca o jogador
       dmg: _danoImpacto.toDouble(),
       knockback: _empurraoImpacto,
       size: Vector2.all(_tamanhoImpacto),
@@ -120,6 +121,7 @@ class CobraAguaBossEnemy extends Enemy with JumpMovement {
       parent?.add(ExplosionHitbox(
         position: position.clone(),
         isEnemy: true,
+        origem: creature,
         dmg: _danoMorte,
         knockback: _empurraoFase2,
         size: Vector2.all(_tamanhoMorte),

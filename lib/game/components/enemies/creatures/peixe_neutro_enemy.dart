@@ -63,6 +63,7 @@ class PeixeNeutroEnemy extends Enemy with JumpMovement {
       ExplosionHitbox(
         position: position.clone(),
         isEnemy: true,
+        origem: creature,
         dmg: _danoImpacto.toDouble(),
         knockback: _empurraoImpacto,
         size: Vector2(28, 28),

@@ -246,6 +246,18 @@
   "victory_titulo": "VOCE VENCEU!",
   "victory_tempo": "TEMPO: {tempo}",
   "victory_elenco": "CRIATURAS DA RUN",
+  "resumo_dungeon": "DUNGEON {dungeon} - ANDAR {andar}",
+  "@resumo_dungeon": {
+    "placeholders": { "dungeon": {}, "andar": {} }
+  },
+  "resumo_abates": "ABATES: {abates}",
+  "@resumo_abates": {
+    "placeholders": { "abates": {} }
+  },
+  "resumo_derrotadoPor": "DERROTADO POR",
+  "resumo_armadilha": "ESPINHOS",
+  "resumo_itens": "ITENS",
+  "resumo_semItens": "NENHUM ITEM",
   "tutorial_controlesTeclado": "WASD PARA MOVER\nSETAS PARA ATACAR",
   "tutorial_controles": "ARRASTE À ESQUERDA PARA MOVER\nARRASTE À DIREITA PARA ATACAR",
   "retirement_titulo": "APOSENTANDO...",

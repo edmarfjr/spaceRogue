@@ -4,6 +4,7 @@ import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/core/responsive.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
+import 'package:creatures_rogue/game/overlays/resumo_run.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 
 class GameOverMenu extends StatelessWidget {
@@ -36,7 +37,9 @@ class GameOverMenu extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 16),
+            ResumoRun(game: game, largura: 320),
+            const SizedBox(height: 24),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: UiTheme.btnCor,

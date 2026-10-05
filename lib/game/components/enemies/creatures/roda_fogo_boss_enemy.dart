@@ -140,6 +140,7 @@ class RodaFogoBossEnemy extends Enemy {
       ExplosionHitbox(
         position: position.clone(),
         isEnemy: true,
+        origem: creature,
         dmg: _danoEstouro,
         knockback: 60,
         size: Vector2(36, 36),

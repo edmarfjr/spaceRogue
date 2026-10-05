@@ -98,7 +98,8 @@ class SapoAguaBossEnemy extends Enemy with JumpMovement {
 
       parent?.add(ExplosionHitbox(
         position: position.clone() + direcao * _offsetLeque,
-        isEnemy: true, // sem isso a gosma machuca inimigos em vez do jogador
+        isEnemy: true,
+        origem: creature, // sem isso a gosma machuca inimigos em vez do jogador
         dmg: _danoGosma,
         knockback: _empurraoGosma,
         size: Vector2(24, 24),

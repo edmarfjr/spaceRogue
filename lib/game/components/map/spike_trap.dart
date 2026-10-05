@@ -120,7 +120,7 @@ class SpikeTrap extends PositionComponent with CollisionCallbacks, HasGameRef {
       other.takeDamage(2, tipoAtacante:CreatureType.neutro);
     } else if (other is DamageableByEnemy) {
       _atingidosNestaAtivacao.add(other);
-      other.takeDamage(1, CreatureType.neutro );
+      other.takeDamage(1, CreatureType.neutro, porArmadilha: true);
     }
   }
 

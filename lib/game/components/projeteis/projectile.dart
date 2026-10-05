@@ -8,6 +8,7 @@ import 'package:creatures_rogue/game/audio/game_audio.dart';
 import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/creatures/damageable_by_enemy.dart';
 import 'package:creatures_rogue/game/components/effects/dot.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart';
@@ -98,6 +99,12 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   final bool playSfx;
 
   final PositionComponent owner;
+
+  /// Criatura por trás do disparo, quando quem atirou é inimigo.
+  CreatureData? get _origem {
+    final dono = owner;
+    return dono is Enemy ? dono.creature : null;
+  }
 
   final double stepTime;
 
@@ -205,6 +212,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         size:Vector2(explosionSize, explosionSize),
         tipo: tipo,
         isEnemy: isEnemy,
+        origem: _origem,
       ));
     }
 
@@ -319,7 +327,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         if (cegoDuracao > 0) other.aplicarCegueira(cegoDuracao);
 
         if (dmg > 0) {
-          other.takeDamage(dmg,tipo);
+          other.takeDamage(dmg, tipo, origem: _origem);
           atravessa--;
           if (atravessa <= 0) onDestroy();
         }

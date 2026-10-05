@@ -8,6 +8,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/creatures/damageable_by_enemy.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart'; // Mude para base_enemy se refatorou
 import 'package:creatures_rogue/game/components/map/obstacle.dart';
@@ -21,6 +22,10 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
   final double stunDuration;
   final double paraliseDuration;
   final bool isEnemy;
+
+  /// Criatura que soltou a explosão, quando é de inimigo — só pro "derrotado
+  /// por" do Game Over (ver `DamageableByEnemy.takeDamage`).
+  final CreatureData? origem;
   final Color cor1;
   final Color cor2;
 
@@ -46,6 +51,7 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
     required Vector2 position,
     this.dmg = 1,
     this.isEnemy = false,
+    this.origem,
     this.stunDuration = 0,
     this.paraliseDuration = 0,
     this.knockback = 50.0,
@@ -152,7 +158,7 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
       final kind = dotKind;
       if (kind != null) other.applyDot(kind, dotTicks);
     } else if (other is DamageableByEnemy && isEnemy) {
-      other.takeDamage(dmg,tipo);
+      other.takeDamage(dmg, tipo, origem: origem);
       if (lentidaoDuracao > 0) other.aplicarLentidao(lentidaoDuracao, fator: lentidaoFator);
       if (cegoDuracao > 0) other.aplicarCegueira(cegoDuracao);
       if (knockback > 0) other.applyKnockback(absolutePosition, knockback);

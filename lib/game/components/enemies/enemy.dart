@@ -8,6 +8,7 @@ import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/audio/game_audio.dart';
 import 'package:creatures_rogue/game/audio/game_music.dart';
+import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:creatures_rogue/game/audio/sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
@@ -741,6 +742,8 @@ abstract class Enemy extends PositionComponent
       item.aoMatarInimigo(playerTarget, this);
     }
     playerTarget.abatesSeguidos++;
+    final jogo = game;
+    if (jogo is CreaturesRogueGame) jogo.abatesDaRun++;
     playerTarget.tempoDesdeAbate = 0.0;
 
     // Antes do `removeFromParent` lá embaixo, e antes do XP: a explosão nasce
@@ -751,6 +754,7 @@ abstract class Enemy extends PositionComponent
         ExplosionHitbox(
           position: position.clone(),
           isEnemy: true,
+          origem: creature,
           dmg: dmg * campeaoExplosaoCoef,
           knockback: 70,
           size: Vector2.all(campeaoExplosaoRaio),
