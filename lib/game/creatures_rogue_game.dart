@@ -52,6 +52,7 @@ import 'package:creatures_rogue/game/components/map/room_component.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 import 'package:creatures_rogue/game/game_settings.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/run_save.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 import 'components/player/player.dart';
@@ -2213,6 +2214,13 @@ class CreaturesRogueGame extends FlameGame
   /// apaga o save —, porque em ambos a run terminou e nao ha pra onde
   /// continuar.
   void _handleVitoria() {
+    // Toda criatura que passou pelo grupo ganha a marca, inclusive as que
+    // caíram ou se aposentaram no caminho — mesmo critério do elenco que a
+    // tela de vitória mostra. Vitória em GOD MODE não conta: é cheat de
+    // teste, e a marca registra o que o jogador conquistou.
+    if (!GameSettings.instance.godMode) {
+      unawaited(CreatureProgress.instance.registrarVitoria(criaturasUsadas));
+    }
     overlays.remove('Hud');
     overlays.add('Victory');
     pauseEngine();

@@ -15,6 +15,7 @@ class CreatureProgress {
   static const _unlockedKey = 'creatures_rogue.unlocked_ids';
   static const _killCountPrefix = 'creatures_rogue.kills.';
   static const _introKey = 'creatures_rogue.intro_concluida';
+  static const _vitoriasKey = 'creatures_rogue.vitorias_ids';
 
   /// Ninguém começa liberado: a primeira criatura vem da escolha no fim da
   /// intro (ver `IntroOverlay`), e é a única jogável na primeira run. A lista
@@ -23,6 +24,7 @@ class CreatureProgress {
 
   late final SharedPreferences _prefs;
   Set<String> _unlockedIds = {};
+  Set<String> _vitoriasIds = {};
   bool _loaded = false;
 
   bool get isLoaded => _loaded;
@@ -31,6 +33,7 @@ class CreatureProgress {
     if (_loaded) return;
     _prefs = await SharedPreferences.getInstance();
     _unlockedIds = (_prefs.getStringList(_unlockedKey) ?? defaultUnlocked).toSet();
+    _vitoriasIds = (_prefs.getStringList(_vitoriasKey) ?? const []).toSet();
     _loaded = true;
   }
 
@@ -70,8 +73,26 @@ class CreatureProgress {
   /// — sem isso ela aparece uma vez na vida do aparelho.
   Future<void> resetIntro() async {
     _unlockedIds = defaultUnlocked.toSet();
+    _vitoriasIds = {};
     await _prefs.setStringList(_unlockedKey, _unlockedIds.toList());
+    await _prefs.setStringList(_vitoriasKey, const []);
     await _prefs.setBool(_introKey, false);
+  }
+
+  /// Marca de conclusão: esta criatura já participou de uma run vencida?
+  /// Indexado pelo `id`, que a forma evoluída compartilha com a base — vencer
+  /// evoluída conta pra mesma criatura.
+  ///
+  /// Sem o atalho do GOD MODE que o [isUnlocked] tem: a marca existe pra
+  /// registrar o que o jogador fez, e mentir nela apagaria o sentido.
+  bool venceuCom(String creatureId) => _vitoriasIds.contains(creatureId);
+
+  /// Grava a marca de todas as [creatureIds] de uma vez, numa escrita só.
+  Future<void> registrarVitoria(Iterable<String> creatureIds) async {
+    final antes = _vitoriasIds.length;
+    _vitoriasIds.addAll(creatureIds);
+    if (_vitoriasIds.length == antes) return;
+    await _prefs.setStringList(_vitoriasKey, _vitoriasIds.toList());
   }
 
   Future<void> unlock(String creatureId) async {

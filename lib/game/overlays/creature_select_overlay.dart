@@ -297,7 +297,10 @@ class _CreatureListTile extends StatelessWidget {
                       ),
                     ),
                     if (locked)
-                      const Icon(Icons.lock, color: Palette.cinzaEsc, size: 16),
+                      const Icon(Icons.lock, color: Palette.cinzaEsc, size: 16)
+                    // Marca de conclusão: já venceu uma run com esta criatura.
+                    else if (CreatureProgress.instance.venceuCom(creature.id))
+                      const Icon(Icons.star, color: UiTheme.txtCor, size: 16),
                   ],
                 ),
               ),
