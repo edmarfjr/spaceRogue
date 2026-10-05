@@ -33,23 +33,30 @@ class PaletteSwapper {
   /// de TODOS os sprites de uma vez, em vez de só dos poucos que passavam a
   /// cor na mão. É o mesmo motivo dos tokens de `UiTheme`.
   ///
-  /// Continuam NULLÁVEIS de propósito: passar `null` explicitamente segue
-  /// significando "não encoste nesses pixels", que é o que um sprite com
-  /// branco e preto já definitivos quer.
+  /// O branco não tem saída: `null` em [whiteReplacement] também vira
+  /// `Palette.branco`. Quem repassa uma cor opcional (`corBranco` do
+  /// `SpriteUi`, do `Enemy`, do `SpriteEffect`) mandava `null` sem querer
+  /// dizer "não encoste", e com isso o branco desses sprites ficaria de fora
+  /// de uma troca de paleta. Bônus: `null` e `Palette.branco` caem na mesma
+  /// chave de cache, em vez de gerar duas texturas idênticas.
+  ///
+  /// O preto continua nulável de propósito: `null` explícito em
+  /// [blackReplacement] segue significando "não encoste nesses pixels".
   static Future<ui.Image> createSwappedImage({
     required String imagePath,
     required Color lightGrayReplacement,
     required Color darkGrayReplacement,
-    Color? whiteReplacement = Palette.branco,
+    Color? whiteReplacement,
     Color? blackReplacement = Palette.preto,
   }) {
     requests++;
+    final branco = whiteReplacement ?? Palette.branco;
 
     final key = _keyFor(
       imagePath,
       lightGrayReplacement,
       darkGrayReplacement,
-      whiteReplacement,
+      branco,
       blackReplacement,
     );
 
@@ -59,7 +66,7 @@ class PaletteSwapper {
         imagePath: imagePath,
         lightGrayReplacement: lightGrayReplacement,
         darkGrayReplacement: darkGrayReplacement,
-        whiteReplacement: whiteReplacement,
+        whiteReplacement: branco,
         blackReplacement: blackReplacement,
       ),
     );
