@@ -138,7 +138,7 @@ class _PauseMenuOverlayState extends State<PauseMenuOverlay> {
 }
 
 /// Fileira com um card por slot do grupo (até 3 — ver
-/// `CreaturesRogueGame.maxCompanions`). Lê `companionCreatures`, não
+/// `CreaturesRogueGame.maxCompanions`). Lê `grupo`, não
 /// `companions`: a criatura recolhida no bolso continua no grupo (a passiva
 /// dela continua valendo, ver PIVOT_TREINADOR.md) e precisa aparecer aqui
 /// igual a uma fora do bolso — só marcada como "no bolso". Slot vazio (grupo
@@ -150,13 +150,13 @@ class _EquipeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final slots = <Widget>[];
-    for (int i = 0; i < game.companionCreatures.length; i++) {
-      final creature = game.companionCreatures[i];
-      if (creature == null) continue;
+    for (int i = 0; i < game.grupo.length; i++) {
+      final membro = game.grupo[i];
+      if (membro == null) continue;
       slots.add(
         _EquipeCard(
-          creature: creature,
-          pocketed: game.companionPocketed[i],
+          creature: membro.criatura,
+          pocketed: membro.noBanco,
           ativa: i == game.companionAtivoIndex,
         ),
       );

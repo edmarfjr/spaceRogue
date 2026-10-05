@@ -470,7 +470,7 @@ class Player extends PositionComponent
   // --- Evolução (ver PIVOT_EVOLUCAO) ---
   /// XP da criatura ATIVA nesta run — só ela ganha XP de inimigo derrotado
   /// (ver `ganharXp`). Cada slot do grupo guarda o seu próprio quando não é
-  /// a ativa (ver `CreaturesRogueGame.companionXp`), restaurado aqui na troca
+  /// a ativa (ver `CreaturesRogueGame.grupo`), restaurado aqui na troca
   /// (`trocarCriatura`). Não sobrevive entre runs.
   double xp = 0.0;
   bool evoluida = false;
@@ -547,7 +547,7 @@ class Player extends PositionComponent
 
     final jogo = game;
     if (jogo is CreaturesRogueGame) {
-      jogo.companionCreatures[jogo.companionAtivoIndex] = proxima;
+      jogo.grupo[jogo.companionAtivoIndex]?.criatura = proxima;
     }
 
     GameAudio.instance.play(Sfx.liberar);
@@ -1028,7 +1028,7 @@ class Player extends PositionComponent
 
   /// Passivas das criaturas do grupo (ver `Passive`) — vale enquanto a
   /// criatura estiver no grupo, ativa ou no banco. Por isso lê
-  /// `companionCreatures` (sobrevive ao banco), não só a ativa. Sempre
+  /// `grupo` (sobrevive ao banco), não só a ativa. Sempre
   /// recomputado no uso, nunca cacheado — elimina qualquer ponto de
   /// recálculo que precisaria ser lembrado em recrutamento/troca/início de
   /// run.
@@ -1037,9 +1037,9 @@ class Player extends PositionComponent
   List<Passive> get passivasAtivas {
     final jogo = game;
     if (jogo is! CreaturesRogueGame) return const [];
-    return jogo.companionCreatures
-        .whereType<CreatureData>()
-        .map((c) => c.passive)
+    return jogo.grupo
+        .whereType<MembroGrupo>()
+        .map((m) => m.criatura.passive)
         .toList(growable: false);
   }
   */

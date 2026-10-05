@@ -1283,7 +1283,7 @@ class EloDoGrupo extends ItemEfeito {
 
     // Conta os slots ocupados: `pocketarSlotAtivo` esvazia o slot de quem cai
     // (nada neste jogo revive), então "slot ocupado" já é "criatura viva".
-    final vivas = jogo.companionCreatures.where((c) => c != null).length;
+    final vivas = jogo.grupo.where((m) => m != null).length;
     if (vivas <= 1) return;
 
     Player.danoMultDerivado += (vivas - 1) * bonusPorCompanheira;

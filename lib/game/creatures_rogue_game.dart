@@ -126,42 +126,19 @@ class CreaturesRogueGame extends FlameGame
   static const int maxCompanions = 3;
 
   /// Qual slot é a criatura que o `Player` está sendo agora. Os outros dois
-  /// estão sempre no banco (`companionPocketed[i] == true`), vazios, ou
+  /// estão sempre no banco (`grupo[i]!.noBanco == true`), vazios, ou
   /// curando ainda abaixo do piso de disponibilidade.
   int companionAtivoIndex = 0;
 
-  /// A criatura de cada slot — sobrevive à troca (o `Player` muta pra virar
-  /// outra, não recria componente nenhum). É o que a Hud usa pra desenhar o
-  /// retrato de cada slot, e o que [_trocarParaSlot]/[pocketarSlotAtivo] usam
-  /// pra saber quem está esperando no banco.
-  final List<CreatureData?> companionCreatures = List<CreatureData?>.filled(
+  /// Os slots do grupo — `null` é slot vazio. Sobrevive à troca (o `Player`
+  /// muta pra virar outra criatura, não recria componente nenhum). É o que a
+  /// Hud usa pra desenhar o retrato de cada slot, e o que
+  /// [_trocarParaSlot]/[pocketarSlotAtivo] usam pra saber quem está esperando
+  /// no banco. Ver [MembroGrupo] pro que cada campo guarda.
+  final List<MembroGrupo?> grupo = List<MembroGrupo?>.filled(
     maxCompanions,
     null,
   );
-
-  /// `true` pra todo slot que não é a ativa agora — banco, na prática só o
-  /// slot ativo (`companionAtivoIndex`) fica com `false`. Nome mantido do
-  /// sistema de bolso original: um slot fica no banco por dois motivos, o
-  /// jogador trocou de ativa (ver [_trocarParaSlot]) ou a ativa bateu 0 de
-  /// vida em combate (ver [pocketarSlotAtivo]) — os dois usam o mesmo estado
-  /// e a mesma cura passiva, só a origem é diferente.
-  final List<bool> companionPocketed = List<bool>.filled(maxCompanions, false);
-
-  /// Vida salva de cada slot do banco — o `Player` só existe como UMA
-  /// criatura por vez, então a vida de quem está no banco não vive em
-  /// componente nenhum, só aqui. Restaurada (via `trocarCriatura`) quando o
-  /// slot volta a ficar ativo.
-  final List<double> companionSavedHealth = List<double>.filled(
-    maxCompanions,
-    0.0,
-  );
-
-  /// XP e evolução de cada slot (ver PIVOT_EVOLUCAO) — mesmo padrão de
-  /// `companionSavedHealth`: o `Player` só existe como UMA criatura por vez,
-  /// então o progresso de quem está no banco só vive aqui, restaurado (via
-  /// `trocarCriatura`) quando o slot volta a ficar ativo.
-  final List<double> companionXp = List<double>.filled(maxCompanions, 0.0);
-  final List<bool> companionEvoluida = List<bool>.filled(maxCompanions, false);
 
   /// Sem cura passiva no banco (pedido do usuário) — a vida de um slot só
   /// muda quando ele está ativo levando dano, ou quando `trocarCriatura`
@@ -174,9 +151,9 @@ class CreaturesRogueGame extends FlameGame
   /// pode entrar, ou já bateu 0 e só volta se algo restaurar a vida dela
   /// (nada faz isso hoje).
   bool slotDisponivel(int slot) {
-    final creature = companionCreatures[slot];
-    if (creature == null || !companionPocketed[slot]) return false;
-    return companionSavedHealth[slot] > 0;
+    final membro = grupo[slot];
+    if (membro == null || !membro.noBanco) return false;
+    return membro.vida > 0;
   }
 
   /// Próximo slot vivo da lista, na ordem 0/1/2 (pulando a ativa) — troca
@@ -194,8 +171,8 @@ class CreaturesRogueGame extends FlameGame
   /// recriar componente nenhum, `Player.trocarCriatura` muta a instância que
   /// já existe.
   void _trocarParaSlot(int slot) {
-    final creature = companionCreatures[slot];
-    if (creature == null) return;
+    final destino = grupo[slot];
+    if (destino == null) return;
     // Trocar no meio de um mergulho (ver `Player.submergir`) entregaria o
     // estado de enterrado — invulnerabilidade inclusa — pra uma criatura que
     // não tem a habilidade, e a explosão de emersão sairia com o dano
@@ -203,23 +180,22 @@ class CreaturesRogueGame extends FlameGame
     // qualquer jeito, e ela não pode acontecer aqui: enterrado não apanha.
     if (player.submerso) return;
 
-    final slotAntigo = companionAtivoIndex;
-    companionCreatures[slotAntigo] = player.creatureData;
-    companionSavedHealth[slotAntigo] = player.currentHealth;
-    companionPocketed[slotAntigo] = true;
-    companionXp[slotAntigo] = player.xp;
-    companionEvoluida[slotAntigo] = player.evoluida;
+    grupo[companionAtivoIndex] = MembroGrupo(
+      criatura: player.creatureData,
+      vida: player.currentHealth,
+      xp: player.xp,
+      evoluida: player.evoluida,
+    );
 
-    final vidaSalva = companionSavedHealth[slot];
-    companionPocketed[slot] = false;
+    destino.noBanco = false;
     companionAtivoIndex = slot;
 
     GameAudio.instance.play(Sfx.liberar);
     player.trocarCriatura(
-      creature,
-      vidaSalva: vidaSalva,
-      xpSalvo: companionXp[slot],
-      evoluidaSalva: companionEvoluida[slot],
+      destino.criatura,
+      vidaSalva: destino.vida,
+      xpSalvo: destino.xp,
+      evoluidaSalva: destino.evoluida,
     );
     dungeonWorld.add(CompanionReviveEffect(position: player.position.clone()));
   }
@@ -346,12 +322,7 @@ class CreaturesRogueGame extends FlameGame
   /// terminam aqui e a cena precisa ser diferente: quem morre é lançado no ar
   /// (ver `Player.iniciarMorte`), quem se aposenta continua sendo recolhido.
   void pocketarSlotAtivo({bool porMorte = true}) {
-    final slotAtual = companionAtivoIndex;
-    companionCreatures[slotAtual] = null;
-    companionSavedHealth[slotAtual] = 0.0;
-    companionPocketed[slotAtual] = false;
-    companionXp[slotAtual] = 0.0;
-    companionEvoluida[slotAtual] = false;
+    grupo[companionAtivoIndex] = null;
 
     final proximo = _primeiroSlotDisponivel();
 
@@ -379,15 +350,14 @@ class CreaturesRogueGame extends FlameGame
       return;
     }
 
-    final creature = companionCreatures[proximo]!;
-    final vidaSalva = companionSavedHealth[proximo];
-    companionPocketed[proximo] = false;
+    final membro = grupo[proximo]!;
+    membro.noBanco = false;
     companionAtivoIndex = proximo;
     player.trocarCriatura(
-      creature,
-      vidaSalva: vidaSalva,
-      xpSalvo: companionXp[proximo],
-      evoluidaSalva: companionEvoluida[proximo],
+      membro.criatura,
+      vidaSalva: membro.vida,
+      xpSalvo: membro.xp,
+      evoluidaSalva: membro.evoluida,
     );
     dungeonWorld.add(CompanionReviveEffect(position: player.position.clone()));
   }
@@ -398,13 +368,13 @@ class CreaturesRogueGame extends FlameGame
   /// `null` sem slot livre no grupo: a sala fica vazia, sem prompt nem fila
   /// de espera.
   WildCreatureNpc? _buildWildCreature(Vector2 position) {
-    final slotVazio = companionCreatures.indexWhere((c) => c == null);
+    final slotVazio = grupo.indexWhere((m) => m == null);
     if (slotVazio == -1) return null;
 
     final possiveis = CreatureRegistry.all
         .where(
           (c) =>
-              !companionCreatures.any((owned) => owned?.id == c.id) &&
+              !grupo.any((m) => m?.criatura.id == c.id) &&
               c.evoluir != null,
         )
         .toList();
@@ -419,15 +389,14 @@ class CreaturesRogueGame extends FlameGame
   /// retrato. Devolve `false` só em caso de corrida rara (grupo já se
   /// preencheu entre a sala nascer e o toque acontecer).
   bool recrutarCriaturaSelvagem(CreatureData creature) {
-    final slotVazio = companionCreatures.indexWhere((c) => c == null);
+    final slotVazio = grupo.indexWhere((m) => m == null);
     if (slotVazio == -1) return false;
 
-    companionCreatures[slotVazio] = creature;
+    grupo[slotVazio] = MembroGrupo(
+      criatura: creature,
+      vida: creature.stats.maxHp,
+    );
     _registrarCriaturaUsada(creature);
-    companionSavedHealth[slotVazio] = creature.stats.maxHp;
-    companionPocketed[slotVazio] = true;
-    companionXp[slotVazio] = 0.0;
-    companionEvoluida[slotVazio] = false;
     return true;
   }
 
@@ -489,7 +458,7 @@ class CreaturesRogueGame extends FlameGame
   }
 
   /// Ids de toda criatura que passou pelo grupo nesta run, na ordem em que
-  /// entraram. Nao e o mesmo que [companionCreatures]: aquele perde a criatura
+  /// entraram. Nao e o mesmo que [grupo]: aquele perde a criatura
   /// que morreu ou se aposentou, e a tela de vitoria quer o elenco inteiro.
   final List<String> criaturasUsadas = [];
 
@@ -719,13 +688,7 @@ class CreaturesRogueGame extends FlameGame
     // em sequência com o motor pausado, e o `Player` da run anterior
     // sobrevivia — o joystick é uma instância única compartilhada por todo
     // `Player`, então dois montados ao mesmo tempo se moviam juntos.
-    for (int i = 0; i < maxCompanions; i++) {
-      companionCreatures[i] = null;
-      companionPocketed[i] = false;
-      companionSavedHealth[i] = 0.0;
-      companionXp[i] = 0.0;
-      companionEvoluida[i] = false;
-    }
+    grupo.fillRange(0, maxCompanions, null);
     companionAtivoIndex = 0;
     tempoDeRun = 0.0;
     abatesDaRun = 0;
@@ -764,8 +727,9 @@ class CreaturesRogueGame extends FlameGame
     );
     dungeonWorld.add(player);
 
-    companionCreatures[0] = creature;
-    companionPocketed[0] = false;
+    // Vida 0 no slot ativo de propósito: a vida de quem está em campo mora no
+    // `player`, e o slot só recebe a dele quando ela for pro banco.
+    grupo[0] = MembroGrupo(criatura: creature, noBanco: false, vida: 0.0);
     _registrarCriaturaUsada(creature);
 
     if (save != null) {
@@ -832,7 +796,7 @@ class CreaturesRogueGame extends FlameGame
     final hud = Hud(
       game: this,
       player: player,
-      companionCreatureAt: (slot) => companionCreatures[slot],
+      companionCreatureAt: (slot) => grupo[slot]?.criatura,
       companionPocketFractionAt: (slot) => companionPocketFraction(slot),
       trocaFraction: () => trocaCooldownFraction,
       isCompanionAtivo: (slot) => slot == companionAtivoIndex,
@@ -932,23 +896,28 @@ class CreaturesRogueGame extends FlameGame
 
     companionAtivoIndex = dados['ativo'] as int;
 
-    final grupo = (dados['grupo'] as List).cast<Map<String, dynamic>>();
+    final grupoSalvo = (dados['grupo'] as List).cast<Map<String, dynamic>>();
     for (int i = 0; i < maxCompanions; i++) {
-      final slot = grupo[i];
+      final slot = grupoSalvo[i];
       final id = slot['id'] as String?;
       final evoluida = slot['evoluida'] as bool;
-      companionCreatures[i] = id == null ? null : _formaSalva(id, evoluida);
-      companionEvoluida[i] = evoluida;
-      companionPocketed[i] = slot['pocketed'] as bool;
-      companionSavedHealth[i] = (slot['vida'] as num).toDouble();
-      companionXp[i] = (slot['xp'] as num).toDouble();
+      grupo[i] = id == null
+          ? null
+          : MembroGrupo(
+              criatura: _formaSalva(id, evoluida),
+              noBanco: slot['pocketed'] as bool,
+              vida: (slot['vida'] as num).toDouble(),
+              xp: (slot['xp'] as num).toDouble(),
+              evoluida: evoluida,
+            );
     }
     // O slot ativo nunca fica marcado como "no banco" — mesma invariante de
     // `startRun`/`_trocarParaSlot`.
-    companionPocketed[companionAtivoIndex] = false;
+    final ativo = grupo[companionAtivoIndex];
+    ativo?.noBanco = false;
 
-    player.xp = companionXp[companionAtivoIndex];
-    player.evoluida = companionEvoluida[companionAtivoIndex];
+    player.xp = ativo?.xp ?? 0.0;
+    player.evoluida = ativo?.evoluida ?? false;
 
     final j = dados['jogador'] as Map<String, dynamic>;
     player.maxHealth = (j['maxHealth'] as num).toDouble();
@@ -1044,14 +1013,19 @@ class CreaturesRogueGame extends FlameGame
     // O slot ativo só é sincronizado de volta pro array em
     // `_trocarParaSlot` (ver comentário lá) — salvar no meio de uma
     // criatura ativa (o caso comum) pegaria dado velho sem isto.
-    companionCreatures[companionAtivoIndex] = player.creatureData;
-    companionEvoluida[companionAtivoIndex] = player.evoluida;
-    companionXp[companionAtivoIndex] = player.xp;
+    final ativo = grupo[companionAtivoIndex] ??= MembroGrupo(
+      criatura: player.creatureData,
+      noBanco: false,
+      vida: 0.0,
+    );
+    ativo
+      ..criatura = player.creatureData
+      ..evoluida = player.evoluida
+      ..xp = player.xp;
 
-    String? baseId(int i) {
-      final c = companionCreatures[i];
-      if (c == null) return null;
-      return companionEvoluida[i] ? CreatureRegistry.baseDe(c).id : c.id;
+    String? baseId(MembroGrupo? m) {
+      if (m == null) return null;
+      return m.evoluida ? CreatureRegistry.baseDe(m.criatura).id : m.criatura.id;
     }
 
     return {
@@ -1065,13 +1039,15 @@ class CreaturesRogueGame extends FlameGame
       'bossId': runBoss?.creatureId,
       'ativo': companionAtivoIndex,
       'grupo': [
-        for (int i = 0; i < maxCompanions; i++)
+        // Chaves e valores de slot vazio iguais aos de antes de `MembroGrupo`
+        // existir, pra save antigo e novo serem o mesmo formato.
+        for (final m in grupo)
           {
-            'id': baseId(i),
-            'evoluida': companionEvoluida[i],
-            'pocketed': companionPocketed[i],
-            'vida': companionSavedHealth[i],
-            'xp': companionXp[i],
+            'id': baseId(m),
+            'evoluida': m?.evoluida ?? false,
+            'pocketed': m?.noBanco ?? false,
+            'vida': m?.vida ?? 0.0,
+            'xp': m?.xp ?? 0.0,
           },
       ],
       'jogador': {
@@ -2081,10 +2057,11 @@ class CreaturesRogueGame extends FlameGame
   /// a criatura entra/sai do banco, não com o tempo. Fora do banco, 0 — nada
   /// pra desenhar.
   double companionPocketFraction(int slot) {
-    if (!companionPocketed[slot]) return 0.0;
-    final creature = companionCreatures[slot];
-    if (creature == null || creature.stats.maxHp <= 0) return 0.0;
-    return (1 - companionSavedHealth[slot] / creature.stats.maxHp).clamp(
+    final membro = grupo[slot];
+    if (membro == null || !membro.noBanco) return 0.0;
+    final maxHp = membro.criatura.stats.maxHp;
+    if (maxHp <= 0) return 0.0;
+    return (1 - membro.vida / maxHp).clamp(
       0.0,
       1.0,
     );
@@ -2109,7 +2086,7 @@ class CreaturesRogueGame extends FlameGame
     // 1. LIMPEZA TOTAL (O "faxineiro")
     // Remove salas velhas, tiros perdidos, itens no chão... tudo, MENOS o
     // jogador (que precisa atravessar de andar) — o grupo inteiro é só dado
-    // (`companionCreatures`), não componente montado, então não há mais nada
+    // (`grupo`), não componente montado, então não há mais nada
     // além do `Player` pra preservar aqui.
     GameAudio.instance.play(Sfx.stairs);
     for (var child in dungeonWorld.children) {
@@ -2445,4 +2422,37 @@ class CreaturesRogueGame extends FlameGame
       );
     }
   }
+}
+
+/// Um slot ocupado do grupo. Junta o que antes eram cinco listas paralelas
+/// indexadas pelo mesmo slot (criatura, banco, vida, XP, evolução), em que
+/// limpar ou preencher um slot exigia lembrar de mexer nas cinco — agora slot
+/// vazio é só `null`.
+///
+/// [vida], [xp] e [evoluida] só valem pra quem está NO BANCO: a criatura em
+/// campo guarda esses três no `Player`, e o slot dela recebe os valores
+/// quando ela volta pro banco (`_trocarParaSlot`) ou no save.
+class MembroGrupo {
+  CreatureData criatura;
+
+  /// `true` pra todo slot que não é a ativa agora. Um slot vai pro banco por
+  /// dois motivos: o jogador trocou de ativa (ver `_trocarParaSlot`) ou a
+  /// ativa bateu 0 de vida (ver `pocketarSlotAtivo`). Gravado como
+  /// `pocketed` no save, nome do sistema de bolso original.
+  bool noBanco;
+
+  /// Vida salva — sem cura passiva no banco, fica congelada na vida com que
+  /// a criatura saiu até ela voltar a campo.
+  double vida;
+
+  double xp;
+  bool evoluida;
+
+  MembroGrupo({
+    required this.criatura,
+    required this.vida,
+    this.noBanco = true,
+    this.xp = 0.0,
+    this.evoluida = false,
+  });
 }
