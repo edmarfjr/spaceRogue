@@ -50,68 +50,6 @@ class BossOption {
 /// criatura sem boss ficaria sem via de desbloqueio.
 class BossRegistry {
   static final List<List<BossOption>> all = [
-    /*[
-      BossOption(
-        creatureId: 'bomba_fogo',
-        builder: (pos, plr) =>
-            BombaFogoBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'slime_planta',
-        builder: (pos, plr) =>
-            SlimePlantaBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'ourico_eletrico',
-        builder: (pos, plr) =>
-            OuricoEletricoBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'caranguejo_fogo',
-        builder: (pos, plr) =>
-            CaranguejoErmitaoBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'pinguim_agua',
-        builder: (pos, plr) =>
-            PinguimAguaBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'toco_planta',
-        builder: (pos, plr) =>
-            TocoPlantaBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'tubarao_agua',
-        builder: (pos, plr) =>
-            TubaraoAguaBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'leao_eletrico',
-        builder: (pos, plr) =>
-            LeaoEletricoBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'cao_neutro',
-        builder: (pos, plr) =>
-            CaoNeutroBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'gato_neutro',
-        builder: (pos, plr) =>
-            GatoNeutroBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'ave_neutro',
-        builder: (pos, plr) =>
-            AveNeutroBossEnemy(position: pos, playerTarget: plr),
-      ),
-      BossOption(
-        creatureId: 'peixe_neutro',
-        builder: (pos, plr) =>
-            PeixeNeutroBossEnemy(position: pos, playerTarget: plr),
-      ),
-    ],*/
     [
       BossOption(
         creatureId: 'tartaruga_planta',
@@ -190,8 +128,8 @@ class BossRegistry {
     // desbloqueio.
     //
     // Acrescentar esta lista ESTENDE o jogo: `ehUltimaDungeon` compara o andar
-    // atual com `BossRegistry.all.length`, entao a vitoria agora exige quatro
-    // dungeons em vez de tres.
+    // atual com `BossRegistry.all.length`, entao cada pool nova aumenta o
+    // numero de dungeons ate a vitoria.
     [
       BossOption(
         creatureId: 'toco_planta',
@@ -212,6 +150,35 @@ class BossRegistry {
         creatureId: 'caranguejo_fogo',
         builder: (pos, plr) =>
             CaranguejoErmitaoBossEnemy(position: pos, playerTarget: plr),
+      ),
+    ],
+    // Dungeon 5, a FINAL: os quatro neutros, que sao a origem do elenco. Nao
+    // segue a regra de um boss por elemento das pools anteriores porque os
+    // neutros nao tem elemento — e eles so aparecem aqui, inclusive como
+    // inimigos comuns (ver `EnemySpawner`).
+    //
+    // Sendo os mais fracos do elenco, a dificuldade da dungeon vem da chance
+    // de campeao elevada em `RoomComponent`, nao das criaturas.
+    [
+      BossOption(
+        creatureId: 'cao_neutro',
+        builder: (pos, plr) =>
+            CaoNeutroBossEnemy(position: pos, playerTarget: plr),
+      ),
+      BossOption(
+        creatureId: 'gato_neutro',
+        builder: (pos, plr) =>
+            GatoNeutroBossEnemy(position: pos, playerTarget: plr),
+      ),
+      BossOption(
+        creatureId: 'ave_neutro',
+        builder: (pos, plr) =>
+            AveNeutroBossEnemy(position: pos, playerTarget: plr),
+      ),
+      BossOption(
+        creatureId: 'peixe_neutro',
+        builder: (pos, plr) =>
+            PeixeNeutroBossEnemy(position: pos, playerTarget: plr),
       ),
     ],
   ];

@@ -14,6 +14,7 @@ import 'package:creatures_rogue/game/components/core/dungeon_theme.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/enemies/dummy_enemy.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart';
+import 'package:creatures_rogue/game/components/enemies/boss_registry.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy_spawner.dart';
 import 'package:creatures_rogue/game/components/items/coin_pickup.dart';
 import 'package:creatures_rogue/game/components/items/consumable_item.dart';
@@ -855,7 +856,13 @@ class RoomComponent extends PositionComponent with HasGameRef {
 
   /// Chance de uma sala de combate ter UM inimigo campeão (ver
   /// `Enemy.promoverACampeao`).
-  double chanceCampeaoPorSala = 0.10;
+  ///
+  /// Na dungeon final a chance quadruplica: ela é dos neutros, o elenco mais
+  /// fraco, e sem compensação o clímax da run seria a dungeon mais fácil.
+  /// Lido de `BossRegistry.all.length` em vez de um 5 fixo pra continuar
+  /// valendo se outra dungeon entrar depois dela.
+  double get chanceCampeaoPorSala =>
+      dungeon >= BossRegistry.all.length ? 0.40 : 0.10;
 
   @override
   void update(double dt) {
