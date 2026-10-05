@@ -48,7 +48,7 @@ class ResumoRun extends StatelessWidget {
             spacing: 10,
             runSpacing: 6,
             children: [
-              for (final id in game.criaturasUsadas) _criatura(context, id),
+              for (final id in game.criaturasUsadas) _criatura(id),
             ],
           ),
           const SizedBox(height: 12),
@@ -103,30 +103,19 @@ class ResumoRun extends StatelessWidget {
     ];
   }
 
-  Widget _criatura(BuildContext context, String id) {
+  Widget _criatura(String id) {
     final criatura = CreatureRegistry.all.firstWhere(
       (c) => c.id == id,
       // Id salvo de uma versão em que a criatura existia e hoje não mais.
       orElse: () => CreatureRegistry.all.first,
     );
-    return SizedBox(
-      width: 64,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SpriteUi(
-            caminho: criatura.spritePath,
-            tamanho: _ladoCriatura,
-            cor1: criatura.corClara,
-            cor2: criatura.corEscura,
-          ),
-          Text(
-            creatureName(context, id),
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: UiTheme.txtCor, fontSize: 10),
-          ),
-        ],
-      ),
+    // Só o sprite: o nome quebrava no meio ("Torchmi/n") na largura de um
+    // ícone, e o elenco já se reconhece pelo desenho.
+    return SpriteUi(
+      caminho: criatura.spritePath,
+      tamanho: _ladoCriatura,
+      cor1: criatura.corClara,
+      cor2: criatura.corEscura,
     );
   }
 

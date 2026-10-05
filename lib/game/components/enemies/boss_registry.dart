@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flame/components.dart';
 import 'package:flutter/widgets.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/components/player/player.dart';
 import 'package:creatures_rogue/l10n/creature_i18n.dart';
 import 'creatures/ave_eletrica_boss_enemy.dart';
@@ -188,11 +189,20 @@ class BossRegistry {
   /// volta pra lista 0, então a run nunca fica sem boss só por ter passado
   /// da última dungeon definida.
   ///
-  /// Pode sortear um boss cuja criatura o jogador já desbloqueou — repetir é
-  /// esperado (ver `BossRevealOverlay`, que mostra a criatura colorida
-  /// quando já é dele, e toda preta quando ainda não).
+  /// Prefere boss cuja criatura o jogador AINDA NÃO desbloqueou: o boss é a
+  /// via de desbloqueio, e sortear a criatura que ele já tem (a da intro, no
+  /// caso mais comum) desperdiça a dungeon. Com a lista inteira já
+  /// desbloqueada, volta a sortear entre todos — repetir aí é esperado (ver
+  /// `BossRevealOverlay`, que mostra a criatura colorida quando já é dele).
+  ///
+  /// No GOD MODE todas contam como desbloqueadas (ver
+  /// `CreatureProgress.isUnlocked`), então o sorteio cai na lista inteira.
   static BossOption sortear(Random random, int dungeon) {
     final lista = all[(dungeon - 1) % all.length];
-    return lista[random.nextInt(lista.length)];
+    final ineditos = lista
+        .where((b) => !CreatureProgress.instance.isUnlocked(b.creatureId))
+        .toList();
+    final candidatos = ineditos.isEmpty ? lista : ineditos;
+    return candidatos[random.nextInt(candidatos.length)];
   }
 }

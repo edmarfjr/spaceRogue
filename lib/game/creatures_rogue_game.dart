@@ -45,6 +45,7 @@ import 'package:creatures_rogue/game/components/UI/level_transition_overlay.dart
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
 import 'package:creatures_rogue/game/components/creatures/wild_creature_npc.dart';
 import 'package:creatures_rogue/game/components/items/consumable_item.dart';
 import 'package:creatures_rogue/game/components/map/dungeon_generator.dart';
@@ -375,7 +376,10 @@ class CreaturesRogueGame extends FlameGame
         .where(
           (c) =>
               !grupo.any((m) => m?.criatura.id == c.id) &&
-              c.evoluir != null,
+              c.evoluir != null &&
+              // Neutros só existem na dungeon final (ver `EnemySpawner`), e
+              // recrutá-los na escada furaria essa regra.
+              c.tipo != CreatureType.neutro,
         )
         .toList();
     if (possiveis.isEmpty) return null;
