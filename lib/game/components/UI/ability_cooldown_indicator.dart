@@ -2,7 +2,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/UI/ability_icons.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
-import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 
 /// Indicador de cooldown de uma habilidade na HUD: o ícone da habilidade com um
 /// quadrado cinza por cima que esvazia de cima pra baixo.
@@ -26,7 +26,7 @@ class AbilityCooldownIndicator extends PositionComponent {
   /// resolução fixa escala a HUD inteira.
   final Paint _spritePaint = Paint()..filterQuality = FilterQuality.none;
 
-  final Paint _cooldownPaint = Paint()..color = Palette.cinzaEsc.withAlpha(220);
+  final Paint _cooldownPaint = Paint()..color = UiTheme.hudRecargaCor.withAlpha(220);
 
   AbilityCooldownIndicator({
     required this.tipo,

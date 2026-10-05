@@ -2,6 +2,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 
 /// Contador de `Player.cargasDeSala` na Hud: uma fileirinha de quadradinhos,
 /// um por carga possível, acesos até a quantidade que o jogador tem.
@@ -47,7 +48,7 @@ class CargaSalaIndicator extends PositionComponent {
   static const double _espaco = 1.0;
 
   final Paint _cheio = Paint()..color = Palette.laranja;
-  final Paint _vazio = Paint()..color = Palette.cinzaEsc.withAlpha(160);
+  final Paint _vazio = Paint()..color = UiTheme.hudSlotFundoCor.withAlpha(160);
 
   @override
   void render(Canvas canvas) {

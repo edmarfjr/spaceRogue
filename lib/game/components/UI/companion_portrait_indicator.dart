@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 
@@ -51,11 +52,11 @@ class CompanionPortraitIndicator extends PositionComponent /* with TapCallbacks 
   bool _carregandoSprite = false;
 
   final Paint _spritePaint = Paint()..filterQuality = FilterQuality.none;
-  final Paint _cooldownPaint = Paint()..color = Palette.cinzaEsc.withAlpha(220);
-  final Paint _fundoVazio = Paint()..color = Palette.cinzaEsc.withAlpha(80);
-  final Paint _fundo = Paint()..color = Palette.branco;
+  final Paint _cooldownPaint = Paint()..color = UiTheme.hudRecargaCor.withAlpha(220);
+  final Paint _fundoVazio = Paint()..color = UiTheme.hudSlotFundoCor.withAlpha(80);
+  final Paint _fundo = Paint()..color = UiTheme.hudFundoCor;
   final Paint _bordaAtiva = Paint()
-    ..color = Palette.preto
+    ..color = UiTheme.hudMolduraCor
     ..style = PaintingStyle.stroke
     ..strokeWidth = 1;
   final Paint _bordaInativa = Paint()

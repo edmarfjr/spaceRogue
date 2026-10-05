@@ -1,6 +1,7 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/components/enemies/enemy.dart';
 
 /// Barra de vida do boss, desenhada na parte de baixo da viewport da câmera
@@ -18,7 +19,7 @@ class BossHealthBar extends PositionComponent {
 
   late final TextPaint _textPaint;
 
-  final Paint _moldura = Paint()..color = Palette.preto;
+  final Paint _moldura = Paint()..color = UiTheme.hudMolduraCor;
   final Paint _fundo = Paint()..color = Palette.cinzaEsc;
   final Paint _preenchimento = Paint()..color = Palette.vermelho;
 
@@ -35,17 +36,10 @@ class BossHealthBar extends PositionComponent {
     _textPaint = TextPaint(
       style: const TextStyle(
         fontFamily: 'pixelFont',
-        color: Palette.branco,
+        color: UiTheme.hudTxtCor,
         fontSize: 8,
         fontWeight: FontWeight.bold,
-        shadows: [Shadow(color: Palette.preto, offset: Offset(1, 1)),
-          Shadow(color: Palette.preto, offset: Offset(-1, -1)),
-          Shadow(color: Palette.preto, offset: Offset(1, -1)),
-          Shadow(color: Palette.preto, offset: Offset(-1, 1)),
-          Shadow(color: Palette.preto, offset: Offset(0, 1)),
-          Shadow(color: Palette.preto, offset: Offset(0, -1)),
-          Shadow(color: Palette.preto, offset: Offset(1, 0)),
-          Shadow(color: Palette.preto, offset: Offset(-1, 0)),],
+        shadows: UiTheme.hudTxtContorno,
       ),
     );
   }

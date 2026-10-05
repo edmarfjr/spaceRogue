@@ -10,6 +10,7 @@ import 'package:creatures_rogue/game/components/UI/ability_cooldown_indicator.da
 import 'package:creatures_rogue/game/components/UI/companion_portrait_indicator.dart';
 import 'package:creatures_rogue/game/components/UI/cooldown_ring_indicator.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import '../player/player.dart';
 
@@ -84,8 +85,8 @@ class Hud extends PositionComponent with HasGameRef {
   /// Barra de evolução (ver PIVOT_EVOLUCAO) — linha preta de fundo (o
   /// "comprimento alvo") com um preenchimento verde por cima que cresce
   /// conforme `player.xp`. Fica entre os corações e o ícone de moeda.
-  final Paint _evoTrackPaint = Paint()..color = Palette.preto;
-  final Paint _evoFundoPaint = Paint()..color = Palette.branco;
+  final Paint _evoTrackPaint = Paint()..color = UiTheme.hudMolduraCor;
+  final Paint _evoFundoPaint = Paint()..color = UiTheme.hudFundoCor;
   final Paint _evoFillPaint = Paint()..color = Palette.jade;
   static const double _evoBarWidth = 32;
   // Linha 0 (0-16px) é a faixa reservada da sala pra HUD (ver
@@ -98,8 +99,8 @@ class Hud extends PositionComponent with HasGameRef {
   /// Barra de energia da habilidade 1 (substituiu o cooldown fixo — ver
   /// `Player.energia`/`custoEnergia`). Mesmo estilo da barra de evolução,
   /// logo abaixo dela, mas sempre visível (toda criatura usa energia agora).
-  final Paint _energiaTrackPaint = Paint()..color = Palette.preto;
-  final Paint _energiaFundoPaint = Paint()..color = Palette.branco;
+  final Paint _energiaTrackPaint = Paint()..color = UiTheme.hudMolduraCor;
+  final Paint _energiaFundoPaint = Paint()..color = UiTheme.hudFundoCor;
   final Paint _energiaFillPaint = Paint()..color = Palette.laranja;
   static const double _energiaBarWidth = 32;
   static const double _energiaBarY = 12;
@@ -227,19 +228,10 @@ class Hud extends PositionComponent with HasGameRef {
     textPaint = TextPaint(
       style: const TextStyle(
         fontFamily: 'pixelFont',
-        color: Palette.branco,
+        color: UiTheme.hudTxtCor,
         fontSize: 12,
         fontWeight: FontWeight.bold,
-        shadows: [
-          Shadow(color: Palette.preto, offset: Offset(1, 1)),
-          Shadow(color: Palette.preto, offset: Offset(-1, -1)),
-          Shadow(color: Palette.preto, offset: Offset(1, -1)),
-          Shadow(color: Palette.preto, offset: Offset(-1, 1)),
-          Shadow(color: Palette.preto, offset: Offset(0, 1)),
-          Shadow(color: Palette.preto, offset: Offset(0, -1)),
-          Shadow(color: Palette.preto, offset: Offset(1, 0)),
-          Shadow(color: Palette.preto, offset: Offset(-1, 0)),
-        ],
+        shadows: UiTheme.hudTxtContorno,
       ),
     );
   }

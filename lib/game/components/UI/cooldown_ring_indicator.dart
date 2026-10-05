@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/UI/ability_icons.dart';
-import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/components/creatures/ability.dart';
 
 /// Anelzinho de cooldown desenhado no MUNDO, em cima do sprite da criatura
@@ -14,7 +14,7 @@ class CooldownRingIndicator extends PositionComponent {
   final double Function() cooldownFraction;
 
   final Paint _spritePaint = Paint()..filterQuality = FilterQuality.none;
-  final Paint _restante = Paint()..color = Palette.cinzaEsc.withAlpha(230);
+  final Paint _restante = Paint()..color = UiTheme.hudRecargaCor.withAlpha(230);
 
   CooldownRingIndicator({
     required this.tipo,

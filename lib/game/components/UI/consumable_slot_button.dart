@@ -3,6 +3,7 @@ import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/components/items/consumable_item.dart';
 import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 
@@ -42,8 +43,8 @@ class ConsumableSlotButton extends PositionComponent
   final Map<ConsumableType, Sprite> _sprites = {};
 
   final Paint _spritePaint = Paint()..filterQuality = FilterQuality.none;
-  final Paint _fundoVazio = Paint()..color = Palette.cinzaEsc.withAlpha(120);
-  final Paint _fundoCheio = Paint()..color = Palette.cinzaEsc.withAlpha(200);
+  final Paint _fundoVazio = Paint()..color = UiTheme.hudSlotFundoCor.withAlpha(120);
+  final Paint _fundoCheio = Paint()..color = UiTheme.hudSlotFundoCor.withAlpha(200);
   final Paint _borda = Paint()
     ..color = Palette.branco.withAlpha(160)
     ..style = PaintingStyle.stroke

@@ -87,6 +87,52 @@ class UiTheme {
   /// que são escuros por dentro — aqueles pedem um token próprio se um dia
   /// o tema mudar.
   static const Color txtCor = Palette.preto;
+
+  // ------------------------------------------------------------------ HUD
+  // Cores do HUD DENTRO do jogo (desenhado pelo Flame no canvas), separadas
+  // das de menu acima de propósito: o HUD passa por cima do mundo, e o texto
+  // dele é branco com contorno — o oposto do [txtCor]. Ligar os dois faria
+  // escurecer o menu apagar o HUD.
+  //
+  // Só papéis que se repetem entre componentes viraram token. Cor que DIZ
+  // algo (vermelho da vida do boss, laranja da energia, cores do minimapa)
+  // continua em `Palette`, porque trocá-la muda o significado, não o tema.
+
+  /// Texto do HUD: contador de moedas/bombas e nome do boss.
+  static const Color hudTxtCor = Palette.branco;
+
+  /// Contorno do [hudTxtCor], que precisa ler em cima de qualquer chão.
+  static const Color hudTxtContornoCor = Palette.preto;
+
+  /// Contorno de 1px nas oito direções, pra `TextStyle.shadows`. Era copiado
+  /// igual no HUD e na barra do boss.
+  static const List<Shadow> hudTxtContorno = [
+    Shadow(color: hudTxtContornoCor, offset: Offset(1, 1)),
+    Shadow(color: hudTxtContornoCor, offset: Offset(-1, -1)),
+    Shadow(color: hudTxtContornoCor, offset: Offset(1, -1)),
+    Shadow(color: hudTxtContornoCor, offset: Offset(-1, 1)),
+    Shadow(color: hudTxtContornoCor, offset: Offset(0, 1)),
+    Shadow(color: hudTxtContornoCor, offset: Offset(0, -1)),
+    Shadow(color: hudTxtContornoCor, offset: Offset(1, 0)),
+    Shadow(color: hudTxtContornoCor, offset: Offset(-1, 0)),
+  ];
+
+  /// Moldura das barras (evolução, energia, vida do boss) e borda do retrato
+  /// da criatura ativa.
+  static const Color hudMolduraCor = Palette.preto;
+
+  /// Fundo das barras de evolução e energia e do retrato da criatura.
+  /// A barra do boss NÃO usa: o fundo dela é cinza escuro, pra o vermelho da
+  /// vida destacar.
+  static const Color hudFundoCor = Palette.branco;
+
+  /// Véu de recarga por cima de botões, retratos e anéis. Cada componente
+  /// aplica a própria opacidade.
+  static const Color hudRecargaCor = Palette.cinzaEsc;
+
+  /// Fundo de slot vazio ou apagado (retrato sem criatura, consumível,
+  /// carga de sala gasta). Também com opacidade por componente.
+  static const Color hudSlotFundoCor = Palette.cinzaEsc;
   
 }
 
