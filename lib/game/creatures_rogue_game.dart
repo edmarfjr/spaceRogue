@@ -464,11 +464,26 @@ class CreaturesRogueGame extends FlameGame
 
   /// MM:SS, pro menu de pausa e pra tela de vitoria. Minutos nao estouram em
   /// 60: uma run de 75 minutos mostra 75:00, nao 15:00.
-  String get tempoDeRunFormatado {
-    final total = tempoDeRun.floor();
+  String get tempoDeRunFormatado => formatarTempo(tempoDeRun);
+
+  /// `mm:ss` — também usado pelo menu pra mostrar o tempo da run salva.
+  static String formatarTempo(double segundos) {
+    final total = segundos.floor();
     final mm = (total ~/ 60).toString().padLeft(2, '0');
     final ss = (total % 60).toString().padLeft(2, '0');
     return '$mm:$ss';
+  }
+
+  /// Criatura ativa da run salva, na forma em que foi salva — pro menu
+  /// mostrar quem vai voltar ao CONTINUAR. Nula sem save.
+  CreatureData? criaturaDaRunSalva() {
+    final dados = RunSave.instance.dados;
+    if (dados == null) return null;
+    final grupo = (dados['grupo'] as List).cast<Map<String, dynamic>>();
+    final slot = grupo[dados['ativo'] as int];
+    final id = slot['id'] as String?;
+    if (id == null) return null;
+    return _formaSalva(id, slot['evoluida'] as bool);
   }
 
   /// Ids de toda criatura que passou pelo grupo nesta run, na ordem em que
@@ -858,6 +873,15 @@ class CreaturesRogueGame extends FlameGame
   /// Chamado pelo botão "CONTINUAR" do menu principal. Reconstrói a run a
   /// partir do save (ver `RunSave`) e entra direto no jogo, sem passar pelo
   /// seletor de criaturas.
+  /// Fecha a tela de título e abre o menu. O toque (ou tecla) que chega aqui
+  /// é o primeiro gesto do jogador — no navegador, é só depois dele que o
+  /// áudio é liberado, e o menu pede a música ao abrir.
+  void sairDoTitulo() {
+    if (!overlays.isActive('Title')) return;
+    overlays.remove('Title');
+    overlays.add('MainMenu');
+  }
+
   void continuarSalva() {
     final dados = RunSave.instance.dados;
     if (dados == null) return; // botão não deveria nem aparecer sem save
@@ -1171,13 +1195,20 @@ class CreaturesRogueGame extends FlameGame
     Set<LogicalKeyboardKey> keysPressed,
   ) {
     // <-- MUDOU AQUI
+    // Tela de título: qualquer tecla avança. Tratado aqui, no teclado do
+    // jogo, e não com um `Focus` no overlay — tirar o foco do `GameWidget`
+    // deixaria os controles da run sem teclado depois.
+    if (event is KeyDownEvent && overlays.isActive('Title')) {
+      sairDoTitulo();
+      return KeyEventResult.handled;
+    }
     if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.f1) {
       _spawnTestBoss();
       return KeyEventResult.handled;
     }
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.escape) {
-      if (!overlays.isActive('MainMenu')) {
+      if (!overlays.isActive('MainMenu') && !overlays.isActive('Title')) {
         if (overlays.isActive('PauseMenu')) {
           overlays.remove('PauseMenu');
           resumeEngine();
@@ -2234,6 +2265,8 @@ class CreaturesRogueGame extends FlameGame
         ? 0
         : _xpDaRun(vitoria: vitoria);
     unawaited(CreatureProgress.instance.ganharXpProgressao(xpProgressaoGanho));
+    // Tempo jogado conta mesmo em god mode: é tempo de jogo, não conquista.
+    unawaited(CreatureProgress.instance.somarTempoJogado(tempoDeRun));
   }
 
   void _handleVitoria() {

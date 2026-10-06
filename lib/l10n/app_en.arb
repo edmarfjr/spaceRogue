@@ -468,7 +468,7 @@
   "creatureName_sereia_agua": "Calamarin",
   "creatureDesc_sereia_agua": "Strikes up close with its tentacle and vanishes in an ink cloud when pressed.",
   "abilityName_Tentaculada": "Tentacle Swing",
-  "abilityDesc_Tentaculada": "A tentacle sweeps an arc in front.",
+  "abilityDesc_Tentaculada": "A tentacle sweeps an arc in front, reflecting projectiles.",
   "abilityName_RedemoinhoDeTentaculos": "Tentacle Whirl",
   "abilityDesc_RedemoinhoDeTentaculos": "The tentacle spins around, hitting everyone nearby.",
   "abilityName_EsguichoDeTinta": "Ink Squirt",
@@ -476,5 +476,13 @@
   "abilityName_CortinaDeTinta": "Ink Curtain",
   "abilityDesc_CortinaDeTinta": "A dodge that leaves an ink cloud that blinds and blocks projectiles.",
   "passiva_camuflagem": "CAMOUFLAGE",
-  "passiva_camuflagemDesc": "STAND STILL FOR A MOMENT AND YOUR NEXT HIT IS CRITICAL"
+  "passiva_camuflagemDesc": "STAND STILL FOR A MOMENT AND YOUR NEXT HIT IS CRITICAL",
+  "titulo_toque": "TAP TO START",
+  "titulo_tecla": "PRESS ANY KEY",
+  "menu_progresso": "PROGRESS",
+  "menu_criaturas": "CREATURES",
+  "menu_itens": "ITEMS",
+  "menu_vitorias": "WINS",
+  "menu_tempoTotal": "TOTAL TIME",
+  "menu_runSalva": "SAVED RUN"
 }

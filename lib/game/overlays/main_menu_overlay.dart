@@ -7,10 +7,15 @@ import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:creatures_rogue/game/run_save.dart';
+import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
+import 'package:creatures_rogue/game/components/items/item_efeito.dart';
+import 'package:creatures_rogue/game/components/items/progressao_itens.dart';
+import 'package:creatures_rogue/game/overlays/selecao_widgets.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 
-/// Menu inicial: as portas de entrada do jogo. O seletor de controle que
-/// morava aqui foi pra [SettingsOverlay], que também persiste a escolha.
+/// Menu principal: os botões de entrada do jogo e o quadro com o estado do
+/// save. Logo e nome moram na tela de título ([TitleOverlay]), que só a
+/// abertura do app mostra.
 class MainMenuOverlay extends StatelessWidget {
   final CreaturesRogueGame game;
   const MainMenuOverlay({super.key, required this.game});
@@ -82,6 +87,10 @@ class MainMenuOverlay extends StatelessWidget {
     );
 
     if (confirmou != true) return;
+    // A run apagada foi jogada: o tempo dela entra no total antes de sumir.
+    final tempoSalvo =
+        (RunSave.instance.dados?['tempoDeRun'] as num?)?.toDouble() ?? 0.0;
+    await CreatureProgress.instance.somarTempoJogado(tempoSalvo);
     await RunSave.instance.apagar();
     if (context.mounted) _novoJogo(context);
   }
@@ -89,94 +98,224 @@ class MainMenuOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // A trilha do menu é pedida AQUI, e não em cada lugar que reexibe o menu.
-    // São cinco caminhos de volta pra cá (boot, game over, vitória, pausa,
+    // São vários caminhos de volta pra cá (título, game over, vitória, pausa,
     // seleção de criatura), e espalhar a chamada por todos é garantir que um
     // deles seja esquecido. `GameMusic.play` não faz nada quando a faixa
     // pedida já é a que está tocando, então rebuild aqui custa uma comparação
     // de string.
     GameMusic.instance.play(GameMusic.menu);
 
-    final estreita = Responsive.ehEstreita(context);
-    final temSave = RunSave.instance.hasSave;
+    final retrato = Responsive.ehRetrato(context);
+    final botoes = _botoes(context);
+    final quadro = _QuadroDeProgresso(game: game);
 
     return ResponsiveOverlayScaffold(
       background: UiTheme.backgroundMenuCor,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // `FilterQuality.none` mantém o pixel art nítido na ampliação —
-          // mesmo tratamento que todo sprite do jogo já recebe no Flame.
-          /*  Image.asset(
-            'assets/images/logo.png',
-            width: 96,
-            height: 96,
-            filterQuality: FilterQuality.none,
-          ),
-          */
-          const SizedBox(height: 6),
-          Text(
-            context.l10n.menu_titulo,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: UiTheme.txtCor,
-              fontSize: estreita ? 32 : 48,
-              fontWeight: FontWeight.bold,
+      // Paisagem pede mais largura de referência pras duas colunas, mesmo
+      // motivo das configurações.
+      maxWidth: retrato ? 480 : 760,
+      child: retrato
+          ? Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [quadro, const SizedBox(height: 20), botoes],
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Flexible(child: botoes),
+                const SizedBox(width: 24),
+                Flexible(child: quadro),
+              ],
             ),
-          ),
-          const SizedBox(height: 30),
-          if (temSave) ...[
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: UiTheme.btnCor,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                elevation: 0,
-                shape: const BordaDuplaShape(),
-              ),
-              onPressed: withBtnSfx(game.continuarSalva),
-              child: Text(
-                context.l10n.pause_continuar,
-                style: const TextStyle(fontSize: 24, color: UiTheme.txtCor),
-              ),
-            ),
-            const SizedBox(height: 10),
-          ],
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: UiTheme.btnCor,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              elevation: 0,
-              shape: const BordaDuplaShape(),
-            ),
-            // Sem save: entra direto (mesmo caminho de sempre — seletor de
-            // criaturas, ou a intro antes da primeira run). Com save,
-            // confirma antes: escolher "novo jogo" por cima de uma run em
-            // andamento apaga ela.
-            onPressed: withBtnSfx(() => _confirmarNovoJogo(context)),
-            child: Text(
-              context.l10n.menu_novoJogo,
-              style: const TextStyle(fontSize: 24, color: UiTheme.txtCor),
-            ),
+    );
+  }
+
+  Widget _botoes(BuildContext context) {
+    final temSave = RunSave.instance.hasSave;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (temSave) ...[
+          _botao(
+            context.l10n.pause_continuar,
+            24,
+            withBtnSfx(game.continuarSalva),
           ),
           const SizedBox(height: 10),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: UiTheme.btnCor,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              elevation: 0,
-              shape: const BordaDuplaShape(),
-            ),
-            onPressed: withBtnSfx(() {
-              game.overlays.remove('MainMenu');
-              game.settingsReturnOverlay = 'MainMenu';
-              game.overlays.add('Settings');
-            }),
-            child: Text(
-              context.l10n.menu_configuracoes,
-              style: const TextStyle(fontSize: 20, color: UiTheme.txtCor),
-            ),
+        ],
+        // Sem save: entra direto (seletor de criaturas, ou a intro antes da
+        // primeira run). Com save, confirma antes: escolher "novo jogo" por
+        // cima de uma run em andamento apaga ela.
+        _botao(
+          context.l10n.menu_novoJogo,
+          24,
+          withBtnSfx(() => _confirmarNovoJogo(context)),
+        ),
+        const SizedBox(height: 10),
+        _botao(
+          context.l10n.menu_configuracoes,
+          20,
+          withBtnSfx(() {
+            game.overlays.remove('MainMenu');
+            game.settingsReturnOverlay = 'MainMenu';
+            game.overlays.add('Settings');
+          }),
+        ),
+      ],
+    );
+  }
+
+  Widget _botao(String texto, double fonte, VoidCallback? onPressed) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: UiTheme.btnCor,
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+        elevation: 0,
+        shape: const BordaDuplaShape(),
+      ),
+      onPressed: onPressed,
+      child: Text(
+        texto,
+        style: TextStyle(fontSize: fonte, color: UiTheme.txtCor),
+      ),
+    );
+  }
+}
+
+/// Estado do save: o progresso geral sempre, e a run salva quando existe —
+/// assim o CONTINUAR mostra o que vai retomar antes do toque.
+///
+/// Os números são o que o jogador conquistou DE FATO: criaturas e itens não
+/// passam pelo atalho do god mode, que libera tudo só pra testar.
+class _QuadroDeProgresso extends StatelessWidget {
+  final CreaturesRogueGame game;
+
+  const _QuadroDeProgresso({required this.game});
+
+  /// `1h 05m`, ou só `12m` abaixo de uma hora.
+  static String _horas(double segundos) {
+    final minutos = segundos ~/ 60;
+    final h = minutos ~/ 60;
+    final m = minutos % 60;
+    return h > 0 ? '${h}h ${m.toString().padLeft(2, '0')}m' : '${m}m';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final progresso = CreatureProgress.instance;
+    final dados = RunSave.instance.dados;
+
+    final totalCriaturas = CreatureRegistry.all.length;
+    final criaturas = progresso.desbloqueadasEntre(
+      CreatureRegistry.all.map((c) => c.id),
+    );
+    final sorteaveis = ItemEfeitoRegistry.todos.where((i) => i.sorteavel);
+    final nivel = progresso.nivelProgressao;
+    final itens = sorteaveis
+        .where((i) => !ProgressaoItens.bloqueado(i, nivel))
+        .length;
+    final tempoRunSalva = (dados?['tempoDeRun'] as num?)?.toDouble() ?? 0.0;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: const BoxDecoration(
+        border: BordaDupla(cor: Palette.preto, espessura: 3),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _rotulo(l.menu_progresso),
+          const SizedBox(height: 6),
+          _linha(l.menu_criaturas, '$criaturas / $totalCriaturas'),
+          _linha(l.menu_itens, '$itens / ${sorteaveis.length}'),
+          _linha(l.menu_vitorias, '${progresso.vitorias}'),
+          // O total soma a run salva por fora: ela só entra no acumulado
+          // quando acaba (ver `CreatureProgress.tempoTotal`).
+          _linha(
+            l.menu_tempoTotal,
+            _horas(progresso.tempoTotal + tempoRunSalva),
           ),
+          if (dados != null) ...[
+            const SizedBox(height: 12),
+            _rotulo(l.menu_runSalva),
+            const SizedBox(height: 6),
+            _runSalva(context, dados, tempoRunSalva),
+          ],
         ],
       ),
     );
   }
+
+  Widget _runSalva(
+    BuildContext context,
+    Map<String, dynamic> dados,
+    double tempo,
+  ) {
+    final l = context.l10n;
+    final criatura = game.criaturaDaRunSalva();
+    return Row(
+      children: [
+        if (criatura != null) ...[
+          SpriteUi(
+            caminho: criatura.spritePath,
+            tamanho: 32,
+            cor1: criatura.corClara,
+            cor2: criatura.corEscura,
+          ),
+          const SizedBox(width: 10),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l.resumo_dungeon(dados['dungeon'] as int, dados['andar'] as int),
+                style: const TextStyle(color: UiTheme.txtCor, fontSize: 14),
+              ),
+              Text(
+                l.victory_tempo(CreaturesRogueGame.formatarTempo(tempo)),
+                style: const TextStyle(color: UiTheme.txtCor, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _rotulo(String texto) => Text(
+    texto,
+    textAlign: TextAlign.center,
+    style: const TextStyle(
+      color: UiTheme.txtCor,
+      fontSize: 12,
+      letterSpacing: 3,
+    ),
+  );
+
+  Widget _linha(String rotulo, String valor) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 1),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            rotulo,
+            style: const TextStyle(color: UiTheme.txtCor, fontSize: 14),
+          ),
+        ),
+        Text(
+          valor,
+          style: const TextStyle(
+            color: UiTheme.txtCor,
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    ),
+  );
 }

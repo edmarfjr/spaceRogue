@@ -18,6 +18,7 @@ import 'package:creatures_rogue/game/overlays/game_over_overlay.dart';
 import 'package:creatures_rogue/game/overlays/intro_overlay.dart';
 import 'package:creatures_rogue/game/overlays/loading_screen.dart';
 import 'package:creatures_rogue/game/overlays/main_menu_overlay.dart';
+import 'package:creatures_rogue/game/overlays/title_overlay.dart';
 import 'package:creatures_rogue/game/overlays/pause_overlay.dart';
 import 'package:creatures_rogue/game/overlays/settings_overlay.dart';
 import 'package:creatures_rogue/game/game_settings.dart';
@@ -80,6 +81,7 @@ void main() async {
     body: GameWidget<CreaturesRogueGame>(
       game: creaturesGame,
       overlayBuilderMap: {
+        'Title': (context, game) => TitleOverlay(game: game),
         'MainMenu': (context, game) => MainMenuOverlay(game: game),
         'Settings': (context, game) => SettingsOverlay(game: game),
         'Intro': (context, game) => IntroOverlay(game: game),
@@ -96,7 +98,9 @@ void main() async {
       // O GameWidget só empilha os overlays (inclusive o MainMenu) depois
       // que o onLoad do jogo resolve; até lá quem pinta a tela é isto.
       loadingBuilder: (context) => const LoadingScreen(),
-      initialActiveOverlays: const ['MainMenu'], // Começa no Menu
+      // Começa na tela de título; só a abertura do app passa por ela — os
+      // caminhos de volta (game over, pausa...) abrem o 'MainMenu' direto.
+      initialActiveOverlays: const ['Title'],
     ),
   );
 

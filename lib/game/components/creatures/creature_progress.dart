@@ -19,6 +19,8 @@ class CreatureProgress {
   static const _introKey = 'creatures_rogue.intro_concluida';
   static const _vitoriasKey = 'creatures_rogue.vitorias_ids';
   static const _xpProgressaoKey = 'creatures_rogue.xp_progressao';
+  static const _vitoriasContagemKey = 'creatures_rogue.vitorias_contagem';
+  static const _tempoTotalKey = 'creatures_rogue.tempo_total';
 
   /// Ninguém começa liberado: a primeira criatura vem da escolha no fim da
   /// intro (ver `IntroOverlay`), e é a única jogável na primeira run. A lista
@@ -80,6 +82,8 @@ class CreatureProgress {
     await _prefs.setStringList(_unlockedKey, _unlockedIds.toList());
     await _prefs.setStringList(_vitoriasKey, const []);
     await _prefs.setInt(_xpProgressaoKey, 0);
+    await _prefs.setInt(_vitoriasContagemKey, 0);
+    await _prefs.setDouble(_tempoTotalKey, 0.0);
     await _prefs.setBool(_introKey, false);
   }
 
@@ -93,6 +97,9 @@ class CreatureProgress {
 
   /// Grava a marca de todas as [creatureIds] de uma vez, numa escrita só.
   Future<void> registrarVitoria(Iterable<String> creatureIds) async {
+    // A contagem de vitórias anda junto das marcas: as duas são "o que o
+    // jogador conquistou", e quem chama já filtrou o god mode.
+    await _prefs.setInt(_vitoriasContagemKey, vitorias + 1);
     final antes = _vitoriasIds.length;
     _vitoriasIds.addAll(creatureIds);
     if (_vitoriasIds.length == antes) return;
@@ -103,6 +110,25 @@ class CreatureProgress {
   /// nível e os itens liberados saem dele (ver [ProgressaoItens]), então
   /// editar a lista de desbloqueio nunca deixa o save inconsistente.
   int get xpProgressao => _prefs.getInt(_xpProgressaoKey) ?? 0;
+
+  /// Runs vencidas fora do god mode — ver [registrarVitoria].
+  int get vitorias => _prefs.getInt(_vitoriasContagemKey) ?? 0;
+
+  /// Segundos jogados em runs que já ACABARAM (morte, vitória, ou run salva
+  /// apagada por "novo jogo"). A run salva em andamento não está aqui: quem
+  /// mostra o total soma o tempo dela por fora, senão ele contaria duas
+  /// vezes quando a run acabasse.
+  double get tempoTotal => _prefs.getDouble(_tempoTotalKey) ?? 0.0;
+
+  Future<void> somarTempoJogado(double segundos) async {
+    if (segundos <= 0) return;
+    await _prefs.setDouble(_tempoTotalKey, tempoTotal + segundos);
+  }
+
+  /// Criaturas que o jogador desbloqueou DE FATO — sem o atalho do god mode
+  /// que o [isUnlocked] tem, porque isto é placar, não permissão.
+  int desbloqueadasEntre(Iterable<String> ids) =>
+      ids.where(_unlockedIds.contains).length;
 
   int get nivelProgressao => ProgressaoItens.nivelPara(xpProgressao);
 

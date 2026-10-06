@@ -516,7 +516,7 @@
   "creatureName_sereia_agua": "Calamarin",
   "creatureDesc_sereia_agua": "Bate de perto com o tentáculo e some numa nuvem de tinta quando aperta.",
   "abilityName_Tentaculada": "Tentaculada",
-  "abilityDesc_Tentaculada": "Um tentáculo varre um arco à frente.",
+  "abilityDesc_Tentaculada": "Um tentáculo varre um arco à frente, refletindo projéteis.",
   "abilityName_RedemoinhoDeTentaculos": "Redemoinho de Tentáculos",
   "abilityDesc_RedemoinhoDeTentaculos": "O tentáculo gira em volta, acertando todos ao redor.",
   "abilityName_EsguichoDeTinta": "Esguicho de Tinta",
@@ -524,5 +524,13 @@
   "abilityName_CortinaDeTinta": "Cortina de Tinta",
   "abilityDesc_CortinaDeTinta": "Esquiva que deixa uma nuvem de tinta que cega e bloqueia projéteis.",
   "passiva_camuflagem": "CAMUFLAGEM",
-  "passiva_camuflagemDesc": "PARADO POR UM TEMPO, O PRÓXIMO GOLPE É CRÍTICO"
+  "passiva_camuflagemDesc": "PARADO POR UM TEMPO, O PRÓXIMO GOLPE É CRÍTICO",
+  "titulo_toque": "TOQUE PARA COMEÇAR",
+  "titulo_tecla": "PRESSIONE QUALQUER TECLA",
+  "menu_progresso": "PROGRESSO",
+  "menu_criaturas": "CRIATURAS",
+  "menu_itens": "ITENS",
+  "menu_vitorias": "VITÓRIAS",
+  "menu_tempoTotal": "TEMPO TOTAL",
+  "menu_runSalva": "RUN SALVA"
 }
