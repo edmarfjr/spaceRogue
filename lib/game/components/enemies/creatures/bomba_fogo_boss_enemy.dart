@@ -103,7 +103,7 @@ class BombaFogoBossEnemy extends Enemy{
       return;
     }
 
-    final distancia = (playerTarget.absolutePosition - absolutePosition).length;
+    final distancia = (alvoPosicao - absolutePosition).length;
     if (distancia <= _alcanceGatilho) {
       _acendeu = true;
       _pavioTimer = 0.0;
@@ -119,6 +119,7 @@ class BombaFogoBossEnemy extends Enemy{
       position: position.clone(),
       isEnemy: true, // isEnemy true = machuca o Player e NÃO machuca inimigos
       origem: creature,
+      dono: this,
       dmg: dano,
       knockback: _empurrao,
       size: Vector2.all(raio),

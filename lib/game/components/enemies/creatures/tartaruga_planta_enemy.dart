@@ -84,7 +84,7 @@ class TartarugaPlantaEnemy extends Enemy with ShooterAttack {
   }
 
   void _cuspirSemente() {
-    final direcao = (playerTarget.absolutePosition - absolutePosition).normalized();
+    final direcao = (alvoPosicao - absolutePosition).normalized();
     shoot(direcao);
   }
 

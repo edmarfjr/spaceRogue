@@ -221,17 +221,10 @@ mixin ShooterAttack on MovementHost {
       return true;
     }
 
-    // Cego não mira: a direção do tiro é calculada a partir da posição do
-    // jogador em cada inimigo, então a única forma honesta de "perder o alvo"
-    // é não deixar a vontade de atirar amadurecer.
-    if (cegoTimer > 0) {
-      wantsToShoot = false;
-      fireTimer = 0.0;
-      // Zera o sorteio junto: sair da cegueira é uma boa hora pra reembaralhar,
-      // e sem isto um grupo cegado pela mesma nuvem voltaria a atirar em coro.
-      _alvoCadencia = 0.0;
-      return false;
-    }
+    // Cego CONTINUA atirando: a mira de cada inimigo lê `alvoPosicao`, que na
+    // cegueira é a última posição em que viu o jogador. Ele erra porque mira
+    // no lugar errado, não porque desistiu — e o tiro que sai às cegas acerta
+    // os outros inimigos também (ver `Projectile.fogoAmigo`).
 
     if (!wantsToShoot) {
       // Sorteado por CICLO, e não guardado no `onLoad`: `fireRate` chega por
@@ -297,13 +290,16 @@ mixin ChaseMovement on MovementHost {
   double _cegoTrocaTimer = 0.0;
 
   void updateChaseMovement(double dt,{double velAux = 1.0}) {
-    if (cegoTimer > 0) {
+    // Calcula a distância exata entre o inimigo e o alvo — o jogador, ou, se
+    // cego, o ponto onde o viu pela última vez (ver `Enemy.alvoPosicao`).
+    Vector2 distanceToPlayer = posicaoDoAlvo - absolutePosition;
+
+    // Cego e já em cima do ponto onde viu o jogador: o rastro acabou ali, e
+    // ele passa a vagar até a visão voltar ou um golpe o denunciar.
+    if (cegoTimer > 0 && distanceToPlayer.length <= 6) {
       _updateCegoMovement(dt);
       return;
     }
-
-    // Calcula a distância exata entre o inimigo e o jogador
-    Vector2 distanceToPlayer = currentTarget.absolutePosition - absolutePosition;
     
     // Evita tremedeira caso ele consiga chegar exatamente no mesmo pixel do jogador
     if (distanceToPlayer.length > 1.0) {
@@ -325,7 +321,7 @@ mixin ChaseMovement on MovementHost {
     }
   }
 
-  /// Cego: perdeu o rastro do jogador e passa a vagar. Reusa a checagem de
+  /// Cego e sem rastro (já chegou na última posição vista): passa a vagar. Reusa a checagem de
   /// parede do Enemy — sem ela, o perseguidor cego encosta numa parede e fica
   /// raspando nela, o que lê como bug e não como cegueira.
   void _updateCegoMovement(double dt) {

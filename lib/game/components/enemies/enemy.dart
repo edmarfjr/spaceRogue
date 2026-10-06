@@ -318,6 +318,25 @@ abstract class Enemy extends PositionComponent
   @override
   PositionComponent get currentTarget => playerTarget;
 
+  /// Última posição em que este inimigo VIU o jogador — gravada no instante
+  /// em que fica cego e atualizada quando o jogador o acerta (o golpe
+  /// denuncia de onde veio). Sem cegueira não é usada.
+  Vector2? _posicaoVista;
+
+  /// Pra onde o inimigo mira, anda, pula e golpeia. Sem cegueira, o jogador;
+  /// cego, o ponto onde o viu por último — ele continua atacando, só que no
+  /// lugar errado. É isso que separa a cegueira do atordoado, que desliga a
+  /// IA. Toda mira dos inimigos passa por aqui, nunca por
+  /// `playerTarget.absolutePosition` direto.
+  Vector2 get alvoPosicao {
+    final vista = _posicaoVista;
+    if (cegoTimer > 0 && vista != null) return vista.clone();
+    return playerTarget.absolutePosition;
+  }
+
+  @override
+  Vector2 get posicaoDoAlvo => alvoPosicao;
+
   @override
   Future onLoad() async {
     final ui.Image enemyImage = await PaletteSwapper.createSwappedImage(
@@ -567,6 +586,9 @@ abstract class Enemy extends PositionComponent
   }
 
   void applyCego(double duracao) {
+    // Só grava ao FICAR cego: renovar a cegueira não pode atualizar o ponto,
+    // senão uma nuvem reaplicando a cada quadro seguiria o jogador.
+    if (cegoTimer <= 0) _posicaoVista = playerTarget.absolutePosition;
     if (duracao > cegoTimer) cegoTimer = duracao;
   }
 
@@ -580,7 +602,12 @@ abstract class Enemy extends PositionComponent
       dot.timer = dot.intervalo;
       if (dot.ticks <= 0) dots.remove(dot.kind);
 
-      takeDamage(dot.dano, corTxt: dot.cor, tipoAtacante: dot.tipo);
+      takeDamage(
+        dot.dano,
+        corTxt: dot.cor,
+        tipoAtacante: dot.tipo,
+        revela: false,
+      );
       if (health <= 0) return;
     }
 
@@ -638,11 +665,23 @@ abstract class Enemy extends PositionComponent
 
   /// [tipoAtacante] aplica a vantagem elemental (ver `typeMultiplier`).
   /// `neutro` — o padrão — vale 1.0, então quem não passa tipo não muda nada.
+  /// [doJogador] `false` é o fogo amigo de um inimigo cego (ver
+  /// `Projectile.fogoAmigo`): só tipo e redução de dano contam. Crítico,
+  /// bônus de item, Prisma e god mode são do JOGADOR, e não podem valer num
+  /// golpe que ele não deu.
+  ///
+  /// [revela] `false` pra dano que não denuncia o jogador — tique de veneno e
+  /// queimadura chegam sozinhos, sem um golpe vindo de algum lugar.
   void takeDamage(
     double amount, {
     Color corTxt = Palette.amarelo,
     CreatureType tipoAtacante = CreatureType.neutro,
+    bool doJogador = true,
+    bool revela = true,
   }) {
+    if (doJogador && revela && amount > 0 && cegoTimer > 0) {
+      _posicaoVista = playerTarget.absolutePosition;
+    }
     var mult = typeMultiplier(
       tipoAtacante,
       creature?.tipo ?? CreatureType.neutro,
@@ -651,7 +690,9 @@ abstract class Enemy extends PositionComponent
     // abaixo, de propósito — depois dele o número sairia cinza, a cor de
     // "resistiu", enquanto o dano na verdade saiu inteiro, e o jogador nunca
     // veria o item funcionando.
-    if (mult < 1.0 && playerTarget.ignoraDesvantagemElemental) mult = 1.0;
+    if (doJogador && mult < 1.0 && playerTarget.ignoraDesvantagemElemental) {
+      mult = 1.0;
+    }
     double fontSize = 6;
 
     if (mult > 1.0) {
@@ -665,11 +706,12 @@ abstract class Enemy extends PositionComponent
     // no ponto do disparo porque este é o único lugar que sabe de que
     // elemento é o golpe — inclusive nos tiques de veneno e queimadura, que
     // chegam por `applyDot` com o tipo da fonte.
-    final bonusElemento =
-        playerTarget.danoElementalDerivado[tipoAtacante] ?? 1.0;
+    final bonusElemento = doJogador
+        ? playerTarget.danoElementalDerivado[tipoAtacante] ?? 1.0
+        : 1.0;
     // `FaroDeSangue`: alvo abaixo da metade da vida apanha mais. Aqui, e não
     // no disparo, porque este é o único ponto que conhece a vida do alvo.
-    final bonusFerido = health < maxHealth * 0.5
+    final bonusFerido = doJogador && health < maxHealth * 0.5
         ? 1.0 + playerTarget.bonusAlvoFerido
         : 1.0;
     double amountFinal =
@@ -685,7 +727,9 @@ abstract class Enemy extends PositionComponent
         playerTarget.critChance +
         playerTarget.creatureData.stats.critBonus +
         playerTarget.critChanceDerivada;
-    if (chanceTotal >= rolagem) {
+    if (!doJogador) {
+      // Fogo amigo: sem rolagem, e sem mexer na contagem do `SangueFrio`.
+    } else if (chanceTotal >= rolagem) {
       amountFinal *= playerTarget.critMult;
       corTxt = Palette.vermelho;
       playerTarget.golpesSemCrit = 0;
@@ -699,7 +743,9 @@ abstract class Enemy extends PositionComponent
 
     // Cheat (ver GameSettings.godMode): qualquer golpe que passe da redução
     // de dano mata na hora, não importa a vida restante.
-    if (GameSettings.instance.godMode && amountFinal > 0) amountFinal = health;
+    if (doJogador && GameSettings.instance.godMode && amountFinal > 0) {
+      amountFinal = health;
+    }
     if(amountFinal>0){
       parent?.add(
         TextEffect.dano(
@@ -758,6 +804,7 @@ abstract class Enemy extends PositionComponent
           position: position.clone(),
           isEnemy: true,
           origem: creature,
+          dono: this,
           dmg: dmg * campeaoExplosaoCoef,
           knockback: 70,
           size: Vector2.all(campeaoExplosaoRaio),

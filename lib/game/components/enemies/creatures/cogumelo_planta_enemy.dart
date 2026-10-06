@@ -53,7 +53,7 @@ class CogumeloPlantaEnemy extends Enemy {
 
   @override
   void movimento(double dt) {
-    final distancia = (playerTarget.absolutePosition - absolutePosition).length;
+    final distancia = (alvoPosicao - absolutePosition).length;
     if (distancia > _alcanceAtivacao) return;
 
     _timer += dt;

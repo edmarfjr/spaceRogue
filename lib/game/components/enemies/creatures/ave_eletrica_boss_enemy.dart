@@ -69,7 +69,7 @@ class AveEletricaBossEnemy extends Enemy with ShooterAttack {
     if (updateAttack(dt, _fireRate, _aoConcluirAtaque)) return;
 
     if (wantsToShoot) {
-      final distancia = (playerTarget.absolutePosition - absolutePosition).length;
+      final distancia = (alvoPosicao - absolutePosition).length;
       if (distancia <= _alcanceGatilho) {
         triggerAttack();
         return;

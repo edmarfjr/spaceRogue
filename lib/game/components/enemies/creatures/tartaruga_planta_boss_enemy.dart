@@ -115,7 +115,7 @@ class TartarugaPlantaBossEnemy extends Enemy with ShooterAttack {
   }
 
   void _cuspirSemente() {
-    final direcao = (playerTarget.absolutePosition - absolutePosition).normalized();
+    final direcao = (alvoPosicao - absolutePosition).normalized();
     shoot(direcao);
   }
 
@@ -124,6 +124,7 @@ class TartarugaPlantaBossEnemy extends Enemy with ShooterAttack {
       position: position.clone(),
       isEnemy: true, // isEnemy true = machuca o Player e NÃO machuca inimigos
       origem: creature,
+      dono: this,
       dmg: _danoOnda,
       knockback: _empurrao,
       size: Vector2.all(_raioOnda),

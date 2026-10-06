@@ -76,7 +76,7 @@ class SereiaAguaBossEnemy extends Enemy {
       : const [_Ataque.redemoinho, _Ataque.cortina];
 
   Vector2 get _paraJogador {
-    final v = playerTarget.absolutePosition - absolutePosition;
+    final v = alvoPosicao - absolutePosition;
     return v.length == 0 ? Vector2(0, 1) : v.normalized();
   }
 
@@ -196,7 +196,7 @@ class SereiaAguaBossEnemy extends Enemy {
 
   void _plantarTentaculos() {
     final rng = Random();
-    final alvo = playerTarget.position.clone();
+    final alvo = alvoPosicao;
     for (int i = 0; i < _tentaculosNoChao; i++) {
       // O primeiro cai exatamente onde o jogador está; os outros em volta,
       // pra fechar as rotas de fuga mais óbvias.
@@ -215,6 +215,7 @@ class SereiaAguaBossEnemy extends Enemy {
         position: ponto,
         isEnemy: true,
         origem: creature,
+        dono: this,
         dmg: _danoChao,
         knockback: 40,
         size: Vector2(20, 20),

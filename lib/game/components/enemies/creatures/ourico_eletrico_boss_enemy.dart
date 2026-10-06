@@ -106,6 +106,7 @@ class OuricoEletricoBossEnemy extends Enemy{
       position: position.clone(),
       isEnemy: true,
       origem: creature,
+      dono: this,
       dmg: _danoOnda,
       knockback: _empurraoOnda,
       size: Vector2.all(_raioOnda),
@@ -115,8 +116,20 @@ class OuricoEletricoBossEnemy extends Enemy{
   }
 
   @override
-  void takeDamage(double amount, {Color corTxt = Palette.amarelo, CreatureType tipoAtacante = CreatureType.neutro}) {
-    super.takeDamage(amount, corTxt: corTxt, tipoAtacante: tipoAtacante);
+  void takeDamage(
+    double amount, {
+    Color corTxt = Palette.amarelo,
+    CreatureType tipoAtacante = CreatureType.neutro,
+    bool doJogador = true,
+    bool revela = true,
+  }) {
+    super.takeDamage(
+      amount,
+      corTxt: corTxt,
+      tipoAtacante: tipoAtacante,
+      doJogador: doJogador,
+      revela: revela,
+    );
     if (health <= 0) return;
     if (_retaliacaoTimer > 0) return;
 
@@ -125,6 +138,7 @@ class OuricoEletricoBossEnemy extends Enemy{
       position: position.clone(),
       isEnemy: true,
       origem: creature,
+      dono: this,
       dmg: _danoRetaliacao,
       knockback: _empurraoRetaliacao,
       cor1: CreatureRegistry.ouricoEletricoEvo.corClara,

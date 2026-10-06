@@ -60,7 +60,7 @@ class LeaoEletricoBossEnemy extends Enemy with ShooterAttack, JumpMovement {
     if (updateAttack(dt, _fireRate, _estocar)) return;
 
     if (wantsToShoot) {
-      final distancia = (playerTarget.absolutePosition - absolutePosition).length;
+      final distancia = (alvoPosicao - absolutePosition).length;
       if (distancia <= _alcanceTiro) {
         triggerAttack();
         return;
@@ -73,7 +73,7 @@ class LeaoEletricoBossEnemy extends Enemy with ShooterAttack, JumpMovement {
   void _movimentoFaseDois(double dt) {
     updateJumpMovement(
       dt,
-      playerTarget.absolutePosition,
+      alvoPosicao,
       mode: JumpMode.targetPlayer,
       jumpDistance: 50.0,
       jumpHeight: 30.0,
@@ -88,7 +88,7 @@ class LeaoEletricoBossEnemy extends Enemy with ShooterAttack, JumpMovement {
   }
 
   void _estocar() {
-    final direcao = (playerTarget.absolutePosition - absolutePosition).normalized();
+    final direcao = (alvoPosicao - absolutePosition).normalized();
     shoot(direcao, lifeTime: 1.2);
   }
 
@@ -97,6 +97,7 @@ class LeaoEletricoBossEnemy extends Enemy with ShooterAttack, JumpMovement {
       position: position.clone(),
       isEnemy: true,
       origem: creature,
+      dono: this,
       dmg: _danoQueda,
       knockback: _empurraoQueda,
       size: Vector2(40, 40),

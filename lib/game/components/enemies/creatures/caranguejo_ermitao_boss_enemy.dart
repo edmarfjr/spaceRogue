@@ -114,7 +114,7 @@ class CaranguejoErmitaoBossEnemy extends Enemy with ShooterAttack {
   }
 
   void _baforar() {
-    final direcao = (playerTarget.absolutePosition - absolutePosition).normalized();
+    final direcao = (alvoPosicao - absolutePosition).normalized();
     shoot(direcao);
   }
 

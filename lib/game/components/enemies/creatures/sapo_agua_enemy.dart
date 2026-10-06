@@ -53,7 +53,7 @@ class SapoAguaEnemy extends Enemy with JumpMovement, ShooterAttack {
 
     updateJumpMovement(
       dt,
-      playerTarget.absolutePosition,
+      alvoPosicao,
       mode: JumpMode.random,
       jumpDistance: 20.0,
       jumpHeight: 14.0,
@@ -61,7 +61,7 @@ class SapoAguaEnemy extends Enemy with JumpMovement, ShooterAttack {
   }
 
   void _cuspirJato() {
-    final direcao = (playerTarget.absolutePosition - absolutePosition).normalized();
+    final direcao = (alvoPosicao - absolutePosition).normalized();
     shoot(direcao);
   }
 

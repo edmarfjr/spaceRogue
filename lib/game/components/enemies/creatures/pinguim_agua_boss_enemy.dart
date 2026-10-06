@@ -132,7 +132,7 @@ class PinguimAguaBossEnemy extends Enemy with ShooterAttack {
         _rastroTimer = 0.0;
         visual.scale = Vector2(flip, 1.0);
         _investidaDirecao =
-            (playerTarget.absolutePosition - absolutePosition).normalized();
+            (alvoPosicao - absolutePosition).normalized();
         _estouroCongelante(); // ponta de saída
       }
       return;
@@ -167,7 +167,7 @@ class PinguimAguaBossEnemy extends Enemy with ShooterAttack {
   /// de volta. O leque é estreito de propósito — o perigo é a faixa ficar
   /// larga na volta, não o tiro de ida cobrir a sala.
   void _salvaDeGelo() {
-    final ate = playerTarget.absolutePosition - absolutePosition;
+    final ate = alvoPosicao - absolutePosition;
     final direcao = ate.normalized();
     final tempoDeVoo =
         ((ate.length + _sobraAlemDoJogador) / _velocidadeTiro).clamp(_vooMinimo, _vooMaximo);
@@ -199,6 +199,7 @@ class PinguimAguaBossEnemy extends Enemy with ShooterAttack {
       position: position.clone(),
       isEnemy: true,
       origem: creature,
+      dono: this,
       dmg: _danoInvestida,
       tipo: CreatureRegistry.pinguimAguaEvo.tipo,
       lentidaoDuracao: _lentidaoInvestida,

@@ -55,7 +55,7 @@ class RodaFogoEnemy extends Enemy {
       case RodaFase.vagando:
         updateWanderMovement(dt);
         final distancia =
-            (playerTarget.absolutePosition - absolutePosition).length;
+            (alvoPosicao - absolutePosition).length;
         if (distancia <= _alcanceInvestida) {
           _entrar(RodaFase.mirando);
           // Aviso com a duração exata da mira: o jogador tem a janela inteira
@@ -66,7 +66,7 @@ class RodaFogoEnemy extends Enemy {
       case RodaFase.mirando:
         // Ainda segue o jogador com a mira ATÉ o último instante, e é aí que
         // ela congela — perseguir depois de travar tiraria a esquiva.
-        _direcao = (playerTarget.absolutePosition - absolutePosition)
+        _direcao = (alvoPosicao - absolutePosition)
             .normalized();
         if (_timer >= _duracaoMira) _entrar(RodaFase.rodando);
 
@@ -112,6 +112,7 @@ class RodaFogoEnemy extends Enemy {
         position: position.clone(),
         isEnemy: true,
         origem: creature,
+        dono: this,
         dmg: _danoEstouro,
         knockback: 40,
         size: Vector2(24, 24),

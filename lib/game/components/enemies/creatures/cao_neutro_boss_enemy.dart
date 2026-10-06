@@ -50,7 +50,7 @@ class CaoNeutroBossEnemy extends Enemy with ShooterAttack {
 
     if (updateAttack(dt, _fireRate, _morder)) return;
 
-    final distancia = (playerTarget.absolutePosition - absolutePosition).length;
+    final distancia = (alvoPosicao - absolutePosition).length;
     if (wantsToShoot && distancia <= _alcanceMordida) {
       triggerAttack();
       return;
@@ -60,7 +60,7 @@ class CaoNeutroBossEnemy extends Enemy with ShooterAttack {
   }
 
   void _morder() {
-    final direcao = (playerTarget.absolutePosition - absolutePosition)
+    final direcao = (alvoPosicao - absolutePosition)
         .normalized();
     dmg = _dano.toInt();
     shoot(direcao, lifeTime: _alcanceSegundos);

@@ -55,12 +55,12 @@ class PeixeNeutroBossEnemy extends Enemy with JumpMovement {
   void movimento(double dt) {
     if (!_faseDois && health <= _vidaInicial / 2) _faseDois = true;
 
-    final distancia = (playerTarget.absolutePosition - absolutePosition).length;
+    final distancia = (alvoPosicao - absolutePosition).length;
     final estavaNoAr = jumpState == JumpState.inAir;
 
     updateJumpMovement(
       dt,
-      playerTarget.absolutePosition,
+      alvoPosicao,
       mode: distancia <= _alcanceBote ? JumpMode.targetPlayer : JumpMode.random,
       jumpDistance: distancia <= _alcanceBote ? _alcanceBote : 26.0,
       jumpHeight: 20.0,
@@ -80,6 +80,7 @@ class PeixeNeutroBossEnemy extends Enemy with JumpMovement {
         position: position.clone(),
         isEnemy: true,
         origem: creature,
+        dono: this,
         dmg: _danoImpacto.toDouble(),
         knockback: _empurraoImpacto,
         size: Vector2(38, 38),

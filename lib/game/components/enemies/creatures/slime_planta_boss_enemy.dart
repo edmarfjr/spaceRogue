@@ -50,7 +50,7 @@ class SlimePlantaBossEnemy extends Enemy {
     updateWanderMovement(dt);
 
     if (isMoving) {
-      final rumoJogador = (playerTarget.absolutePosition - absolutePosition).normalized();
+      final rumoJogador = (alvoPosicao - absolutePosition).normalized();
       currentDirection = (currentDirection + rumoJogador * _viesJogador).normalized();
     }
 

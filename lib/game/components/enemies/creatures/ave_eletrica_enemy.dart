@@ -40,7 +40,7 @@ class AveEletricaEnemy extends Enemy with ShooterAttack {
     if (updateAttack(dt, _fireRate, _bicar)) return;
 
     if (wantsToShoot) {
-      final distancia = (playerTarget.absolutePosition - absolutePosition).length;
+      final distancia = (alvoPosicao - absolutePosition).length;
       if (distancia <= 45.0) {
         triggerAttack();
         return;
@@ -51,7 +51,7 @@ class AveEletricaEnemy extends Enemy with ShooterAttack {
   }
 
   void _bicar() {
-    final direcao = (playerTarget.absolutePosition - absolutePosition).normalized();
+    final direcao = (alvoPosicao - absolutePosition).normalized();
     shoot(direcao, lifeTime: _alcanceTiro);
   }
 }

@@ -107,6 +107,12 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   /// — nem perde pra vantagem de tipo. Ver [_resolverColisaoEntreProjeteis].
   final bool engoleProjeteis;
 
+  /// Tiro que saiu ÀS CEGAS: o inimigo que disparou estava cego no instante
+  /// do disparo. Acerta os outros inimigos além do jogador — nunca quem
+  /// atirou. Fotografado no nascimento: recuperar a visão depois não chama o
+  /// tiro de volta.
+  late final bool fogoAmigo;
+
   final PositionComponent owner;
 
   /// Criatura por trás do disparo, quando quem atirou é inimigo.
@@ -157,7 +163,10 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
       size: size ?? Vector2(16, 16),
       anchor: Anchor.center,
       priority: priority,
-    );
+    ) {
+    final dono = owner;
+    fogoAmigo = isEnemy && dono is Enemy && dono.cegoTimer > 0;
+  }
 
   @override
   Future<void> onLoad() async {
@@ -224,6 +233,8 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         tipo: tipo,
         isEnemy: isEnemy,
         origem: _origem,
+        dono: owner,
+        forcarFogoAmigo: fogoAmigo,
       ));
     }
 
@@ -316,6 +327,10 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         _resolverColisaoEntreProjeteis(other);
         return;
       }
+      if (fogoAmigo && other is Enemy && other != owner) {
+        _acertarAsCegas(other);
+        return;
+      }
       
       if (other is DamageableByEnemy) {
         if(noChao && other is Player && other.isAirborne){
@@ -382,6 +397,25 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
         if (atravessa <= 0) onDestroy();
         
       }
+    }
+  }
+
+  /// Fogo amigo: o tiro às cegas atinge outro inimigo com o mesmo efeito que
+  /// teria no jogador. `doJogador: false` deixa crítico e bônus de item de
+  /// fora — o golpe não é dele.
+  void _acertarAsCegas(Enemy alvo) {
+    if (alvo.summonTimer > 0 || hits.containsKey(alvo)) return;
+    if (!alvo.enemyHitbox.toAbsoluteRect().overlaps(toAbsoluteRect())) return;
+    hits[alvo] = hitCooldown;
+    if (lentidaoDuracao > 0) {
+      alvo.applyLentidao(lentidaoDuracao, fator: lentidaoFator);
+    }
+    if (cegoDuracao > 0) alvo.applyCego(cegoDuracao);
+    if (dmg > 0) {
+      alvo.takeDamage(dmg, tipoAtacante: tipo, doJogador: false);
+      alvo.applyKnockback(absolutePosition, kbForce);
+      atravessa--;
+      if (atravessa <= 0) onDestroy();
     }
   }
 

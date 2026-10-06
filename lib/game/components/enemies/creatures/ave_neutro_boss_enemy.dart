@@ -61,7 +61,7 @@ class AveNeutroBossEnemy extends Enemy with ShooterAttack {
 
     if (wantsToShoot) {
       final distancia =
-          (playerTarget.absolutePosition - absolutePosition).length;
+          (alvoPosicao - absolutePosition).length;
       if (distancia <= _alcanceGatilho) {
         triggerAttack();
         return;

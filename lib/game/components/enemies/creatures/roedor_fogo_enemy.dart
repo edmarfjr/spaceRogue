@@ -40,7 +40,7 @@ class RoedorFogoEnemy extends Enemy with ShooterAttack {
     if (updateAttack(dt, _fireRate, _dispararLeque)) return;
 
     if (wantsToShoot) {
-      final distancia = (playerTarget.absolutePosition - absolutePosition).length;
+      final distancia = (alvoPosicao - absolutePosition).length;
       if (distancia <= 80.0) {
         triggerAttack();
         return;
@@ -51,7 +51,7 @@ class RoedorFogoEnemy extends Enemy with ShooterAttack {
   }
 
   void _dispararLeque() {
-    final base = (playerTarget.absolutePosition - absolutePosition).normalized();
+    final base = (alvoPosicao - absolutePosition).normalized();
     final anguloRad = _anguloLequeGraus * pi / 180;
 
     for (final offset in [-anguloRad, 0.0, anguloRad]) {

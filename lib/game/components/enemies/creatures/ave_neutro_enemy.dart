@@ -36,7 +36,7 @@ class AveNeutroEnemy extends Enemy with ShooterAttack {
 
     if (wantsToShoot) {
       final distancia =
-          (playerTarget.absolutePosition - absolutePosition).length;
+          (alvoPosicao - absolutePosition).length;
       if (distancia <= 45.0) {
         triggerAttack();
         return;
@@ -47,7 +47,7 @@ class AveNeutroEnemy extends Enemy with ShooterAttack {
   }
 
   void _bicar() {
-    final direcao = (playerTarget.absolutePosition - absolutePosition)
+    final direcao = (alvoPosicao - absolutePosition)
         .normalized();
     shoot(direcao, lifeTime: _alcanceTiro);
   }

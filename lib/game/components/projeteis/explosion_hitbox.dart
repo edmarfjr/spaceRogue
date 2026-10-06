@@ -26,6 +26,14 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
   /// Criatura que soltou a explosão, quando é de inimigo — só pro "derrotado
   /// por" do Game Over (ver `DamageableByEnemy.takeDamage`).
   final CreatureData? origem;
+
+  /// Quem criou a explosão, quando foi um inimigo. Serve pra saber se ela
+  /// saiu às cegas ([fogoAmigo]) e pra ela nunca acertar o próprio dono.
+  final PositionComponent? dono;
+
+  /// Explosão às cegas: o dono estava cego ao criá-la, então ela acerta os
+  /// outros inimigos além do jogador. Ver `Projectile.fogoAmigo`.
+  late final bool fogoAmigo;
   final Color cor1;
   final Color cor2;
 
@@ -52,6 +60,8 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
     this.dmg = 1,
     this.isEnemy = false,
     this.origem,
+    this.dono,
+    bool? forcarFogoAmigo,
     this.stunDuration = 0,
     this.paraliseDuration = 0,
     this.knockback = 50.0,
@@ -65,7 +75,11 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
     this.cor2 = Palette.branco,
     Vector2? size,
   })
-      : super(position: position, size: size ?? Vector2(32, 32), anchor: Anchor.center);
+      : super(position: position, size: size ?? Vector2(32, 32), anchor: Anchor.center) {
+    final d = dono;
+    fogoAmigo =
+        forcarFogoAmigo ?? (isEnemy && d is Enemy && d.cegoTimer > 0);
+  }
 
   @override
   Future<void> onLoad() async {
@@ -157,6 +171,15 @@ class ExplosionHitbox extends PositionComponent with CollisionCallbacks {
       if (knockback > 0) other.applyKnockback(absolutePosition, knockback);
       final kind = dotKind;
       if (kind != null) other.applyDot(kind, dotTicks);
+    } else if (other is Enemy && fogoAmigo && other != dono) {
+      if (other.summonTimer > 0) return;
+      // Mesmo efeito que teria no jogador, sem crítico nem bônus de item.
+      if (dmg > 0) other.takeDamage(dmg, tipoAtacante: tipo, doJogador: false);
+      if (lentidaoDuracao > 0) {
+        other.applyLentidao(lentidaoDuracao, fator: lentidaoFator);
+      }
+      if (cegoDuracao > 0) other.applyCego(cegoDuracao);
+      if (knockback > 0) other.applyKnockback(absolutePosition, knockback);
     } else if (other is DamageableByEnemy && isEnemy) {
       other.takeDamage(dmg, tipo, origem: origem);
       if (lentidaoDuracao > 0) other.aplicarLentidao(lentidaoDuracao, fator: lentidaoFator);

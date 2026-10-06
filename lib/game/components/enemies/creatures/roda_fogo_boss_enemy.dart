@@ -81,14 +81,14 @@ class RodaFogoBossEnemy extends Enemy {
       case RodaFase.vagando:
         updateWanderMovement(dt);
         final distancia =
-            (playerTarget.absolutePosition - absolutePosition).length;
+            (alvoPosicao - absolutePosition).length;
         if (distancia <= _alcanceInvestida) {
           _entrar(RodaFase.mirando);
           spawnAlerta(duracao: _duracaoMira);
         }
 
       case RodaFase.mirando:
-        _direcao = (playerTarget.absolutePosition - absolutePosition)
+        _direcao = (alvoPosicao - absolutePosition)
             .normalized();
         if (_timer >= _duracaoMira) {
           _rastroTimer = 0.0;
@@ -141,6 +141,7 @@ class RodaFogoBossEnemy extends Enemy {
         position: position.clone(),
         isEnemy: true,
         origem: creature,
+        dono: this,
         dmg: _danoEstouro,
         knockback: 60,
         size: Vector2(36, 36),

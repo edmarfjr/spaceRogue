@@ -66,12 +66,12 @@ class SapoAguaBossEnemy extends Enemy with JumpMovement {
   void movimento(double dt) {
     if (!_faseDois && health <= _vidaInicial / 2) _faseDois = true;
 
-    final distancia = (playerTarget.absolutePosition - absolutePosition).length;
+    final distancia = (alvoPosicao - absolutePosition).length;
     final estavaNoAr = jumpState == JumpState.inAir;
 
     updateJumpMovement(
       dt,
-      playerTarget.absolutePosition,
+      alvoPosicao,
       mode: distancia <= _alcanceAtaque ? JumpMode.targetPlayer : JumpMode.random,
       jumpDistance: distancia <= _alcanceAtaque ? _alcanceAtaque : 24.0,
       jumpHeight: 28.0,
@@ -87,7 +87,7 @@ class SapoAguaBossEnemy extends Enemy with JumpMovement {
   }
 
   void _dispararLequeAoPousar() {
-    final direcaoJogador = (playerTarget.absolutePosition - absolutePosition).normalized();
+    final direcaoJogador = (alvoPosicao - absolutePosition).normalized();
     final direcaoBase = direcaoJogador.length > 0 ? direcaoJogador : Vector2(0, 1);
     final passoRad = _anguloLequeGraus * pi / 180;
     final metade = (_numGosmas - 1) / 2;
@@ -100,6 +100,7 @@ class SapoAguaBossEnemy extends Enemy with JumpMovement {
         position: position.clone() + direcao * _offsetLeque,
         isEnemy: true, // sem isso a gosma machuca inimigos em vez do jogador
         origem: creature,
+        dono: this,
         dmg: _danoGosma,
         knockback: _empurraoGosma,
         size: Vector2(24, 24),

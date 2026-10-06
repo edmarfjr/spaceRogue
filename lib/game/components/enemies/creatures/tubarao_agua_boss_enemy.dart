@@ -58,7 +58,7 @@ class TubaraoAguaBossEnemy extends Enemy with JumpMovement {
 
     updateJumpMovement(
       dt,
-      playerTarget.absolutePosition,
+      alvoPosicao,
       mode: JumpMode.targetPlayer,
       jumpDistance: 44.0,
       jumpHeight: 28.0,
@@ -77,6 +77,7 @@ class TubaraoAguaBossEnemy extends Enemy with JumpMovement {
       position: position.clone(),
       isEnemy: true,
       origem: creature,
+      dono: this,
       dmg: _danoPouso,
       knockback: _empurraoPouso,
       size: Vector2(_tamanhoPouso, _tamanhoPouso),

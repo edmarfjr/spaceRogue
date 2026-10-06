@@ -43,8 +43,20 @@ class OuricoEletricoEnemy extends Enemy {
   }
 
   @override
-  void takeDamage(double amount, {Color corTxt = Palette.amarelo, CreatureType tipoAtacante = CreatureType.neutro}) {
-    super.takeDamage(amount, corTxt: corTxt, tipoAtacante: tipoAtacante);
+  void takeDamage(
+    double amount, {
+    Color corTxt = Palette.amarelo,
+    CreatureType tipoAtacante = CreatureType.neutro,
+    bool doJogador = true,
+    bool revela = true,
+  }) {
+    super.takeDamage(
+      amount,
+      corTxt: corTxt,
+      tipoAtacante: tipoAtacante,
+      doJogador: doJogador,
+      revela: revela,
+    );
     if (health <= 0) return;
     if (_retaliacaoTimer > 0) return;
 
@@ -53,6 +65,7 @@ class OuricoEletricoEnemy extends Enemy {
       position: position.clone(),
       isEnemy: true, // machuca o jogador, não outros inimigos
       origem: creature,
+      dono: this,
       dmg: _danoRetaliacao,
       knockback: _empurraoRetaliacao,
       cor1: CreatureRegistry.ouricoEletrico.corClara,

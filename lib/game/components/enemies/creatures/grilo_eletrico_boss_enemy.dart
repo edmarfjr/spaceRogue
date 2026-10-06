@@ -87,7 +87,7 @@ class GriloEletricoBossEnemy extends Enemy with JumpMovement, ShooterAttack {
     // JumpMode.random sempre: ele foge do jogador, não mira nele.
     updateJumpMovement(
       dt,
-      playerTarget.absolutePosition,
+      alvoPosicao,
       mode: JumpMode.random,
       jumpDistance: _jumpDistancia,
       jumpHeight: _jumpAltura,
@@ -95,7 +95,7 @@ class GriloEletricoBossEnemy extends Enemy with JumpMovement, ShooterAttack {
   }
 
   void _faisca() {
-    final direcao = (playerTarget.absolutePosition - absolutePosition).normalized();
+    final direcao = (alvoPosicao - absolutePosition).normalized();
     shoot(direcao);
   }
 

@@ -61,7 +61,7 @@ class UrsoPlantaEnemy extends Enemy{
       return;
     }
 
-    final distancia = (playerTarget.absolutePosition - absolutePosition).length;
+    final distancia = (alvoPosicao - absolutePosition).length;
     if (distancia <= _alcancePancada) {
       _preparando = true;
       _preparoTimer = 0.0;
@@ -76,6 +76,7 @@ class UrsoPlantaEnemy extends Enemy{
       position: position.clone(),
       isEnemy: true, // sem isso a explosão não machuca o jogador
       origem: creature,
+      dono: this,
       dmg: _danoPancada.toDouble(),
       knockback: _empurraoPancada,
       size: Vector2(34, 34),

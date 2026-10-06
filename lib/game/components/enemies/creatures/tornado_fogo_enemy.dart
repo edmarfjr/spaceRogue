@@ -39,7 +39,7 @@ class TornadoFogoEnemy extends Enemy with ShooterAttack {
   void movimento(double dt) {
     if (updateAttack(dt, _fireRate, _socar)) return;
 
-    final distancia = (playerTarget.absolutePosition - absolutePosition).length;
+    final distancia = (alvoPosicao - absolutePosition).length;
 
     // Só soca colado. Longe, o cooldown fica pronto esperando a aproximação.
     if (wantsToShoot && distancia <= _alcanceSoco) {
@@ -51,7 +51,7 @@ class TornadoFogoEnemy extends Enemy with ShooterAttack {
   }
 
   void _socar() {
-    final direcao = (playerTarget.absolutePosition - absolutePosition).normalized();
+    final direcao = (alvoPosicao - absolutePosition).normalized();
     shoot(direcao, lifeTime: _alcanceSegundos);
   }
 }

@@ -99,7 +99,7 @@ class TornadoFogoBossEnemy extends Enemy with ShooterAttack {
         _dashTelegrafando = false;
         _dashEmAndamento = true;
         _dashTimer = 0.0;
-        _dashDirecao = (playerTarget.absolutePosition - absolutePosition).normalized();
+        _dashDirecao = (alvoPosicao - absolutePosition).normalized();
         GhostEffect.spawnTrail(
           visual: visual,
           add: (g) => parent?.add(g),
@@ -111,7 +111,7 @@ class TornadoFogoBossEnemy extends Enemy with ShooterAttack {
 
     if (updateAttack(dt, _fireRate, _socar)) return;
 
-    final distancia = (playerTarget.absolutePosition - absolutePosition).length;
+    final distancia = (alvoPosicao - absolutePosition).length;
 
     // Anti-kite: só na fase 2, só quando o jogador já fugiu de verdade, e só
     // quando o dash não está em cooldown.
@@ -132,7 +132,7 @@ class TornadoFogoBossEnemy extends Enemy with ShooterAttack {
   }
 
   void _socar() {
-    final direcao = (playerTarget.absolutePosition - absolutePosition).normalized();
+    final direcao = (alvoPosicao - absolutePosition).normalized();
     shoot(direcao, lifeTime: _alcanceSegundos);
   }
 
@@ -141,6 +141,7 @@ class TornadoFogoBossEnemy extends Enemy with ShooterAttack {
       position: position.clone(),
       isEnemy: true, // sem isso a explosão não machuca o jogador
       origem: creature,
+      dono: this,
       dmg: _dashDano,
       knockback: _dashEmpurrao,
       size: Vector2(36, 36),

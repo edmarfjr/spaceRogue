@@ -39,12 +39,12 @@ class GatoNeutroEnemy extends Enemy with JumpMovement {
 
   @override
   void movimento(double dt) {
-    final distancia = (playerTarget.absolutePosition - absolutePosition).length;
+    final distancia = (alvoPosicao - absolutePosition).length;
     final estavaNoAr = jumpState == JumpState.inAir;
 
     updateJumpMovement(
       dt,
-      playerTarget.absolutePosition,
+      alvoPosicao,
       mode: distancia <= _alcanceBote ? JumpMode.targetPlayer : JumpMode.random,
       jumpDistance: distancia <= _alcanceBote ? _alcanceBote : 20.0,
       jumpHeight: 14.0,
@@ -64,6 +64,7 @@ class GatoNeutroEnemy extends Enemy with JumpMovement {
         position: position.clone(),
         isEnemy: true,
         origem: creature,
+        dono: this,
         dmg: _danoImpacto.toDouble(),
         knockback: _empurraoImpacto,
         size: Vector2(16, 16),

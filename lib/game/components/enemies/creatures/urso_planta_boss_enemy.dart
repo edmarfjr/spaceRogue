@@ -109,7 +109,7 @@ class UrsoPlantaBossEnemy extends Enemy{
         _leapEmAndamento = true;
         _leapTimer = 0.0;
         visual.scale = Vector2(flip, 1.0);
-        _leapDirecao = (playerTarget.absolutePosition - absolutePosition).normalized();
+        _leapDirecao = (alvoPosicao - absolutePosition).normalized();
       }
       return;
     }
@@ -138,7 +138,7 @@ class UrsoPlantaBossEnemy extends Enemy{
       return;
     }
 
-    final distancia = (playerTarget.absolutePosition - absolutePosition).length;
+    final distancia = (alvoPosicao - absolutePosition).length;
 
     // Anti-kite: só na fase 2, só quando já fugiu do alcance da pancada, só
     // com o salto fora de cooldown.
@@ -164,6 +164,7 @@ class UrsoPlantaBossEnemy extends Enemy{
       position: position.clone(),
       isEnemy: true, // sem isso a explosão não machuca o jogador
       origem: creature,
+      dono: this,
       dmg: _danoPancada,
       knockback: _empurraoPancada,
       size: Vector2(50, 50),
@@ -177,6 +178,7 @@ class UrsoPlantaBossEnemy extends Enemy{
       position: position.clone(),
       isEnemy: true,
       origem: creature,
+      dono: this,
       dmg: _leapDano,
       knockback: _leapEmpurrao,
       size: Vector2(64, 64),

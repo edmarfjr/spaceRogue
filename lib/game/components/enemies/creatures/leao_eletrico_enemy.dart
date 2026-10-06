@@ -33,7 +33,7 @@ class LeaoEletricoEnemy extends Enemy with ShooterAttack {
     if (updateAttack(dt, _fireRate, _estocar)) return;
 
     if (wantsToShoot) {
-      final distancia = (playerTarget.absolutePosition - absolutePosition).length;
+      final distancia = (alvoPosicao - absolutePosition).length;
       if (distancia <= _alcanceTiro) {
         triggerAttack();
         return;
@@ -44,7 +44,7 @@ class LeaoEletricoEnemy extends Enemy with ShooterAttack {
   }
 
   void _estocar() {
-    final direcao = (playerTarget.absolutePosition - absolutePosition).normalized();
+    final direcao = (alvoPosicao - absolutePosition).normalized();
     shoot(direcao, lifeTime: 1.2);
   }
 }

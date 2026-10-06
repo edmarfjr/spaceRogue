@@ -29,6 +29,10 @@ mixin MovementHost on PositionComponent {
   /// depende da natureza.
   PositionComponent get currentTarget;
 
+  /// Ponto pra onde o host mira e anda. Por padrão é o próprio alvo; o
+  /// `Enemy` cego troca pela última posição em que viu o jogador.
+  Vector2 get posicaoDoAlvo => currentTarget.absolutePosition;
+
   /// Toca a animação de movimento genérica do host (ver `MovementAnimator`).
   /// Cada host mantém seu próprio animador — não há estado comum aqui.
   void animateMovement(double dt, {required bool isMoving, double horizontalDir = 0.0});

@@ -60,7 +60,7 @@ class RoedorFogoBossEnemy extends Enemy with ShooterAttack {
     if (updateAttack(dt, _fireRate, _dispararLeque)) return;
 
     if (wantsToShoot) {
-      final distancia = (playerTarget.absolutePosition - absolutePosition).length;
+      final distancia = (alvoPosicao - absolutePosition).length;
       if (distancia <= _alcanceGatilho) {
         triggerAttack();
         return;
@@ -71,7 +71,7 @@ class RoedorFogoBossEnemy extends Enemy with ShooterAttack {
   }
 
   void _dispararLeque() {
-    final base = (playerTarget.absolutePosition - absolutePosition).normalized();
+    final base = (alvoPosicao - absolutePosition).normalized();
     final passoRad = _anguloLequeGraus * pi / 180;
 
     // Leque de 5: dois passos pra cada lado do centro, mais largo que o

@@ -44,7 +44,7 @@ class SereiaAguaEnemy extends Enemy {
       );
 
   Vector2 get _paraJogador {
-    final v = playerTarget.absolutePosition - absolutePosition;
+    final v = alvoPosicao - absolutePosition;
     return v.length == 0 ? Vector2(0, 1) : v.normalized();
   }
 
@@ -74,9 +74,10 @@ class SereiaAguaEnemy extends Enemy {
       return;
     }
 
-    final distancia = (playerTarget.absolutePosition - absolutePosition).length;
-    // Cego não arma o golpe: ele nem sabe onde o jogador está.
-    if (distancia <= _alcanceGolpe && cegoTimer <= 0) {
+    final distancia = (alvoPosicao - absolutePosition).length;
+    // Cego também golpeia — no ponto onde viu o jogador por último (ver
+    // `Enemy.alvoPosicao`), e às cegas o golpe acerta outros inimigos.
+    if (distancia <= _alcanceGolpe) {
       _avisoTimer = _aviso;
       spawnAlerta(duracao: _aviso);
       return;
@@ -110,8 +111,16 @@ class SereiaAguaEnemy extends Enemy {
     double amount, {
     Color corTxt = Palette.amarelo,
     CreatureType tipoAtacante = CreatureType.neutro,
+    bool doJogador = true,
+    bool revela = true,
   }) {
-    super.takeDamage(amount, corTxt: corTxt, tipoAtacante: tipoAtacante);
+    super.takeDamage(
+      amount,
+      corTxt: corTxt,
+      tipoAtacante: tipoAtacante,
+      doJogador: doJogador,
+      revela: revela,
+    );
     if (health <= 0 || _fugaRecargaTimer > 0 || amount <= 0) return;
     _fugir();
   }

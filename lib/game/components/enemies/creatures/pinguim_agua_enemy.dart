@@ -69,7 +69,7 @@ class PinguimAguaEnemy extends Enemy with ShooterAttack {
   /// Não usa `shoot()` porque o herdado não sabe estilhaçar — precisa do
   /// `estilhaca` e do tempo de voo casados.
   void _tiroDeGelo() {
-    final ate = playerTarget.absolutePosition - absolutePosition;
+    final ate = alvoPosicao - absolutePosition;
     final direcao = ate.normalized();
     final tempoDeVoo =
         ((ate.length + _sobraAlemDoJogador) / _velocidadeTiro).clamp(_vooMinimo, _vooMaximo);
