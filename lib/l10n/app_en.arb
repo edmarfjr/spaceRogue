@@ -464,5 +464,17 @@
   "passiveName_RastroFlamejante": "Flaming Trail",
   "passiveDesc_RastroFlamejante": "Every trainer dodge sets the landing point on fire.",
   "passiveName_ReflexoEletrico": "Electric Reflex",
-  "passiveDesc_ReflexoEletrico": "The trainer's dodge recharges much faster, but covers less distance."
+  "passiveDesc_ReflexoEletrico": "The trainer's dodge recharges much faster, but covers less distance.",
+  "creatureName_sereia_agua": "Calamarin",
+  "creatureDesc_sereia_agua": "Strikes up close with its tentacle and vanishes in an ink cloud when pressed.",
+  "abilityName_Tentaculada": "Tentacle Swing",
+  "abilityDesc_Tentaculada": "A tentacle sweeps an arc in front.",
+  "abilityName_RedemoinhoDeTentaculos": "Tentacle Whirl",
+  "abilityDesc_RedemoinhoDeTentaculos": "The tentacle spins around, hitting everyone nearby.",
+  "abilityName_EsguichoDeTinta": "Ink Squirt",
+  "abilityDesc_EsguichoDeTinta": "A dodge that leaves a blinding ink cloud.",
+  "abilityName_CortinaDeTinta": "Ink Curtain",
+  "abilityDesc_CortinaDeTinta": "A dodge that leaves an ink cloud that blinds and blocks projectiles.",
+  "passiva_camuflagem": "CAMOUFLAGE",
+  "passiva_camuflagemDesc": "STAND STILL FOR A MOMENT AND YOUR NEXT HIT IS CRITICAL"
 }

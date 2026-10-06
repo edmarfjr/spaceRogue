@@ -190,6 +190,7 @@ class ItemEfeitoRegistry {
     SeteVidas(),
     RaizProfunda(),
     FaroDeSangue(),
+    Camuflagem(),
     Revezamento(),
     CascaInstavel(),
     Estilhaco(),
@@ -2892,6 +2893,50 @@ class RaizProfunda extends ItemEfeito {
 ///
 /// Dano de execução é um eixo que nenhum outro item tem. Vale contra boss e
 /// campeão também, que é onde a metade final da barra custa mais caro.
+/// Calamarin (`sereia_agua`). Eco do molusco que some no cenário: ficar
+/// parado por [espera] segundos garante crítico no PRÓXIMO golpe.
+///
+/// Um só: o crítico gasta a camuflagem, e ela só rearma depois de o jogador
+/// se mexer e parar de novo. Sem isso, plantar o pé e atacar daria crítico
+/// em todo golpe — virava torre, não emboscada.
+///
+/// `tempoParado` mede deslocamento, não `velocity` (ver a doc dele), então
+/// atacar parado não desarma; andar desarma.
+class Camuflagem extends ItemEfeito {
+  const Camuflagem();
+
+  static const double espera = 1.5;
+
+  @override
+  String get id => 'camuflagem';
+  @override
+  bool get sorteavel => false;
+  @override
+  String get spritePath => 'actors/sereiaAgua.png';
+  @override
+  Color get cor1 => cinzaMarcadorClaro;
+  @override
+  Color get cor2 => cinzaMarcadorEscuro;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_camuflagem;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_camuflagemDesc;
+
+  @override
+  void aoAtualizar(Player player, double dt) {
+    if (player.tempoParado <= 0) player.camuflagemGasta = false;
+    if (player.camuflagemGasta || player.tempoParado < espera) return;
+    // 100 pontos percentuais: crítico certo, qualquer que seja a base.
+    player.critChanceDerivada += 100;
+  }
+
+  @override
+  void aoCritar(Player player, Enemy alvo) {
+    if (player.tempoParado >= espera) player.camuflagemGasta = true;
+  }
+}
+
 class FaroDeSangue extends ItemEfeito {
   const FaroDeSangue();
 
@@ -3085,6 +3130,7 @@ class PassivasAposentadoria {
     'gato_neutro': SeteVidas(),
     'toco_planta': RaizProfunda(),
     'tubarao_agua': FaroDeSangue(),
+    'sereia_agua': Camuflagem(),
   };
 
   static ItemEfeito? de(String creatureId) => porCriatura[creatureId];

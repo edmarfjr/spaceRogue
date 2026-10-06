@@ -271,6 +271,11 @@ class Player extends PositionComponent
   /// [SangueFrio] lê pra compensar azar.
   int golpesSemCrit = 0;
 
+  /// A [Camuflagem] já gastou o crítico garantido desde a última vez que o
+  /// jogador se mexeu. Mora aqui pelo mesmo motivo que [golpesSemCrit]: as
+  /// instâncias de item são `const` e não guardam estado.
+  bool camuflagemGasta = false;
+
   /// Moedas da run, gastas nos balcões da loja (ver ShopStand). Zeram junto
   /// com o Player, ou seja, a cada run nova.
   int coins = 0;

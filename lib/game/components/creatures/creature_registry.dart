@@ -128,6 +128,11 @@ import '../enemies/creatures/toco_planta_enemy.dart';
 import '../enemies/creatures/tornado_fogo_enemy.dart';
 import '../enemies/creatures/tubarao_agua_enemy.dart';
 import '../enemies/creatures/urso_planta_enemy.dart';
+import '../enemies/creatures/sereia_agua_enemy.dart';
+import 'abilities/tentaculada.dart';
+import 'abilities/redemoinho_de_tentaculos.dart';
+import 'abilities/esguicho_de_tinta.dart';
+import 'abilities/cortina_de_tinta.dart';
 
 class CreatureRegistry {
   static final CreatureData roedorFogo = CreatureData(
@@ -900,6 +905,49 @@ class CreatureRegistry {
   );
 
 
+  /// Calamarin (nome provisório) — molusco de água de corpo a corpo. O botão A
+  /// varre um arco com o tentáculo; o botão B esquiva soltando tinta que cega.
+  /// Id `sereia_agua` fixo: é chave de save, e não muda quando o nome mudar.
+  static final CreatureData sereiaAgua = CreatureData(
+    id: 'sereia_agua',
+    nome: 'Calamarin',
+    spritePath: 'actors/sereiaAgua.png',
+    tipo: CreatureType.agua,
+    corClara: Palette.azul,
+    corEscura: Palette.mauve,
+    stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 3),
+    ability1: Tentaculada(),
+    ability2: EsguichoDeTinta(),
+    moveAnim: MovementAnimation.caminhada,
+    hitboxSize: Vector2(10, 10),
+    enemyBuilder: (pos, plr) =>
+        SereiaAguaEnemy(position: pos, playerTarget: plr),
+    evoluir: () => sereiaAguaEvo,
+  );
+
+  /// Evolução do Calamarin (Kalamarok, provisório). O tentáculo passa a girar
+  /// em volta e a tinta vira cortina contra tiro.
+  ///
+  /// `spritePath` aponta pro sprite da BASE de propósito: o
+  /// `actors/sereiaAguaEvo.png` ainda não existe, e um caminho pra arquivo
+  /// inexistente derruba o `Flame.images.load` no instante em que a criatura
+  /// evolui. Trocar aqui quando a arte chegar.
+  static final CreatureData sereiaAguaEvo = CreatureData(
+    id: 'sereia_agua',
+    nome: 'Kalamarok',
+    spritePath: 'actors/sereiaAgua.png',
+    tipo: CreatureType.agua,
+    corClara: Palette.azul,
+    corEscura: Palette.mauve,
+    stats: BaseStats(maxHp: 6, speed: 70, defesa: 1, ataque: 3),
+    ability1: RedemoinhoDeTentaculos(),
+    ability2: CortinaDeTinta(),
+    moveAnim: MovementAnimation.caminhada,
+    hitboxSize: Vector2(10, 10),
+    enemyBuilder: (pos, plr) =>
+        SereiaAguaEnemy(position: pos, playerTarget: plr),
+  );
+
   /// Cogumelo de Planta. Não mira: o esporo do botão A vai pro lado que o
   /// jogador está indo, e para quando ele para — arma de condução, não de
   /// pontaria. O botão B converte o golpe absorvido em nuvem no chão.
@@ -958,6 +1006,7 @@ class CreatureRegistry {
     tubaraoAgua,
     leaoEletrico,
     cogumeloPlanta,
+    sereiaAgua,
     caoNeutro,
     gatoNeutro,
     aveNeutro,

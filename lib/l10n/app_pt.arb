@@ -512,5 +512,17 @@
   "passiveName_RastroFlamejante": "Rastro Flamejante",
   "passiveDesc_RastroFlamejante": "Toda esquiva do treinador incendeia o de chegada.",
   "passiveName_ReflexoEletrico": "Reflexo Elétrico",
-  "passiveDesc_ReflexoEletrico": "A esquiva do treinador recarrega bem mais rápido, mas percorre menos distância."
+  "passiveDesc_ReflexoEletrico": "A esquiva do treinador recarrega bem mais rápido, mas percorre menos distância.",
+  "creatureName_sereia_agua": "Calamarin",
+  "creatureDesc_sereia_agua": "Bate de perto com o tentáculo e some numa nuvem de tinta quando aperta.",
+  "abilityName_Tentaculada": "Tentaculada",
+  "abilityDesc_Tentaculada": "Um tentáculo varre um arco à frente.",
+  "abilityName_RedemoinhoDeTentaculos": "Redemoinho de Tentáculos",
+  "abilityDesc_RedemoinhoDeTentaculos": "O tentáculo gira em volta, acertando todos ao redor.",
+  "abilityName_EsguichoDeTinta": "Esguicho de Tinta",
+  "abilityDesc_EsguichoDeTinta": "Esquiva que deixa uma nuvem de tinta que cega.",
+  "abilityName_CortinaDeTinta": "Cortina de Tinta",
+  "abilityDesc_CortinaDeTinta": "Esquiva que deixa uma nuvem de tinta que cega e bloqueia projéteis.",
+  "passiva_camuflagem": "CAMUFLAGEM",
+  "passiva_camuflagemDesc": "PARADO POR UM TEMPO, O PRÓXIMO GOLPE É CRÍTICO"
 }

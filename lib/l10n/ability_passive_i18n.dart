@@ -31,6 +31,10 @@ import 'package:creatures_rogue/game/components/creatures/abilities/escamas_esco
 import 'package:creatures_rogue/game/components/creatures/abilities/escamas_espelhadas.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/rabanada.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/rabanada_evo.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/tentaculada.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/redemoinho_de_tentaculos.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/esguicho_de_tinta.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/cortina_de_tinta.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/escudo_de_espinhos.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/escudo_de_espinhos_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/esquiva_bomba.dart';
@@ -147,6 +151,10 @@ String abilityName(BuildContext context, Ability a) {
     Rabanada() => l.abilityName_Rabanada,
     RabanadaEvo() => l.abilityName_RabanadaEvo,
     EscamasEspelhadas() => l.abilityName_EscamasEspelhadas,
+    Tentaculada() => l.abilityName_Tentaculada,
+    RedemoinhoDeTentaculos() => l.abilityName_RedemoinhoDeTentaculos,
+    EsguichoDeTinta() => l.abilityName_EsguichoDeTinta,
+    CortinaDeTinta() => l.abilityName_CortinaDeTinta,
 
     _ => a.nome,
   };
@@ -220,6 +228,10 @@ String abilityDescription(BuildContext context, Ability a) {
     Rabanada() => l.abilityDesc_Rabanada,
     RabanadaEvo() => l.abilityDesc_RabanadaEvo,
     EscamasEspelhadas() => l.abilityDesc_EscamasEspelhadas,
+    Tentaculada() => l.abilityDesc_Tentaculada,
+    RedemoinhoDeTentaculos() => l.abilityDesc_RedemoinhoDeTentaculos,
+    EsguichoDeTinta() => l.abilityDesc_EsguichoDeTinta,
+    CortinaDeTinta() => l.abilityDesc_CortinaDeTinta,
 
     _ => a.descricao,
   };
