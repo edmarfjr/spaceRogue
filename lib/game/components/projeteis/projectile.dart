@@ -98,6 +98,15 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   final bool estilhaca;
   final bool playSfx;
 
+  /// `false` faz este projétil ignorar os do lado oposto: nenhum dos dois se
+  /// gasta no encontro. É o que uma nuvem que só cega quer — sem isto ela
+  /// virava escudo contra tiro sem ninguém ter pedido.
+  final bool interageComProjeteis;
+
+  /// Barreira: projétil do lado oposto que encosta some, e este não se gasta
+  /// — nem perde pra vantagem de tipo. Ver [_resolverColisaoEntreProjeteis].
+  final bool engoleProjeteis;
+
   final PositionComponent owner;
 
   /// Criatura por trás do disparo, quando quem atirou é inimigo.
@@ -139,6 +148,8 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     this.estilhaca = false,
     this.playSfx = true,
     this.noChao = false,
+    this.interageComProjeteis = true,
+    this.engoleProjeteis = false,
     Vector2? size,
     int priority = 0,
     }): super(
@@ -355,11 +366,18 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
           other.applyStun(stunDuration);
         }
         
-        other.takeDamage(
-          dmg * Player.danoMult * Player.danoMultDerivado,
-          tipoAtacante: tipo,
-        );
-        other.applyKnockback(absolutePosition, kbForce);
+        // `dmg > 0`, mesma guarda do `ExplosionHitbox`: nuvem de dano zero
+        // (tinta, fumaça) só aplica status. Sem isso cada inimigo na nuvem
+        // levava um "0.0", um `Sfx.hit` e uma rolagem de crítico — que
+        // alimentava `SangueFrio` e disparava os ganchos de `aoCritar` por
+        // um golpe que não existiu.
+        if (dmg > 0) {
+          other.takeDamage(
+            dmg * Player.danoMult * Player.danoMultDerivado,
+            tipoAtacante: tipo,
+          );
+          other.applyKnockback(absolutePosition, kbForce);
+        }
         atravessa--;
         if (atravessa <= 0) onDestroy();
         
@@ -367,7 +385,15 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
     }
   }
 
+  /// Cada lado do encontro chama isto pra SI MESMO (o Flame dispara o
+  /// `onCollisionStart` nos dois), então aqui só se decide o destino deste.
   void _resolverColisaoEntreProjeteis(Projectile other) {
+    if (!interageComProjeteis || !other.interageComProjeteis) return;
+    if (other.engoleProjeteis) {
+      onDestroy();
+      return;
+    }
+    if (engoleProjeteis) return;
     if (typeMultiplier(tipo, other.tipo) > 1.0) return;
     atravessa-=1;
     if(atravessa<=0)onDestroy();
