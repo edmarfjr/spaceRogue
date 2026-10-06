@@ -46,6 +46,17 @@ class GolpeDeTentaculo extends PositionComponent {
   final Color cor1;
   final Color cor2;
 
+  /// Desenha a área de acerto (o setor do arco) por cima do golpe — só pra
+  /// teste e debug. Contorno = arco inteiro que o golpe vai cobrir;
+  /// preenchido = parte já varrida, que é a que já pode acertar.
+  static const bool mostrarHitbox = true;
+
+  final Paint _hitboxContorno = Paint()
+    ..color = const Color(0xFFFF0000)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 0.5;
+  final Paint _hitboxVarrida = Paint()..color = const Color(0x55FF0000);
+
   final Set<PositionComponent> _atingidos = {};
   double _tempo = 0.0;
   late final double _anguloInicial;
@@ -115,6 +126,18 @@ class GolpeDeTentaculo extends PositionComponent {
     _acertar(arco * fracao);
 
     if (_tempo >= duracao) removeFromParent();
+  }
+
+  @override
+  void render(Canvas canvas) {
+    super.render(canvas);
+    if (!mostrarHitbox || !isLoaded) return;
+    // O componente não gira (quem gira é o sprite filho) e está na posição do
+    // dono com tamanho zero, então a origem do canvas é o centro do arco.
+    final area = Rect.fromCircle(center: Offset.zero, radius: alcance);
+    canvas.drawArc(area, _anguloInicial, sentido * arco, true, _hitboxContorno);
+    final fracao = (_tempo / duracao).clamp(0.0, 1.0);
+    canvas.drawArc(area, _anguloInicial, sentido * arco * fracao, true, _hitboxVarrida);
   }
 
   /// Quanto do arco o alvo em [ponto] está "depois" do início da varredura,
