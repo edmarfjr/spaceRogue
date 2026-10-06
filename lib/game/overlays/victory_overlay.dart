@@ -14,9 +14,23 @@ import '../audio/ui_sfx.dart';
 /// motivo de o de menu NÃO chamar `resetGame`: iniciar uma run só pra
 /// esconder outra atrás do menu deixava dois `Player` vivos ao mesmo tempo. A
 /// run terminada fica parada e pausada até o jogador escolher de novo.
-class VictoryOverlay extends StatelessWidget {
+class VictoryOverlay extends StatefulWidget {
   final CreaturesRogueGame game;
   const VictoryOverlay({super.key, required this.game});
+
+  @override
+  State<VictoryOverlay> createState() => _VictoryOverlayState();
+}
+
+class _VictoryOverlayState extends State<VictoryOverlay> {
+  /// Botões travados até a barra de progressão terminar de encher e a
+  /// última janela de item fechar — sem isso, um RESTART apressado fecharia
+  /// a tela por cima das janelas de desbloqueio.
+  bool _liberado = false;
+
+  CreaturesRogueGame get game => widget.game;
+
+  void _liberar() => setState(() => _liberado = true);
 
   @override
   Widget build(BuildContext context) {
@@ -53,24 +67,29 @@ class VictoryOverlay extends StatelessWidget {
                     200.0,
                     320.0,
                   ),
+                  aoConcluirProgressao: _liberar,
                 ),
                 const SizedBox(height: 20),
                 _Botao(
                   texto: context.l10n.gameOver_restart,
                   fonte: 20,
-                  onPressed: () {
-                    game.overlays.remove('Victory');
-                    game.resetGame();
-                  },
+                  onPressed: !_liberado
+                      ? null
+                      : () {
+                          game.overlays.remove('Victory');
+                          game.resetGame();
+                        },
                 ),
                 const SizedBox(height: 12),
                 _Botao(
                   texto: context.l10n.gameOver_menuPrincipal,
                   fonte: 16,
-                  onPressed: () {
-                    game.overlays.remove('Victory');
-                    game.overlays.add('MainMenu');
-                  },
+                  onPressed: !_liberado
+                      ? null
+                      : () {
+                          game.overlays.remove('Victory');
+                          game.overlays.add('MainMenu');
+                        },
                 ),
               ],
             ),
@@ -84,7 +103,7 @@ class VictoryOverlay extends StatelessWidget {
 class _Botao extends StatelessWidget {
   final String texto;
   final double fonte;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   const _Botao({
     required this.texto,

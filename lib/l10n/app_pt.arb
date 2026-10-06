@@ -251,13 +251,23 @@
     "placeholders": { "dungeon": {}, "andar": {} }
   },
   "resumo_abates": "ABATES: {abates}",
+  "progressao_nivel": "NÍVEL {nivel}",
+  "@progressao_nivel": {
+    "placeholders": { "nivel": {} }
+  },
+  "progressao_xpGanho": "+{xp} XP",
+  "@progressao_xpGanho": {
+    "placeholders": { "xp": {} }
+  },
+  "progressao_max": "NÍVEL MÁXIMO",
+  "progressao_proximo": "PRÓXIMO",
+  "progressao_novoItem": "ITEM DESBLOQUEADO!",
+  "progressao_ok": "OK",
   "@resumo_abates": {
     "placeholders": { "abates": {} }
   },
   "resumo_derrotadoPor": "DERROTADO POR",
   "resumo_armadilha": "ESPINHOS",
-  "resumo_itens": "ITENS",
-  "resumo_semItens": "NENHUM ITEM",
   "tutorial_controlesTeclado": "WASD PARA MOVER\nSETAS PARA ATACAR",
   "tutorial_controles": "ARRASTE À ESQUERDA PARA MOVER\nARRASTE À DIREITA PARA ATACAR",
   "retirement_titulo": "APOSENTANDO...",

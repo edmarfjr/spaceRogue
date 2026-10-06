@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
+import 'package:creatures_rogue/game/overlays/barra_progressao.dart';
 import 'package:creatures_rogue/game/overlays/selecao_widgets.dart';
 import 'package:creatures_rogue/l10n/creature_i18n.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 
 /// Resumo da run que acabou: até onde chegou, quanto durou, quantos caíram,
-/// quem derrubou o grupo, quem jogou e o que foi pego. Usado pelo Game Over e
+/// quem derrubou o grupo, quem jogou e a barra de progressão. Usado pelo Game Over e
 /// pela vitória — as duas telas encerram uma run e contam a mesma história.
 ///
 /// Lê o estado VIVO do jogo: no fim da run nada é resetado até o jogador
-/// apertar RESTART ou escolher criatura de novo, então `player.itens` e os
-/// contadores ainda são os da run terminada.
+/// apertar RESTART ou escolher criatura de novo, então os contadores ainda
+/// são os da run terminada.
 ///
 /// [largura] é obrigatória porque o Game Over vive dentro do `FittedBox` do
 /// `ResponsiveOverlayScaffold`, que dá largura INFINITA ao filho — e um
@@ -21,15 +22,22 @@ class ResumoRun extends StatelessWidget {
   final CreaturesRogueGame game;
   final double largura;
 
-  const ResumoRun({super.key, required this.game, required this.largura});
+  /// Repassado à [BarraProgressao]: chamado quando a barra terminou de
+  /// encher e a última janela de item fechou.
+  final VoidCallback aoConcluirProgressao;
+
+  const ResumoRun({
+    super.key,
+    required this.game,
+    required this.largura,
+    required this.aoConcluirProgressao,
+  });
 
   static const double _ladoCriatura = 32;
-  static const double _ladoItem = 20;
 
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final itens = game.player.itens;
 
     return SizedBox(
       width: largura,
@@ -47,30 +55,15 @@ class ResumoRun extends StatelessWidget {
             alignment: WrapAlignment.center,
             spacing: 10,
             runSpacing: 6,
-            children: [
-              for (final id in game.criaturasUsadas) _criatura(id),
-            ],
+            children: [for (final id in game.criaturasUsadas) _criatura(id)],
           ),
-          const SizedBox(height: 12),
-          _rotulo(l.resumo_itens),
-          const SizedBox(height: 6),
-          if (itens.isEmpty)
-            _linha(l.resumo_semItens)
-          else
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 4,
-              runSpacing: 4,
-              children: [
-                for (final item in itens)
-                  SpriteUi(
-                    caminho: item.spritePath,
-                    tamanho: _ladoItem,
-                    cor1: item.cor1,
-                    cor2: item.cor2,
-                  ),
-              ],
-            ),
+          const SizedBox(height: 16),
+          BarraProgressao(
+            xpAntes: game.xpProgressaoAntes,
+            xpGanho: game.xpProgressaoGanho,
+            largura: largura,
+            aoConcluir: aoConcluirProgressao,
+          ),
         ],
       ),
     );

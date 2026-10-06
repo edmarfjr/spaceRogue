@@ -440,6 +440,16 @@ class CreaturesRogueGame extends FlameGame
   /// em `Enemy.death`, que já tem guarda contra morrer duas vezes.
   int abatesDaRun = 0;
 
+  /// Bosses derrotados nesta run — contado em `Enemy.death`, pro XP de
+  /// progressão.
+  int bossesDaRun = 0;
+
+  /// XP de progressão de ANTES desta run e o que ela rendeu, gravados no
+  /// instante em que a run acaba (ver [_premiarProgressao]). A barra do
+  /// resumo anima de um pro outro.
+  int xpProgressaoAntes = 0;
+  int xpProgressaoGanho = 0;
+
   /// Quem derrubou a ÚLTIMA criatura do grupo — ver [pocketarSlotAtivo].
   /// Nulo quando a run acabou sem morte (aposentando a última) ou quando o
   /// golpe não tinha origem conhecida; o resumo então omite a linha.
@@ -696,6 +706,7 @@ class CreaturesRogueGame extends FlameGame
     companionAtivoIndex = 0;
     tempoDeRun = 0.0;
     abatesDaRun = 0;
+    bossesDaRun = 0;
     derrotadoPor = null;
     derrotadoPorArmadilha = false;
     criaturasUsadas.clear();
@@ -704,7 +715,11 @@ class CreaturesRogueGame extends FlameGame
       //  filtra as passivas de aposentadoria: elas moram no mesmo
       // registro (pra  reconstruir o save), mas não podem cair num
       // pedestal.
-      ..addAll(ItemEfeitoRegistry.todos.where((i) => i.sorteavel));
+      ..addAll(
+        ItemEfeitoRegistry.todos.where(
+          (i) => i.sorteavel && CreatureProgress.instance.itemLiberado(i),
+        ),
+      );
     poolAposentadoria
       ..clear()
       ..addAll(PassivasAposentadoria.porCriatura.keys);
@@ -891,6 +906,7 @@ class CreaturesRogueGame extends FlameGame
     // fica vazio. Nada quebra, so a tela de vitoria mostraria menos.
     tempoDeRun = (dados['tempoDeRun'] as num?)?.toDouble() ?? 0.0;
     abatesDaRun = (dados['abates'] as num?)?.toInt() ?? 0;
+    bossesDaRun = (dados['bosses'] as num?)?.toInt() ?? 0;
     criaturasUsadas
       ..clear()
       ..addAll(((dados['criaturasUsadas'] as List?) ?? const []).cast<String>());
@@ -956,7 +972,9 @@ class CreaturesRogueGame extends FlameGame
             // um save antigo enchia a pool também com as passivas de
             // aposentadoria, que moram no mesmo registro só pra reconstruir o
             // save — e aí elas apareciam em pedestal e na loja.
-            ? ItemEfeitoRegistry.todos.where((i) => i.sorteavel)
+            ? ItemEfeitoRegistry.todos.where(
+                (i) => i.sorteavel && CreatureProgress.instance.itemLiberado(i),
+              )
             : poolSalva.cast<String>().map(ItemEfeitoRegistry.porId).nonNulls,
       );
 
@@ -1038,6 +1056,7 @@ class CreaturesRogueGame extends FlameGame
       'poolItens': poolItens.map((i) => i.id).toList(),
       'tempoDeRun': tempoDeRun,
       'abates': abatesDaRun,
+      'bosses': bossesDaRun,
       'criaturasUsadas': List<String>.from(criaturasUsadas),
       'poolAposentadoria': List<String>.from(poolAposentadoria),
       'bossId': runBoss?.creatureId,
@@ -2194,12 +2213,36 @@ class CreaturesRogueGame extends FlameGame
   /// [ehUltimaDungeon]). Mesma mecanica do Game Over — tira a Hud, pausa e
   /// apaga o save —, porque em ambos a run terminou e nao ha pra onde
   /// continuar.
+  /// XP de progressão desta run: andar alcançado pesa mais, boss e vitória
+  /// dão bônus, abate vale pouco (a quantidade de inimigos já cresce com o
+  /// andar, então pesar abate contaria o progresso duas vezes). Moeda fica de
+  /// fora de propósito: contar o saldo puniria gastar na loja.
+  int _xpDaRun({required bool vitoria}) {
+    final andares = (currentLevel - 1) * numFloors + currentFloor;
+    return andares * 10 +
+        bossesDaRun * 30 +
+        abatesDaRun +
+        (vitoria ? 100 : 0);
+  }
+
+  /// Grava o XP da run ANTES de qualquer animação: fechar o app no meio da
+  /// barra enchendo não pode custar o XP. A tela só reproduz o que já está
+  /// salvo. GOD MODE não rende XP — é cheat de teste.
+  void _premiarProgressao({required bool vitoria}) {
+    xpProgressaoAntes = CreatureProgress.instance.xpProgressao;
+    xpProgressaoGanho = GameSettings.instance.godMode
+        ? 0
+        : _xpDaRun(vitoria: vitoria);
+    unawaited(CreatureProgress.instance.ganharXpProgressao(xpProgressaoGanho));
+  }
+
   void _handleVitoria() {
     // `nextLevel` já fez `currentFloor++` antes de perceber que era a última
     // dungeon, então aqui o andar está um além do último. Sem voltar, o
     // resumo da vitória mostraria um andar que não existe. Seguro mexer: o
     // save é apagado logo abaixo e `startRun` zera o andar.
     currentFloor = numFloors;
+    _premiarProgressao(vitoria: true);
     // Toda criatura que passou pelo grupo ganha a marca, inclusive as que
     // caíram ou se aposentaram no caminho — mesmo critério do elenco que a
     // tela de vitória mostra. Vitória em GOD MODE não conta: é cheat de
@@ -2225,6 +2268,7 @@ class CreaturesRogueGame extends FlameGame
 
     overlays.remove('Hud');
     unawaited(RunSave.instance.apagar());
+    _premiarProgressao(vitoria: false);
     // Aqui, e não em `_mostrarGameOver`: a faixa entra junto com a cena de
     // morte, que é quando a run acabou de fato. RESTART volta pra trilha da
     // run sozinho — `startRun` toca `GameMusic.run`.

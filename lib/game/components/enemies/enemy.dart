@@ -743,7 +743,10 @@ abstract class Enemy extends PositionComponent
     }
     playerTarget.abatesSeguidos++;
     final jogo = game;
-    if (jogo is CreaturesRogueGame) jogo.abatesDaRun++;
+    if (jogo is CreaturesRogueGame) {
+      jogo.abatesDaRun++;
+      if (ehBoss) jogo.bossesDaRun++;
+    }
     playerTarget.tempoDesdeAbate = 0.0;
 
     // Antes do `removeFromParent` lá embaixo, e antes do XP: a explosão nasce

@@ -1,5 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:creatures_rogue/game/components/items/item_efeito.dart';
+import 'package:creatures_rogue/game/components/items/progressao_itens.dart';
 import 'package:creatures_rogue/game/game_settings.dart';
 
 /// Progresso de desbloqueio das criaturas: quais estão liberadas pra jogar, e
@@ -16,6 +18,7 @@ class CreatureProgress {
   static const _killCountPrefix = 'creatures_rogue.kills.';
   static const _introKey = 'creatures_rogue.intro_concluida';
   static const _vitoriasKey = 'creatures_rogue.vitorias_ids';
+  static const _xpProgressaoKey = 'creatures_rogue.xp_progressao';
 
   /// Ninguém começa liberado: a primeira criatura vem da escolha no fim da
   /// intro (ver `IntroOverlay`), e é a única jogável na primeira run. A lista
@@ -76,6 +79,7 @@ class CreatureProgress {
     _vitoriasIds = {};
     await _prefs.setStringList(_unlockedKey, _unlockedIds.toList());
     await _prefs.setStringList(_vitoriasKey, const []);
+    await _prefs.setInt(_xpProgressaoKey, 0);
     await _prefs.setBool(_introKey, false);
   }
 
@@ -94,6 +98,24 @@ class CreatureProgress {
     if (_vitoriasIds.length == antes) return;
     await _prefs.setStringList(_vitoriasKey, _vitoriasIds.toList());
   }
+
+  /// XP de progressão acumulado em todas as runs. Só o total é salvo: o
+  /// nível e os itens liberados saem dele (ver [ProgressaoItens]), então
+  /// editar a lista de desbloqueio nunca deixa o save inconsistente.
+  int get xpProgressao => _prefs.getInt(_xpProgressaoKey) ?? 0;
+
+  int get nivelProgressao => ProgressaoItens.nivelPara(xpProgressao);
+
+  Future<void> ganharXpProgressao(int xp) async {
+    if (xp <= 0) return;
+    await _prefs.setInt(_xpProgressaoKey, xpProgressao + xp);
+  }
+
+  /// O item pode cair nesta run? GOD MODE libera todos, pelo mesmo motivo de
+  /// [isUnlocked]: é cheat de teste, e mente só na leitura.
+  bool itemLiberado(ItemEfeito item) =>
+      GameSettings.instance.godMode ||
+      !ProgressaoItens.bloqueado(item, nivelProgressao);
 
   Future<void> unlock(String creatureId) async {
     if (_unlockedIds.add(creatureId)) {

@@ -7,9 +7,23 @@ import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 import 'package:creatures_rogue/game/overlays/resumo_run.dart';
 import 'package:creatures_rogue/l10n/l10n_extensions.dart';
 
-class GameOverMenu extends StatelessWidget {
+class GameOverMenu extends StatefulWidget {
   final CreaturesRogueGame game;
   const GameOverMenu({super.key, required this.game});
+
+  @override
+  State<GameOverMenu> createState() => _GameOverMenuState();
+}
+
+class _GameOverMenuState extends State<GameOverMenu> {
+  /// Botões travados até a barra de progressão terminar de encher e a
+  /// última janela de item fechar — sem isso, um RESTART apressado fecharia
+  /// a tela por cima das janelas de desbloqueio.
+  bool _liberado = false;
+
+  CreaturesRogueGame get game => widget.game;
+
+  void _liberar() => setState(() => _liberado = true);
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +52,7 @@ class GameOverMenu extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            ResumoRun(game: game, largura: 320),
+            ResumoRun(game: game, largura: 320, aoConcluirProgressao: _liberar),
             const SizedBox(height: 24),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -47,19 +61,21 @@ class GameOverMenu extends StatelessWidget {
                 elevation: 0,
                 shape: const BordaDuplaShape(),
               ),
-              onPressed: withBtnSfx(() {
-                game.overlays.remove('GameOver');
-                // `resetGame` (→ `startRun`) é quem decide se a Hud entra
-                // agora ou depois: numa run nova ele abre o `BossReveal`
-                // primeiro, com o motor PAUSADO, e deixa a Hud e o
-                // `resumeEngine` pro `dismissBossReveal`.
-                //
-                // Antes daqui saíam um `overlays.add('Hud')` e um
-                // `resumeEngine()` fixos, que atropelavam essa decisão: o
-                // botão de pausa aparecia funcional em cima da tela de VS, e
-                // o jogo já rodava atrás dela.
-                game.resetGame();
-              }),
+              onPressed: !_liberado
+                  ? null
+                  : withBtnSfx(() {
+                      game.overlays.remove('GameOver');
+                      // `resetGame` (→ `startRun`) é quem decide se a Hud entra
+                      // agora ou depois: numa run nova ele abre o `BossReveal`
+                      // primeiro, com o motor PAUSADO, e deixa a Hud e o
+                      // `resumeEngine` pro `dismissBossReveal`.
+                      //
+                      // Antes daqui saíam um `overlays.add('Hud')` e um
+                      // `resumeEngine()` fixos, que atropelavam essa decisão: o
+                      // botão de pausa aparecia funcional em cima da tela de VS, e
+                      // o jogo já rodava atrás dela.
+                      game.resetGame();
+                    }),
               child: Text(
                 context.l10n.gameOver_restart,
                 style: const TextStyle(fontSize: 20, color: UiTheme.txtCor),
@@ -73,18 +89,20 @@ class GameOverMenu extends StatelessWidget {
                 elevation: 0,
                 shape: const BordaDuplaShape(),
               ),
-              onPressed: withBtnSfx(() {
-                game.overlays.remove('GameOver');
-                // Sem resetGame() aqui: chamar startRun (via resetGame) só pra
-                // esconder a run atrás do menu criava dois "startRun" em
-                // sequência com o motor pausado, e o Player/Companion da run
-                // morta sobrevivia junto com o novo (ver PIVOT_TREINADOR.md).
-                // O CreatureSelectOverlay já chama startRun quando o jogador
-                // de fato escolhe jogar de novo — essa run parada e pausada
-                // fica só esperando, sem custo de gameplay nenhum.
-                game.overlays.add('MainMenu'); // Volta pro Menu Principal
-                // O motor já foi pausado na morte, então continua pausado
-              }),
+              onPressed: !_liberado
+                  ? null
+                  : withBtnSfx(() {
+                      game.overlays.remove('GameOver');
+                      // Sem resetGame() aqui: chamar startRun (via resetGame) só pra
+                      // esconder a run atrás do menu criava dois "startRun" em
+                      // sequência com o motor pausado, e o Player/Companion da run
+                      // morta sobrevivia junto com o novo (ver PIVOT_TREINADOR.md).
+                      // O CreatureSelectOverlay já chama startRun quando o jogador
+                      // de fato escolhe jogar de novo — essa run parada e pausada
+                      // fica só esperando, sem custo de gameplay nenhum.
+                      game.overlays.add('MainMenu'); // Volta pro Menu Principal
+                      // O motor já foi pausado na morte, então continua pausado
+                    }),
               child: Text(
                 context.l10n.gameOver_menuPrincipal,
                 style: const TextStyle(fontSize: 16, color: UiTheme.txtCor),
