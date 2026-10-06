@@ -122,8 +122,8 @@ class TartarugaPlantaBossEnemy extends Enemy with ShooterAttack {
   void _abrirComOnda() {
     parent?.add(ExplosionHitbox(
       position: position.clone(),
-      isEnemy: true,
-      origem: creature, // isEnemy true = machuca o Player e NÃO machuca inimigos
+      isEnemy: true, // isEnemy true = machuca o Player e NÃO machuca inimigos
+      origem: creature,
       dmg: _danoOnda,
       knockback: _empurrao,
       size: Vector2.all(_raioOnda),

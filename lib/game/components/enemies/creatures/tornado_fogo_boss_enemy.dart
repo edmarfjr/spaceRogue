@@ -139,8 +139,8 @@ class TornadoFogoBossEnemy extends Enemy with ShooterAttack {
   void _bater() {
     parent?.add(ExplosionHitbox(
       position: position.clone(),
-      isEnemy: true,
-      origem: creature, // sem isso a explosão não machuca o jogador
+      isEnemy: true, // sem isso a explosão não machuca o jogador
+      origem: creature,
       dmg: _dashDano,
       knockback: _dashEmpurrao,
       size: Vector2(36, 36),
