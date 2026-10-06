@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/responsive.dart';
@@ -51,43 +52,50 @@ class _TitleOverlayState extends State<TitleOverlay>
       onTap: withBtnSfx(widget.game.sairDoTitulo),
       child: ResponsiveOverlayScaffold(
         background: UiTheme.backgroundMenuCor,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // `FilterQuality.none` mantém o pixel art nítido na ampliação.
-            Image.asset(
-              'assets/images/logo.png',
-              width: 96,
-              height: 96,
-              filterQuality: FilterQuality.none,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              l.menu_titulo,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: UiTheme.txtCor,
-                fontSize: estreita ? 32 : 48,
-                fontWeight: FontWeight.bold,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: UiTheme.quadroFundoCor,
+            border: BordaDupla(cor: Palette.preto, espessura: 3),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // `FilterQuality.none` mantém o pixel art nítido na ampliação.
+              Image.asset(
+                'assets/images/logo.png',
+                width: 96,
+                height: 96,
+                filterQuality: FilterQuality.none,
               ),
-            ),
-            const SizedBox(height: 40),
-            AnimatedBuilder(
-              animation: _pisca,
-              builder: (context, _) => Opacity(
-                opacity: _pisca.value < 0.6 ? 1.0 : 0.0,
-                child: Text(
-                  convite,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: UiTheme.txtCor,
-                    fontSize: 16,
-                    letterSpacing: 2,
+              const SizedBox(height: 6),
+              Text(
+                l.menu_titulo,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: UiTheme.txtCor,
+                  fontSize: estreita ? 32 : 48,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 40),
+              AnimatedBuilder(
+                animation: _pisca,
+                builder: (context, _) => Opacity(
+                  opacity: _pisca.value < 0.6 ? 1.0 : 0.0,
+                  child: Text(
+                    convite,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: UiTheme.txtCor,
+                      fontSize: 16,
+                      letterSpacing: 2,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/components/core/responsive.dart';
@@ -44,38 +45,45 @@ class BossRevealOverlay extends StatelessWidget {
 
     return ResponsiveOverlayScaffold(
       background: UiTheme.backgroundMenuCor,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            context.l10n.bossReveal_vs,
-            style: TextStyle(
-              color: UiTheme.txtCor,
-              fontSize: estreita ? 28 : 40,
-              fontWeight: FontWeight.bold,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: UiTheme.quadroFundoCor,
+          border: BordaDupla(cor: Palette.preto, espessura: 3),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              context.l10n.bossReveal_vs,
+              style: TextStyle(
+                color: UiTheme.txtCor,
+                fontSize: estreita ? 28 : 40,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          CreatureSprite(
-            creature: recompensa,
-            size: 120,
-            tudoPreto: !CreatureProgress.instance.isUnlocked(boss.creatureId),
-          ),
-          const SizedBox(height: 6),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: UiTheme.btnCor,
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              elevation: 0,
-              shape: const BordaDuplaShape(),
+            const SizedBox(height: 6),
+            CreatureSprite(
+              creature: recompensa,
+              size: 120,
+              tudoPreto: !CreatureProgress.instance.isUnlocked(boss.creatureId),
             ),
-            onPressed: withBtnSfx(game.dismissBossReveal),
-            child: Text(
-              context.l10n.bossReveal_entrar,
-              style: const TextStyle(fontSize: 20, color: UiTheme.txtCor),
+            const SizedBox(height: 6),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: UiTheme.btnCor,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                elevation: 0,
+                shape: const BordaDuplaShape(),
+              ),
+              onPressed: withBtnSfx(game.dismissBossReveal),
+              child: Text(
+                context.l10n.bossReveal_entrar,
+                style: const TextStyle(fontSize: 20, color: UiTheme.txtCor),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

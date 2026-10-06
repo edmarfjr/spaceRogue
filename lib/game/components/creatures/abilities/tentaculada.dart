@@ -17,7 +17,7 @@ class Tentaculada extends Ability {
   final double coef;
   final double alcance;
 
-  const Tentaculada({this.coef = 1.6, this.alcance = 22})
+  const Tentaculada({this.coef = 1.6, this.alcance = 32})
     : super(
         nome: 'Tentaculada',
         descricao: 'Um tentáculo varre um arco à frente.',
@@ -41,6 +41,7 @@ class Tentaculada extends Ability {
         sentido: _sentido,
         duracao: 0.15,
         alcance: alcance,
+        empurrao: 50,
         dano: user.creatureData.stats.ataque * coef,
         tipo: user.creatureData.tipo,
         cor1: user.creatureData.corClara,

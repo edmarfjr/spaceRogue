@@ -16,7 +16,7 @@ class CortinaDeTinta extends Ability {
   final double vidaNuvem;
 
   const CortinaDeTinta({
-    this.distancia = 32,
+    this.distancia = 48,
     this.duracao = 0.15,
     this.cegueira = 1.5,
     this.vidaNuvem = 4.0,
@@ -49,7 +49,7 @@ class CortinaDeTinta extends Ability {
     );
     user.add(
       MoveByEffect(
-        user.dashOffsetLivre(-dir, distancia),
+        user.dashOffsetLivre(dir, distancia),
         EffectController(duration: duracao),
       ),
     );

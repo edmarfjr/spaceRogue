@@ -44,7 +44,7 @@ class _PauseMenuOverlayState extends State<PauseMenuOverlay> {
       child: Container(
         padding: const EdgeInsets.all(30),
         decoration: BoxDecoration(
-          color: UiTheme.backgroundMenuCor,
+          color: UiTheme.quadroFundoCor,
           border: const BordaDupla(cor: Palette.preto, espessura: 4),
           borderRadius: BorderRadius.circular(0),
         ),
@@ -193,7 +193,7 @@ class _EquipeCard extends StatelessWidget {
       width: Responsive.largura(context, 320),
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: UiTheme.backgroundMenuCor,
+        color: UiTheme.quadroFundoCor,
         border: BordaDupla(cor: Palette.preto, espessura: ativa ? 3 : 1),
       ),
       child: Column(
@@ -289,13 +289,13 @@ class _Aba extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: ativa ? Palette.preto : Palette.branco,
+          color: ativa ? UiTheme.txtCor : UiTheme.btnCor,
           border: const BordaDupla(cor: Palette.preto, espessura: 2),
         ),
         child: Text(
           texto,
           style: TextStyle(
-            color: ativa ? Palette.branco : UiTheme.txtCor,
+            color: ativa ? UiTheme.btnCor : UiTheme.txtCor,
             fontSize: 16,
           ),
         ),

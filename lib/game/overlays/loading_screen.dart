@@ -1,3 +1,4 @@
+import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:flutter/material.dart';
 
 import 'package:creatures_rogue/game/components/core/ui_theme.dart';
@@ -27,37 +28,44 @@ class LoadingScreen extends StatelessWidget {
 
     return ResponsiveOverlayScaffold(
       background: UiTheme.backgroundMenuCor,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // `FilterQuality.none` mantém o pixel art nítido na ampliação —
-          // mesmo tratamento que todo sprite do jogo recebe no Flame.
-          Image.asset(
-            'assets/images/logo.png',
-            width: estreita ? 96 : 128,
-            height: estreita ? 96 : 128,
-            filterQuality: FilterQuality.none,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            context.l10n.menu_titulo,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: UiTheme.txtCor,
-              fontSize: estreita ? 32 : 48,
-              fontWeight: FontWeight.bold,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: UiTheme.quadroFundoCor,
+          border: BordaDupla(cor: Palette.preto, espessura: 3),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // `FilterQuality.none` mantém o pixel art nítido na ampliação —
+            // mesmo tratamento que todo sprite do jogo recebe no Flame.
+            Image.asset(
+              'assets/images/logo.png',
+              width: estreita ? 96 : 128,
+              height: estreita ? 96 : 128,
+              filterQuality: FilterQuality.none,
             ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            context.l10n.loading_carregando,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: UiTheme.txtCor,
-              fontSize: estreita ? 16 : 20,
+            const SizedBox(height: 12),
+            Text(
+              context.l10n.menu_titulo,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: UiTheme.txtCor,
+                fontSize: estreita ? 32 : 48,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+            Text(
+              context.l10n.loading_carregando,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: UiTheme.txtCor,
+                fontSize: estreita ? 16 : 20,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

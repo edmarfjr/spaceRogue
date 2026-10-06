@@ -35,7 +35,7 @@ class _GameOverMenuState extends State<GameOverMenu> {
       child: Container(
         padding: const EdgeInsets.all(30),
         decoration: BoxDecoration(
-          color: UiTheme.backgroundMenuCor,
+          color: UiTheme.quadroFundoCor,
           border: const BordaDupla(cor: Palette.preto, espessura: 4),
           borderRadius: BorderRadius.circular(0),
         ),
@@ -78,7 +78,7 @@ class _GameOverMenuState extends State<GameOverMenu> {
                     }),
               child: Text(
                 context.l10n.gameOver_restart,
-                style: const TextStyle(fontSize: 20, color: UiTheme.txtCor),
+                style: const TextStyle(fontSize: 22, color: UiTheme.txtCor),
               ),
             ),
             const SizedBox(height: 15),
@@ -105,7 +105,7 @@ class _GameOverMenuState extends State<GameOverMenu> {
                     }),
               child: Text(
                 context.l10n.gameOver_menuPrincipal,
-                style: const TextStyle(fontSize: 16, color: UiTheme.txtCor),
+                style: const TextStyle(fontSize: 22, color: UiTheme.txtCor),
               ),
             ),
           ],

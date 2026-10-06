@@ -68,7 +68,14 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
     return Material(
       color: UiTheme.backgroundMenuCor,
       child: SafeArea(
-        child: Column(
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          margin: const EdgeInsets.all(8),
+          decoration: const BoxDecoration(
+            color: UiTheme.quadroFundoCor,
+            border: BordaDupla(cor: Palette.preto, espessura: 3),
+          ),
+          child: Column(
           children: [
             Padding(
               padding: const EdgeInsets.only(
@@ -84,7 +91,7 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
                       widget.game.overlays.remove('CreatureSelect');
                       widget.game.overlays.add('MainMenu');
                     }),
-                    icon: const Icon(Icons.arrow_back, color: Palette.preto),
+                    icon: const Icon(Icons.arrow_back, color: UiTheme.txtCor),
                   ),
                   Expanded(
                     child: Text(
@@ -170,6 +177,7 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
             ),
           ],
         ),
+        ),
       ),
     );
   }
@@ -187,7 +195,6 @@ class _CreatureList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: UiTheme.backgroundMenuCor,
         borderRadius: BorderRadius.circular(0),
       ),
       padding: const EdgeInsets.all(6),
@@ -247,6 +254,7 @@ class _CreatureListTile extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
                 decoration: BoxDecoration(
+                  color: UiTheme.quadroFundoCor,
                   // Mesma regra do cartão da intro: seleção muda a COR da linha
                   // de fora, nunca a espessura, pra geometria não se mexer.
                   border: BordaDupla(
@@ -325,6 +333,7 @@ class _CreatureDetailPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: const BoxDecoration(
+        color: UiTheme.quadroFundoCor,
         border: BordaDupla(cor: Palette.preto, espessura: 4),
       ),
       child: Column(

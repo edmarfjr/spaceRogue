@@ -14,7 +14,7 @@ class RajadaDeBrasaEvo extends Ability {
   final double alcanceSegundos;
 
   const RajadaDeBrasaEvo({
-    this.coef = 0.7,
+    this.coef = 0.667,
     this.anguloLequeGraus = 18,
     this.alcanceSegundos = 0.5,
   }) : super(nome: 'Rajada de Brasa+', cooldown: 0.3, custoEnergia: 3.0);

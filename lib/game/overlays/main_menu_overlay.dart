@@ -222,6 +222,7 @@ class _QuadroDeProgresso extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: const BoxDecoration(
+        color: UiTheme.quadroFundoCor,
         border: BordaDupla(cor: Palette.preto, espessura: 3),
       ),
       child: Column(

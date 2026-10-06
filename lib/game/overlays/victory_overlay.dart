@@ -42,7 +42,7 @@ class _VictoryOverlayState extends State<VictoryOverlay> {
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: UiTheme.backgroundMenuCor,
+              color: UiTheme.quadroFundoCor,
               border: const BordaDupla(cor: Palette.preto, espessura: 3),
             ),
             child: Column(

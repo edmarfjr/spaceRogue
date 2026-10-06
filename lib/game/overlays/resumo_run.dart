@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_registry.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
@@ -33,7 +34,7 @@ class ResumoRun extends StatelessWidget {
     required this.aoConcluirProgressao,
   });
 
-  static const double _ladoCriatura = 32;
+  static const double _ladoCriatura = 48;
 
   @override
   Widget build(BuildContext context) {
@@ -44,9 +45,23 @@ class ResumoRun extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _linha(l.resumo_dungeon(game.currentLevel, game.currentFloor)),
-          _linha(l.victory_tempo(game.tempoDeRunFormatado)),
-          _linha(l.resumo_abates(game.abatesDaRun)),
+          // Os números da run num quadro próprio: separa o placar do resto
+          // (derrota, elenco, barra), que são outra leitura.
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+            decoration: const BoxDecoration(
+              color: UiTheme.quadroFundoCor,
+              border: BordaDupla(cor: Palette.preto, espessura: 2),
+            ),
+            child: Column(
+              children: [
+                _linha(l.resumo_dungeon(game.currentLevel, game.currentFloor)),
+                _linha(l.victory_tempo(game.tempoDeRunFormatado)),
+                _linha(l.resumo_abates(game.abatesDaRun)),
+              ],
+            ),
+          ),
           ..._derrota(context),
           const SizedBox(height: 12),
           _rotulo(l.victory_elenco),

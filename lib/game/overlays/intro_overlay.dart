@@ -45,6 +45,7 @@ const List<String> _idsIniciais = [
   'roedor_fogo',
   'tartaruga_planta',
   'sapo_agua',
+ //'sereia_agua',
   'ave_eletrica',
 ///////////////////
   //'tornado_fogo',
@@ -159,9 +160,17 @@ class _IntroOverlayState extends State<IntroOverlay> {
     return Material(
       color: UiTheme.backgroundMenuCor,
       child: SafeArea(
-        child: _fase == _Fase.dialogo
-            ? _construirDialogo()
-            : _construirEscolha(),
+        child: Container(
+          padding: const EdgeInsets.all(4),
+          margin: const EdgeInsets.all(8),
+          decoration: const BoxDecoration(
+            color: UiTheme.quadroFundoCor,
+            border: BordaDupla(cor: Palette.preto, espessura: 3),
+          ),
+          child: _fase == _Fase.dialogo
+              ? _construirDialogo()
+              : _construirEscolha(),
+        ),
       ),
     );
   }
@@ -349,7 +358,7 @@ class _CaixaDialogo extends StatelessWidget {
           height: 116,
           padding: const EdgeInsets.all(12),
           decoration:  BoxDecoration(
-            color: UiTheme.backgroundMenuCor,
+            color: UiTheme.quadroFundoCor,
             borderRadius: BorderRadius.circular(2) ,
             border: BordaDupla(cor: Palette.preto, espessura: 2),
           ),
@@ -405,6 +414,7 @@ class _CartaoCandidata extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final corTipo = UiTheme.corDoTipo(criatura.tipo);
+    final corTipo2 = UiTheme.corDoTipo2(criatura.tipo);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -413,13 +423,14 @@ class _CartaoCandidata extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
+            color: UiTheme.quadroFundoCor,
             borderRadius: BorderRadius.zero,
             // Seleção marcada por COR da linha de fora, não por espessura: a
             // geometria da borda fica igual nos dois estados, então o
             // conteúdo do cartão não dá um pulo quando a seleção troca.
             border: BordaDupla(
               cor: Palette.preto,
-              corExterna: selecionada ? corTipo : null,
+              corVao: selecionada ? corTipo : UiTheme.bordaVaoCor,
               espessura: 2,
             ),
           ),
@@ -437,7 +448,7 @@ class _CartaoCandidata extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              _blocoNome(context, corTipo),
+              _blocoNome(context, corTipo, corTipo2),
             ],
           ),
         ),
@@ -447,7 +458,7 @@ class _CartaoCandidata extends StatelessWidget {
 
   /// Caixa preta com o nome em branco e, dentro dela, a etiqueta do tipo:
   /// fundo da cor do elemento, texto e borda pretos.
-  Widget _blocoNome(BuildContext context, Color corTipo) {
+  Widget _blocoNome(BuildContext context, Color corTipo, Color corTipo2) {
     return Container(
       color: Palette.preto,
       padding: const EdgeInsets.fromLTRB(4, 4, 4, 5),
@@ -479,8 +490,8 @@ class _CartaoCandidata extends StatelessWidget {
               fit: BoxFit.scaleDown,
               child: Text(
                 CreatureSelectOverlay.typeLabel(context, criatura.tipo),
-                style: const TextStyle(
-                  color: UiTheme.txtCor,
+                style:  TextStyle(
+                  color: corTipo2,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -510,6 +521,7 @@ class _FaixaDetalhe extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: const BoxDecoration(
+        color: UiTheme.quadroFundoCor,
         borderRadius: BorderRadius.zero,
         border: BordaDupla(cor: Palette.preto, espessura: 4),
       ),

@@ -18,7 +18,7 @@ class UiTheme {
   /// valendo igual pra todas, pra que a etiqueta de tipo seja reconhecível à
   /// primeira vista.
   static const Map<CreatureType, Color> _porTipo = {
-    CreatureType.fogo: Palette.pumpkin,
+    CreatureType.fogo: Palette.laranja,
     CreatureType.planta: Palette.verde,
     CreatureType.agua: Palette.azul,
     CreatureType.eletrico: Palette.amarelo,
@@ -64,7 +64,7 @@ class UiTheme {
   static const Color apadCor2 = Palette.roxoEsc;
 
   ///Cor botões
-  static const Color btnCor = Palette.cinza;
+  static const Color btnCor = Palette.branco;
 
   /// Fundo do botão que representa a opção JÁ ESCOLHIDA — o esquema de
   /// controle e o idioma em uso, nas configurações.
@@ -87,6 +87,18 @@ class UiTheme {
   /// que são escuros por dentro — aqueles pedem um token próprio se um dia
   /// o tema mudar.
   static const Color txtCor = Palette.preto;
+
+  /// Cor do vão entre as duas linhas de toda [BordaDupla] e
+  /// [BordaDuplaShape] que não passar a sua. Nula = vão transparente, que
+  /// deixa aparecer o fundo do painel (o visual de sempre). Trocar aqui pinta
+  /// o vão de todas as molduras e botões de uma vez.
+  static const Color bordaVaoCor = Palette.indigo;
+
+  /// Fundo de todo QUADRO emoldurado com [BordaDupla] (cartões, painéis,
+  /// barra de progressão, janela de item destravado). Separado de
+  /// [backgroundMenuCor], que é o fundo da TELA atrás deles — com os dois
+  /// iguais o quadro se funde na tela; com tokens próprios dá pra destacá-lo.
+  static const Color quadroFundoCor = Palette.branco;
 
   // ------------------------------------------------------------------ HUD
   // Cores do HUD DENTRO do jogo (desenhado pelo Flame no canvas), separadas
@@ -146,10 +158,10 @@ class UiTheme {
 /// que é onde moram os `FittedBox`/`Expanded` que já foram ajustados no
 /// aparelho.
 ///
-/// O vão não é pintado: o `BoxDecoration` desenha o `color` dele por baixo da
-/// borda inteira, então entre as duas linhas aparece o próprio fundo do
-/// painel. Painel sem `color` deixa passar o que estiver atrás, que é o
-/// comportamento esperado nos cards transparentes.
+/// O vão só é pintado com [corVao]. Sem ela, o `BoxDecoration` desenha o
+/// `color` dele por baixo da borda inteira, então entre as duas linhas
+/// aparece o próprio fundo do painel — e painel sem `color` deixa passar o
+/// que estiver atrás, que é o comportamento esperado nos cards transparentes.
 ///
 /// Só desenha CANTO RETO. Toda a UI do jogo usa `BorderRadius.zero` (é pixel
 /// art), e suportar raio aqui seria código sem chamador.
@@ -158,8 +170,10 @@ class BordaDupla extends BoxBorder {
   const BordaDupla({
     this.cor = UiTheme.backgroundMenuCor2,
     this.corExterna,
+    this.corVao = UiTheme.bordaVaoCor,
     this.espessura = 2.0,
     this.vao = 2.0,
+    this.raio = 5.0,
   });
 
   /// Cor da linha de DENTRO, e também da de fora quando [corExterna] é nula.
@@ -176,11 +190,18 @@ class BordaDupla extends BoxBorder {
   /// cartão não se mexe nem um pixel quando a seleção troca.
   final Color? corExterna;
 
+  /// Cor do vão entre as duas linhas — por padrão [UiTheme.bordaVaoCor]. Nula
+  /// deixa o vão transparente: aparece o fundo do painel (ou o que estiver
+  /// atrás dele).
+  final Color? corVao;
+
   /// Espessura de CADA linha.
   final double espessura;
 
   /// Distância entre a linha de fora e a de dentro.
   final double vao;
+
+  final double raio;
 
   BorderSide get _lado => BorderSide(color: cor, width: espessura);
 
@@ -202,6 +223,7 @@ class BordaDupla extends BoxBorder {
   ShapeBorder scale(double t) => BordaDupla(
     cor: cor,
     corExterna: corExterna,
+    corVao: corVao,
     espessura: espessura * t,
     vao: vao * t,
   );
@@ -235,14 +257,15 @@ class BordaDupla extends BoxBorder {
     // sumiria no corte do widget.
     //canvas.drawRect(rect.deflate(espessura / 2), tinta);
     //canvas.drawRect(rect.deflate(espessura * 1.5 + vao), tinta);
+    _pintarVao(canvas, rect, corVao, espessura, vao, raio);
     canvas.drawRRect(
-      RRect.fromRectAndRadius(rect.deflate(espessura / 2), Radius.circular(5)),
+      RRect.fromRectAndRadius(rect.deflate(espessura / 2), Radius.circular(raio)),
       tinta..color = corExterna ?? cor,
     );
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         rect.deflate(espessura * 1.5 + vao),
-        Radius.circular(5),
+        Radius.circular(raio),
       ),
       tinta..color = cor,
     );
@@ -264,17 +287,23 @@ class BordaDupla extends BoxBorder {
 class BordaDuplaShape extends OutlinedBorder {
   const BordaDuplaShape({
     this.cor = UiTheme.backgroundMenuCor2,
+    this.corVao = UiTheme.bordaVaoCor,
     this.espessura = 2.0,
     this.vao = 2.0,
+    this.raio = 5.0,
   }) : super(side: BorderSide.none);
 
   final Color cor;
+
+  /// Cor do vão entre as linhas — mesma regra da [BordaDupla.corVao].
+  final Color? corVao;
+
   final double espessura;
   final double vao;
 
   /// Raio do arredondamento. Igual ao da [BordaDupla] — se mudar lá, muda
   /// aqui.
-  static const double _raio = 5.0;
+  final double raio;
 
   /// O conteúdo começa depois das duas linhas E do vão, senão o rótulo do
   /// botão encostaria na linha de dentro.
@@ -282,30 +311,41 @@ class BordaDuplaShape extends OutlinedBorder {
   EdgeInsetsGeometry get dimensions => EdgeInsets.all(espessura * 2 + vao);
 
   @override
-  BordaDuplaShape copyWith({BorderSide? side, Color? cor, double? espessura, double? vao}) =>
+  BordaDuplaShape copyWith({
+    BorderSide? side,
+    Color? cor,
+    Color? corVao,
+    double? espessura,
+    double? vao,
+    double? raio,
+  }) =>
       BordaDuplaShape(
         cor: cor ?? this.cor,
+        corVao: corVao ?? this.corVao,
         espessura: espessura ?? this.espessura,
         vao: vao ?? this.vao,
+        raio: raio ?? this.raio,
       );
 
   @override
   ShapeBorder scale(double t) => BordaDuplaShape(
     cor: cor,
+    corVao: corVao,
     espessura: espessura * t,
     vao: vao * t,
+    raio: raio * t,
   );
 
   @override
   Path getOuterPath(Rect rect, {TextDirection? textDirection}) => Path()
-    ..addRRect(RRect.fromRectAndRadius(rect, const Radius.circular(_raio)));
+    ..addRRect(RRect.fromRectAndRadius(rect, Radius.circular(raio)));
 
   @override
   Path getInnerPath(Rect rect, {TextDirection? textDirection}) => Path()
     ..addRRect(
       RRect.fromRectAndRadius(
         dimensions.resolve(textDirection).deflateRect(rect),
-        const Radius.circular(_raio),
+         Radius.circular(raio),
       ),
     );
 
@@ -318,21 +358,53 @@ class BordaDuplaShape extends OutlinedBorder {
       // Pixel art: nada de suavizar, senão a linha sai cinza nas pontas.
       ..isAntiAlias = false;
 
+    _pintarVao(canvas, rect, corVao, espessura, vao, raio);
     // `deflate(espessura / 2)`: o Canvas centra o traço na linha do caminho,
     // então sem isso metade da linha de fora cairia fora do retângulo.
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         rect.deflate(espessura / 2),
-        const Radius.circular(_raio),
+         Radius.circular(raio),
       ),
       tinta,
     );
     canvas.drawRRect(
       RRect.fromRectAndRadius(
         rect.deflate(espessura * 1.5 + vao),
-        const Radius.circular(_raio),
+         Radius.circular(raio),
       ),
       tinta,
     );
   }
+}
+
+/// Pinta o vão entre as duas linhas da borda dupla, usado pela [BordaDupla] e
+/// pela [BordaDuplaShape]. Vem ANTES das linhas.
+///
+/// Preenchimento, e não traço: um traço da largura do vão com o mesmo raio
+/// das linhas não acompanha a curva delas, e as quinas ficavam com frestas
+/// sem cor. Aqui a área pintada vai do CENTRO da linha de fora ao CENTRO da
+/// linha de dentro — exatamente os dois retângulos que as linhas usam — então
+/// cada linha, desenhada por cima, cobre a borda do preenchimento sem deixar
+/// fresta em ponto nenhum, quina inclusive.
+void _pintarVao(
+  Canvas canvas,
+  Rect rect,
+  Color? corVao,
+  double espessura,
+  double vao,
+  double raio,
+) {
+  if (corVao == null || vao <= 0) return;
+  canvas.drawDRRect(
+    RRect.fromRectAndRadius(rect.deflate(espessura / 2), Radius.circular(raio)),
+    RRect.fromRectAndRadius(
+      rect.deflate(espessura * 1.5 + vao),
+      Radius.circular(raio),
+    ),
+    Paint()
+      ..color = corVao
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = false,
+  );
 }

@@ -19,7 +19,7 @@ class EsguichoDeTinta extends Ability {
   final double vidaNuvem;
 
   const EsguichoDeTinta({
-    this.distancia = 32,
+    this.distancia = 48,
     this.duracao = 0.15,
     this.cegueira = 1.5,
     this.vidaNuvem = 3.0,
@@ -52,7 +52,7 @@ class EsguichoDeTinta extends Ability {
       isEnemy: isEnemy,
       sprPath: 'projeteis/nuvem.png',
       cor1: Palette.cinzaEsc,
-      cor2: Palette.preto,
+      cor2: Palette.azulEsc,
       cegoDuracao: cegueira,
       atravessa: 100,
       size: Vector2.all(lado),
@@ -61,6 +61,7 @@ class EsguichoDeTinta extends Ability {
       playSfx: false,
       interageComProjeteis: bloqueiaTiro,
       engoleProjeteis: bloqueiaTiro,
+      atravessaObstaculos: true,
     );
   }
 
@@ -83,7 +84,7 @@ class EsguichoDeTinta extends Ability {
     );
     user.add(
       MoveByEffect(
-        user.dashOffsetLivre(-dir, distancia),
+        user.dashOffsetLivre(dir, distancia),
         EffectController(duration: duracao),
       ),
     );

@@ -218,6 +218,7 @@ class IconeHabilidade extends StatelessWidget {
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         border: Border.all(color: Palette.preto, width: 2),
+        color: Palette.branco,
       ),
       child: SpriteUi(
         caminho: caminho,

@@ -918,7 +918,7 @@ class CreatureRegistry {
     stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 3),
     ability1: Tentaculada(),
     ability2: EsguichoDeTinta(),
-    moveAnim: MovementAnimation.caminhada,
+    moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(10, 10),
     enemyBuilder: (pos, plr) =>
         SereiaAguaEnemy(position: pos, playerTarget: plr),
@@ -935,14 +935,14 @@ class CreatureRegistry {
   static final CreatureData sereiaAguaEvo = CreatureData(
     id: 'sereia_agua',
     nome: 'Kalamarok',
-    spritePath: 'actors/sereiaAgua.png',
+    spritePath: 'actors/sereiaAguaEvo.png',
     tipo: CreatureType.agua,
     corClara: Palette.azul,
     corEscura: Palette.mauve,
     stats: BaseStats(maxHp: 6, speed: 70, defesa: 1, ataque: 3),
     ability1: RedemoinhoDeTentaculos(),
     ability2: CortinaDeTinta(),
-    moveAnim: MovementAnimation.caminhada,
+    moveAnim: MovementAnimation.saltitar,
     hitboxSize: Vector2(10, 10),
     enemyBuilder: (pos, plr) =>
         SereiaAguaEnemy(position: pos, playerTarget: plr),

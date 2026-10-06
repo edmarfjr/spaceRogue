@@ -12,7 +12,7 @@ class RajadaDeBrasa extends Ability {
   final double anguloLequeGraus;
   final double alcanceSegundos;
 
-  const RajadaDeBrasa({this.coef = 0.67, this.anguloLequeGraus = 10, this.alcanceSegundos = 0.5})
+  const RajadaDeBrasa({this.coef = 0.667, this.anguloLequeGraus = 10, this.alcanceSegundos = 0.5})
       : super(nome: 'Rajada de Brasa', descricao: 'Três projéteis em leque, dano alto e curto alcance.', cooldown: 0.3, custoEnergia: 3.0);
 
   @override

@@ -41,6 +41,11 @@ class _BarraProgressaoState extends State<BarraProgressao>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controle;
 
+  /// Velocidade da barra: quantos milissegundos cada ponto de XP leva pra
+  /// entrar. Taxa FIXA — a duração é só `xpGanho × _msPorXp`, sem piso nem
+  /// teto, então run que rende o dobro enche pelo dobro do tempo.
+  static const int _msPorXp = 30;
+
   /// Último nível cuja janela já foi mostrada. Começa no nível de antes da run.
   late int _nivelMostrado;
   bool _janelaAberta = false;
@@ -55,9 +60,9 @@ class _BarraProgressaoState extends State<BarraProgressao>
     _nivelMostrado = ProgressaoItens.nivelPara(widget.xpAntes);
     _controle = AnimationController(
       vsync: this,
-      // Proporcional ao ganho, com piso e teto: run curta não pisca, run
-      // longa não vira espera.
-      duration: Duration(milliseconds: (widget.xpGanho * 8).clamp(600, 2500)),
+      // Run longa demora de verdade (650 XP a 30 ms dá ~20 s) — tocar a
+      // barra pula pro fim.
+      duration: Duration(milliseconds: widget.xpGanho * _msPorXp),
     )..addListener(_aoAnimar);
 
     // Um quadro de respiro antes de encher: abrindo junto com a tela, o
@@ -160,57 +165,47 @@ class _BarraProgressaoState extends State<BarraProgressao>
             ),
             const SizedBox(height: 4),
             Container(
-              height: 14,
+              height: 18,
               decoration: const BoxDecoration(
-                color: UiTheme.backgroundMenuCor,
+                color: UiTheme.quadroFundoCor,
                 border: BordaDupla(cor: Palette.preto, espessura: 2),
               ),
               alignment: Alignment.centerLeft,
               child: FractionallySizedBox(
                 widthFactor: fracao.clamp(0.0, 1.0),
                 heightFactor: 1,
-                child: const ColoredBox(color: UiTheme.txtCor),
+                child: const ColoredBox(color: Palette.verde),
               ),
             ),
             if (!maximo) ...[
               const SizedBox(height: 4),
-              Text(
+            /*  Text(
                 '$noNivel / $custo XP',
                 style: const TextStyle(color: UiTheme.txtCor, fontSize: 10),
               ),
-              const SizedBox(height: 6),
-              _proximo(context, nivel),
+           */   const SizedBox(height: 6),
+              _proximo(nivel),
             ],
+          
           ],
         ),
       ),
     );
   }
 
-  /// Silhueta preta do próximo prêmio: a meta fica visível sem entregar
-  /// qual é o item.
-  Widget _proximo(BuildContext context, int nivel) {
+  /// Silhueta preta do próximo prêmio, alinhada ao FIM da barra — é lá que
+  /// ela chega quando enche. A meta fica visível sem entregar qual é o item.
+  Widget _proximo(int nivel) {
     final item = ProgressaoItens.porNivel[nivel];
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          context.l10n.progressao_proximo,
-          style: const TextStyle(
-            color: UiTheme.txtCor,
-            fontSize: 10,
-            letterSpacing: 2,
-          ),
-        ),
-        const SizedBox(width: 6),
-        SpriteUi(
-          caminho: item.spritePath,
-          tamanho: 20,
-          cor1: Palette.preto,
-          cor2: Palette.preto,
-          corBranco: Palette.preto,
-        ),
-      ],
+    return Align(
+      alignment: Alignment.centerRight,
+      child: SpriteUi(
+        caminho: item.spritePath,
+        tamanho: 32,
+        cor1: Palette.preto,
+        cor2: Palette.preto,
+        corBranco: Palette.preto,
+      ),
     );
   }
 }
@@ -224,7 +219,7 @@ class _JanelaDesbloqueio extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = context.l10n;
     return Dialog(
-      backgroundColor: UiTheme.backgroundMenuCor,
+      backgroundColor: UiTheme.quadroFundoCor,
       shape: const BordaDuplaShape(),
       child: Padding(
         padding: const EdgeInsets.all(20),

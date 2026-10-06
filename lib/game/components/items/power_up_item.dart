@@ -27,7 +27,7 @@ enum PowerUpType implements ItemDescritor {
   energyUp('items/energyUp.png', Palette.laranja, Palette.marrom),
   energyRegenUp('items/energyRegen.png', Palette.laranja, Palette.marrom),
   shieldRegenUp('items/escudoRegen.png', Palette.indigo, Palette.azulEsc),
-  evasaoUp('items/evadeUp.png', Palette.branco, Palette.azulEsc);
+  evasaoUp('items/evadeUp.png', Palette.cinza, Palette.indigo);
 
   const PowerUpType(this.spritePath, this.cor1, this.cor2);
 
