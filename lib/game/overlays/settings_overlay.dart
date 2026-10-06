@@ -138,7 +138,9 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
     required bool ativo,
     required ValueChanged<double> onChanged,
   }) {
-    final cor = ativo ? Palette.preto : Palette.cinzaEsc;
+    // Claro quando ativo, como o resto do texto; apagado quando o som ou a
+    // música estão desligados.
+    final cor = ativo ? UiTheme.txtCor : Palette.indigo;
     // `maxWidth`, e não `width` cravada: este seletor mora numa linha junto do
     // rótulo e do interruptor, e em paisagem cada coluna tem pouco mais de
     // 400px. Com largura fixa a linha inteira passava da coluna por um fio —
@@ -168,7 +170,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
             child: Slider(
               value: valor,
               activeColor: cor,
-              inactiveColor: Palette.cinza,
+              inactiveColor: UiTheme.btnCor,
               thumbColor: cor,
               // Dez passos, do mudo ao máximo: volume é ajuste grosso, e um
               // seletor contínuo só daria trabalho de acertar a mesma casa
@@ -238,56 +240,63 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
       // colunas nasceriam com 240 cada e o `FittedBox` encolheria tudo de novo,
       // desfazendo o ganho.
       maxWidth: retrato ? 480 : 860,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            context.l10n.settings_titulo,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: UiTheme.txtCor,
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          if (retrato)
-            ..._secaoControle(context)
-          else
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: _secaoControle(context),
-                    ),
-                  ),
-                  const VerticalDivider(
-                    color: Palette.preto,
-                    thickness: 2,
-                    width: 24,
-                  ),
-                  Expanded(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ..._secaoIdioma(context),
-                        ..._secaoAudio(context),
-                      ],
-                    ),
-                  ),
-                ],
+      // Tudo dentro de um quadro, como os outros painéis: o texto do menu
+      // (`txtCor`) é claro, e direto sobre o fundo claro da tela não tinha
+      // contraste. No `quadroFundoCor` ele lê.
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: const BoxDecoration(
+          color: UiTheme.quadroFundoCor,
+          border: BordaDupla(cor: Palette.preto, espessura: 3),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              context.l10n.settings_titulo,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: UiTheme.txtCor,
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          if (retrato) ...[
-            ..._secaoIdioma(context),
-            ..._secaoAudio(context),
+            const SizedBox(height: 4),
+            if (retrato)
+              ..._secaoControle(context)
+            else
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: _secaoControle(context),
+                      ),
+                    ),
+                    const VerticalDivider(
+                      color: Palette.preto,
+                      thickness: 2,
+                      width: 24,
+                    ),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          ..._secaoIdioma(context),
+                          ..._secaoAudio(context),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (retrato) ...[..._secaoIdioma(context), ..._secaoAudio(context)],
+            const SizedBox(height: 4),
+            ..._botoesFinais(context),
           ],
-          const SizedBox(height: 4),
-          ..._botoesFinais(context),
-        ],
+        ),
       ),
     );
   }
@@ -313,10 +322,17 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(rotulo, style: const TextStyle(color: UiTheme.txtCor, fontSize: 14)),
+        Text(
+          rotulo,
+          style: const TextStyle(color: UiTheme.txtCor, fontSize: 14),
+        ),
         Switch(
           value: valor,
-          activeThumbColor: Palette.preto,
+          activeThumbColor: UiTheme.txtCor,
+          activeTrackColor: UiTheme.btnCor,
+          inactiveThumbColor: Palette.indigo,
+          inactiveTrackColor: Palette.cinzaEsc,
+          trackOutlineColor: const WidgetStatePropertyAll(Palette.preto),
           onChanged: onChanged,
         ),
       ],
@@ -422,7 +438,7 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
                     fontSize: 16,
                     color: locale == GameSettings.instance.locale
                         ? Palette.branco
-                        : Palette.preto,
+                        : UiTheme.txtCor,
                   ),
                 ),
               ),
@@ -448,7 +464,11 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
           ),
           Switch(
             value: GameSettings.instance.soundEnabled,
-            activeThumbColor: Palette.preto,
+            activeThumbColor: UiTheme.txtCor,
+            activeTrackColor: UiTheme.btnCor,
+            inactiveThumbColor: Palette.indigo,
+            inactiveTrackColor: Palette.cinzaEsc,
+            trackOutlineColor: const WidgetStatePropertyAll(Palette.preto),
             onChanged: (valor) => _alternarSom(valor),
           ),
           // `Flexible` pra ceder largura quando a coluna aperta — sem ele o
@@ -477,7 +497,11 @@ class _SettingsOverlayState extends State<SettingsOverlay> {
           ),
           Switch(
             value: GameSettings.instance.musicEnabled,
-            activeThumbColor: Palette.preto,
+            activeThumbColor: UiTheme.txtCor,
+            activeTrackColor: UiTheme.btnCor,
+            inactiveThumbColor: Palette.indigo,
+            inactiveTrackColor: Palette.cinzaEsc,
+            trackOutlineColor: const WidgetStatePropertyAll(Palette.preto),
             onChanged: (valor) => _alternarMusica(valor),
           ),
           Flexible(
