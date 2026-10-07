@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui' as ui;
 
+import 'package:creatures_rogue/game/components/map/pedestal.dart';
 import 'package:flame/components.dart';
 import 'package:flame/collisions.dart';
 import 'package:flutter/material.dart';
@@ -311,7 +312,7 @@ class Projectile extends SpriteAnimationComponent with CollisionCallbacks, HasGa
   void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollisionStart(intersectionPoints, other);
     
-    if ((other is WallBarrier || other is Rock) && !atravessaObstaculos) {
+    if ((other is WallBarrier || other is Rock || other is PedestalComponent) && !atravessaObstaculos) {
       onDestroy();
       return; 
     }

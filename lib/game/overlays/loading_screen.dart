@@ -30,10 +30,10 @@ class LoadingScreen extends StatelessWidget {
       background: UiTheme.backgroundMenuCor,
       child: Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: UiTheme.quadroFundoCor,
-          border: BordaDupla(cor: Palette.preto, espessura: 3),
-        ),
+       // decoration: const BoxDecoration(
+       //   color: UiTheme.quadroFundoCor,
+       //   border: BordaDupla(cor: Palette.preto, espessura: 3),
+       // ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [

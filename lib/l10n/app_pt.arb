@@ -2,7 +2,7 @@
   "@@locale": "pt",
 
   "loading_carregando": "CARREGANDO...",
-  "menu_titulo": "CREATURES ROGUE",
+  "menu_titulo": "ROGUECRITTERS",
   "menu_novoJogo": " NOVO JOGO ",
   "menu_configuracoes": " CONFIGURAÇÕES ",
   "menu_confirmarNovoJogoTitulo": "COMEÇAR DE NOVO?",
@@ -90,7 +90,7 @@
   "evolution_titulo": "EVOLUINDO!",
 
   "bossReveal_vs": "VS",
-  "bossReveal_entrar": " ENTRAR ",
+  "bossReveal_entrar": " INICIAR ",
 
   "intro_pagina1": "FOGO, ÁGUA, PLANTA e RELÂMPAGO. Há muito tempo, as CRIATURAS viviamos paz e harmonia.",
   "intro_pagina2": "Então tudo mudou quando o treinador surgiu...",
@@ -528,8 +528,8 @@
   "titulo_toque": "TOQUE PARA COMEÇAR",
   "titulo_tecla": "PRESSIONE QUALQUER TECLA",
   "menu_progresso": "PROGRESSO",
-  "menu_criaturas": "CRIATURAS",
-  "menu_itens": "ITENS",
+  "menu_criaturas": "CRIATURAS DESBLOQUADAS",
+  "menu_itens": "ITENS DESBLOQUADOS",
   "menu_vitorias": "VITÓRIAS",
   "menu_tempoTotal": "TEMPO TOTAL",
   "menu_runSalva": "RUN SALVA"

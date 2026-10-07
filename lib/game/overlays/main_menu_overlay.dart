@@ -3,6 +3,7 @@ import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'package:creatures_rogue/game/components/core/responsive.dart';
+import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_progress.dart';
 import 'package:creatures_rogue/game/creatures_rogue_game.dart';
@@ -232,7 +233,7 @@ class _QuadroDeProgresso extends StatelessWidget {
           _rotulo(l.menu_progresso),
           const SizedBox(height: 6),
           _linha(l.menu_criaturas, '$criaturas / $totalCriaturas'),
-          _linha(l.menu_itens, '$itens / ${sorteaveis.length}'),
+          _linha(l.menu_itens, '${itens-16} / ${sorteaveis.length - 16}'),
           _linha(l.menu_vitorias, '${progresso.vitorias}'),
           // O total soma a run salva por fora: ela só entra no acumulado
           // quando acaba (ver `CreatureProgress.tempoTotal`).
@@ -263,7 +264,7 @@ class _QuadroDeProgresso extends StatelessWidget {
         if (criatura != null) ...[
           SpriteUi(
             caminho: criatura.spritePath,
-            tamanho: 32,
+            tamanho: Vector2(32, 32),
             cor1: criatura.corClara,
             cor2: criatura.corEscura,
           ),

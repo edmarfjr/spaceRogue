@@ -163,10 +163,10 @@ class _IntroOverlayState extends State<IntroOverlay> {
         child: Container(
           padding: const EdgeInsets.all(4),
           margin: const EdgeInsets.all(8),
-          decoration: const BoxDecoration(
-            color: UiTheme.quadroFundoCor,
-            border: BordaDupla(cor: Palette.preto, espessura: 3),
-          ),
+         // decoration: const BoxDecoration(
+         //   color: UiTheme.quadroFundoCor,
+         //   border: BordaDupla(cor: Palette.preto, espessura: 3),
+         // ),
           child: _fase == _Fase.dialogo
               ? _construirDialogo()
               : _construirEscolha(),

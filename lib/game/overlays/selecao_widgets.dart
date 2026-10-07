@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
 import 'package:creatures_rogue/game/components/core/palette.dart';
@@ -23,7 +24,7 @@ import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 /// pixel nenhum a mais.
 class SpriteUi extends StatelessWidget {
   final String caminho;
-  final double tamanho;
+  final Vector2 tamanho;
   final Color cor1;
   final Color cor2;
   final Color? corBranco;
@@ -40,8 +41,8 @@ class SpriteUi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: tamanho,
-      height: tamanho,
+      width: tamanho.x,
+      height: tamanho.y,
       child: FutureBuilder<ui.Image>(
         future: PaletteSwapper.createSwappedImage(
           imagePath: caminho,
@@ -57,8 +58,8 @@ class SpriteUi extends StatelessWidget {
           if (imagem == null) return const SizedBox.shrink();
           return RawImage(
             image: imagem,
-            width: tamanho,
-            height: tamanho,
+            width: tamanho.x,
+            height: tamanho.y,
             // `contain` obrigatório: sem `fit`, o Flutter assume `scaleDown`,
             // que só REDUZ — um sprite de 16x16 ficaria desenhado em 16x16 no
             // canto de uma caixa maior.
@@ -222,7 +223,7 @@ class IconeHabilidade extends StatelessWidget {
       ),
       child: SpriteUi(
         caminho: caminho,
-        tamanho: tamanho,
+        tamanho: Vector2(tamanho, tamanho),
         cor1: UiTheme.corDoTipo(criatura.tipo),
         cor2: UiTheme.corDoTipo2(criatura.tipo),
         corBranco: Palette.branco,

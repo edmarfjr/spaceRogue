@@ -2,7 +2,7 @@
   "@@locale": "en",
 
   "loading_carregando": "LOADING...",
-  "menu_titulo": "CREATURES ROGUE",
+  "menu_titulo": "ROGUECRITTERS",
   "menu_novoJogo": " NEW GAME ",
   "menu_configuracoes": " SETTINGS ",
   "menu_confirmarNovoJogoTitulo": "START OVER?",
@@ -72,7 +72,7 @@
   "evolution_titulo": "EVOLVING!",
 
   "bossReveal_vs": "VS",
-  "bossReveal_entrar": " ENTER ",
+  "bossReveal_entrar": " START ",
 
   "intro_pagina1": "FIRE, WATER, PLANT e LIGHTNING. A long time ago, the CREATURES living in peace and harmony.",
   "intro_pagina2": "Bu everything changes when THE TRAINER arives...",
@@ -480,8 +480,8 @@
   "titulo_toque": "TAP TO START",
   "titulo_tecla": "PRESS ANY KEY",
   "menu_progresso": "PROGRESS",
-  "menu_criaturas": "CREATURES",
-  "menu_itens": "ITEMS",
+  "menu_criaturas": "CREATURES UNLOCKED",
+  "menu_itens": "ITEMS UNLOCKED",
   "menu_vitorias": "WINS",
   "menu_tempoTotal": "TOTAL TIME",
   "menu_runSalva": "SAVED RUN"

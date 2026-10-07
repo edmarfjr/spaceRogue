@@ -1,3 +1,4 @@
+import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
@@ -201,7 +202,7 @@ class _BarraProgressaoState extends State<BarraProgressao>
       alignment: Alignment.centerRight,
       child: SpriteUi(
         caminho: item.spritePath,
-        tamanho: 32,
+        tamanho: Vector2(32, 32),
         cor1: Palette.preto,
         cor2: Palette.preto,
         corBranco: Palette.preto,
@@ -240,7 +241,7 @@ class _JanelaDesbloqueio extends StatelessWidget {
               const SizedBox(height: 12),
               SpriteUi(
                 caminho: item.spritePath,
-                tamanho: 48,
+                tamanho: Vector2(48, 48),
                 cor1: item.cor1,
                 cor2: item.cor2,
               ),

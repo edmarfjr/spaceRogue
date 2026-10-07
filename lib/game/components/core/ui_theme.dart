@@ -92,7 +92,7 @@ class UiTheme {
   /// [BordaDuplaShape] que não passar a sua. Nula = vão transparente, que
   /// deixa aparecer o fundo do painel (o visual de sempre). Trocar aqui pinta
   /// o vão de todas as molduras e botões de uma vez.
-  static const Color bordaVaoCor = Palette.indigo;
+  static const Color bordaVaoCor = Palette.cinza;
 
   /// Fundo de todo QUADRO emoldurado com [BordaDupla] (cartões, painéis,
   /// barra de progressão, janela de item destravado). Separado de

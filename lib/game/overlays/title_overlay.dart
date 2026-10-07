@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:creatures_rogue/game/components/core/palette.dart';
+import 'package:flame/components.dart' show Vector2;
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/responsive.dart';
@@ -42,8 +44,8 @@ class _TitleOverlayState extends State<TitleOverlay>
 
   /// Largura da "janela" por onde as criaturas passam — também a distância
   /// que elas percorrem pra sair e entrar.
-  static const double _larguraJanela = 360;
-  static const double _ladoCriatura = 160;
+  static const double _larguraJanela = 980;
+  static const double _ladoCriatura = 128;
 
   /// De quantos pixels acima o letreiro começa a cair.
   static const double _alturaQueda = 260;
@@ -136,14 +138,14 @@ class _TitleOverlayState extends State<TitleOverlay>
       child: ResponsiveOverlayScaffold(
         background: UiTheme.backgroundMenuCor,
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               _letreiro(l.menu_titulo, estreita),
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
               _janelaDeCriaturas(),
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
               _convite(convite),
             ],
           ),
@@ -165,14 +167,20 @@ class _TitleOverlayState extends State<TitleOverlay>
           child: child,
         );
       },
-      child: Text(
-        texto,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          color: UiTheme.txtCor,
-          fontSize: estreita ? 32 : 48,
-          fontWeight: FontWeight.bold,
-        ),
+      //child: Text(
+      //  texto,
+      //  textAlign: TextAlign.center,
+      //  style: TextStyle(
+      //    color: UiTheme.txtCor,
+      //    fontSize: estreita ? 32 : 48,
+      //    fontWeight: FontWeight.bold,
+      //  ),
+      //),
+      child: SpriteUi(
+        caminho: 'title.png',
+        tamanho: Vector2(_larguraJanela, _ladoCriatura)*1.5,
+        cor1: Palette.lemon,
+        cor2: Palette.indigo,
       ),
     );
   }
@@ -199,7 +207,7 @@ class _TitleOverlayState extends State<TitleOverlay>
               child: Center(
                 child: SpriteUi(
                   caminho: criatura.spritePath,
-                  tamanho: _ladoCriatura,
+                  tamanho: Vector2(_ladoCriatura, _ladoCriatura),
                   cor1: criatura.corClara,
                   cor2: criatura.corEscura,
                 ),

@@ -1,3 +1,4 @@
+import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/core/ui_theme.dart';
@@ -101,7 +102,7 @@ class ResumoRun extends StatelessWidget {
         // base do registro: é o sprite que o jogador viu na luta.
         SpriteUi(
           caminho: quem.spritePath,
-          tamanho: _ladoCriatura,
+          tamanho: Vector2(_ladoCriatura, _ladoCriatura),
           cor1: quem.corClara,
           cor2: quem.corEscura,
         ),
@@ -121,7 +122,7 @@ class ResumoRun extends StatelessWidget {
     // ícone, e o elenco já se reconhece pelo desenho.
     return SpriteUi(
       caminho: criatura.spritePath,
-      tamanho: _ladoCriatura,
+      tamanho: Vector2(_ladoCriatura, _ladoCriatura),
       cor1: criatura.corClara,
       cor2: criatura.corEscura,
     );
