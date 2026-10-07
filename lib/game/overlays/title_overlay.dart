@@ -69,11 +69,9 @@ class _TitleOverlayState extends State<TitleOverlay>
     duration: const Duration(milliseconds: 900),
   );
 
-  /// Ordem de exibição: todas as criaturas, na forma EVOLUÍDA (a mais
-  /// vistosa), embaralhadas a cada abertura do app.
-  late final List<CreatureData> _ordem = [
-    for (final c in CreatureRegistry.all) c.evoluir?.call() ?? c,
-  ]..shuffle();
+  /// Ordem de exibição: todas as criaturas, na forma BASE, embaralhadas a
+  /// cada abertura do app.
+  late final List<CreatureData> _ordem = [...CreatureRegistry.all]..shuffle();
 
   int _indice = 0;
   Timer? _espera;
