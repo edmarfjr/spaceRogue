@@ -32,6 +32,10 @@ class WildCreatureNpc extends PositionComponent
   /// dois slots do grupo com a mesma criatura.
   bool _recrutado = false;
 
+  /// As outras criaturas da mesma oferta. Recrutar esta faz as irmãs sumirem
+  /// — a escolha é uma OU outra (ver `CreaturesRogueGame._buildWildCreatures`).
+  final List<WildCreatureNpc> irmas = [];
+
   WildCreatureNpc({required Vector2 position, required this.creatureData})
       : super(size: Vector2(16, 16), anchor: Anchor.center, position: position);
 
@@ -93,6 +97,12 @@ class WildCreatureNpc extends PositionComponent
       GameAudio.instance.play(Sfx.liberar);
       parent?.add(CompanionReviveEffect(position: position.clone()));
       removeFromParent();
+      // Trava as irmãs ANTES de removê-las: a remoção só vale no fim do
+      // quadro, e até lá o jogador ainda pode estar encostando nelas.
+      for (final irma in irmas) {
+        irma._recrutado = true;
+        irma.removeFromParent();
+      }
     }
   }
 }

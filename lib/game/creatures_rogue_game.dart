@@ -241,8 +241,7 @@ class CreaturesRogueGame extends FlameGame
   /// significa que outra fonte (um pedestal) entregou o mesmo item enquanto a
   /// loja ainda o exibia. Nesse caso a venda deve ser RECUSADA: dois do mesmo
   /// item na lista disparariam o gancho duas vezes por evento.
-  bool consumirItemEfeito(ItemEfeito item) =>
-      poolItens.remove(item);
+  bool consumirItemEfeito(ItemEfeito item) => poolItens.remove(item);
 
   final Random _poolRandom = Random();
 
@@ -363,14 +362,20 @@ class CreaturesRogueGame extends FlameGame
     dungeonWorld.add(CompanionReviveEffect(position: player.position.clone()));
   }
 
-  /// Criatura selvagem da sala da escada do quarto andar (ver
+  /// Distância de cada criatura da oferta até o centro dela.
+  static const double _afastamentoOferta = 24.0;
+
+  /// Oferta de criaturas selvagens da sala da escada (andares pares, ver
   /// PIVOT_CONTROLE_DIRETO.md §5) — passado como `wildCreatureBuilder` pra
   /// `RoomComponent`, mesmo padrão que `bossBuilder`/`isBossFloor` já usa.
-  /// `null` sem slot livre no grupo: a sala fica vazia, sem prompt nem fila
-  /// de espera.
-  WildCreatureNpc? _buildWildCreature(Vector2 position) {
+  ///
+  /// DUAS criaturas, lado a lado, e o jogador leva só uma: recrutar uma faz a
+  /// outra sumir (ver `WildCreatureNpc.irmas`) — mesma escolha excludente da
+  /// sala de tesouro. Uma só quando não sobra outra candidata; nenhuma sem
+  /// slot livre no grupo.
+  List<WildCreatureNpc> _buildWildCreatures(Vector2 centro) {
     final slotVazio = grupo.indexWhere((m) => m == null);
-    if (slotVazio == -1) return null;
+    if (slotVazio == -1) return const [];
 
     final possiveis = CreatureRegistry.all
         .where(
@@ -382,10 +387,27 @@ class CreaturesRogueGame extends FlameGame
               c.tipo != CreatureType.neutro,
         )
         .toList();
-    if (possiveis.isEmpty) return null;
+    possiveis.shuffle(_wildRandom);
+    final escolhidas = possiveis.take(2).toList();
 
-    final sorteada = possiveis[_wildRandom.nextInt(possiveis.length)];
-    return WildCreatureNpc(position: position, creatureData: sorteada);
+    final npcs = [
+      for (var i = 0; i < escolhidas.length; i++)
+        WildCreatureNpc(
+          // Com duas, uma de cada lado do centro; sozinha, no centro.
+          position: escolhidas.length == 1
+              ? centro.clone()
+              : centro +
+                    Vector2(
+                      i == 0 ? -_afastamentoOferta : _afastamentoOferta,
+                      0,
+                    ),
+          creatureData: escolhidas[i],
+        ),
+    ];
+    for (final npc in npcs) {
+      npc.irmas.addAll(npcs.where((outra) => outra != npc));
+    }
+    return npcs;
   }
 
   /// Chamado por `WildCreatureNpc` quando o jogador encosta nela. Entra no
@@ -691,7 +713,6 @@ class CreaturesRogueGame extends FlameGame
     gameCamera.add(tremorCamera);
     add(GameboyBezel(camera: gameCamera));
 
-
     _camaraPronta = true;
     _reflowControles(size);
     // Depois do `_reflowControles`: e ele quem decide o tipo de viewport, e no
@@ -795,7 +816,7 @@ class CreaturesRogueGame extends FlameGame
         dungeon: currentLevel,
         floor: currentFloor,
         bossBuilder: isBossFloor ? _buildRunBoss : null,
-        wildCreatureBuilder: currentFloor % 2 == 0 ? _buildWildCreature : null,
+        wildCreatureBuilder: currentFloor % 2 == 0 ? _buildWildCreatures : null,
       );
       loadedRooms['${roomData.x},${roomData.y}'] = room;
       dungeonWorld.add(room);
@@ -933,7 +954,9 @@ class CreaturesRogueGame extends FlameGame
     bossesDaRun = (dados['bosses'] as num?)?.toInt() ?? 0;
     criaturasUsadas
       ..clear()
-      ..addAll(((dados['criaturasUsadas'] as List?) ?? const []).cast<String>());
+      ..addAll(
+        ((dados['criaturasUsadas'] as List?) ?? const []).cast<String>(),
+      );
 
     final bossId = dados['bossId'] as String?;
     runBoss = bossId == null ? null : _acharBoss(bossId, currentLevel);
@@ -1029,9 +1052,9 @@ class CreaturesRogueGame extends FlameGame
     player.upgradesPegos
       ..clear()
       ..addAll(
-        ((j['upgrades'] as List?) ?? const [])
-            .cast<String>()
-            .map((n) => PowerUpType.values.byName(n)),
+        ((j['upgrades'] as List?) ?? const []).cast<String>().map(
+          (n) => PowerUpType.values.byName(n),
+        ),
       );
     // Save anterior às cargas de sala: começa zerado. Perder as cargas ao
     // continuar seria injusto, mas o contrário (ganhar) seria explorável, e
@@ -1071,7 +1094,9 @@ class CreaturesRogueGame extends FlameGame
 
     String? baseId(MembroGrupo? m) {
       if (m == null) return null;
-      return m.evoluida ? CreatureRegistry.baseDe(m.criatura).id : m.criatura.id;
+      return m.evoluida
+          ? CreatureRegistry.baseDe(m.criatura).id
+          : m.criatura.id;
     }
 
     return {
@@ -1327,10 +1352,8 @@ class CreaturesRogueGame extends FlameGame
       const gapSala = 3.0;
       final ladoSala = _raioSlotNaSala * 2;
       final quantidade = _slotButtons.length;
-      final larguraTotal =
-          quantidade * ladoSala + (quantidade - 1) * gapSala;
-      final esquerda =
-          RoomComponent.roomWidth - margemSala - larguraTotal;
+      final larguraTotal = quantidade * ladoSala + (quantidade - 1) * gapSala;
+      final esquerda = RoomComponent.roomWidth - margemSala - larguraTotal;
       final topo = RoomComponent.roomHeight - margemSala - ladoSala;
       for (var i = 0; i < quantidade; i++) {
         _slotButtons[i].position = Vector2(
@@ -2027,7 +2050,7 @@ class CreaturesRogueGame extends FlameGame
     // disputar espaço com o analógico direito do outro lado.
     const double folga = 8;
     _trocaButton = AbilityButton(
-      radius: buttonRadius*0.75,
+      radius: buttonRadius * 0.75,
       quadro: (pressionado) => pressionado
           ? AbilityButtonSprites.trocaPressionado
           : AbilityButtonSprites.trocaNeutro,
@@ -2115,10 +2138,7 @@ class CreaturesRogueGame extends FlameGame
     if (membro == null || !membro.noBanco) return 0.0;
     final maxHp = membro.criatura.stats.maxHp;
     if (maxHp <= 0) return 0.0;
-    return (1 - membro.vida / maxHp).clamp(
-      0.0,
-      1.0,
-    );
+    return (1 - membro.vida / maxHp).clamp(0.0, 1.0);
   }
 
   /// Chamado pela `Stairs` ao encostar no jogador. Só encena a animação —
@@ -2194,7 +2214,7 @@ class CreaturesRogueGame extends FlameGame
         dungeon: currentLevel,
         floor: currentFloor,
         bossBuilder: isBossFloor ? _buildRunBoss : null,
-        wildCreatureBuilder: currentFloor % 2 == 0 ? _buildWildCreature : null,
+        wildCreatureBuilder: currentFloor % 2 == 0 ? _buildWildCreatures : null,
       );
       loadedRooms['${roomData.x},${roomData.y}'] = room;
       dungeonWorld.add(room);
@@ -2250,10 +2270,7 @@ class CreaturesRogueGame extends FlameGame
   /// fora de propósito: contar o saldo puniria gastar na loja.
   int _xpDaRun({required bool vitoria}) {
     final andares = (currentLevel - 1) * numFloors + currentFloor;
-    return andares * 10 +
-        bossesDaRun * 30 +
-        abatesDaRun +
-        (vitoria ? 100 : 0);
+    return andares * 10 + bossesDaRun * 30 + abatesDaRun + (vitoria ? 100 : 0);
   }
 
   /// Grava o XP da run ANTES de qualquer animação: fechar o app no meio da
@@ -2475,8 +2492,7 @@ class CreaturesRogueGame extends FlameGame
         // `topoHud` pra pousar depois da faixa, no mesmo lugar relativo
         // (dentro da linha da parede/porta) que já pousava antes.
         player.position.y +=
-            (roomBottom + RoomComponent.topoHud + threshold + margem) -
-            pes.top;
+            (roomBottom + RoomComponent.topoHud + threshold + margem) - pes.top;
       } else if (newRoomY < currentRoomIndex.y) {
         player.position.y -= pes.bottom - (roomTop - threshold - margem);
       }

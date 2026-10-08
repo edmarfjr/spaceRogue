@@ -130,7 +130,11 @@ class RoomComponent extends PositionComponent with HasGameRef {
   /// PIVOT_CONTROLE_DIRETO.md §5) — mesmo padrão do `bossBuilder` acima: quem
   /// decide QUANDO e SE nasce é o jogo (que sabe se há slot livre no grupo),
   /// a sala só sabe onde colocar. `null` = andar comum, sem criatura nenhuma.
-  final WildCreatureNpc? Function(Vector2 position)? wildCreatureBuilder;
+  ///
+  /// Recebe o CENTRO da oferta e devolve as criaturas já posicionadas em
+  /// volta dele — uma escolha entre até duas (ver
+  /// `CreaturesRogueGame._buildWildCreatures`). Lista vazia = sem oferta.
+  final List<WildCreatureNpc> Function(Vector2 centro)? wildCreatureBuilder;
 
   RoomComponent(
     this.data, {
@@ -696,10 +700,12 @@ class RoomComponent extends PositionComponent with HasGameRef {
     if (construirCriatura != null) {
       // Posição própria (centerY - 28), livre da escada (centerY) e da
       // recompensa (centerY + 28) — ver PIVOT_CONTROLE_DIRETO.md §5.2.
-      final npc = construirCriatura(
+      final npcs = construirCriatura(
         position + Vector2(width / 2, centerY - 64),
       );
-      if (npc != null) parent?.add(npc);
+      for (final npc in npcs) {
+        parent?.add(npc);
+      }
     }
   }
 
