@@ -61,7 +61,7 @@ class RodaDeFogo extends Passive {
         : 0.0;
     player.empurraoDeContato = naMaxima ? empurrao : 0.0;
 
-    if (naMaxima) _rastroDeVelocidade(player);
+    if (naMaxima) rastroDeVelocidade(player);
   }
 
   /// Segundos entre uma imagem fantasma e a próxima, na velocidade máxima.
@@ -76,7 +76,12 @@ class RodaDeFogo extends Passive {
   /// com `EfeitoStack.ignora` que, ao expirar, solta um vulto — e o quadro
   /// seguinte rearma enquanto a condição valer. A passiva é `const` e não
   /// guarda cronômetro.
-  void _rastroDeVelocidade(Player player) {
+  ///
+  /// Estático e público porque o item `ImpetoArdente` (a passiva de
+  /// aposentadoria da Roda) dá o mesmo estado a qualquer criatura, e precisa
+  /// do mesmo aviso. A chave do efeito é uma só: com os dois ativos, sai um
+  /// vulto por tique, não dois.
+  static void rastroDeVelocidade(Player player) {
     player.aplicarEfeito(
       #rodaFogoVulto,
       _intervaloVulto,
