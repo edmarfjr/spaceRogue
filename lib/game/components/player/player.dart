@@ -603,6 +603,10 @@ class Player extends PositionComponent
   /// Dano que o proprio corpo causa ao encostar num inimigo. 0 = nenhum.
   double danoDeContato = 0.0;
 
+  /// Empurrao que o mesmo contato aplica no inimigo atingido. 0 = nenhum.
+  /// Separado do dano porque nem toda fonte de dano de contato empurra.
+  double empurraoDeContato = 0.0;
+
   /// Trava de reacerto por inimigo. Sobreposicao de corpos dispara colisao
   /// todo quadro — sem isto o dano de contato sairia a 60fps. Mesmo padrao do
   /// mapa `hits` do `Projectile`.
@@ -1422,6 +1426,7 @@ class Player extends PositionComponent
     limparEscudos();
     imuneAContato = false;
     danoDeContato = 0.0;
+    empurraoDeContato = 0.0;
     _contatoCooldown.clear();
     damageReduction = 0.0;
     speedLocked = false;
@@ -1836,6 +1841,9 @@ class Player extends PositionComponent
       danoDeContato * danoMult * danoMultDerivado,
       tipoAtacante: creatureData.tipo,
     );
+    if (empurraoDeContato > 0) {
+      inimigo.applyKnockback(absolutePosition, empurraoDeContato);
+    }
   }
 
   /// Empurra o jogador para longe de [sourcePosition]. Usado por explosões

@@ -25,7 +25,11 @@ import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 /// `trocarCriatura` zera os dois campos, e a criatura nova os reescreve —
 /// ou não, se não tiver passiva).
 class RodaDeFogo extends Passive {
-  const RodaDeFogo({this.limiarVelocidade = 0.75, this.coefDano = 1.5})
+  const RodaDeFogo({
+    this.limiarVelocidade = 0.75,
+    this.coefDano = 1.0,
+    this.empurrao = 90.0,
+  })
     : super(nome: 'Roda de Fogo');
 
   /// Fração de [Player.maxSpeed] a partir da qual conta como velocidade
@@ -41,6 +45,10 @@ class RodaDeFogo extends Passive {
   /// `Player` (0,3s por inimigo).
   final double coefDano;
 
+  /// Força com que o atropelamento joga o inimigo pra longe. Boss não é
+  /// empurrado (ver `Enemy.applyKnockback`).
+  final double empurrao;
+
   @override
   void aoAtualizar(Player player, double dt) {
     final maxima = player.maxSpeed;
@@ -51,6 +59,7 @@ class RodaDeFogo extends Passive {
     player.danoDeContato = naMaxima
         ? player.creatureData.stats.ataque * coefDano
         : 0.0;
+    player.empurraoDeContato = naMaxima ? empurrao : 0.0;
 
     if (naMaxima) _rastroDeVelocidade(player);
   }
@@ -103,6 +112,7 @@ class RodaDeFogoEvo extends RodaDeFogo {
   const RodaDeFogoEvo({
     super.limiarVelocidade,
     super.coefDano,
+    super.empurrao,
     this.intervaloRastro = 0.08,
     this.coefRastro = 0.6,
     this.duracaoChama = 2.0,
