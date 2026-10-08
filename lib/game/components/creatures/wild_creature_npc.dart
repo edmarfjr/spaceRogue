@@ -14,10 +14,8 @@ import 'package:creatures_rogue/game/creatures_rogue_game.dart';
 
 /// Criatura selvagem parada na sala da escada do quarto andar de cada
 /// dungeon (ver PIVOT_CONTROLE_DIRETO.md §5) — sem IA de combate nenhuma, só
-/// um sprite e um hitbox passivo. Encostar recruta na hora, sem confirmação
-/// (pedido explícito de simplicidade): se o grupo tiver slot livre, entra no
-/// banco com vida cheia; se a corrida rara acontecer (grupo se encheu entre
-/// a sala nascer e o toque), não faz nada e a criatura continua ali.
+/// um sprite e um hitbox passivo. Encostar abre a ficha dela, com VOLTAR e
+/// ESCOLHER; escolher põe no banco com vida cheia (ver [recrutar]).
 class WildCreatureNpc extends PositionComponent
     with CollisionCallbacks, HasGameRef<CreaturesRogueGame> {
   final CreatureData creatureData;
@@ -87,22 +85,45 @@ class WildCreatureNpc extends PositionComponent
     priority = ySortPriority(position.y + size.y / 2);
   }
 
+  /// Depois de "VOLTAR", um instante em que encostar não reabre a janela:
+  /// os dois hitboxes do jogador entram em momentos diferentes, e o segundo
+  /// reabriria a janela logo depois de fechada.
+  double _ignorarToque = 0.0;
+  static const double _pausaAposVoltar = 0.6;
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (_ignorarToque > 0) _ignorarToque -= dt;
+  }
+
+  /// Encostar abre a ficha da criatura (ver `WildCreatureInfoOverlay`); quem
+  /// recruta é o botão ESCOLHER, via [recrutar].
   @override
   void onCollisionStart(Set<Vector2> intersectionPoints, PositionComponent other) {
     super.onCollisionStart(intersectionPoints, other);
-    if (_recrutado || other is! Player) return;
+    if (_recrutado || _ignorarToque > 0 || other is! Player) return;
+    gameRef.abrirInfoCriaturaSelvagem(this);
+  }
 
-    if (gameRef.recrutarCriaturaSelvagem(creatureData)) {
-      _recrutado = true;
-      GameAudio.instance.play(Sfx.liberar);
-      parent?.add(CompanionReviveEffect(position: position.clone()));
-      removeFromParent();
-      // Trava as irmãs ANTES de removê-las: a remoção só vale no fim do
-      // quadro, e até lá o jogador ainda pode estar encostando nelas.
-      for (final irma in irmas) {
-        irma._recrutado = true;
-        irma.removeFromParent();
-      }
+  /// Chamado ao fechar a ficha com VOLTAR.
+  void recusada() => _ignorarToque = _pausaAposVoltar;
+
+  /// Entra no grupo e faz as irmãs da oferta sumirem. Se a corrida rara
+  /// acontecer (grupo cheio entre a sala nascer e a escolha), nada muda e a
+  /// criatura continua ali.
+  void recrutar() {
+    if (_recrutado) return;
+    if (!gameRef.recrutarCriaturaSelvagem(creatureData)) return;
+    _recrutado = true;
+    GameAudio.instance.play(Sfx.liberar);
+    parent?.add(CompanionReviveEffect(position: position.clone()));
+    removeFromParent();
+    // Trava as irmãs ANTES de removê-las: a remoção só vale no fim do
+    // quadro, e até lá o jogador ainda pode estar encostando nelas.
+    for (final irma in irmas) {
+      irma._recrutado = true;
+      irma.removeFromParent();
     }
   }
 }

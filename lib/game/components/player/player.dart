@@ -667,6 +667,19 @@ class Player extends PositionComponent
   // `MovementAnimator` —, e por isso o `update` corta tudo o resto enquanto
   // ela roda.
   bool _morrendo = false;
+
+  /// Na cena de morte — quem segue o jogador (o feixe do Zapeye) para aqui.
+  bool get estaMorrendo => _morrendo;
+
+  /// Onde o jogador estava no instante em que usou a habilidade 2, antes de
+  /// ela mexer nele. Os ganchos `aoUsarAbility2` rodam DEPOIS da habilidade,
+  /// e um teleporte já mudou a posição até lá — a `Piscadela` usa isto pra
+  /// cegar os inimigos no ponto de onde ele sumiu.
+  Vector2 posicaoAntesDaHab2 = Vector2.zero();
+
+  /// Fator de velocidade enquanto o Zapeye dispara o raio (ver
+  /// `FeixeEletrico`, que liga o efeito `#focoDoRaio` a cada quadro).
+  static const double _fatorFocoDoRaio = 0.5;
   double _morteTimer = 0.0;
   VoidCallback? _morteAoTerminar;
 
@@ -1533,6 +1546,7 @@ class Player extends PositionComponent
       item.aoAtualizar(this, dt);
     }
     creatureData.passive?.aoAtualizar(this, dt);
+    if (temEfeito(#focoDoRaio)) velMultDerivado *= _fatorFocoDoRaio;
 
     if (_contatoCooldown.isNotEmpty) {
       _contatoCooldown.updateAll((inimigo, resta) => resta - dt);
@@ -1719,6 +1733,7 @@ class Player extends PositionComponent
     if (emCutscene || submerso) return;
     if (_cooldown2 > 0) return;
     if (!creatureData.ability2.canExecute(this)) return;
+    posicaoAntesDaHab2 = position.clone();
     creatureData.ability2.execute(this, lockedAb2Direction);
 
     // Antes dos ganchos por tipo, e sem condição nenhuma: vale pra esquiva,
@@ -1831,6 +1846,40 @@ class Player extends PositionComponent
       livre = p;
     }
     return d * livre;
+  }
+
+  /// Deslocamento do teleporte do Zapeye: o ponto mais longe, até
+  /// [distanciaBase] na direção [dir], onde os pés cabem no chão da sala atual
+  /// sem encostar em parede, pedra ou buraco. Procura de trás pra frente, em
+  /// passos de 4px, e devolve `null` se nenhum ponto serve.
+  ///
+  /// Diferente de [dashOffsetLivre], só o DESTINO importa — o caminho pode
+  /// ter buraco ou pedra, que é o que faz do teleporte um teleporte. Mas o
+  /// destino tem que estar dentro da sala: atravessar a parede levaria o
+  /// jogador pra sala vizinha sem passar pela troca de sala.
+  Vector2? deslocamentoDoPiscar(Vector2 dir, double distanciaBase) {
+    final d = dir.normalized();
+    final distancia = distanciaBase * dodgeDistMult;
+    if (d.isZero() || distancia <= 0) return null;
+    final sala = currentRoom;
+    if (sala == null) return null;
+
+    final area = sala.areaInterna;
+    final solidos = [
+      for (final c in sala.children.whereType<PositionComponent>())
+        if (barraMovimento(c, isAirborne: false)) c.toAbsoluteRect(),
+    ];
+    final pes = physicsHitbox.toAbsoluteRect();
+    for (var p = distancia; p >= 8; p -= 4) {
+      final destino = pes.shift(ui.Offset(d.x * p, d.y * p));
+      if (!area.contains(destino.topLeft) ||
+          !area.contains(destino.bottomRight)) {
+        continue;
+      }
+      if (solidos.any((s) => s.overlaps(destino))) continue;
+      return d * p;
+    }
+    return null;
   }
 
   /// Machuca [inimigo] com o próprio corpo, respeitando a trava de reacerto.

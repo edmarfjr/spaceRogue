@@ -129,6 +129,9 @@ import '../enemies/creatures/tornado_fogo_enemy.dart';
 import '../enemies/creatures/tubarao_agua_enemy.dart';
 import '../enemies/creatures/urso_planta_enemy.dart';
 import '../enemies/creatures/sereia_agua_enemy.dart';
+import '../enemies/creatures/olho_eletrico_enemy.dart';
+import 'abilities/raio_ocular.dart';
+import 'abilities/piscar.dart';
 import 'abilities/tentaculada.dart';
 import 'abilities/redemoinho_de_tentaculos.dart';
 import 'abilities/esguicho_de_tinta.dart';
@@ -905,6 +908,47 @@ class CreatureRegistry {
   );
 
 
+  /// Zapeye — olho elétrico de longe. O botão A segura um raio contínuo que
+  /// atordoa quem fica nele; o botão B é o único teleporte do elenco.
+  static final CreatureData olhoEletrico = CreatureData(
+    id: 'olho_eletrico',
+    nome: 'Zapeye',
+    spritePath: 'actors/olhoEletrico.png',
+    tipo: CreatureType.eletrico,
+    corClara: Palette.amarelo,
+    corEscura: Palette.plumEsc,
+    stats: BaseStats(maxHp: 4, speed: 70, defesa: 1, ataque: 3),
+    ability1: RaioOcular(),
+    ability2: Piscar(),
+    moveAnim: MovementAnimation.flutuar,
+    hitboxSize: Vector2(10, 10),
+    enemyBuilder: (pos, plr) =>
+        OlhoEletricoEnemy(position: pos, playerTarget: plr),
+    evoluir: () => olhoEletricoEvo,
+  );
+
+  /// Evolução do Zapeye (Zaptron). O raio cresce com o foco e o teleporte
+  /// deixa um clarão atordoante pra trás.
+  ///
+  /// `spritePath` aponta pro sprite da BASE de propósito: o evoluído ainda
+  /// não existe, e um caminho pra arquivo inexistente derruba o
+  /// `Flame.images.load` no instante da evolução. Trocar quando a arte chegar.
+  static final CreatureData olhoEletricoEvo = CreatureData(
+    id: 'olho_eletrico',
+    nome: 'Zaptron',
+    spritePath: 'actors/olhoEletrico.png',
+    tipo: CreatureType.eletrico,
+    corClara: Palette.amarelo,
+    corEscura: Palette.plumEsc,
+    stats: BaseStats(maxHp: 6, speed: 70, defesa: 1, ataque: 3),
+    ability1: RaioConcentrado(),
+    ability2: PiscarFulminante(),
+    moveAnim: MovementAnimation.flutuar,
+    hitboxSize: Vector2(10, 10),
+    enemyBuilder: (pos, plr) =>
+        OlhoEletricoEnemy(position: pos, playerTarget: plr),
+  );
+
   /// Calamarin (nome provisório) — molusco de água de corpo a corpo. O botão A
   /// varre um arco com o tentáculo; o botão B esquiva soltando tinta que cega.
   /// Id `sereia_agua` fixo: é chave de save, e não muda quando o nome mudar.
@@ -1007,6 +1051,7 @@ class CreatureRegistry {
     leaoEletrico,
     cogumeloPlanta,
     sereiaAgua,
+    olhoEletrico,
     caoNeutro,
     gatoNeutro,
     aveNeutro,

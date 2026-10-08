@@ -1,7 +1,10 @@
+import 'dart:ui' as ui;
 import 'package:creatures_rogue/game/components/core/ui_theme.dart';
 import 'dart:async';
 
+import 'package:flame/components.dart' show Vector2;
 import 'package:flutter/material.dart';
+import 'package:creatures_rogue/game/components/utils/palette_swapper.dart';
 
 import 'package:creatures_rogue/game/audio/ui_sfx.dart';
 import 'package:creatures_rogue/game/components/core/palette.dart';
@@ -45,7 +48,6 @@ const List<String> _idsIniciais = [
   'roedor_fogo',
   'tartaruga_planta',
   'sapo_agua',
- //'sereia_agua',
   'ave_eletrica',
 ///////////////////
   //'tornado_fogo',
@@ -67,6 +69,11 @@ const List<String> _idsIniciais = [
   //'gato_neutro',
   //'ave_neutro',
   //'peixe_neutro',
+///////////////////
+  // 'roda_fogo',
+  // 'cogumelo_planta',
+  //'sereia_agua',
+  //'olho_eletrico'
 ];
 
 class _IntroOverlayState extends State<IntroOverlay> {
@@ -184,11 +191,26 @@ class _IntroOverlayState extends State<IntroOverlay> {
           behavior: HitTestBehavior.opaque,
           onTap: withBtnSfx(_avancar),
           child: Center(
-            child: _CaixaDialogo(
-              texto: _textoAtual.substring(0, _revelados),
-              mostrarSeta: _paginaCompleta,
-              pagina: _pagina,
-              total: _paginas.length,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Troca com um esmaecer curto a cada página, pra virar de
+                // cena em vez de piscar de uma imagem pra outra.
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: KeyedSubtree(
+                    key: ValueKey(_pagina),
+                    child: _IlustracaoDaPagina(pagina: _pagina),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _CaixaDialogo(
+                  texto: _textoAtual.substring(0, _revelados),
+                  mostrarSeta: _paginaCompleta,
+                  pagina: _pagina,
+                  total: _paginas.length,
+                ),
+              ],
             ),
           ),
         ),
@@ -332,6 +354,124 @@ class _IntroOverlayState extends State<IntroOverlay> {
 /// Caixa de diálogo de altura fixa. `maxLines` é o que garante isso: sem
 /// limite de linhas, uma página mais longa que o previsto estoura a caixa em
 /// vez de ser cortada.
+/// Imagem que acompanha cada página do diálogo da intro. Uma por página, na
+/// ordem do texto:
+///
+/// 1. "Fogo, água, planta e relâmpago... em paz" — uma criatura de cada
+///    elemento, lado a lado.
+/// 2. "O treinador surgiu" — o treinador.
+/// 3. "Um novo elemento... NORMAL" — as quatro neutras.
+/// 4. "Libertar seus irmãos capturados" — as criaturas da página 1 em
+///    silhueta preta: agora presas.
+///
+/// Feita com os sprites que já existem; trocar por uma arte desenhada é
+/// mexer só aqui.
+class _IlustracaoDaPagina extends StatelessWidget {
+  final int pagina;
+
+  const _IlustracaoDaPagina({required this.pagina});
+
+  static const double _lado = 56;
+
+  static final List<CreatureData> _elementais = [
+    CreatureRegistry.roedorFogo,
+    CreatureRegistry.sapoAgua,
+    CreatureRegistry.tartarugaPlanta,
+    CreatureRegistry.aveEletrica,
+  ];
+
+  static final List<CreatureData> _neutras = [
+    CreatureRegistry.caoNeutro,
+    CreatureRegistry.gatoNeutro,
+    CreatureRegistry.aveNeutro,
+    CreatureRegistry.peixeNeutro,
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: _lado * 1.5,
+      child: Center(
+        child: switch (pagina) {
+          0 => _fileira(_elementais),
+          1 => const _QuadroDoTreinador(lado: _lado * 1.5),
+          2 => _fileira(_neutras),
+          _ => _fileira(_elementais, silhueta: true),
+        },
+      ),
+    );
+  }
+
+  Widget _fileira(List<CreatureData> criaturas, {bool silhueta = false}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final c in criaturas)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6),
+            child: SpriteUi(
+              caminho: c.spritePath,
+              tamanho: Vector2.all(_lado),
+              cor1: silhueta ? Palette.preto : c.corClara,
+              cor2: silhueta ? Palette.preto : c.corEscura,
+              corBranco: silhueta ? Palette.preto : null,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+/// O treinador, recortado do primeiro quadro de `actors/plr.png` (a folha
+/// tem dois quadros de 16x16 lado a lado) e nas mesmas cores da cena do
+/// boss (ver `BossCutscene`).
+class _QuadroDoTreinador extends StatelessWidget {
+  final double lado;
+
+  const _QuadroDoTreinador({required this.lado});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: lado,
+      height: lado,
+      child: FutureBuilder<ui.Image>(
+        future: PaletteSwapper.createSwappedImage(
+          imagePath: 'actors/plr.png',
+          lightGrayReplacement: Palette.bege,
+          darkGrayReplacement: Palette.burgundy,
+        ),
+        builder: (context, snapshot) {
+          final img = snapshot.data;
+          if (img == null) return const SizedBox.shrink();
+          return CustomPaint(painter: _SegundoQuadro(img));
+        },
+      ),
+    );
+  }
+}
+
+class _SegundoQuadro extends CustomPainter {
+  final ui.Image imagem;
+
+  _SegundoQuadro(this.imagem);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final ladoQuadro = imagem.height.toDouble();
+    canvas.drawImageRect(
+      imagem,
+      Rect.fromLTWH(16, 0, ladoQuadro, ladoQuadro),
+      Offset.zero & size,
+      // Pixel art: ampliar sem suavizar.
+      Paint()..filterQuality = FilterQuality.none,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_SegundoQuadro antigo) => antigo.imagem != imagem;
+}
+
 class _CaixaDialogo extends StatelessWidget {
   final String texto;
   final bool mostrarSeta;

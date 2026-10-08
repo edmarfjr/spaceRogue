@@ -45,7 +45,7 @@ class _TitleOverlayState extends State<TitleOverlay>
   /// Largura da "janela" por onde as criaturas passam — também a distância
   /// que elas percorrem pra sair e entrar.
   static const double _larguraJanela = 980;
-  static const double _ladoCriatura = 128;
+  static const double _ladoCriatura = 112;
 
   /// De quantos pixels acima o letreiro começa a cair.
   static const double _alturaQueda = 260;
@@ -143,7 +143,7 @@ class _TitleOverlayState extends State<TitleOverlay>
             mainAxisSize: MainAxisSize.min,
             children: [
               _letreiro(l.menu_titulo, estreita),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               _janelaDeCriaturas(),
               const SizedBox(height: 24),
               _convite(convite),
@@ -178,7 +178,7 @@ class _TitleOverlayState extends State<TitleOverlay>
       //),
       child: SpriteUi(
         caminho: 'title.png',
-        tamanho: Vector2(_larguraJanela, _ladoCriatura)*1.5,
+        tamanho: Vector2(_larguraJanela, _ladoCriatura)*2,
         cor1: Palette.lemon,
         cor2: Palette.indigo,
       ),

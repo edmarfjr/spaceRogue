@@ -47,10 +47,10 @@ class BossRevealOverlay extends StatelessWidget {
       background: UiTheme.backgroundMenuCor,
       child: Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: UiTheme.quadroFundoCor,
-          border: BordaDupla(cor: Palette.preto, espessura: 3),
-        ),
+        //decoration: const BoxDecoration(
+        //  color: UiTheme.quadroFundoCor,
+        //  border: BordaDupla(cor: Palette.preto, espessura: 3),
+        //),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -68,7 +68,7 @@ class BossRevealOverlay extends StatelessWidget {
               size: 120,
               tudoPreto: !CreatureProgress.instance.isUnlocked(boss.creatureId),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 16),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: UiTheme.btnCor,

@@ -1,5 +1,6 @@
 import 'package:creatures_rogue/game/components/effects/sprite_effect.dart';
 import 'package:flutter/material.dart';
+import 'package:creatures_rogue/game/components/creatures/passives/roda_de_fogo.dart';
 
 import 'package:creatures_rogue/game/components/creatures/creature_data.dart';
 import 'package:creatures_rogue/game/components/creatures/creature_type.dart';
@@ -191,6 +192,7 @@ class ItemEfeitoRegistry {
     RaizProfunda(),
     FaroDeSangue(),
     Camuflagem(),
+    Piscadela(),
     Revezamento(),
     CascaInstavel(),
     Estilhaco(),
@@ -403,7 +405,7 @@ class PeleDeCinzas extends ItemEfeito {
   /// falta, então um intervalo curto manteria o inimigo encostado queimando
   /// sem parar — com 2 tiques a cada 2s o teto é 2 de dano por segundo, e
   /// esse é o número pra mexer se ficar fraco ou forte demais.
-  static const double intervalo = 1.0;
+  static const double intervalo = 0.6;
   static const int ticks = 1;
 
   @override
@@ -997,15 +999,21 @@ class ReflexoEletrico extends ItemEfeito {
 }
 
 /// Roda de Fogo. Na velocidade máxima, o corpo do jogador machuca quem
-/// encostar — a assinatura da criatura virando permanente, sem a imunidade a
-/// contato que ela tinha (essa fica só com quem está pilotando a Roda).
+/// encostar e o empurra, e fica imune ao dano de contato — a assinatura da
+/// criatura virando permanente. Sem a imunidade a passiva não se pagava: pra
+/// causar o dano de contato era preciso encostar, e encostar custava vida.
 ///
-/// Escreve em `Player.danoDeContato`, o mesmo campo que a passiva de criatura
+/// Escreve em `Player.danoDeContato`, `empurraoDeContato` e `imuneAContato`,
+/// os mesmos campos que a passiva de criatura
 /// [RodaDeFogo] usa. Os dois convivem: os itens rodam ANTES de
 /// `creatureData.passive` no `Player.update`, então jogando DE Roda de Fogo o
 /// valor da criatura vence (é maior). Com qualquer outra criatura, vale este.
 class ImpetoArdente extends ItemEfeito {
-  const ImpetoArdente({this.limiarVelocidade = 0.9, this.coefDano = 0.6});
+  const ImpetoArdente({
+    this.limiarVelocidade = 0.9,
+    this.coefDano = 0.6,
+    this.empurrao = 90.0,
+  });
 
   /// Fração de `Player.maxSpeed` a partir da qual conta como máxima. Mais
   /// exigente que o da criatura (0,75): aqui não há o freio de ter que jogar
@@ -1013,6 +1021,9 @@ class ImpetoArdente extends ItemEfeito {
   final double limiarVelocidade;
 
   final double coefDano;
+
+  /// Mesmo empurrão do atropelamento da Roda de Fogo (ver `RodaDeFogo`).
+  final double empurrao;
 
   @override
   bool get sorteavel => false;
@@ -1046,6 +1057,11 @@ class ImpetoArdente extends ItemEfeito {
     player.danoDeContato = naMaxima
         ? player.creatureData.stats.ataque * coefDano
         : 0.0;
+    player.empurraoDeContato = naMaxima ? empurrao : 0.0;
+    player.imuneAContato = naMaxima;
+    // Mesmo rastro de vultos da Roda: o jogador precisa ver quando o corpo
+    // virou arma.
+    if (naMaxima) RodaDeFogo.rastroDeVelocidade(player);
   }
 }
 
@@ -2902,6 +2918,46 @@ class RaizProfunda extends ItemEfeito {
 ///
 /// `tempoParado` mede deslocamento, não `velocity` (ver a doc dele), então
 /// atacar parado não desarma; andar desarma.
+/// Zapeye (`olho_eletrico`). Eco do teleporte: todo botão B, de qualquer
+/// criatura, faz todos os inimigos perderem o jogador de vista por
+/// [duracao] segundos.
+///
+/// Usa a cegueira de inimigo, que agora mira a última posição vista: eles
+/// atacam o ponto de onde o jogador SAIU — e tiro às cegas acerta os outros.
+/// Cega no ponto de partida (`Player.posicaoAntesDaHab2`), e não no atual,
+/// porque este gancho roda depois da habilidade e um teleporte já moveu o
+/// jogador.
+class Piscadela extends ItemEfeito {
+  const Piscadela();
+
+  static const double duracao = 0.8;
+
+  @override
+  String get id => 'piscadela';
+  @override
+  bool get sorteavel => false;
+  @override
+  String get spritePath => 'actors/olhoEletrico.png';
+  @override
+  Color get cor1 => cinzaMarcadorClaro;
+  @override
+  Color get cor2 => cinzaMarcadorEscuro;
+  @override
+  String nome(BuildContext context) => context.l10n.passiva_piscadela;
+  @override
+  String descricao(BuildContext context) =>
+      context.l10n.passiva_piscadelaDesc;
+
+  @override
+  void aoUsarAbility2(Player player) {
+    final inimigos =
+        player.parent?.children.whereType<Enemy>() ?? const <Enemy>[];
+    for (final inimigo in inimigos) {
+      inimigo.applyCego(duracao, vista: player.posicaoAntesDaHab2);
+    }
+  }
+}
+
 class Camuflagem extends ItemEfeito {
   const Camuflagem();
 
@@ -3131,6 +3187,7 @@ class PassivasAposentadoria {
     'toco_planta': RaizProfunda(),
     'tubarao_agua': FaroDeSangue(),
     'sereia_agua': Camuflagem(),
+    'olho_eletrico': Piscadela(),
   };
 
   static ItemEfeito? de(String creatureId) => porCriatura[creatureId];

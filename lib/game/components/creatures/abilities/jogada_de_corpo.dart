@@ -28,7 +28,7 @@ class JogadaDeCorpo extends Ability {
          descricao:
              'Pulo invulnerável na direção do toque; a aterrissagem empurra tudo ao redor.',
          cooldown: 2.5,
-         target: AbilityTarget.joyDir,
+         target: AbilityTarget.plrDir,
          tipo: AbilityTipo.esquiva,
        );
 

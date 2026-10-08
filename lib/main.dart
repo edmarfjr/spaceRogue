@@ -19,6 +19,7 @@ import 'package:creatures_rogue/game/overlays/intro_overlay.dart';
 import 'package:creatures_rogue/game/overlays/loading_screen.dart';
 import 'package:creatures_rogue/game/overlays/main_menu_overlay.dart';
 import 'package:creatures_rogue/game/overlays/title_overlay.dart';
+import 'package:creatures_rogue/game/overlays/wild_creature_info_overlay.dart';
 import 'package:creatures_rogue/game/overlays/pause_overlay.dart';
 import 'package:creatures_rogue/game/overlays/settings_overlay.dart';
 import 'package:creatures_rogue/game/game_settings.dart';
@@ -82,6 +83,8 @@ void main() async {
       game: creaturesGame,
       overlayBuilderMap: {
         'Title': (context, game) => TitleOverlay(game: game),
+        'WildCreatureInfo': (context, game) =>
+            WildCreatureInfoOverlay(game: game),
         'MainMenu': (context, game) => MainMenuOverlay(game: game),
         'Settings': (context, game) => SettingsOverlay(game: game),
         'Intro': (context, game) => IntroOverlay(game: game),

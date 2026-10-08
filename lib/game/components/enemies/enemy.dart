@@ -585,10 +585,15 @@ abstract class Enemy extends PositionComponent
     speed = speedBase * lentidaoFator;
   }
 
-  void applyCego(double duracao) {
+  /// [vista] é o ponto que fica gravado como "onde viu o jogador". Sem ele,
+  /// a posição atual do jogador — quem passa outro é a `Piscadela`, que cega
+  /// depois de um teleporte e precisa do ponto de PARTIDA.
+  void applyCego(double duracao, {Vector2? vista}) {
     // Só grava ao FICAR cego: renovar a cegueira não pode atualizar o ponto,
     // senão uma nuvem reaplicando a cada quadro seguiria o jogador.
-    if (cegoTimer <= 0) _posicaoVista = playerTarget.absolutePosition;
+    if (cegoTimer <= 0) {
+      _posicaoVista = vista?.clone() ?? playerTarget.absolutePosition;
+    }
     if (duracao > cegoTimer) cegoTimer = duracao;
   }
 

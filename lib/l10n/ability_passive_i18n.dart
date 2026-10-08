@@ -32,6 +32,8 @@ import 'package:creatures_rogue/game/components/creatures/abilities/escamas_espe
 import 'package:creatures_rogue/game/components/creatures/abilities/rabanada.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/rabanada_evo.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/tentaculada.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/raio_ocular.dart';
+import 'package:creatures_rogue/game/components/creatures/abilities/piscar.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/redemoinho_de_tentaculos.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/esguicho_de_tinta.dart';
 import 'package:creatures_rogue/game/components/creatures/abilities/cortina_de_tinta.dart';
@@ -152,6 +154,10 @@ String abilityName(BuildContext context, Ability a) {
     RabanadaEvo() => l.abilityName_RabanadaEvo,
     EscamasEspelhadas() => l.abilityName_EscamasEspelhadas,
     Tentaculada() => l.abilityName_Tentaculada,
+    RaioConcentrado() => l.abilityName_RaioConcentrado,
+    RaioOcular() => l.abilityName_RaioOcular,
+    PiscarFulminante() => l.abilityName_PiscarFulminante,
+    Piscar() => l.abilityName_Piscar,
     RedemoinhoDeTentaculos() => l.abilityName_RedemoinhoDeTentaculos,
     EsguichoDeTinta() => l.abilityName_EsguichoDeTinta,
     CortinaDeTinta() => l.abilityName_CortinaDeTinta,
@@ -229,6 +235,10 @@ String abilityDescription(BuildContext context, Ability a) {
     RabanadaEvo() => l.abilityDesc_RabanadaEvo,
     EscamasEspelhadas() => l.abilityDesc_EscamasEspelhadas,
     Tentaculada() => l.abilityDesc_Tentaculada,
+    RaioConcentrado() => l.abilityDesc_RaioConcentrado,
+    RaioOcular() => l.abilityDesc_RaioOcular,
+    PiscarFulminante() => l.abilityDesc_PiscarFulminante,
+    Piscar() => l.abilityDesc_Piscar,
     RedemoinhoDeTentaculos() => l.abilityDesc_RedemoinhoDeTentaculos,
     EsguichoDeTinta() => l.abilityDesc_EsguichoDeTinta,
     CortinaDeTinta() => l.abilityDesc_CortinaDeTinta,

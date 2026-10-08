@@ -126,7 +126,7 @@ class _CreatureSelectOverlayState extends State<CreatureSelectOverlay> {
                       onSelect: (creature) =>
                           setState(() => _selected = creature),
                     );
-                    final detail = _CreatureDetailPanel(
+                    final detail = PainelDetalheCriatura(
                       creature: _selected,
                       onPlay: () => widget.game.startRun(_selected),
                     );
@@ -322,11 +322,22 @@ class _CreatureListTile extends StatelessWidget {
 
 /// Painel de detalhe: sprite e identidade em cima, status e habilidades
 /// embaixo, botão de jogar no pé — o rascunho de paisagem.
-class _CreatureDetailPanel extends StatelessWidget {
+///
+/// Público porque a janela da criatura selvagem (`WildCreatureInfoOverlay`)
+/// mostra a mesma ficha, trocando só os botões do pé por [rodape].
+class PainelDetalheCriatura extends StatelessWidget {
   final CreatureData creature;
-  final VoidCallback onPlay;
+  final VoidCallback? onPlay;
 
-  const _CreatureDetailPanel({required this.creature, required this.onPlay});
+  /// Substitui o botão JOGAR no pé do painel.
+  final Widget? rodape;
+
+  const PainelDetalheCriatura({
+    super.key,
+    required this.creature,
+    this.onPlay,
+    this.rodape,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -345,7 +356,7 @@ class _CreatureDetailPanel extends StatelessWidget {
           const SizedBox(height: 8),
           Expanded(flex: 4, child: _habilidades(context)),
           const SizedBox(height: 10),
-          Center(child: _botaoJogar(context)),
+          Center(child: rodape ?? _botaoJogar(context)),
         ],
       ),
     );

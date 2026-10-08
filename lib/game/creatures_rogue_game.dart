@@ -410,7 +410,35 @@ class CreaturesRogueGame extends FlameGame
     return npcs;
   }
 
-  /// Chamado por `WildCreatureNpc` quando o jogador encosta nela. Entra no
+  /// Criatura selvagem cuja ficha está aberta (ver `WildCreatureInfoOverlay`).
+  WildCreatureNpc? npcEmAnalise;
+
+  /// Encostou numa criatura selvagem: pausa e abre a ficha dela. Ignora se a
+  /// ficha já está aberta — os dois hitboxes do jogador chegam a disparar o
+  /// toque no mesmo quadro.
+  void abrirInfoCriaturaSelvagem(WildCreatureNpc npc) {
+    if (overlays.isActive('WildCreatureInfo')) return;
+    npcEmAnalise = npc;
+    pauseEngine();
+    overlays.add('WildCreatureInfo');
+  }
+
+  /// Fecha a ficha. [escolher] recruta a criatura (e some com as irmãs da
+  /// oferta); sem ele, ela fica onde está.
+  void fecharInfoCriaturaSelvagem({required bool escolher}) {
+    overlays.remove('WildCreatureInfo');
+    final npc = npcEmAnalise;
+    npcEmAnalise = null;
+    resumeEngine();
+    if (npc == null) return;
+    if (escolher) {
+      npc.recrutar();
+    } else {
+      npc.recusada();
+    }
+  }
+
+  /// Chamado por `WildCreatureNpc` quando o jogador escolhe a criatura. Entra no
   /// banco com vida cheia — o jogador troca pra ela quando quiser, pelo
   /// retrato. Devolve `false` só em caso de corrida rara (grupo já se
   /// preencheu entre a sala nascer e o toque acontecer).
@@ -1233,7 +1261,9 @@ class CreaturesRogueGame extends FlameGame
     }
     if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.escape) {
-      if (!overlays.isActive('MainMenu') && !overlays.isActive('Title')) {
+      if (!overlays.isActive('MainMenu') &&
+          !overlays.isActive('Title') &&
+          !overlays.isActive('WildCreatureInfo')) {
         if (overlays.isActive('PauseMenu')) {
           overlays.remove('PauseMenu');
           resumeEngine();

@@ -95,6 +95,16 @@ class RoomComponent extends PositionComponent with HasGameRef {
   /// desenhar em cima sem disputar espaço com sprite de sala.
   static const double topoHud = 16.0;
 
+  /// Chão da sala em coordenadas do mundo, sem paredes nem a faixa da HUD.
+  /// Quem move algo SEM percorrer o caminho (o teleporte do Zapeye) confere
+  /// o destino contra isto, senão atravessaria a parede pra sala vizinha.
+  Rect get areaInterna => Rect.fromLTRB(
+    position.x + 16,
+    position.y + topoHud + 16,
+    position.x + width - 16,
+    position.y + height - 16,
+  );
+
   /// Centro vertical da área JOGÁVEL (linhas 1-11, y de 16 a 192) — usado
   /// onde antes era `height / 2`, pra tudo que precisa ficar centralizado no
   /// que sobrou depois da faixa da HUD (portas, obstáculos, spawns...).
