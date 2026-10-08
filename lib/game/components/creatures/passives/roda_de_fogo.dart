@@ -4,6 +4,7 @@ import 'package:creatures_rogue/game/components/core/palette.dart';
 import 'package:creatures_rogue/game/components/creatures/passive.dart';
 import 'package:creatures_rogue/game/components/effects/dot.dart';
 import 'package:creatures_rogue/game/components/effects/efeitos_temporarios.dart';
+import 'package:creatures_rogue/game/components/effects/ghost_effect.dart';
 import 'package:creatures_rogue/game/components/player/player.dart';
 import 'package:creatures_rogue/game/components/projeteis/projectile.dart';
 
@@ -50,6 +51,38 @@ class RodaDeFogo extends Passive {
     player.danoDeContato = naMaxima
         ? player.creatureData.stats.ataque * coefDano
         : 0.0;
+
+    if (naMaxima) _rastroDeVelocidade(player);
+  }
+
+  /// Segundos entre uma imagem fantasma e a próxima, na velocidade máxima.
+  static const double _intervaloVulto = 0.05;
+
+  /// Rastro de imagens fantasma enquanto a criatura está na velocidade
+  /// máxima: o "deslocamento de ar" que avisa o jogador que o corpo virou
+  /// arma (imune a contato e ferindo quem encosta). Sem sinal nenhum, ele só
+  /// descobria que tinha embalado ao ver um inimigo levar dano.
+  ///
+  /// Mesmo tique periódico do rastro de fogo da evolução: um efeito temporário
+  /// com `EfeitoStack.ignora` que, ao expirar, solta um vulto — e o quadro
+  /// seguinte rearma enquanto a condição valer. A passiva é `const` e não
+  /// guarda cronômetro.
+  void _rastroDeVelocidade(Player player) {
+    player.aplicarEfeito(
+      #rodaFogoVulto,
+      _intervaloVulto,
+      stack: EfeitoStack.ignora,
+      aoTerminar: () {
+        if (!player.visual.isMounted) return;
+        player.parent?.add(
+          GhostEffect.fromSprite(
+            player.visual,
+            duration: 0.2,
+            startOpacity: 0.45,
+          ),
+        );
+      },
+    );
   }
 }
 
