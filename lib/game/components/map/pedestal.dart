@@ -27,16 +27,13 @@ class PedestalComponent extends Obstacle {
   /// sala põe três.
   final List<PedestalComponent> irmaos = [];
 
-  /// Qual família de item este pedestal oferece: 0 = ITEM_EFEITO,
-  /// 1 = CONSUMÍVEL, 2 = UPGRADE. `null` sorteia na hora, que é o
-  /// comportamento do pedestal sozinho.
-  final int? familia;
+  /// Família do que este pedestal oferece, já DECIDIDA: 0 = ITEM_EFEITO,
+  /// 1 = CONSUMÍVEL, 2 = UPGRADE. Vem de [sortearOferta].
+  final int familia;
 
-  /// A família do [irmao], quando há um. Serve só pro desempate do caso em
-  /// que a pool de ITEM_EFEITO acaba: sem isto, um pedestal de ITEM_EFEITO
-  /// sem pool cairia num sorteio livre e poderia acabar oferecendo o MESMO
-  /// item do irmão — que é justamente o que uma escolha não pode ser.
-  final int? familiaIrmao;
+  /// O item da família ITEM_EFEITO, já tirado da pool da run. Nulo nas outras
+  /// famílias.
+  final ItemEfeito? itemEfeito;
 
   /// Já vi um coletável nascer aqui?
   ///
@@ -51,45 +48,40 @@ class PedestalComponent extends Obstacle {
     required super.position,
     super.cor1 = Palette.indigo,
     super.cor2 = Palette.cinzaEsc,
-    this.familia,
-    this.familiaIrmao,
+    required this.familia,
+    this.itemEfeito,
   }) : super(
          spritePath: 'tileset/pedestal.png',
          size: Vector2(16, 16),
          collisionType: CollisionType.passive,
        );
 
-  /// O sorteio mora aqui, e não no construtor, porque a família ITEM_EFEITO
-  /// precisa consultar a pool da run — e `game` só existe depois da montagem.
-  @override
-  Future<void> onLoad() async {
-    await super.onLoad();
-
-    // Antes de qualquer sorteio: o `onLoad` dos dois pedestais de um par roda
-    // em paralelo, e o jogador pode ter levado o item do irmão enquanto este
-    // aqui ainda carregava. Sortear assim mesmo GASTARIA um item da pool da
-    // run (`sortearItemEfeito` retira o que devolve) pra jogá-lo fora.
-    if (!hasItem) return;
-
-    final rng = Random();
-    final jogo = game;
+  /// Sorteia o que um pedestal vai oferecer — chamado pela SALA, no instante
+  /// em que ela monta os pedestais, e não pelo `onLoad` do pedestal.
+  ///
+  /// O sorteio de ITEM_EFEITO tira o item da pool da run na hora. Feito
+  /// aqui, de forma síncrona, ele acontece antes de qualquer outra coisa do
+  /// andar — inclusive antes do save que o andar grava logo depois de nascer.
+  /// No `onLoad` (assíncrono) ele caía DEPOIS do save, e continuar a run
+  /// recriava o andar com aqueles itens ainda na pool. Assim, item oferecido
+  /// e recusado (sala de desafio evitada, pedestal não escolhido) nunca volta
+  /// a aparecer na mesma run.
+  ///
+  /// [familia] `null` sorteia a família (pedestal sozinho, sala de desafio).
+  /// [familiaIrmao] é o desempate de quando a pool de ITEM_EFEITO acaba: o
+  /// pedestal cai na família que o irmão NÃO tem, senão a escolha poderia
+  /// oferecer duas vezes a mesma coisa.
+  static ({int familia, ItemEfeito? item}) sortearOferta(
+    CreaturesRogueGame jogo,
+    Random rng, {
+    int? familia,
+    int? familiaIrmao,
+  }) {
     final escolhida = familia ?? rng.nextInt(3);
-
-    // ITEM_EFEITO é o único que consulta a pool: `sortearItemEfeito` já retira
-    // o item, então a mesma run nunca oferece o mesmo duas vezes. Pool vazia
-    // devolve `null` e a oferta recai nas outras duas famílias — pedestal
-    // nenhum fica vazio por isso.
-    if (escolhida == 0 && jogo is CreaturesRogueGame) {
+    if (escolhida == 0) {
       final item = jogo.sortearItemEfeito();
-      if (item != null) {
-        add(ItemEfeitoPickup(position: Vector2(8, -4), item: item));
-        return;
-      }
+      if (item != null) return (familia: 0, item: item);
     }
-
-    // Chegou aqui: ou a família é CONSUMÍVEL/UPGRADE, ou a pool de ITEM_EFEITO
-    // acabou. Com irmão, cai na família que ele NÃO tem; sozinho, mantém o
-    // cara-ou-coroa de sempre.
     final int familiaFinal;
     if (escolhida != 0) {
       familiaFinal = escolhida;
@@ -98,8 +90,27 @@ class PedestalComponent extends Obstacle {
     } else {
       familiaFinal = rng.nextBool() ? 1 : 2;
     }
+    return (familia: familiaFinal, item: null);
+  }
 
-    if (familiaFinal == 1) {
+  @override
+  Future<void> onLoad() async {
+    await super.onLoad();
+
+    // O jogador pode ter levado o item do irmão enquanto este aqui ainda
+    // carregava: aí não há mais oferta pra montar.
+    if (!hasItem) return;
+
+    final item = itemEfeito;
+    if (item != null) {
+      add(ItemEfeitoPickup(position: Vector2(8, -4), item: item));
+      return;
+    }
+
+    // Consumível e upgrade não vêm de pool nenhuma, então o tipo pode ser
+    // sorteado aqui mesmo.
+    final rng = Random();
+    if (familia == 1) {
       add(
         ConsumablePickup(
           position: Vector2(8, -4),

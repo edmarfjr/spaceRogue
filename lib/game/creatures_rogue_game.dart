@@ -362,6 +362,12 @@ class CreaturesRogueGame extends FlameGame
     dungeonWorld.add(CompanionReviveEffect(position: player.position.clone()));
   }
 
+  /// Ids de toda criatura já OFERECIDA na sala da escada nesta run, escolhida
+  /// ou não. A oferta seguinte não repete nenhuma: quem recusou uma criatura
+  /// (ou pulou a sala) vê outras da próxima vez. Só quando não sobra nenhuma
+  /// inédita é que as já vistas voltam a valer.
+  final Set<String> criaturasOferecidas = {};
+
   /// Distância de cada criatura da oferta até o centro dela.
   static const double _afastamentoOferta = 24.0;
 
@@ -387,8 +393,13 @@ class CreaturesRogueGame extends FlameGame
               c.tipo != CreatureType.neutro,
         )
         .toList();
-    possiveis.shuffle(_wildRandom);
-    final escolhidas = possiveis.take(2).toList();
+    final ineditas = possiveis
+        .where((c) => !criaturasOferecidas.contains(c.id))
+        .toList();
+    final candidatas = ineditas.isEmpty ? possiveis : ineditas;
+    candidatas.shuffle(_wildRandom);
+    final escolhidas = candidatas.take(2).toList();
+    criaturasOferecidas.addAll(escolhidas.map((c) => c.id));
 
     final npcs = [
       for (var i = 0; i < escolhidas.length; i++)
@@ -774,6 +785,7 @@ class CreaturesRogueGame extends FlameGame
     derrotadoPor = null;
     derrotadoPorArmadilha = false;
     criaturasUsadas.clear();
+    criaturasOferecidas.clear();
     poolItens
       ..clear()
       //  filtra as passivas de aposentadoria: elas moram no mesmo
@@ -916,7 +928,7 @@ class CreaturesRogueGame extends FlameGame
       resumeEngine();
     }
 
-    unawaited(_salvarProgresso());
+    unawaited(_salvarAposMontarAndar());
   }
 
   /// Chamado pelo botão "CONTINUAR" do menu principal. Reconstrói a run a
@@ -980,6 +992,12 @@ class CreaturesRogueGame extends FlameGame
     tempoDeRun = (dados['tempoDeRun'] as num?)?.toDouble() ?? 0.0;
     abatesDaRun = (dados['abates'] as num?)?.toInt() ?? 0;
     bossesDaRun = (dados['bosses'] as num?)?.toInt() ?? 0;
+    // Save anterior a este campo: sem histórico, qualquer criatura pode vir.
+    criaturasOferecidas
+      ..clear()
+      ..addAll(
+        ((dados['criaturasOferecidas'] as List?) ?? const []).cast<String>(),
+      );
     criaturasUsadas
       ..clear()
       ..addAll(
@@ -1135,6 +1153,7 @@ class CreaturesRogueGame extends FlameGame
       'abates': abatesDaRun,
       'bosses': bossesDaRun,
       'criaturasUsadas': List<String>.from(criaturasUsadas),
+      'criaturasOferecidas': criaturasOferecidas.toList(),
       'poolAposentadoria': List<String>.from(poolAposentadoria),
       'bossId': runBoss?.creatureId,
       'ativo': companionAtivoIndex,
@@ -1192,6 +1211,23 @@ class CreaturesRogueGame extends FlameGame
   /// rearmam no quadro seguinte se a condição deles ainda valer. O preço é o
   /// [Revezamento] perder o resto da janela dele quando a foto cai no meio
   /// dela — janela de segundos, contra um bônus que ficava pra sempre.
+  /// Salva só depois que TODAS as salas do andar terminaram de montar.
+  ///
+  /// As salas nascem com `add`, mas o `onLoad` delas — onde os pedestais
+  /// sorteiam itens da pool e a sala da escada sorteia as criaturas — só roda
+  /// no quadro seguinte. Salvando antes, o save guardava a pool e o histórico
+  /// de criaturas de ANTES desses sorteios, e continuar a run recriava o andar
+  /// oferecendo as mesmas coisas de novo. Com o motor pausado (tela de VS do
+  /// boss), a montagem espera ele voltar, e o save junto.
+  Future<void> _salvarAposMontarAndar() async {
+    await Future.wait([
+      for (final sala in loadedRooms.values.whereType<RoomComponent>())
+        sala.loaded,
+    ]);
+    if (!_runStarted || _gameOverEmCurso) return;
+    await _salvarProgresso();
+  }
+
   Future<void> _salvarProgresso() {
     player.limparEfeitos(dono: EfeitoDono.jogador);
     return RunSave.instance.salvar(_serializarRun());
@@ -2278,7 +2314,7 @@ class CreaturesRogueGame extends FlameGame
       overlays.add('BossReveal');
     }
 
-    unawaited(_salvarProgresso());
+    unawaited(_salvarAposMontarAndar());
 
     player.naoMove = false;
   }

@@ -234,7 +234,15 @@ class RoomComponent extends PositionComponent with HasGameRef {
   /// trancada. Quem não quiser, sai pela porta aberta sem levar nada.
   void _spawnDesafio() {
     final centro = position + Vector2(width / 2 - 8, centerY);
-    final pedestal = PedestalComponent(position: centro);
+    final oferta = PedestalComponent.sortearOferta(
+      game as CreaturesRogueGame,
+      _random,
+    );
+    final pedestal = PedestalComponent(
+      position: centro,
+      familia: oferta.familia,
+      itemEfeito: oferta.item,
+    );
     _pedestalDesafio = pedestal;
     parent?.add(pedestal);
   }
@@ -346,15 +354,23 @@ class RoomComponent extends PositionComponent with HasGameRef {
       // Fila centrada: com 2 as posições são -0,5 e +0,5 do passo; com 3 são
       // -1, 0 e +1.
       final desvio = i - (quantos - 1) / 2;
+      // Sorteio AQUI, antes de o pedestal existir (ver
+      // `PedestalComponent.sortearOferta`). O irmão citado é só pro desempate
+      // de quando a pool de ITEM_EFEITO acaba. Com três pedestais as três
+      // famílias já estão tomadas, então nesse caso raro (pool vazia, fim de
+      // run) uma oferta pode repetir a família de outra. É barato de aceitar
+      // e caro de evitar.
+      final oferta = PedestalComponent.sortearOferta(
+        game as CreaturesRogueGame,
+        _random,
+        familia: familias[i],
+        familiaIrmao: familias[(i + 1) % quantos],
+      );
       pedestais.add(
         PedestalComponent(
           position: centro + Vector2(desvio * _passoPedestais, 0),
-          familia: familias[i],
-          // O irmão citado é só pro desempate de quando a pool de ITEM_EFEITO
-          // acaba. Com três pedestais as três famílias já estão tomadas, então
-          // nesse caso raro (pool vazia, fim de run) uma oferta pode repetir a
-          // família de outra. É barato de aceitar e caro de evitar.
-          familiaIrmao: familias[(i + 1) % quantos],
+          familia: oferta.familia,
+          itemEfeito: oferta.item,
         ),
       );
     }
@@ -711,7 +727,7 @@ class RoomComponent extends PositionComponent with HasGameRef {
       // Posição própria (centerY - 28), livre da escada (centerY) e da
       // recompensa (centerY + 28) — ver PIVOT_CONTROLE_DIRETO.md §5.2.
       final npcs = construirCriatura(
-        position + Vector2(width / 2, centerY - 64),
+        position + Vector2(width / 2, centerY - 32),
       );
       for (final npc in npcs) {
         parent?.add(npc);

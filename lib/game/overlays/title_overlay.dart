@@ -37,7 +37,7 @@ class TitleOverlay extends StatefulWidget {
 class _TitleOverlayState extends State<TitleOverlay>
     with TickerProviderStateMixin {
   /// Antes do letreiro cair, só a criatura na tela.
-  static const _antesDaQueda = Duration(milliseconds: 600);
+  static const _antesDaQueda = Duration(milliseconds: 100);
 
   /// Quanto cada criatura fica parada antes de sair.
   static const _exibicao = Duration(seconds: 3);
@@ -48,7 +48,7 @@ class _TitleOverlayState extends State<TitleOverlay>
   static const double _ladoCriatura = 112;
 
   /// De quantos pixels acima o letreiro começa a cair.
-  static const double _alturaQueda = 260;
+  static const double _alturaQueda = 360;
 
   /// Pisca em degrau (aceso/apagado), não em fade: é o "PRESS START" de
   /// cartucho, e um esmaecer suave leria como carregamento.
@@ -143,9 +143,9 @@ class _TitleOverlayState extends State<TitleOverlay>
             mainAxisSize: MainAxisSize.min,
             children: [
               _letreiro(l.menu_titulo, estreita),
-              const SizedBox(height: 32),
-              _janelaDeCriaturas(),
               const SizedBox(height: 24),
+              _janelaDeCriaturas(),
+              const SizedBox(height: 112),
               _convite(convite),
             ],
           ),
@@ -178,7 +178,7 @@ class _TitleOverlayState extends State<TitleOverlay>
       //),
       child: SpriteUi(
         caminho: 'title.png',
-        tamanho: Vector2(_larguraJanela, _ladoCriatura)*2,
+        tamanho: Vector2(_ladoCriatura*5, _ladoCriatura)*2,
         cor1: Palette.lemon,
         cor2: Palette.indigo,
       ),
